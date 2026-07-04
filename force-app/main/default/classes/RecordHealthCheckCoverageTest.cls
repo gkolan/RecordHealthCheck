@@ -730,7 +730,7 @@ private class RecordHealthCheckCoverageTest {
       'Unary query checks should still expose an Expected provenance row.'
     );
     System.assertEquals(
-      'Expected requirement',
+      'Comparator',
       isNotBlankResult.expectedProvenance.sourceLabel
     );
     System.assertEquals(

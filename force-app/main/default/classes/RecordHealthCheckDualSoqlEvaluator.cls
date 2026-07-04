@@ -178,12 +178,12 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
       result.actualProvenance = new RecordHealthCheckProvenance.Detail(
         provenanceSource(rule.FieldToRead__c, 'Primary query'),
         primaryValue == null ? 'null' : String.valueOf(primaryValue),
-        primaryRows.size() + ' row(s)'
+        RecordHealthCheckProvenance.rowCount(primaryRows.size())
       );
       result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
         provenanceSource(rule.CompareToField__c, 'Comparison query'),
         comparisonValue == null ? 'null' : String.valueOf(comparisonValue),
-        comparisonRows.size() + ' row(s)'
+        RecordHealthCheckProvenance.rowCount(comparisonRows.size())
       );
     } else {
       // CompareAsLists — show both result sets
@@ -204,12 +204,12 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
       );
       result.actualProvenance = new RecordHealthCheckProvenance.Detail(
         provenanceSource(rule.FieldToRead__c, 'Primary query'),
-        primaryList.size() + ' row(s)',
+        RecordHealthCheckProvenance.rowCount(primaryList.size()),
         null
       );
       result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
         provenanceSource(rule.CompareToField__c, 'Comparison query'),
-        comparisonList.size() + ' row(s)',
+        RecordHealthCheckProvenance.rowCount(comparisonList.size()),
         null
       );
     }

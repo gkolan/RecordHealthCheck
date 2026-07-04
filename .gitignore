@@ -94,6 +94,8 @@ scripts/**/*.py
 docs/reference/product-roadmap.md
 docs/reference/label-simplification-plan.md
 docs/guides/cli-commands.md
+docs/demo/
+docs/demo-account-health-check-component.md
 
 # Python Salesforce Functions
 **/__pycache__/

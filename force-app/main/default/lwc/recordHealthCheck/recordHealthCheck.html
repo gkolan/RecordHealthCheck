@@ -174,21 +174,30 @@
                         <span class="rhc-cmp__val">{check.expectedValue}</span>
                       </span>
                     </template>
-                    <template if:true={check.showActualDetail}>
-                      <p class="rhc-row__provenance">
-                        <span class="rhc-row__provenance-key">Found</span>
-                        <span class="rhc-row__provenance-val"
-                          >{check.actualValueDetail}</span
+                    <template if:true={check.showProvenance}>
+                      <div class="rhc-row__provenance-group">
+                        <span class="rhc-row__provenance-label"
+                          >Where these values came from</span
                         >
-                      </p>
-                    </template>
-                    <template if:true={check.showExpectedDetail}>
-                      <p class="rhc-row__provenance">
-                        <span class="rhc-row__provenance-key">Expected</span>
-                        <span class="rhc-row__provenance-val"
-                          >{check.expectedValueDetail}</span
-                        >
-                      </p>
+                        <template if:true={check.showActualDetail}>
+                          <p class="rhc-row__provenance">
+                            <span class="rhc-row__provenance-key">Found</span>
+                            <span class="rhc-row__provenance-val"
+                              >{check.actualValueDetail}</span
+                            >
+                          </p>
+                        </template>
+                        <template if:true={check.showExpectedDetail}>
+                          <p class="rhc-row__provenance">
+                            <span class="rhc-row__provenance-key"
+                              >Expected</span
+                            >
+                            <span class="rhc-row__provenance-val"
+                              >{check.expectedValueDetail}</span
+                            >
+                          </p>
+                        </template>
+                      </div>
                     </template>
                   </div>
                 </template>

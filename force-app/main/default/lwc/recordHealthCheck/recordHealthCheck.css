@@ -633,21 +633,39 @@
   line-height: 1.4;
 }
 
-/* Provenance note: source → raw value (coercion). De-emphasized relative to the
-   value chips — it explains where a value came from, it is not the value. */
+/* Provenance sub-section: a labeled group ("Where these values came from") that
+   sits below the value chips, separated by a rule. The label gives the second
+   Found/Expected pair a clear identity so it reads as supporting detail — where
+   each value was sourced — rather than a second, inconsistent copy of the values
+   above it. */
+.rhc-row__provenance-group {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
+}
+
+.rhc-row__provenance-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
+}
+
+/* Provenance note: source → raw value (coercion). Explains where a value came
+   from; the raw value carries the same chip treatment as the comparison values
+   above so the two Found/Expected pairs read as a consistent set. */
 .rhc-row__provenance {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
   margin: 0;
   color: var(--slds-g-color-neutral-base-30, #444240);
-}
-
-.rhc-row__provenance:first-of-type {
-  align-self: stretch;
-  margin-top: 0.35rem;
-  padding-top: 0.45rem;
-  border-top: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
 }
 
 .rhc-row__provenance-key {
@@ -670,6 +688,10 @@
     monospace
   );
   font-size: 0.7rem;
+  color: var(--slds-g-color-neutral-base-20, #2b2826);
+  background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
   word-break: break-word;
 }
 
@@ -730,7 +752,7 @@
   box-shadow: var(--slds-g-shadow-3, 0 2px 8px rgba(0, 0, 0, 0.2));
   font-size: 0.75rem;
   font-weight: 500;
-  line-height: 1.55;
+  line-height: 1.4;
   white-space: normal;
   transform: var(--rhc-tooltip-transform);
 }
@@ -782,9 +804,14 @@
    any column width and lets the text wrap and grow downward. */
 .rhc-tooltip-anchor--row::after {
   left: 1rem;
-  right: 1rem;
-  width: auto;
-  max-width: none;
+  right: auto;
+  /* Size to the text (capped), left-aligned, rather than spanning the whole card.
+     On a wide card the bubble no longer stretches edge-to-edge, so the right side
+     of the rows below stays visible — you can peek at the next row instead of it
+     being fully covered. calc(100% - 2rem) keeps it inside the card in a narrow
+     record-page column, where it still effectively spans the available width. */
+  width: max-content;
+  max-width: min(34rem, calc(100% - 2rem));
 }
 
 /* Bordered "nubbin" pointing up from the bubble to the row it describes: a

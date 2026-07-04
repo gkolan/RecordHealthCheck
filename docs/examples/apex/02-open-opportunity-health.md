@@ -14,7 +14,7 @@ Among **open** Opportunities on the Account, the check looks for rows that are u
 
 ## When to use this
 
-Reach for this pattern when the business rule binds **multiple field conditions to the same child row**: not to the Account as a whole. Separate Query rules can flag stale Opportunities, missing Next Steps, or bad Close Dates independently, but they cannot require that the **same** Opportunity fail all three together. A single dense SOQL WHERE can approximate pass/fail, but per-row clarity, explicit quarter boundaries, and an unhealthy count on fail belong in Apex.
+Reach for this pattern when the business rule binds **multiple field conditions to the same child row**: not to the Account as a whole. Separate Query rules can flag stale Opportunities, missing Next Steps, or bad Close Dates independently, but they cannot require that the **same** Opportunity fail all three together. A single dense SOQL WHERE can approximate pass/fail, but per-row clarity, explicit quarter boundaries, and an auditable unhealthy count belong in Apex.
 
 ## Why this evaluator
 
@@ -36,7 +36,7 @@ The reason this is Apex and not metadata is **same-Opportunity AND**: one open O
 | "Every open Opportunity has a Next Step" | [Query](../query/11-is-not-blank.md) + `AllRowsPass` or `AnyRowPasses` |
 | Same Opportunity must fail all three checks together | **Apex** (this example) or one dense Query WHERE (harder to own) |
 
-**Verdict:** Apex earns its place when the rule is **per-Opportunity combined logic** with maintainable code and an unhealthy count on fail. Drop to a single Query only if a long SOQL WHERE is acceptable and per-row clarity in the UI is not required.
+**Verdict:** Apex earns its place when the rule is **per-Opportunity combined logic** with maintainable code and an auditable unhealthy count. Drop to a single Query only if a long SOQL WHERE is acceptable and per-row clarity in the UI is not required.
 
 ## Configuration
 
@@ -59,7 +59,7 @@ The reason this is Apex and not metadata is **same-Opportunity AND**: one open O
 
 ## How it works
 
-The class reads the stale window from the metadata record, loads open Opportunities, evaluates the three conditions per row, and fails when any row matches all three. On fail it sets Found/Expected to show how many Opportunities were unhealthy.
+The class reads the stale window from the metadata record, loads open Opportunities, evaluates the three conditions per row, and fails when any row matches all three. It sets Found/Expected values on both pass and fail so an entitled viewer can expand a green row and audit the count too. It also captures provenance for both sides, which the engine renders only for users with `Record_Health_Check_View_Details`.
 
 ```apex
 public with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
@@ -89,10 +89,18 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = unhealthyCount == 0 ? 'PASS' : 'FAIL';
-    if (unhealthyCount > 0) {
-      result.actualValue = unhealthyCount + ' unhealthy';
-      result.expectedValue = '0 unhealthy';
-    }
+    result.actualValue = unhealthyCount + ' unhealthy';
+    result.expectedValue = '0 unhealthy';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Unhealthy open opportunities',
+      String.valueOf(unhealthyCount),
+      openOpps.size() + ' open opportunities scanned'
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Allowed unhealthy count',
+      '0',
+      null
+    );
     return result;
   }
 
@@ -134,10 +142,11 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
 - **Run When Count Query Matches**: the Rule skips Apex when the Account has no open Opportunities.
 - **Per-child boolean logic**: three conditions are AND-ed on each Opportunity in a loop instead of one opaque WHERE clause.
-- **Found/Expected on fail**: surfaces how many children matched the combined bar.
+- **Found/Expected on pass and fail**: surfaces how many children matched the combined bar, with passing-row visibility controlled by the Check Set's Comparison Display setting.
+- **Provenance from Apex**: `actualProvenance` and `expectedProvenance` explain where the values came from when the viewer has `Record_Health_Check_View_Details`.
 
 > [!NOTE]
-> Quarter boundaries use calendar quarters in Apex (`getQuarterStart`), not SOQL `THIS_QUARTER`. Both queries run `WITH USER_MODE`. The failure message comes from the configuration record; the class sets status and Found/Expected only.
+> Quarter boundaries use calendar quarters in Apex (`getQuarterStart`), not SOQL `THIS_QUARTER`. Both queries run `WITH USER_MODE`. The failure message comes from the configuration record; the class sets status, Found/Expected, and provenance.
 
 ## Get this example
 

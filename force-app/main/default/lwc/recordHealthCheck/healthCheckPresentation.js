@@ -175,6 +175,10 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     detailExpanded && valuesBehindCaret && expectedValue != null;
   const showActualDetail = detailExpanded && actualValueDetail != null;
   const showExpectedDetail = detailExpanded && expectedValueDetail != null;
+  // The provenance notes form their own labeled sub-section under the values, so
+  // the caption ("Where these values came from") renders once when either side
+  // is present rather than per note.
+  const showProvenance = showActualDetail || showExpectedDetail;
 
   const caretExpanded = detailExpanded;
   const caretLabel = detailExpanded
@@ -256,6 +260,7 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     showExpandedExpected,
     showActualDetail,
     showExpectedDetail,
+    showProvenance,
     adminDetailMessage,
     showAdminDetail,
     debugMeta,

@@ -57,7 +57,7 @@ The reason this is Apex and not metadata is **weighted scoring**: four unrelated
 
 ## How it works
 
-The class resolves both JSON parameters, loads billing fields on the Account, awards equal points for each criterion met, and compares the total to the minimum. On fail it sets Found/Expected to the actual score and the required minimum.
+The class resolves both JSON parameters, loads billing fields on the Account, awards equal points for each criterion met, and compares the total to the minimum. It sets Found/Expected values on both pass and fail so an entitled viewer can expand a green row and audit the score too. It also captures provenance for both sides, which the engine renders only for users with `Record_Health_Check_View_Details`.
 
 ```apex
 public with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
@@ -92,10 +92,18 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = score >= minScore ? 'PASS' : 'FAIL';
-    if (score < minScore) {
-      result.actualValue = String.valueOf(score);
-      result.expectedValue = String.valueOf(minScore) + '+';
-    }
+    result.actualValue = String.valueOf(score);
+    result.expectedValue = String.valueOf(minScore) + '+';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Strategic readiness score',
+      String.valueOf(score),
+      'sum of met criteria'
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Minimum required score',
+      String.valueOf(minScore),
+      null
+    );
     return result;
   }
 
@@ -158,7 +166,8 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
 - **Weighted scoring**: four criteria at equal weight; the passing bar changes through `minScore` in JSON without a code deploy.
 - **Reuse of sub-patterns**: activity OR logic from example 01 inside a composite evaluator.
 - **Applicability formula**: only Strategic Accounts invoke the queries.
-- **Found/Expected on fail**: shows actual score versus required minimum.
+- **Found/Expected on pass and fail**: shows actual score versus required minimum, with passing-row visibility controlled by the Check Set's Comparison Display setting.
+- **Provenance from Apex**: `actualProvenance` and `expectedProvenance` explain the score and threshold when the viewer has `Record_Health_Check_View_Details`.
 
 > [!NOTE]
 > Non-Strategic Accounts are skipped by the applicability formula: the Apex never runs for them.

@@ -72,4 +72,20 @@ private class RecordHealthCheckProvenanceTest {
       'An all-blank detail renders nothing rather than an empty note.'
     );
   }
+
+  @isTest
+  static void rowCountPluralizesCorrectly() {
+    System.assertEquals('0 rows', RecordHealthCheckProvenance.rowCount(0));
+    System.assertEquals(
+      '1 row',
+      RecordHealthCheckProvenance.rowCount(1),
+      'A single row uses the singular unit, not "1 row(s)".'
+    );
+    System.assertEquals('3 rows', RecordHealthCheckProvenance.rowCount(3));
+    System.assertEquals(
+      '0 rows',
+      RecordHealthCheckProvenance.rowCount(null),
+      'Null is treated as 0.'
+    );
+  }
 }

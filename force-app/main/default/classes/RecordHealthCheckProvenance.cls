@@ -69,4 +69,13 @@ public class RecordHealthCheckProvenance {
     }
     return note;
   }
+
+  /**
+   * Formats a row count with a correctly pluralized unit — "0 rows", "1 row",
+   * "3 rows" — so provenance notes never read "1 row(s)". Null is treated as 0.
+   */
+  public static String rowCount(Integer count) {
+    Integer n = count == null ? 0 : count;
+    return n + (n == 1 ? ' row' : ' rows');
+  }
 }

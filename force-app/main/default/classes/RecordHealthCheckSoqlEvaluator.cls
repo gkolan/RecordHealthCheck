@@ -252,13 +252,17 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     result.actualProvenance = new RecordHealthCheckProvenance.Detail(
       describePrimarySource(rule),
       primaryList != null
-        ? primaryList.size() + ' row(s)'
+        ? RecordHealthCheckProvenance.rowCount(primaryList.size())
         : rawLabel(primaryValue),
       null
     );
     if (isUnaryComparator) {
+      // A unary comparator has no comparison value or source, so the "source" of
+      // the requirement is the comparator itself. Labeling it 'Comparator' (not
+      // 'Expected requirement') avoids the row reading "Expected Expected …" once
+      // the UI prefixes it with the "Expected" caption.
       result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
-        'Expected requirement',
+        'Comparator',
         result.expectedValue,
         null
       );
@@ -266,7 +270,9 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
         describeComparisonSource(rule),
         isListComparator
-          ? (comparisonList == null ? 0 : comparisonList.size()) + ' row(s)'
+          ? RecordHealthCheckProvenance.rowCount(
+              comparisonList == null ? 0 : comparisonList.size()
+            )
           : rawLabel(comparisonValue),
         null
       );
@@ -498,7 +504,9 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     // "Contacts → 0 rows (query returned no matching rows)".
     result.actualProvenance = new RecordHealthCheckProvenance.Detail(
       describePrimarySource(rule),
-      primaryList != null ? primaryList.size() + ' row(s)' : '0 rows',
+      RecordHealthCheckProvenance.rowCount(
+        primaryList != null ? primaryList.size() : 0
+      ),
       'query returned no matching rows'
     );
 

@@ -103,19 +103,31 @@ for (User assignee : [
 ]) {
   inactiveNames.add(assignee.Name);
 }
+result.actualValue = inactiveNames.size() + ' inactive';           // Found chip
+result.expectedValue = '0 inactive';                              // Expected chip
+result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+  'Inactive approvers on pending requests',
+  String.valueOf(inactiveNames.size()),
+  null
+);
+result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+  'Allowed inactive approvers',
+  '0',
+  null
+);
+
 if (inactiveNames.isEmpty()) { result.status = 'PASS'; return result; }
 
 result.status = 'FAIL';
-result.message = buildMessage(inactiveNames, settings.maxNames);   // "blocked by … Jane Approver"
-result.actualValue = inactiveNames.size() + ' inactive';           // Found chip
-result.expectedValue = '0 inactive';                              // Expected chip
+result.message = buildMessage(inactiveNames, settings.maxNames);   // "blocked by ... Jane Approver"
 ```
 
 **What this demonstrates**
 
 - **Graceful managed-package dependency**: `Schema.getGlobalDescribe().containsKey(...)` plus dynamic SOQL means the class deploys and runs in any org; without the package it returns `UNABLE_TO_EVALUATE`, never a false PASS.
 - **Plugin-authored message**: the class sets `result.message` to list the offending approvers; the dispatcher keeps it because it is non-blank.
-- **Found / Expected from Apex**: `actualValue` and `expectedValue` populate the comparison chips the same way as a Query check.
+- **Found / Expected from Apex**: `actualValue` and `expectedValue` populate the comparison chips the same way as a Query check, on pass and fail.
+- **Provenance from Apex**: `actualProvenance` and `expectedProvenance` explain the inactive count and allowed count when the viewer has `Record_Health_Check_View_Details`.
 - **Configuration over code**: object, lookup, status, and the name cap are all JSON parameters.
 
 > [!NOTE]

@@ -324,6 +324,16 @@ When a single message is not enough, set comparison chips on the card. Failed ro
 result.status = 'FAIL';
 result.actualValue = '2 unhealthy';
 result.expectedValue = '0 unhealthy';
+result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+  'Unhealthy open opportunities',
+  '2',
+  '3 open opportunities scanned'
+);
+result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+  'Allowed unhealthy count',
+  '0',
+  null
+);
 ```
 
 See [Design spec 9 comparison display](../reference/record-health-check-design-spec.md#comparison-display-contract).
@@ -337,6 +347,11 @@ result.actualProvenance = new RecordHealthCheckProvenance.Detail(
   'Open Opportunities',
   '2 unhealthy',
   'filtered by Amount and Close Date'
+);
+result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+  'Allowed unhealthy count',
+  '0',
+  null
 );
 ```
 
