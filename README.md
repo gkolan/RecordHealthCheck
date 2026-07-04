@@ -25,7 +25,7 @@ Because it runs at read time rather than save time, it can evaluate across relat
       <p>The footer tallies <b>Passed / Failed / Warnings / Skipped</b> at a glance, and <b>Rerun</b> re-evaluates on demand.</p>
       <!-- Video walkthrough: replace the line below with
            <p>▶ <b>Watch the two-minute walkthrough:</b> <a href="https://youtu.be/YOUR_VIDEO_ID">youtu.be/YOUR_VIDEO_ID</a></p> -->
-      <p>▶ <b><a href="https://raw.githubusercontent.com/gkolan/recordHealthCheck/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif">See the animated GIF for a quick demo</a></b>.</p>
+      <p>▶ <b><a href="https://github.com/gkolan/recordHealthCheck/blob/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See the animated GIF for a quick demo</a></b>.</p>
     </td>
     <td width="42%" valign="top">
       <img src="docs/assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
