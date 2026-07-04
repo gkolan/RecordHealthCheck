@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>High Priority Open Cases</name>
+    <description
+  >Open, high-priority cases. Used by the Account 360 Health Check "No high priority open cases" rule as a one-click drill-in; the action link passes the current Account ID into the first editable filter (fv0).</description>
+    <format>Tabular</format>
+    <reportType>CaseList</reportType>
+    <columns>
+        <field>CASE_NUMBER</field>
+    </columns>
+    <columns>
+        <field>ACCOUNT.NAME</field>
+    </columns>
+    <columns>
+        <field>SUBJECT</field>
+    </columns>
+    <columns>
+        <field>DESCRIPTION</field>
+    </columns>
+    <columns>
+        <field>PRIORITY</field>
+    </columns>
+    <columns>
+        <field>STATUS</field>
+    </columns>
+    <columns>
+        <field>CREATED_DATE</field>
+    </columns>
+    <filter>
+        <criteriaItems>
+            <column>ACCOUNT_ID</column>
+            <operator>equals</operator>
+            <value>001ak00002x68UYAAY</value>
+        </criteriaItems>
+        <criteriaItems>
+            <column>PRIORITY</column>
+            <operator>equals</operator>
+            <value>High</value>
+        </criteriaItems>
+        <criteriaItems>
+            <column>CLOSED</column>
+            <operator>equals</operator>
+            <value>false</value>
+        </criteriaItems>
+    </filter>
+    <sortColumn>CREATED_DATE</sortColumn>
+    <sortOrder>Desc</sortOrder>
+</Report>

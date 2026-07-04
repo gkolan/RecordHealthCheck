@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Record formula |
+| **Evaluator** | Check fields on this record |
 | **Sample** | [`Billing_Address_Is_Complete`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Billing_Address_Is_Complete.md-meta.xml) |
 | **Check Set** | `Account_Examples_Formula` · [`package-Account_Examples_Formula.xml`](../../../manifest/package-Account_Examples_Formula.xml) |
 
@@ -22,8 +22,8 @@ Every condition reads a field on the same Account row. `AND` composes them in on
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `AND(NOT(ISBLANK(...)), ...)` | **This example.** One row, all conditions on the record. |
-| Single query | One rule per field (three Query rules) | Produces **three rows**; cannot express "all three missing = one failure" as a single coaching message without formula. |
+| Check fields on this record | `AND(NOT(ISBLANK(...)), ...)` | **This example.** One row, all conditions on the record. |
+| Check records with a query | One rule per field (three Query rules) | Produces **three rows**; cannot express "all three missing = one failure" as a single coaching message without formula. |
 | Compare two queries | | Nothing here compares two query results. |
 | Custom Apex | Apex AND on three fields | Same outcome with unnecessary code. |
 
@@ -34,7 +34,7 @@ Every condition reads a field on the same Account row. `AND` composes them in on
 | Only one field required | [Single required field](01-single-required-field.md) |
 | At least one of several fields | [Either/or field](02-either-or-field.md) |
 
-**Verdict:** Record formula with `AND` is the right evaluator when every condition is an on-record blank test. Split into separate rules only when each missing field should surface as its own row.
+**Verdict:** Check fields on this record with `AND` is the right evaluator when every condition is an on-record blank test. Split into separate rules only when each missing field should surface as its own row.
 
 ## Configuration
 
@@ -42,18 +42,18 @@ Every condition reads a field on the same Account row. `AND` composes them in on
 | ----------- | ----- |
 | Check Name | Billing Address Is Complete |
 | Developer Name | Billing_Address_Is_Complete |
-| Check Method | Record formula |
-| Pass/Fail Formula | `AND(NOT(ISBLANK(BillingCity)), NOT(ISBLANK(BillingState)), NOT(ISBLANK(BillingCountry)))` |
+| Check Type | Check fields on this record |
+| Pass Condition (Formula) | `AND(NOT(ISBLANK(BillingCity)), NOT(ISBLANK(BillingState)), NOT(ISBLANK(BillingCountry)))` |
 | Run This Check When | Always |
 | Severity | Error |
-| Message When Failed | Billing address is incomplete: City, State, and Country are all required. |
+| Message When Check Fails | Billing address is incomplete: City, State, and Country are all required. |
 
 > [!NOTE]
 > This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change.
 
 ## How it works
 
-The engine evaluates Pass/Fail Formula on the Account. All three billing components must be non-blank for pass.
+The engine evaluates Pass Condition (Formula) on the Account. All three billing components must be non-blank for pass.
 
 ```text
 AND(
@@ -77,7 +77,7 @@ sf project deploy start --manifest manifest/package-core.xml                    
 sf project deploy start --manifest manifest/package-Account_Examples_Formula.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

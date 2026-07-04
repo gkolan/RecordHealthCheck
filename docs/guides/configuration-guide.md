@@ -12,7 +12,7 @@ This guide explains how Check Sets and Rules wire to the Lightning record page c
 | [1. Mental model](#1-mental-model) | Check Set, Rule, and component wiring |
 | [2. What it can check](#2-what-it-can-check) | Choosing the right Check Type |
 | [3. Check Set fields](#3-check-set-fields) | Link to [Check Set field reference](../metadata/check-set.md) |
-| [4. Rule fields](#4-rule-fields) | Link to [Rule field reference](../metadata/rule-fields.md) |
+| [4. Rule fields](#4-rule-fields) | Link to [Rule field reference](../metadata/rule-fields.md) and action links |
 | [5. Result meanings](#5-result-meanings) | Status and severity |
 | [6. Formula rules](#6-formula-rules) | Record-formula patterns |
 | [7. Query rules](#7-query-rules) | Single-query patterns |
@@ -25,7 +25,7 @@ This guide explains how Check Sets and Rules wire to the Lightning record page c
 | [14. Review checklist](#14-review-checklist) | Pre-activation validation |
 | [15. Runtime and integration](#15-runtime-and-integration) | Stack, programmatic API, edge cases |
 
-For copy-paste examples of every pattern, see [Examples](../examples/index.md). For the formal contract, see [Design Specification](../reference/record-health-check-design-spec.md). For setup walkthrough, see [Getting Started](../installation/getting-started.md). For Show Troubleshooting Details, see [Show Troubleshooting Details](debug-mode.md).
+For copy-paste examples of every pattern, see [Examples](../examples/index.md). For the formal contract, see [Design Specification](../reference/record-health-check-design-spec.md). For setup walkthrough, see [Getting Started](../installation/getting-started.md). For action link examples, see [Action Links and Fix Instructions](action-links.md). For Show Troubleshooting Details, see [Show Troubleshooting Details](debug-mode.md).
 
 ## 1. Mental Model
 
@@ -47,7 +47,7 @@ Rule DeveloperName: Account_DQ_BillingCity
 
 **Where to place the component:** Lightning **record pages** only. The component needs a record context (`recordId`). It is not exposed on App or Home pages.
 
-**App Builder properties:** Set **Check Set Developer Name** to the Check Set `DeveloperName`. Optional **Comparison Disclosure** controls the initial state of comparison carets for this page placement: **Inherit** follows the Check Set default, **Collapsed** starts eligible comparison rows closed, and **Expanded** pre-opens eligible rows. It cannot reveal Found/Expected values hidden by the Check Set **Comparison Display** setting.
+**App Builder properties:** Set **Check Set Developer Name** to the Check Set `DeveloperName`. Optional **Comparison Disclosure** controls the initial state of comparison expanders for this page placement: **Inherit** follows the Check Set default, **Collapsed** starts eligible comparison checks closed, and **Expanded** pre-opens eligible comparison checks. It cannot reveal Found/Expected values hidden by the Check Set **Found/Expected Display** setting.
 
 ## 2. What It Can Check
 
@@ -70,11 +70,11 @@ Representative Account patterns (full walkthrough in the [Examples index](../exa
 
 ## 3. Check Set Fields
 
-Every field on `Record_Health_Check_Set__mdt`: including picklist values for **Start Checks**, **Comparison Display**, display modes, and **Show Troubleshooting Details**: is documented in **[Check Set fields](../metadata/check-set.md)**.
+Every field on `Record_Health_Check_Set__mdt`: including picklist values for **Start Checks**, **Found/Expected Display**, display modes, and **Show Troubleshooting Details**: is documented in **[Check Set fields](../metadata/check-set.md)**.
 
 ## 4. Rule Fields
 
-Every field on `Record_Health_Check_Rule__mdt` is documented in **[Rule fields](../metadata/rule-fields.md)**. Optional **Category** is metadata-only for now (UI grouping planned). Optional **Fix Instructions** and primary action fields are schema-only until the LWC renders remediation guidance.
+Every field on `Record_Health_Check_Rule__mdt` is documented in **[Rule fields](../metadata/rule-fields.md)**. Optional **Category** is metadata-only for now (UI grouping planned). Optional **Fix Instructions** and primary action fields render as read-only guidance on failed checks. Examples: [Action Links and Fix Instructions](action-links.md).
 
 ## 5. Result Meanings
 
@@ -84,7 +84,7 @@ Every field on `Record_Health_Check_Rule__mdt` is documented in **[Rule fields](
 | `FAIL` | Rule ran and found a data issue. | Record or process owner. |
 | `SKIPPED` | Rule did not apply or dependency did not pass. | Review applicability or dependencies if unexpected. |
 | `UNABLE_TO_EVALUATE` | Metadata, permissions, SOQL, or data blocked safe evaluation. | Review configuration, FLS, and reason code. |
-| `ERROR` | Unexpected framework or Apex exception. | Review Apex plugin, debug logs, and reason code. |
+| `ERROR` | Unexpected framework or Apex exception. | Review the Apex plugin, Salesforce logs, and reason code. |
 
 | Severity | Use when |
 | -------- | -------- |
@@ -121,16 +121,16 @@ MessageWhenFailed__c: {!Name} needs either a Phone or Website.
 
 ### Showing Found vs Expected (optional)
 
-By default a Formula check shows only **Expected** — the quoted formula text — and no **Found** value. For balance and comparison checks you can declare two optional scalar formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
+By default a Formula check shows only a **Passes when** line — the pass/fail formula text, unquoted — and no **Found** value. For balance and comparison checks you can declare two optional scalar formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
 
 | Field | Purpose |
 | ----- | ------- |
 | `FoundValueFormula__c` | Scalar formula → **Found** (left side — what the record has). |
-| `ExpectedValueFormula__c` | Scalar formula → **Expected** (right side — what it should have). |
+| `ExpectedValueFormula__c` | Scalar formula → **Expected** (right side — required or target value). |
 
 `PassFailFormula__c` still decides pass/fail (it must return Boolean); these two are display-only and additive.
 
-> **Found and Expected are not compared to each other.** The engine evaluates each independently and just shows them. `PassFailFormula__c` performs the actual comparison (`FieldA = FieldB`, `Total >= 50000`, …) and is the only thing that determines pass/fail. If you put a formula in Found/Expected, it does **not** affect the result — it only changes what the row displays. There is no separate "formula comparison operator" setting: the comparison lives inside `PassFailFormula__c`.
+> **Found and Expected are not compared to each other.** The engine evaluates each independently and displays them. `PassFailFormula__c` performs the actual comparison (`FieldA = FieldB`, `Total >= 50000`, …) and is the only thing that determines pass/fail. If you put a formula in Found/Expected, it does **not** affect the result — it only changes what the row displays. There is no separate "formula comparison operator" setting: the comparison lives inside `PassFailFormula__c`.
 
 ```text
 PassFailFormula__c:      BLANKVALUE(Debit_Total__c, 0) = BLANKVALUE(Credit_Total__c, 0)
@@ -141,7 +141,7 @@ ExpectedValueFormula__c: BLANKVALUE(Credit_Total__c, 0)
 On a failing row this renders **Found "100"** / **Expected "75"** instead of echoing the formula.
 
 > [!CAUTION]
-> **Keep Found/Expected consistent with Pass Condition (Formula).** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassFailFormula__c` compares A to B, then `FoundValueFormula__c` should be A and `ExpectedValueFormula__c` should be B — otherwise a row can **pass while Found ≠ Expected** (or fail while they look equal), which is confusing. A safe habit: copy each side of the comparison in `PassFailFormula__c` verbatim into the matching display formula.
+> **Keep Found/Expected consistent with Pass Condition (Formula).** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassFailFormula__c` compares A to B, use A for `FoundValueFormula__c` and B for `ExpectedValueFormula__c`. Otherwise a row can **pass while Found ≠ Expected** or fail while the values look equal. A safe habit: copy each side of the comparison in `PassFailFormula__c` verbatim into the matching display formula.
 
 - **When to use boolean-only:** the formula is a simple presence/condition check (`NOT(ISBLANK(...))`, `ISPICKVAL(...)`) where echoing the condition as Expected is enough.
 - **When to add Found/Expected:** the formula compares two values (balance, threshold, equality, date) and seeing both sides is more actionable than the formula text.
@@ -158,7 +158,7 @@ If you want the *framework* to compare two sides with an operator (rather than e
 | A SOQL result vs a **fixed value** | Check records with a query | `CompareAgainst__c = FixedValue`, set `FixedValue__c` |
 | A SOQL result vs a **record formula** | Check records with a query | `CompareAgainst__c = RecordFormula`, set `RecordFormulaValue__c` |
 | A SOQL result vs **another SOQL result** | Check records with a query / Compare two queries | `CompareAgainst__c = AnotherQuery` (or the Compare-two-queries method) |
-| Two values **on the record** (formula vs formula, formula vs fixed, etc.) | Check fields on this record | Encode the comparison in `PassFailFormula__c`; optionally add Found/Expected to display each side |
+| Two values **on the record** (formula vs formula, or formula vs fixed value) | Check fields on this record | Encode the comparison in `PassFailFormula__c`; optionally add Found/Expected to display each side |
 
 So "compare SOQL to a formula" and "compare SOQL to a fixed value" are existing Query-check features — no new setting is needed. Formula checks compare inside `PassFailFormula__c`; Found/Expected only make that comparison *readable*.
 
@@ -211,7 +211,7 @@ Operator__c: Equals
 
 ## 9. Apex Rules
 
-Use Apex when metadata cannot express the rule safely or clearly. **Implementing a class:** [Apex plugin reference](../apex/plugin-reference.md). **Walkthroughs:** [examples catalog](../examples/index.md#example-catalog). **Contract:** [Apex plugin contract](../apex/plugin-contract.md).
+Use Apex when metadata cannot express the rule safely. **Implementing a class:** [Apex plugin reference](../apex/plugin-reference.md). **Walkthroughs:** [examples catalog](../examples/index.md#example-catalog). **Contract:** [Apex plugin contract](../apex/plugin-contract.md).
 
 **Shipped example classes:** `AccountHasRecentActivityCheck`, `AccountOpenOpportunityHealthCheck`. Deploy custom classes (for example the strategic readiness reference in [example 3](../examples/apex/03-strategic-readiness.md)) before referencing them in **Apex Class Name**.
 
@@ -220,11 +220,11 @@ Use Apex when metadata cannot express the rule safely or clearly. **Implementing
 | Apex Class Name | `ApexClass__c` | Class implementing `RecordHealthCheckRule` |
 | Apex Settings (JSON) | `ApexSettingsJson__c` | Optional tuning map passed as `context.parameters` |
 
-For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-checkmethod__c--apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
+For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-checkmethod__c-apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
 
 ## 10. Applicability and Dependencies
 
-**Applicability**: should this Rule run for this record?
+**Applicability**: does this Rule run for this record?
 
 | Mode | When to use |
 | ---- | ----------- |
@@ -232,7 +232,7 @@ For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.
 | `Formula` | Condition is on the record (for example, `ISPICKVAL(Type, "Partner")`). |
 | `SOQL` | Condition needs a related COUNT (for example, at least one open Opportunity exists). |
 
-**Dependencies**: should this Rule run after another passes?
+**Dependencies**: does this Rule wait for another Rule to pass?
 
 Set **Prerequisite Check (Developer Name)** to the prerequisite `DeveloperName`. Use sparingly for checks that are misleading unless a foundation check passed first.
 
@@ -255,11 +255,11 @@ Messages and SOQL may use any readable field on the base record: **standard or c
 - SOQL tokens are escaped and typed by the framework (strings quoted, numbers/dates/booleans unquoted).
 - The engine loads every token field from the record before evaluation; if the running user lacks FLS, the check may return `RECORD_NOT_ACCESSIBLE` or `MISSING_BIND_VALUE`.
 
-More examples: [Examples: Merge tokens in SOQL](../examples/index.md#merge-tokens-in-soql).
+SOQL examples live in the [SOQL examples catalog](../examples/index.md#soql-single-query).
 
 ## 11a. Multi-line messages
 
-**Message When Failed** and **Message When It Can't Run** support multiple lines. Press **Enter** in Setup to start a new line; each line renders as a separate line on the card. Use a blank line (press Enter twice) to add spacing between paragraphs.
+**Message When Check Fails** and **Message When Check Cannot Run** support multiple lines. Press **Enter** in Setup to start a new line; each line renders as a separate line on the card. Use a blank line (press Enter twice) to add spacing between paragraphs.
 
 ```text
 {!Name} is out of balance.
@@ -291,11 +291,11 @@ Contact Finance to reconcile.
 | No checks run | Inactive Check Set or Rules | `IsActive__c` on Set and Rules. |
 | Rule skipped | Applicability false or dependency not passed | Applicability fields and `RequiresCheck__c`. |
 | Unable to evaluate | SOQL, formula, permissions, or limits | Rule fields, FLS, Show Troubleshooting Details, reason code. |
-| Rule error | Apex or framework exception | Apex class, debug logs, `DebugMode__c`. |
+| Rule error | Apex or framework exception | Apex class, Salesforce logs, and Show Troubleshooting Details. |
 | Stale results after metadata edit | Component not reloaded | Refresh the record page. |
 | Stale results after inline edit | No auto-rerun on record save | Click **Rerun** or refresh the page. |
-| Prerequisite skipped | 25-check cap | Lower the prerequisite's Priority (lower runs first) so it runs within the first 25, or reduce active Rules. |
-| Custom automation runs slowly or hits limits | Each `RecordHealthCheck.run` call is one full evaluation | Reduce batch size; evaluate fewer Rules per transaction; monitor debug logs. There is no packaged Flow invocable: only custom Apex. |
+| Prerequisite skipped | 25-check cap | Lower the prerequisite's Run Order (lower runs first) so it runs within the first 25, or reduce active Rules. |
+| Custom automation runs slowly or hits limits | Each `RecordHealthCheck.run` call is one full evaluation | Reduce batch size; evaluate fewer Rules per transaction; monitor Salesforce logs. There is no packaged Flow invocable: only custom Apex. |
 | Check passes in UI but fails from custom automation | Different running user (FLS) | Automation runs as the integration or invoking user: verify field access. |
 
 For reason codes and open limitations, see [Design Specification: reason codes and open limitations](../reference/record-health-check-design-spec.md#10-reason-codes).
@@ -313,19 +313,19 @@ for (RecordHealthCheckMetadataValidator.ValidationIssue i :
 
 Before activating a Check Set:
 
-- [ ] Permission set `Record_Health_Check_User` assigned to users who run the card (assign `Record_Health_Check_Admin` when Show Troubleshooting Details is needed).
+- [ ] Permission Set `Record_Health_Check_User` assigned to users who run the card (assign `Record_Health_Check_Admin` when Show Troubleshooting Details is needed).
 - [ ] Check Set DeveloperName matches component **Check Set Developer Name** in App Builder.
 - [ ] `ObjectApiName__c` matches the record page object.
 - [ ] Component is on a **record page** (not App/Home).
-- [ ] Every active Rule has Check Name, Priority (lower runs first), Check Type, Severity, and Message When Failed.
+- [ ] Every active Rule has Check Name, Run Order (lower runs first), Check Type, Failure Severity, and Message When Check Fails.
 - [ ] Longer panels use Category consistently for authoring (UI grouping not implemented yet), or leave it blank to group checks as Uncategorized.
-- [ ] Any Fix Instructions or Primary Action URL are authored for future UI; they do not render on the card yet. Keep them advisory/read-only and do not imply that Record Health Check updates records.
-- [ ] **Comparison Display** matches how much Found/Expected detail users should see (`On demand` for audit-friendly panels, `Failures only` for compact pass rows).
-- [ ] Check records with a query and Compare two queries Rules have required query fields and **If Query Returns Multiple Rows** set appropriately.
+- [ ] Any Fix Instructions or Action Button URL are advisory/read-only. They can guide users on failed checks, but Record Health Check does not update records.
+- [ ] **Found/Expected Display** matches the amount of Found/Expected detail users need (`On demand` for audit-friendly panels, `Failed checks only` for compact pass checks).
+- [ ] Check records with a query and Compare two queries Rules have required query fields and **How To Interpret Query Results** set appropriately.
 - [ ] `WhenZeroRows__c` is set for Any/All/CompareAsLists Rules.
 - [ ] Apex Rules reference deployed `RecordHealthCheckRule` implementations.
-- [ ] Dependencies reference active Rules with lower Priority (lower runs first) in the same Check Set.
-- [ ] `DebugMode__c` is off for production unless actively troubleshooting (requires `Record_Health_Check_Debug`: see [Show Troubleshooting Details guide](debug-mode.md)).
+- [ ] Dependencies reference active Rules with lower Run Order (lower runs first) in the same Check Set.
+- [ ] **Show Troubleshooting Details** is off for production unless actively troubleshooting (requires `Record_Health_Check_Debug`: see [Troubleshooting Details](debug-mode.md)).
 - [ ] Tested on records that pass, fail, skip, and unable-to-evaluate.
 
 ## 15. Runtime and Integration

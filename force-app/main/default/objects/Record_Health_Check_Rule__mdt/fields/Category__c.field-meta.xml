@@ -47,31 +47,31 @@
             <value>
                 <fullName>Completeness</fullName>
                 <default>false</default>
-                <label>Completeness</label>
+                <label>Required Field Completeness</label>
             </value>
             <value>
                 <fullName>Activity</fullName>
                 <default>false</default>
-                <label>Activity</label>
+                <label>Recent Activity</label>
             </value>
             <value>
                 <fullName>Relationship Coverage</fullName>
                 <default>false</default>
-                <label>Relationship Coverage</label>
+                <label>Related Record Coverage</label>
             </value>
             <value>
                 <fullName>Pipeline</fullName>
                 <default>false</default>
-                <label>Pipeline</label>
+                <label>Sales Pipeline</label>
             </value>
             <value>
                 <fullName>Data Freshness</fullName>
                 <default>false</default>
-                <label>Data Freshness</label>
+                <label>Recent or Current Data</label>
             </value>
         </valueSetDefinition>
     </valueSet>
     <inlineHelpText
-  >Optional. Groups related checks for scanning, e.g. Completeness, Compliance, Pipeline, or AI Readiness. Blank shows as Uncategorized.</inlineHelpText>
+  >Optional. Groups related checks for scanning, e.g. Required Field Completeness, Compliance, Sales Pipeline, or AI Readiness. Blank shows as Uncategorized.</inlineHelpText>
     <required>false</required>
 </CustomField>

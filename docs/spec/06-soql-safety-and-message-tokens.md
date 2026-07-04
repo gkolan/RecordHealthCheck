@@ -1,3 +1,5 @@
+# SOQL Safety and Message Tokens
+
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 
@@ -28,4 +30,4 @@ Safety contract:
 
 Failure and unable-to-evaluate messages may use `{!FieldApiName}` merge tokens. Unresolved tokens are replaced with blank text. A bad message token does not change Rule status.
 
-**Found / Expected is separate from merge tokens.** The engine builds `actualValue` and `expectedValue` automatically for Query and CompareTwoQueries checks (and optionally for Apex). These lines are not authored in metadata and do not need `{!Field}` tokens in `MessageWhenFailed__c` to show what the record produced versus what the rule required: though merge tokens remain useful for narrative context (record name, owner, and so on).
+**Found / Expected is separate from merge tokens.** The engine builds `actualValue` and `expectedValue` automatically for Query and CompareTwoQueries checks; Apex checks must set both fields for `PASS` / `FAIL`. These lines are not authored in metadata and do not need `{!Field}` tokens in `MessageWhenFailed__c` to show what the record produced versus what the rule required, though merge tokens remain useful for narrative context (record name, owner, and so on).

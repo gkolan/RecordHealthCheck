@@ -1,3 +1,5 @@
+# Limitations and Roadmap
+
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 
@@ -28,5 +30,6 @@
 | Record save | No automatic re-run after inline edit. | User clicks **Rerun** or refreshes the page. |
 | Component placement | Record-page only (`lightning__RecordPage`). | Use `RecordHealthCheck.run` or Flow for non-record-page automation. |
 | `checksOmittedByLimit` not logged | UI shows the badge but the framework does not emit a WARN log when Rules are truncated. | Review Check Set active Rule count during configuration. |
-| Category / remediation UI | `Category__c`, `FixInstructions__c`, and primary-action fields are editable in Setup but not rendered on the card yet. | Author for future UI; do not expect grouping or fix links on the record page today. |
+| Category UI | `Category__c` is editable in Setup but not rendered on the card yet (no grouping). | Author for future UI; do not expect grouping today. |
+| Remediation link needs a valid URL | `FixInstructions__c` and the primary-action fields render on a **FAIL** row (read-only link + guidance). `PrimaryActionUrl__c` is token-resolved (`{!Id}` etc.) and sanitized; an unsafe (non-`https`/non-relative) or over-2000-char URL is dropped, though instructions still show. | Use same-org relative deep links or `https://` URLs; a filtered-report deep link needs the report's Id, which only exists after the report is deployed. |
 | `Record_Health_Check_Configure` | Custom permission is assigned via Admin set but no feature gates on it yet (reserved for Rule Tester). | Assign Admin for validator/debug/view-details access; Configure permission is forward-compatible only. |

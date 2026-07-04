@@ -1,3 +1,5 @@
+# Defaults and Resolved Issues
+
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 
@@ -30,10 +32,10 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | B11 | Named aggregate aliases supported via `getPopulatedFieldsAsMap`. |
 | B12 | Documentation uses `AccountHasRecentActivityCheck`. |
 | B13 | LWC Automatic concurrency capped at 5 simultaneous `evaluateCheck` calls; queue for the rest. |
-| B14 | Debug details gated by `Record_Health_Check_Debug` Custom Permission in Apex (`RecordHealthCheckAccess`). |
+| B14 | Troubleshooting details gated by `Record_Health_Check_Debug` Custom Permission in Apex (`RecordHealthCheckAccess`). |
 | B15 | Null `recordId` on evaluate path returns `NO_RECORD_CONTEXT`. |
 | B17 | Manual mode shows pre-run guidance before the first run in **both** reveal modes (`showPreRunHint`). |
-| B18 | Non-passing rows show **Found** / **Expected** labelled chips from `actualValue` / `expectedValue`; Formula checks show Expected (quoted formula text) only. |
+| B18 | Non-passing checks show **Found** / **Expected** labelled chips from `actualValue` / `expectedValue`; Formula checks show a **Passes when** line (unquoted pass/fail formula) only. |
 | B19 | Row and summary-pill status icons are CSS-drawn (`rhc-status-icon--*`): not `lightning-icon`: for reliable rendering. |
 | B20 | Summary pills list rule labels in hover/focus tooltips; standalone per-status footer notes removed. |
 | B21 | Rule descriptions are tooltip-only (never inline); tooltips use `:focus-visible` to avoid double-tooltip on mouse click. |
@@ -50,7 +52,8 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | B32 | Action button `min-width` is **5rem** with a fixed **0.75rem** glyph slot: label must not shift when play swaps to spinner. |
 | B33 | Summary-pill tooltip bubble must **wrap** at card width: never a narrow pill-width column (`position: relative` wrapper between anchor and stats bar). |
 | B34 | Summary-pill nubbin must **attach to the tooltip bubble bottom** (`.rhc-stat__nubbin-host` sibling pattern): never float above the pill detached from the bubble. |
-| B35 | `ComparisonDisplay__c` controls Found/Expected visibility: `OnDemand` (default), `FailuresOnly`, `AllRows`; disclosure caret on rows that have values or provenance behind it. |
+| B35 | Check Set **Found/Expected Display** (`ComparisonDisplay__c`) controls Found/Expected visibility: **On demand** (`OnDemand`, default), **Failed checks only** (`FailuresOnly`), or **Show on every check** (`AllRows`); the expander appears on checks that have values hidden behind it. |
 | B36 | `actualValueDetail` / `expectedValueDetail` provenance notes gated by `Record_Health_Check_View_Details`; rendered from `RecordHealthCheckProvenance` by the engine. |
-| B37 | Category and remediation Rule fields ship in metadata; LWC grouping and fix-instruction rendering are not implemented yet. |
+| B37a | Category Rule fields ship in metadata; LWC grouping is not implemented yet. |
+| B37b | Remediation Rule fields (`FixInstructions__c`, `PrimaryActionLabel__c`, `PrimaryActionUrl__c`) render as read-only guidance on `FAIL` rows. Unsafe or over-2000-character resolved URLs are dropped, but fix instructions may still render. |
 | B38 | `Record_Health_Check_Configure` custom permission ships in Admin set for future admin tooling; no runtime branch today. |

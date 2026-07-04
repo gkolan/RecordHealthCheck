@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>CompareAgainst__c</fullName>
-    <label>Compare To Source</label>
+    <label>Expected Value Comes From</label>
     <description
-  >For Single query checks, this says where the right-hand value comes from: a fixed value you type, a formula on the record, or a second query.</description>
+  >For query checks, this says where the expected value comes from: a fixed value you type, a formula on this record, or a second query result.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -22,11 +22,11 @@
             <value>
                 <fullName>AnotherQuery</fullName>
                 <default>false</default>
-                <label>A second query</label>
+                <label>A second query result</label>
             </value>
         </valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >A fixed value = type it in Expected Value or Threshold. A formula on the record = enter it in Expected Formula (on this record). A second query = enter it in Second Query.</inlineHelpText>
+  >A fixed value = type it in Expected Value. A formula on this record = enter it in Expected Formula (on this record). A second query result = enter it in Second Query.</inlineHelpText>
     <required>false</required>
 </CustomField>

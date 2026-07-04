@@ -3,11 +3,11 @@
     <fullName>CompareToQuery__c</fullName>
     <label>Second Query</label>
     <description
-  >The second SOQL query. Used when Compare To Source is "A second query", or for a Compare two queries check. Supports merge tokens like {!Id} and {!FieldApiName}.</description>
+  >The second SOQL query. Used when Expected Value Comes From is "A second query result", or for a Compare two queries check. Supports merge tokens like {!Id} and {!FieldApiName}.</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>5</visibleLines>
         <inlineHelpText
-  >The second SOQL query, for "A second query" comparisons or Compare two queries checks.</inlineHelpText>
+  >The second SOQL query, for "A second query result" comparisons or Compare two queries checks.</inlineHelpText>
     <required>false</required>
 </CustomField>

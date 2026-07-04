@@ -65,4 +65,41 @@ private class RecordHealthCheckMetadataValidatorTest {
     System.assertEquals('Message', issue.message);
     System.assertEquals('REASON', issue.reasonCode);
   }
+
+  @isTest
+  static void validateRejectsUnrecognizedComparisonDisplay() {
+    Record_Health_Check_Set__mdt checkSet = new Record_Health_Check_Set__mdt(
+      DeveloperName = 'Bad_Comparison_Display',
+      ObjectApiName__c = 'Account',
+      PanelHeading__c = 'Bad Comparison Display',
+      PassedChecksDisplay__c = 'Show',
+      SkippedChecksDisplay__c = 'Show',
+      RunChecksWhen__c = 'Manual',
+      RowAppearance__c = 'AllAtOnce',
+      ComparisonDisplay__c = 'Bogus'
+    );
+
+    List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = new RecordHealthCheckMetadataValidator()
+      .validateRecordsForTest(
+        new List<Record_Health_Check_Set__mdt>{ checkSet },
+        new List<Record_Health_Check_Rule__mdt>()
+      );
+
+    Boolean found = false;
+    for (RecordHealthCheckMetadataValidator.ValidationIssue issue : issues) {
+      if (
+        issue.componentName == 'Bad_Comparison_Display' &&
+        issue.fieldName == 'ComparisonDisplay__c' &&
+        issue.reasonCode == 'INVALID_CONFIG' &&
+        issue.message.contains('Bogus')
+      ) {
+        found = true;
+      }
+    }
+
+    System.assert(
+      found,
+      'Metadata validation should reject invalid ComparisonDisplay__c values.'
+    );
+  }
 }

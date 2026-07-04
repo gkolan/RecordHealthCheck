@@ -28,7 +28,7 @@
     </values>
     <values>
         <field>RowAppearance__c</field>
-        <value xsi:type="xsd:string">AllAtOnce</value>
+        <value xsi:type="xsd:string">OneAtATime</value>
     </values>
     <values>
         <field>PassedChecksDisplay__c</field>
@@ -36,7 +36,7 @@
     </values>
     <values>
         <field>SkippedChecksDisplay__c</field>
-        <value xsi:type="xsd:string">Hide</value>
+        <value xsi:type="xsd:string">Show</value>
     </values>
     <values>
         <field>StopOnSystemError__c</field>

@@ -18,6 +18,9 @@ private class AccountOpenOpportunityHealthCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('PASS', result.status);
+    System.assertEquals('0 unhealthy', result.actualValue);
+    System.assertEquals('0 unhealthy', result.expectedValue);
+    System.assertNotEquals(null, result.actualProvenance);
   }
 
   @IsTest
@@ -43,6 +46,8 @@ private class AccountOpenOpportunityHealthCheckTest {
       result.status,
       'A deal with a Next Step closing this quarter is healthy.'
     );
+    System.assertEquals('0 unhealthy', result.actualValue);
+    System.assertEquals('0 unhealthy', result.expectedValue);
   }
 
   @IsTest

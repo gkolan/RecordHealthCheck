@@ -1,3 +1,5 @@
+# Programmatic API
+
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 

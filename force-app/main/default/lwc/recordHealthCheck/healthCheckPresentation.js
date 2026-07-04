@@ -139,6 +139,12 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     isResolved && result.expectedValue != null ? result.expectedValue : null;
   const hasValues = actualValue != null || expectedValue != null;
 
+  // The Expected side normally reads "Expected"; a Formula check echoing its
+  // pass/fail condition (rather than a comparison value) overrides this with its
+  // own key, e.g. "Passes when". Found always reads "Found".
+  const expectedKeyLabel =
+    (isResolved && result.expectedValueLabel) || "Expected";
+
   // Provenance is permission-gated on the server; null *Detail means not entitled.
   const actualValueDetail =
     isResolved && result.actualValueDetail != null
@@ -148,37 +154,48 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     isResolved && result.expectedValueDetail != null
       ? result.expectedValueDetail
       : null;
-  const hasProvenance =
-    actualValueDetail != null || expectedValueDetail != null;
-
   const showInlineComparison =
     isResolved && hasValues && (!isPass || mode === "AllRows");
 
-  let valuesBehindCaret = false;
-  let provenanceBehindCaret = false;
-  if (isResolved && !(mode === "FailuresOnly" && isPass)) {
-    valuesBehindCaret = hasValues && !showInlineComparison;
-    provenanceBehindCaret = hasProvenance;
-  }
-  const showCaret = valuesBehindCaret || provenanceBehindCaret;
+  const valuesBehindCaret =
+    isResolved &&
+    hasValues &&
+    !showInlineComparison &&
+    !(mode === "FailuresOnly" && isPass);
+  const showCaret = valuesBehindCaret;
   const detailExpanded = showCaret && rowExpanded;
 
   // Inline chips
   const showActual = showInlineComparison && actualValue != null;
   const showExpected = showInlineComparison && expectedValue != null;
 
-  // Expanded region: values only when they were not already inline, provenance
-  // whenever present and entitled.
+  // Expanded region: values only when they were not already inline. Provenance
+  // source notes attach to whichever value row is currently visible instead of
+  // rendering as a second labeled section.
   const showExpandedActual =
     detailExpanded && valuesBehindCaret && actualValue != null;
   const showExpandedExpected =
     detailExpanded && valuesBehindCaret && expectedValue != null;
-  const showActualDetail = detailExpanded && actualValueDetail != null;
-  const showExpectedDetail = detailExpanded && expectedValueDetail != null;
-  // The provenance notes form their own labeled sub-section under the values, so
-  // the caption ("Where these values came from") renders once when either side
-  // is present rather than per note.
-  const showProvenance = showActualDetail || showExpectedDetail;
+  const showActualDetail =
+    actualValueDetail != null && (showActual || showExpandedActual);
+  const showExpectedDetail =
+    expectedValueDetail != null && (showExpected || showExpandedExpected);
+
+  // Guided remediation: a read-only deep link and/or fix instructions the server
+  // populates only on FAIL (actionUrl is blank on any other status). Instructions
+  // may stand alone when the link was omitted or failed sanitization server-side.
+  const actionUrl = isResolved && result.actionUrl ? result.actionUrl : null;
+  const actionLabel = actionUrl ? result.actionLabel || "Fix this" : null;
+  const fixInstructions =
+    isResolved && result.fixInstructions ? result.fixInstructions : null;
+  const showAction = actionUrl != null;
+  const showFixInstructions = fixInstructions != null;
+  const showActionBlock = showAction || showFixInstructions;
+
+  // A divider separates the message/action zone from the Found/Expected evidence
+  // on a busy inline row — only when there is actually something above it.
+  const showComparisonDivider =
+    showInlineComparison && hasValues && (showMessage || showActionBlock);
 
   const caretExpanded = detailExpanded;
   const caretLabel = detailExpanded
@@ -201,12 +218,14 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     isLoading ? "Evaluating" : isPending ? "Pending" : statusLabel,
     c.description,
     accessibleMessage,
+    fixInstructions,
+    actionLabel ? `Link: ${actionLabel}` : null,
     comparisonAudible && actualValue != null ? `Found ${actualValue}` : null,
     comparisonAudible && expectedValue != null
-      ? `Expected ${expectedValue}`
+      ? `${expectedKeyLabel} ${expectedValue}`
       : null,
-    showActualDetail ? actualValueDetail : null,
-    showExpectedDetail ? expectedValueDetail : null
+    showActualDetail ? `Source ${actualValueDetail}` : null,
+    showExpectedDetail ? `Source ${expectedValueDetail}` : null
   ]
     .filter(Boolean)
     .join(". ");
@@ -246,11 +265,19 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     messageLines,
     actualValue,
     expectedValue,
+    expectedKeyLabel,
     actualValueDetail,
     expectedValueDetail,
     showInlineComparison,
     showActual,
     showExpected,
+    actionUrl,
+    actionLabel,
+    fixInstructions,
+    showAction,
+    showFixInstructions,
+    showActionBlock,
+    showComparisonDivider,
     showCaret,
     caretExpanded,
     caretLabel,
@@ -260,7 +287,6 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     showExpandedExpected,
     showActualDetail,
     showExpectedDetail,
-    showProvenance,
     adminDetailMessage,
     showAdminDetail,
     debugMeta,

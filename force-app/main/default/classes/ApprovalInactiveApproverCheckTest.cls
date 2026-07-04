@@ -75,6 +75,9 @@ private class ApprovalInactiveApproverCheckTest {
       result.status,
       'An active assigned user should pass.'
     );
+    System.assertEquals('0 inactive', result.actualValue);
+    System.assertEquals('0 inactive', result.expectedValue);
+    System.assertNotEquals(null, result.actualProvenance);
   }
 
   @IsTest
@@ -90,6 +93,8 @@ private class ApprovalInactiveApproverCheckTest {
       settings
     );
     System.assertEquals('PASS', passNull.status);
+    System.assertEquals('0 inactive', passNull.actualValue);
+    System.assertEquals('0 inactive', passNull.expectedValue);
 
     RecordHealthCheckResult passEmpty = check.buildResult(
       new Set<Id>(),
@@ -97,6 +102,8 @@ private class ApprovalInactiveApproverCheckTest {
       settings
     );
     System.assertEquals('PASS', passEmpty.status);
+    System.assertEquals('0 inactive', passEmpty.actualValue);
+    System.assertEquals('0 inactive', passEmpty.expectedValue);
   }
 
   @IsTest
@@ -117,6 +124,8 @@ private class ApprovalInactiveApproverCheckTest {
       result.status,
       'The running user is active, so there are no inactive approvers.'
     );
+    System.assertEquals('0 inactive', result.actualValue);
+    System.assertEquals('0 inactive', result.expectedValue);
   }
 
   @IsTest

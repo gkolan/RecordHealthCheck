@@ -24,8 +24,8 @@ Two requirements push this past declarative checks. First, the result must **nam
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Single query (count) | `SELECT COUNT() FROM sbaa__Approval__c WHERE … AND sbaa__User__r.IsActive = false`, compared to `= 0` | Detects the problem but returns only a number: it cannot tell the owner **which** approver is inactive. |
-| Single query (read name) | `SELECT sbaa__User__r.Name FROM sbaa__Approval__c WHERE … IsActive = false`, Every row must pass + Is empty | Surfaces **one** name through the Found chip, but cannot list several, and the metadata still hard-references package fields. |
+| Check records with a query (count) | `SELECT COUNT() FROM sbaa__Approval__c WHERE … AND sbaa__User__r.IsActive = false`, compared to `= 0` | Detects the problem but returns only a number: it cannot tell the owner **which** approver is inactive. |
+| Check records with a query (read name) | `SELECT sbaa__User__r.Name FROM sbaa__Approval__c WHERE … IsActive = false`, Every record must pass + Is empty | Surfaces **one** name through the Found chip, but cannot list several, and the metadata still hard-references package fields. |
 | Formula | | Cannot traverse to a related object's child approval rows, let alone the assigned user's `IsActive`. |
 | Custom Apex | Dynamic query + named approvers | **This example.** Lists every inactive approver and compiles even without the package installed. |
 
@@ -33,8 +33,8 @@ Two requirements push this past declarative checks. First, the result must **nam
 
 | Need | Use instead |
 | ---- | ----------- |
-| Pass/fail only, no names | [Single query count](../query/13-count-upper-limit.md) pattern, comparing to `= 0` |
-| One name is enough, package always present | Single query reading `sbaa__User__r.Name` with **Every row must pass** + **Is empty** |
+| Pass/fail only, no names | [Check records with a query count](../soql/single-query/13-count-upper-limit.md) pattern, comparing to `= 0` |
+| One name is enough, package always present | Check records with a query reading `sbaa__User__r.Name` with **Every record must pass** + **Is empty** |
 
 **Verdict:** Apex earns its place because the message must name the inactive approvers and the class must deploy in orgs that do not have Advanced Approvals. Drop to a Query check the moment a bare count is acceptable and the package is guaranteed present.
 
@@ -45,13 +45,13 @@ Two requirements push this past declarative checks. First, the result must **nam
 | Check Name | No Inactive Approvers In Chain |
 | Developer Name | Approval_No_Inactive_Approvers |
 | Active | **Unchecked**: activate after confirming the field names below |
-| Check Method | Custom Apex |
+| Check Type | Custom Apex |
 | Apex Class | `ApprovalInactiveApproverCheck` |
 | Apex Settings (JSON) | `{"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c","userField":"sbaa__User__c","statusField":"sbaa__Status__c","pendingStatuses":["Requested"],"maxNames":5}` |
 | Run This Check When | Always |
 | Severity | Error |
-| Message When Failed | One or more pending approval steps are assigned to an inactive user. Reassign the approver before submitting for approval. |
-| Message When It Can't Run | Could not check approvers: confirm Advanced Approvals is installed and the object and field API names in Apex Settings are correct for this org. |
+| Message When Check Fails | One or more pending approval steps are assigned to an inactive user. Reassign the approver before submitting for approval. |
+| Message When Check Cannot Run | Could not check approvers: confirm Advanced Approvals is installed and the object and field API names in Apex Settings are correct for this org. |
 
 > [!IMPORTANT]
 > The sample rule ships **inactive**. The three API names in the JSON are managed-package members whose exact spelling varies by package version and configuration: confirm them in **Setup → Object Manager → `sbaa__Approval__c`** before activation:
@@ -142,7 +142,7 @@ sf project deploy start --manifest manifest/package-core.xml                   #
 sf project deploy start --manifest manifest/package-Account_Examples_Apex.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. Then edit `Approval_No_Inactive_Approvers`, confirm the Apex Settings field names against the target org, and check **Active**. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. Then edit `Approval_No_Inactive_Approvers`, confirm the Apex Settings field names against the target org, and check **Active**. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

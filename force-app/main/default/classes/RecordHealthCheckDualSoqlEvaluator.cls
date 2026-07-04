@@ -105,10 +105,10 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
     } else {
       throw new RecordHealthCheckEvaluatorException(
         'INVALID_COMPARATOR',
-        'CompareTwoQueries does not support Multiple Records Handling "' +
+        'Compare two queries does not support How To Interpret Query Results "' +
           mode +
           '".' +
-          ' Use OneResult (Tier 7) or CompareAsLists (Tier 9).'
+          ' Use Expect one row or aggregate result (Tier 7) or Compare query results as lists (Tier 9).'
       );
     }
 
@@ -395,7 +395,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
           values.add(String.valueOf(val));
           continue;
         }
-        // null handling now depends on the configured null behavior.
+        // Null handling depends on the configured null behavior.
         if (nullBehavior == 'SkipRecordsWithMissingValue') {
           // Drop the missing value from the list entirely.
           continue;

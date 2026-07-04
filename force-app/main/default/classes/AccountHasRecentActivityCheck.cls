@@ -10,7 +10,7 @@
  * ApexSettingsJson__c so it can be tuned per rule without a code change
  * ApexSettingsJson__c: {"daysBack": 90}
  * Failure message, severity, and label all come from the CMT record — this
- * class only determines PASS or FAIL.
+ * class determines PASS/FAIL and returns comparison values for the UI.
  */
 public with sharing class AccountHasRecentActivityCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_DAYS_BACK = 30;
@@ -38,8 +38,25 @@ public with sharing class AccountHasRecentActivityCheck implements RecordHealthC
       WITH USER_MODE
     ];
 
+    Integer activityCount = taskCount + eventCount;
+
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.status = (taskCount + eventCount > 0) ? 'PASS' : 'FAIL';
+    result.status = activityCount > 0 ? 'PASS' : 'FAIL';
+    result.actualValue =
+      activityCount +
+      ' activit' +
+      (activityCount == 1 ? 'y' : 'ies');
+    result.expectedValue = 'at least 1 activity';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Completed tasks + events',
+      String.valueOf(activityCount),
+      'last ' + daysBack + ' days'
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Required recent activity',
+      '1',
+      'within ' + daysBack + ' days'
+    );
     return result;
   }
 

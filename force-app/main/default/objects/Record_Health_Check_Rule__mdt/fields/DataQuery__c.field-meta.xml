@@ -3,7 +3,7 @@
     <fullName>DataQuery__c</fullName>
     <label>Primary Query (SOQL)</label>
     <description
-  >The SOQL that fetches what you are checking. Use merge tokens like {!Id} or {!AccountNumber} to insert values from the current record. Leave blank only when using the List includes any of / List excludes all of operators (use Pass/Fail Formula instead).</description>
+  >The SOQL that fetches what you are checking. Use merge tokens like {!Id} or {!AccountNumber} to insert values from the current record. Leave blank only when using the List includes any of / List excludes all of operators; use Value To Test (list checks only) for the value to compare against the Second Query list.</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>5</visibleLines>

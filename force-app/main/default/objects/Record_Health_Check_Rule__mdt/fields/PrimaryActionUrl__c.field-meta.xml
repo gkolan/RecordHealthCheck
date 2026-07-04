@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>PrimaryActionUrl__c</fullName>
-    <label>Primary Action URL</label>
+    <label>Action Button URL</label>
     <description
-  >Optional URL for a read-only remediation link. Use for docs, playbooks, or Salesforce deep links; do not use it for automatic record updates.</description>
-    <type>Url</type>
+  >Optional URL for a read-only remediation link. Use for docs, playbooks, or Salesforce deep links; do not use it for automatic record updates. Supports {!FieldName} merge tokens (including relationship paths, e.g. {!Owner.ManagerId}) resolved against the record before the link is shown. Stored as Long Text Area (2000) so tokenized report/list deep links have room; the framework validates the resolved URL.</description>
+    <type>LongTextArea</type>
+    <length>2000</length>
+    <visibleLines>3</visibleLines>
     <inlineHelpText
-  >Optional. Link users to guidance or a Salesforce page that helps them fix the issue. The link is read-only.</inlineHelpText>
+  >Optional. Link users to guidance or a Salesforce page that helps them fix the issue. The link is read-only and may use {!FieldName} tokens, for example /lightning/r/Report/00O.../view?fv0={!Id}.</inlineHelpText>
     <required>false</required>
 </CustomField>

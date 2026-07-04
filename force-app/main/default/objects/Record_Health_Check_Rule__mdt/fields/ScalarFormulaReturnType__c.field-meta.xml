@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ScalarFormulaReturnType__c</fullName>
-    <label>Advanced: Formula Result Type</label>
+    <label>Advanced: Formula Value Type</label>
     <description
-  >Declares the return type of the scalar formula used as a comparison value (Record formula) or as the value to test (list checks). When set to anything other than Auto, the framework evaluates the formula once with that type instead of probing up to eight types. Reduces FormulaEval API usage in bulk/Flow loops. Auto (default) keeps the original probing behavior. Ignored when the check uses no scalar formula.</description>
+  >Optional. Tells Record Health Check what kind of value a formula returns when the formula is used as a comparison value or list-check value. Leave Auto unless you know the formula returns a specific type.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -42,6 +42,6 @@
         </valueSetDefinition>
     </valueSet>
     <inlineHelpText
-  >Set this to the formula's actual return type to skip type probing and save FormulaEval calls in bulk runs. Leave as Auto if unsure — Auto still works, it just costs more calls on the first evaluation. Only applies to Record formula comparison values and list-check "value to test" formulas.</inlineHelpText>
+  >Leave Auto unless you know the formula returns a specific type. Only applies to formula-based comparison values and list-check values.</inlineHelpText>
     <required>false</required>
 </CustomField>

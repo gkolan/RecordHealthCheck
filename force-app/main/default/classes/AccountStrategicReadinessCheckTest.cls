@@ -80,6 +80,9 @@ private class AccountStrategicReadinessCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('PASS', result.status);
+    System.assertEquals('100', result.actualValue);
+    System.assertEquals('80+', result.expectedValue);
+    System.assertNotEquals(null, result.actualProvenance);
   }
 
   @IsTest

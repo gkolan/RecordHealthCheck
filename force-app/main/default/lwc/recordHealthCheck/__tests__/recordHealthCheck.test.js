@@ -1544,6 +1544,36 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(vals).toEqual(["ISBLANK(BillingCity)"]);
   });
 
+  it("labels an echoed pass/fail condition with its own key instead of 'Expected'", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ...FAIL_NO_SEVERITY("Check_A"),
+      actualValue: null,
+      expectedValue: "Owner.IsActive",
+      expectedValueLabel: "Passes when"
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const comparison = element.shadowRoot.querySelector(".rhc-row__comparison");
+    expect(comparison).not.toBeNull();
+    const keys = [...comparison.querySelectorAll(".rhc-cmp__key")].map((n) =>
+      n.textContent.trim()
+    );
+    const vals = [...comparison.querySelectorAll(".rhc-cmp__val")].map((n) =>
+      n.textContent.trim()
+    );
+    expect(keys).toEqual(["Passes when"]);
+    expect(vals).toEqual(["Owner.IsActive"]);
+
+    const row = element.shadowRoot.querySelector("li[aria-label]");
+    expect(row.getAttribute("aria-label")).toContain(
+      "Passes when Owner.IsActive"
+    );
+  });
+
   it("renders a Found chip when the actual value is 0", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
@@ -1569,6 +1599,45 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(vals[0]).toBe("0");
     const row = element.shadowRoot.querySelector("li[aria-label]");
     expect(row.getAttribute("aria-label")).toContain("Found 0");
+  });
+
+  it("clamps long values and toggles a value chip open and closed", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ...FAIL_NO_SEVERITY("Check_A"),
+      actualValue: null,
+      expectedValue:
+        "OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website)), NOT(ISBLANK(Fax)))",
+      expectedValueLabel: "Passes when"
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    // Every value chip renders clampable, with a paired Show more toggle. jsdom
+    // has no layout so scrollHeight is 0 and the toggle stays hidden until the
+    // renderedCallback measures a real overflow — but the toggle handler is
+    // exercised directly here.
+    const chip = element.shadowRoot.querySelector(
+      ".rhc-cmp__val--clampable[data-clampval]"
+    );
+    expect(chip).not.toBeNull();
+    const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
+    expect(toggle).not.toBeNull();
+    expect(toggle.textContent.trim()).toBe("Show more");
+
+    toggle.click();
+    await Promise.resolve();
+    expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(true);
+    expect(toggle.textContent.trim()).toBe("Show less");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+
+    toggle.click();
+    await Promise.resolve();
+    expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(false);
+    expect(toggle.textContent.trim()).toBe("Show more");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("does not render the comparison block on a passing row", async () => {
@@ -1631,7 +1700,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(a.showExpandedExpected).toBe(true);
   });
 
-  it("OnDemand: a failing row shows values inline and provenance behind the caret", () => {
+  it("OnDemand: a failing row shows values inline with source notes attached", () => {
     const collapsed = annotateCheck(
       resolved(failWithValuesAndProvenance),
       false,
@@ -1640,8 +1709,9 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     );
     expect(collapsed.showInlineComparison).toBe(true);
     expect(collapsed.showActual).toBe(true);
-    expect(collapsed.showCaret).toBe(true); // provenance is behind the caret
-    expect(collapsed.showActualDetail).toBe(false); // not until expanded
+    expect(collapsed.showCaret).toBe(false);
+    expect(collapsed.showActualDetail).toBe(true);
+    expect(collapsed.showExpectedDetail).toBe(true);
 
     const open = annotateCheck(
       resolved(failWithValuesAndProvenance),
@@ -1651,11 +1721,12 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     );
     expect(open.showActualDetail).toBe(true);
     expect(open.showExpectedDetail).toBe(true);
-    // values were already inline, so they are not repeated in the expanded region
+    // Values were already inline, so there is no expanded region.
+    expect(open.detailExpanded).toBe(false);
     expect(open.showExpandedActual).toBe(false);
   });
 
-  it("gates provenance: with no *Detail, expanding shows values but no provenance line", () => {
+  it("gates source notes: with no *Detail, expanding shows values but no notes", () => {
     const a = annotateCheck(resolved(passWithValues), false, "OnDemand", true);
     expect(a.showExpandedActual).toBe(true);
     expect(a.showActualDetail).toBe(false);
@@ -1718,6 +1789,73 @@ describe("annotateCheck — comparison disclosure matrix", () => {
   });
 });
 
+describe("annotateCheck — guided remediation", () => {
+  const resolved = (result) => ({
+    uiState: "RESOLVED",
+    label: "L",
+    description: null,
+    result
+  });
+
+  const failWithLink = {
+    status: "FAIL",
+    severity: "Warning",
+    message: "Contacts missing email.",
+    actualValue: "1 of 2 contacts missing email",
+    expectedValue: "every contact has an email",
+    actionUrl: "/lightning/r/Report/00O/view?fv0=001",
+    actionLabel: "View contacts missing email",
+    fixInstructions: "Opens a filtered report for this account."
+  };
+
+  it("surfaces the link, label, instructions, and divider on a FAIL", () => {
+    const a = annotateCheck(resolved(failWithLink), false, "OnDemand", false);
+    expect(a.showAction).toBe(true);
+    expect(a.showActionBlock).toBe(true);
+    expect(a.actionUrl).toBe("/lightning/r/Report/00O/view?fv0=001");
+    expect(a.actionLabel).toBe("View contacts missing email");
+    expect(a.showFixInstructions).toBe(true);
+    // Message + action above, evidence below → divider between them.
+    expect(a.showComparisonDivider).toBe(true);
+    expect(a.accessibleLabel).toContain("Link: View contacts missing email");
+  });
+
+  it("defaults the label when a URL is present but no label was authored", () => {
+    const a = annotateCheck(
+      resolved({ ...failWithLink, actionLabel: null }),
+      false,
+      "OnDemand",
+      false
+    );
+    expect(a.actionLabel).toBe("Fix this");
+  });
+
+  it("shows instructions with no link when the URL was omitted/suppressed", () => {
+    const a = annotateCheck(
+      resolved({ ...failWithLink, actionUrl: null }),
+      false,
+      "OnDemand",
+      false
+    );
+    expect(a.showAction).toBe(false);
+    expect(a.actionLabel).toBe(null);
+    expect(a.showFixInstructions).toBe(true);
+    expect(a.showActionBlock).toBe(true);
+  });
+
+  it("renders no action block on a PASS (server sends no link)", () => {
+    const a = annotateCheck(
+      resolved({ status: "PASS", actualValue: "x", expectedValue: "y" }),
+      false,
+      "OnDemand",
+      false
+    );
+    expect(a.showAction).toBe(false);
+    expect(a.showFixInstructions).toBe(false);
+    expect(a.showActionBlock).toBe(false);
+  });
+});
+
 describe("c-record-health-check — comparison disclosure (integration)", () => {
   let element;
 
@@ -1752,7 +1890,7 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
       ...overrides
     });
 
-  it("OnDemand: passing row shows a caret; clicking it reveals values and provenance", async () => {
+  it("OnDemand: passing row shows a caret; clicking it reveals values and source notes", async () => {
     getCheckDefinitions.mockResolvedValue(onePassCheck());
     evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
     await appendAndLoad(element);
@@ -1773,13 +1911,72 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
       n.textContent.trim()
     );
     expect(vals).toEqual(['"Technology"', 'to equal "Technology"']);
-    const provenance = [...detail.querySelectorAll(".rhc-row__provenance")];
-    expect(provenance).toHaveLength(2);
+    const sourceNotes = [...detail.querySelectorAll(".rhc-cmp__source")];
+    expect(sourceNotes).toHaveLength(2);
     expect(detail.textContent).toContain('Industry → "Technology"');
     expect(caret.getAttribute("aria-expanded")).toBe("true");
   });
 
-  it("gates provenance: no *Detail means the expanded row shows values but no provenance line", async () => {
+  it("renders the Fix-it link, instructions, and divider on a failing row", async () => {
+    getCheckDefinitions.mockResolvedValue(onePassCheck());
+    evaluateCheck.mockResolvedValue({
+      checkDeveloperName: "Check_A",
+      label: "Check_A",
+      status: "FAIL",
+      severity: "Warning",
+      message: "Contacts missing email.",
+      actualValue: "1 of 2 contacts missing email",
+      expectedValue: "every contact has an email",
+      actionUrl: "/lightning/r/Report/00O/view?fv0=001",
+      actionLabel: "View contacts missing email",
+      fixInstructions: "Opens a filtered report for this account."
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const link = element.shadowRoot.querySelector(".rhc-row__action-link");
+    expect(link).not.toBeNull();
+    expect(link.getAttribute("href")).toBe(
+      "/lightning/r/Report/00O/view?fv0=001"
+    );
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
+    expect(link.textContent.trim()).toBe("View contacts missing email");
+    expect(
+      element.shadowRoot.querySelector(".rhc-row__fix-instructions").textContent
+    ).toContain("filtered report");
+    expect(
+      element.shadowRoot.querySelector(".rhc-row__divider")
+    ).not.toBeNull();
+  });
+
+  it("Rerun collapses a caret the user opened on the previous run", async () => {
+    getCheckDefinitions.mockResolvedValue(onePassCheck());
+    evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    // Open the passing row's caret, then rerun.
+    element.shadowRoot.querySelector(".rhc-caret").click();
+    await flushPromises();
+    expect(
+      element.shadowRoot
+        .querySelector(".rhc-caret")
+        .getAttribute("aria-expanded")
+    ).toBe("true");
+
+    await clickRun(element);
+
+    // The rerun starts the row back at the placement default (collapsed).
+    expect(
+      element.shadowRoot
+        .querySelector(".rhc-caret")
+        .getAttribute("aria-expanded")
+    ).toBe("false");
+    expect(element.shadowRoot.querySelector(".rhc-row__detail")).toBeNull();
+  });
+
+  it("gates source notes: no *Detail means the expanded row shows values but no notes", async () => {
     getCheckDefinitions.mockResolvedValue(onePassCheck());
     evaluateCheck.mockResolvedValue({
       ...PASS_WITH_VALUES,
@@ -1795,7 +1992,7 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
     const detail = element.shadowRoot.querySelector(".rhc-row__detail");
     expect(detail).not.toBeNull();
     expect(detail.querySelector(".rhc-cmp__val")).not.toBeNull();
-    expect(detail.querySelector(".rhc-row__provenance")).toBeNull();
+    expect(detail.querySelector(".rhc-cmp__source")).toBeNull();
   });
 
   it("FailuresOnly: a passing row shows neither a caret nor comparison", async () => {

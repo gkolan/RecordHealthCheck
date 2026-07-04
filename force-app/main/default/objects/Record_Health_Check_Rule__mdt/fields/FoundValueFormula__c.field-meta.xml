@@ -3,11 +3,11 @@
     <fullName>FoundValueFormula__c</fullName>
     <label>Advanced: Found Display Value</label>
     <description
-  >Optional, Record formula checks only. A scalar formula whose result is shown as the "Found" value on the result row (the left side of a comparison — what the record has). Leave blank to keep the default behavior (no Found value). The Pass/Fail Formula still decides pass/fail. Example: BLANKVALUE(Debit_Total__c, 0).</description>
+  >Optional. Used only when Check Type is Check fields on this record. A formula whose result is shown as the "Found" value on the result row (the left side of a comparison — what the record has). Leave blank to keep the default behavior (no Found value). The Pass Condition (Formula) still decides pass/fail. Example: BLANKVALUE(Debit_Total__c, 0).</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>3</visibleLines>
         <inlineHelpText
-  >Optional. Scalar formula shown as "Found" on the row (e.g. BLANKVALUE(Debit_Total__c, 0)). Pass/Fail is still decided by the Pass/Fail Formula. Blank = no Found value.</inlineHelpText>
+  >Optional. Formula shown as "Found" on the row (e.g. BLANKVALUE(Debit_Total__c, 0)). Pass/fail is still decided by Pass Condition (Formula). Blank = no Found value.</inlineHelpText>
     <required>false</required>
 </CustomField>

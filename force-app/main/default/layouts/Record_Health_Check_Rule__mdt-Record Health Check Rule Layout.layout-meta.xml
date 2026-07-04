@@ -12,10 +12,6 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>DeveloperName</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Required</behavior>
                 <field>Record_Health_Check_Set__c</field>
             </layoutItems>
             <layoutItems>
@@ -23,18 +19,22 @@
                 <field>IsActive__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Required</behavior>
-                <field>RunOrder__c</field>
+                <behavior>Readonly</behavior>
+                <field>NamespacePrefix</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
-                <behavior>Edit</behavior>
-                <field>IsProtected</field>
+                <behavior>Required</behavior>
+                <field>DeveloperName</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>NamespacePrefix</field>
+                <behavior>Required</behavior>
+                <field>RunOrder__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>IsProtected</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -54,6 +54,20 @@
                 <field>Tooltip__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Required</behavior>
+                <field>MessageWhenFailed__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>PrimaryActionLabel__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>FixInstructions__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Category__c</field>
             </layoutItems>
@@ -61,23 +75,9 @@
                 <behavior>Required</behavior>
                 <field>Severity__c</field>
             </layoutItems>
-        </layoutColumns>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Required</behavior>
-                <field>MessageWhenFailed__c</field>
-            </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>MessageWhenCannotRun__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>FixInstructions__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>PrimaryActionLabel__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -117,12 +117,12 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ExpectedValueFormula__c</field>
-            </layoutItems>
-            <layoutItems>
                 <behavior>Required</behavior>
                 <field>ScalarFormulaReturnType__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ExpectedValueFormula__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -131,7 +131,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>5. Query Checks</label>
+        <label>5. Query Sources</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -143,11 +143,30 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Operator__c</field>
+                <field>ValueToTest__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>CompareToQuery__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>CompareAgainst__c</field>
+                <field>CompareToField__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsLeftToRight</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>6. Query Comparison</label>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Operator__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -157,19 +176,11 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>CompareAgainst__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>RecordFormulaValue__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>CompareToQuery__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>CompareToField__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ValueToTest__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -178,7 +189,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>6. Advanced Query Behavior</label>
+        <label>7. Advanced Query Behavior</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -205,7 +216,26 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>7. When This Check Applies</label>
+        <label>8. Advanced Display Text</label>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>FoundSummaryOverride__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ExpectedSummaryOverride__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsLeftToRight</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>9. When This Check Applies</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -217,21 +247,21 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>RunWhenCountQuery__c</field>
+                <field>CountOperator__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>CountOperator__c</field>
+                <field>RequiresCheck__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>RunWhenCountQuery__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>CountThreshold__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>RequiresCheck__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -240,7 +270,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>8. Custom Apex</label>
+        <label>10. Custom Apex</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>

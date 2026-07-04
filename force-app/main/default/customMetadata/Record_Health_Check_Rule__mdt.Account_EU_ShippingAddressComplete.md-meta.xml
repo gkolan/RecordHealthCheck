@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>EU - Shipping Address Complete</label>
+    <label>Everyday Use - Shipping Address Complete</label>
     <protected>false</protected>
     <values>
         <field>Record_Health_Check_Set__c</field>

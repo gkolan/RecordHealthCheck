@@ -87,8 +87,8 @@ docs/_templates/
 **/_TEMPLATE.*
 
 # Maintainer doc-generation / authoring tooling (one-off Python scripts).
-# Kept local; the .apex/.soql helper scripts under scripts/ stay in the repo.
-scripts/**/*.py
+# Local helper scripts — kept local, not published with the project.
+scripts/
 
 # Internal planning / roadmap docs — kept local, not published with the project.
 docs/reference/product-roadmap.md
@@ -96,6 +96,9 @@ docs/reference/label-simplification-plan.md
 docs/guides/cli-commands.md
 docs/demo/
 docs/demo-account-health-check-component.md
+
+# Internal bug write-ups — kept local, not published with the project.
+bugs/
 
 # Python Salesforce Functions
 **/__pycache__/

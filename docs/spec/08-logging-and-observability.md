@@ -1,3 +1,5 @@
+# Logging and Observability
+
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 
@@ -24,7 +26,7 @@ Requires **both** `DebugMode__c` on the Check Set **and** `Record_Health_Check_D
 When enabled, after a run completes the LWC:
 
 - Renders a compact per-row debug-meta line under each result.
-- Shows expandable **Debug detail** (`adminDetailMessage`) on errors.
+- Shows expandable **Troubleshooting detail** (`adminDetailMessage`) on errors.
 - Shows footnote: **Check console (F12) for diagnostics.**
 - Logs to the browser console: `[RHC] Health Check run …` with full run JSON and `console.table` of per-check results.
 

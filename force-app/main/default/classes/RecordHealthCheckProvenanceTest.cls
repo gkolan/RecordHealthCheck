@@ -55,6 +55,19 @@ private class RecordHealthCheckProvenanceTest {
   }
 
   @isTest
+  static void rendersCoercionOnlyWithoutNullPointer() {
+    RecordHealthCheckProvenance.Detail d = new RecordHealthCheckProvenance.Detail(
+      null,
+      null,
+      'blank treated as 0'
+    );
+    System.assertEquals(
+      '(blank treated as 0)',
+      RecordHealthCheckProvenance.render(d)
+    );
+  }
+
+  @isTest
   static void returnsNullForNullDetail() {
     System.assertEquals(null, RecordHealthCheckProvenance.render(null));
   }
