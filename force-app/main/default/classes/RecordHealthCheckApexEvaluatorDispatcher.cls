@@ -31,7 +31,7 @@ public with sharing class RecordHealthCheckApexEvaluatorDispatcher {
     try {
       result = doDispatch(rule, recordId, record, result);
     } catch (Exception ex) {
-      // Last-resort catch — the inner dispatch should never surface here,
+      // Last-resort catch — the inner dispatch should never surface here
       // but platform-level failures (e.g. Type.forName on a missing class
       // when already handled) must not escape the Controller boundary.
       result.status = 'ERROR';
@@ -149,8 +149,8 @@ public with sharing class RecordHealthCheckApexEvaluatorDispatcher {
     try {
       apexResult = evaluator.evaluate(context);
     } catch (Exception ex) {
-      // Pluggable Apex must catch its own exceptions, but if it doesn't,
-      // we catch here and return ERROR with a safe message (Section 4.4).
+      // Pluggable Apex must catch its own exceptions, but if it doesn't
+      // we catch here and return ERROR with a safe message .
       fallbackResult.status = 'ERROR';
       fallbackResult.reasonCode = 'APEX_EVALUATOR_ERROR';
       fallbackResult.message = safeCannotEvaluateMessage(rule);

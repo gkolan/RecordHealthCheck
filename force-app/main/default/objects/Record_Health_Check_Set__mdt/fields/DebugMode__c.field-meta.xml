@@ -6,8 +6,8 @@
   >When ON, shows extra troubleshooting detail on the health check card and in the browser console — but only for users with the Record Health Check Debug custom permission (assign the Record Health Check Admin permission set). Everyone else sees the normal panel. Turn OFF when troubleshooting is finished.</description>
     <externalId>false</externalId>
     <fieldManageability>DeveloperControlled</fieldManageability>
-    <label>Debug Mode</label>
+    <label>Show Troubleshooting Details</label>
     <inlineHelpText
-  >Troubleshooting only. Also assign Record Health Check Admin to the user — Debug Mode alone does not show extra detail.</inlineHelpText>
+  >Troubleshooting only. Also assign Record Health Check Admin to the user — Show Troubleshooting Details alone does not show extra detail.</inlineHelpText>
     <type>Checkbox</type>
 </CustomField>

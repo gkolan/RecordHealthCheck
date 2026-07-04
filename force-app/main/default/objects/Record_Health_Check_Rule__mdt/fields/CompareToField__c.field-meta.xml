@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>CompareToField__c</fullName>
-    <label>Compare-To Field</label>
+    <label>Second Query Field/Alias</label>
     <description
-  >The API name of the field your Compare-To Query returns. Needed when that query returns field values rather than a COUNT() aggregate.</description>
+  >The API name of the field your Second Query returns. Needed when that query returns field values rather than a COUNT() aggregate.</description>
     <type>Text</type>
     <length>255</length>
         <inlineHelpText
-  >Which column from the Compare-To Query to read, e.g. Country_Code__c. Leave blank for COUNT() or aggregate queries.</inlineHelpText>
+  >Which column from the Second Query to read, e.g. Country_Code__c. Leave blank for COUNT() or aggregate queries.</inlineHelpText>
     <required>false</required>
     <unique>false</unique>
     <externalId>false</externalId>

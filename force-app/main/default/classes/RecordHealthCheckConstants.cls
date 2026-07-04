@@ -5,18 +5,15 @@
 
 /**
  * Single source of truth for the framework's valid-value sets and numeric caps.
- *
  * These were previously duplicated, verbatim, in both RecordHealthCheckConfigService
  * (runtime validation) and RecordHealthCheckMetadataValidator (deploy-time audit).
  * Duplication meant adding a new comparator, behavior, or mode required editing
  * several files in lockstep — and missing one let the two validators silently
  * disagree. Centralizing them here removes that drift risk and makes the framework
  * easier to extend: add a value once and every validator sees it.
- *
  * Public Set properties return defensive copies. Callers may safely mutate the
  * returned Set without changing the framework's canonical values for the
  * transaction.
- *
  * Comparator/behavior *logic* (the if-chains in the engine and evaluators)
  * intentionally lives with the code that applies it; only the enumerations of
  * legal values live here.
@@ -57,6 +54,16 @@ public with sharing class RecordHealthCheckConstants {
   public static Set<String> VALID_REVEAL_MODES {
     get {
       return new Set<String>(VALID_REVEAL_MODES_INTERNAL);
+    }
+  }
+  private static final Set<String> VALID_COMPARISON_DISPLAYS_INTERNAL = new Set<String>{
+    'OnDemand',
+    'FailuresOnly',
+    'AllRows'
+  };
+  public static Set<String> VALID_COMPARISON_DISPLAYS {
+    get {
+      return new Set<String>(VALID_COMPARISON_DISPLAYS_INTERNAL);
     }
   }
 

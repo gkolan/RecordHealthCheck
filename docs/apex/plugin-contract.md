@@ -32,8 +32,10 @@ Source: [`RecordHealthCheckRule.cls`](../../force-app/main/default/classes/Recor
 | Field | Plugin sets | Notes |
 | ----- | ------- | ----- |
 | `status` | **Yes** | `PASS` or `FAIL` for normal checks |
-| `actualValue` | Optional | **Found** on failed rows |
-| `expectedValue` | Optional | **Expected** on failed rows |
+| `actualValue` | Optional | **Found** comparison value |
+| `expectedValue` | Optional | **Expected** comparison value |
+| `actualProvenance` | Optional | Internal detail for the Found side; rendered only as `actualValueDetail` when the viewer has `Record_Health_Check_View_Details` |
+| `expectedProvenance` | Optional | Internal detail for the Expected side; rendered only as `expectedValueDetail` when the viewer has `Record_Health_Check_View_Details` |
 | `message` | Optional | Used on `FAIL` when non-blank; else metadata message |
 
 Dispatcher sets `label`, `severity`, `durationMs`, etc. Details: [Apex plugin reference 6](plugin-reference.md#6-returning-recordhealthcheckresult).

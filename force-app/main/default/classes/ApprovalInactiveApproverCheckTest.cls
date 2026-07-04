@@ -5,7 +5,6 @@
 
 /**
  * Tests for ApprovalInactiveApproverCheck.
- *
  * The Advanced Approvals managed package is not assumed to be installed, so the
  * package-dependent dynamic query is exercised against a standard object
  * (Account configured as the "approval" object) and the inactive-user logic is

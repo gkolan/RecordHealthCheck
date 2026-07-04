@@ -90,6 +90,11 @@ docs/_templates/
 # Kept local; the .apex/.soql helper scripts under scripts/ stay in the repo.
 scripts/**/*.py
 
+# Internal planning / roadmap docs — kept local, not published with the project.
+docs/reference/product-roadmap.md
+docs/reference/label-simplification-plan.md
+docs/guides/cli-commands.md
+
 # Python Salesforce Functions
 **/__pycache__/
 **/.venv/

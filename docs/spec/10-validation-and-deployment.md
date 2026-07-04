@@ -11,15 +11,16 @@ query output fields, plugin class/interface/JSON, row caps, and dependencies. Th
 deploy-time validator warns when the first-25 cap omits rules or prerequisites and
 exposes structured JSON through `validateAsJson()` for CI.
 
-Validation must catch: missing required fields, unknown modes and Check Methods, invalid Operator / **If Query Returns Multiple Rows** combinations, invalid **If Query Returns Zero Rows** values, invalid Apex JSON, missing or cyclic dependencies, and row safety values outside framework caps.
+Validation must catch: missing required fields, unknown modes and Check Types, invalid **`ComparisonDisplay__c`**, invalid Operator / **If Query Returns Multiple Rows** combinations, invalid **If Query Returns Zero Rows** values, invalid Apex JSON, missing or cyclic dependencies, and row safety values outside framework caps.
 
 ## 17. Deployment Contents
 
-- Apex classes and interfaces (including `RecordHealthCheck` façade, `RecordHealthCheckLogger`, `RecordHealthCheckConstants`, `RecordHealthCheckSoqlTemplate`, `RecordHealthCheckValueResolver`)
+- Apex classes and interfaces (including `RecordHealthCheck` façade, `RecordHealthCheckLogger`, `RecordHealthCheckConstants`, `RecordHealthCheckSoqlTemplate`, `RecordHealthCheckValueResolver`, `RecordHealthCheckProvenance`)
 - Lightning Web Component
 - Custom Metadata Type definitions and fields
 - Sample Custom Metadata records (10 Check Sets, 88 Rules)
 - Layout metadata for Custom Metadata editing
+- Custom permissions: `Record_Health_Check_Debug`, `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`
 - Permission sets: `Record_Health_Check_User`, `Record_Health_Check_Admin`
 - Documentation and anonymous Apex runner script
 

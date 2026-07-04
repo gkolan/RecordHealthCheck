@@ -18,6 +18,14 @@
         label="Check Set Developer Name"
         description="Developer name of the Record_Health_Check_Set__mdt record to run (e.g. Account_Data_Quality)."
       />
+            <property
+        name="comparisonDisclosure"
+        type="String"
+        label="Comparison Disclosure"
+        description="Initial state of the per-row comparison caret for this placement. Inherit = follow the Check Set (collapsed). Collapsed = start collapsed. Expanded = pre-open the detail on rows that have a caret. Cannot reveal detail the Check Set's Comparison Display does not allow."
+        datasource="Inherit,Collapsed,Expanded"
+        default="Inherit"
+      />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

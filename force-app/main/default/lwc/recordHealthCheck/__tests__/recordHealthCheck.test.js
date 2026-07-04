@@ -1,6 +1,12 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { createElement } from "lwc";
 import RecordHealthCheck from "c/recordHealthCheck";
 import {
+  annotateCheck,
   buildSummaryStats,
   splitMessageLines
 } from "../healthCheckPresentation";
@@ -252,7 +258,7 @@ describe("c-record-health-check — load and error states", () => {
     expect(badge.label).toBe("First 25 shown");
   });
 
-  it("shows a load error when a definition has a duplicate developerName (LWC-03)", async () => {
+  it("shows a load error when a definition has a duplicate developerName", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         checks: [
@@ -281,7 +287,7 @@ describe("c-record-health-check — load and error states", () => {
     expect(element.shadowRoot.querySelector(".rhc-list")).toBeNull();
   });
 
-  it("shows a load error when a definition is missing its developerName (LWC-03)", async () => {
+  it("shows a load error when a definition is missing its developerName", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         checks: [
@@ -301,7 +307,7 @@ describe("c-record-health-check — load and error states", () => {
     ).not.toBeNull();
   });
 
-  it("treats an unrecognized revealMode as AllAtOnce (LWC-09)", async () => {
+  it("treats an unrecognized revealMode as AllAtOnce", async () => {
     const checks = [0, 1, 2].map((i) => ({
       developerName: `Check_${i}`,
       label: `Check ${i}`,
@@ -324,7 +330,7 @@ describe("c-record-health-check — load and error states", () => {
     expect(element.shadowRoot.querySelectorAll(".rhc-row").length).toBe(3);
   });
 
-  it("falls back to a Manual Run affordance for an unrecognized triggerMode (LWC-27)", async () => {
+  it("falls back to a Manual Run affordance for an unrecognized triggerMode", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ triggerMode: "Whenever" })
     );
@@ -339,7 +345,7 @@ describe("c-record-health-check — load and error states", () => {
     ).not.toBeNull();
   });
 
-  it("labels the setup-error icon as 'Setup required', not 'Error' (LWC-28)", async () => {
+  it("labels the setup-error icon as 'Setup required', not 'Error'", async () => {
     element.configName = null; // triggers the SETUP_REQUIRED banner
     await appendAndLoad(element);
 
@@ -537,7 +543,7 @@ describe("c-record-health-check — run orchestration", () => {
     expect(rows).toHaveLength(0);
   });
 
-  it("shows summary stats, not rows or an empty-state message, when every row is hidden (LWC-08)", async () => {
+  it("shows summary stats, not rows or an empty-state message, when every row is hidden", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ triggerMode: "Automatic", successDisplayMode: "Hide" })
     );
@@ -552,7 +558,7 @@ describe("c-record-health-check — run orchestration", () => {
     expect(element.shadowRoot.querySelector(".rhc-stats-bar")).not.toBeNull();
   });
 
-  it("reveals a ready visible result without waiting behind a slower hidden check (LWC-02 / T-07)", async () => {
+  it("reveals a ready visible result without waiting behind a slower hidden check", async () => {
     // OneAtATime + Hide passes: Check_A (declared first) is a hidden PASS that is
     // SLOW; Check_B is a visible FAIL that resolves FIRST. The visible failure must
     // surface immediately instead of being withheld behind Check_A's spinner.
@@ -653,6 +659,11 @@ describe("c-record-health-check — success display modes", () => {
     expect(rows).toHaveLength(2);
     // The standalone success footer note no longer exists.
     expect(element.shadowRoot.querySelector(".rhc-footer-note")).toBeNull();
+    const pill = element.shadowRoot.querySelector(".rhc-stat--pass");
+    expect(pill).not.toBeNull();
+    expect(pill.classList).not.toContain("rhc-tooltip-anchor");
+    expect(pill.getAttribute("data-tooltip")).toBeNull();
+    expect(pill.getAttribute("tabindex")).toBeNull();
   });
 
   it("hides passed rows but rolls them into the Passed pill when SuccessDisplayMode is Hide", async () => {
@@ -672,6 +683,8 @@ describe("c-record-health-check — success display modes", () => {
     const pill = element.shadowRoot.querySelector(".rhc-stat--pass");
     expect(pill).not.toBeNull();
     expect(pill.textContent).toContain("2 Passed");
+    expect(pill.classList).toContain("rhc-tooltip-anchor");
+    expect(pill.getAttribute("tabindex")).toBe("0");
     expect(pill.getAttribute("data-tooltip")).toContain("Check A");
     expect(pill.getAttribute("data-tooltip")).toContain("Check B");
   });
@@ -703,6 +716,11 @@ describe("c-record-health-check — skipped display modes", () => {
     const rows = element.shadowRoot.querySelectorAll(".rhc-row--skipped");
     expect(rows).toHaveLength(2);
     expect(element.shadowRoot.querySelector(".rhc-footer-note")).toBeNull();
+    const pill = element.shadowRoot.querySelector(".rhc-stat--skipped");
+    expect(pill).not.toBeNull();
+    expect(pill.classList).not.toContain("rhc-tooltip-anchor");
+    expect(pill.getAttribute("data-tooltip")).toBeNull();
+    expect(pill.getAttribute("tabindex")).toBeNull();
   });
 
   it("hides skipped rows but rolls them into the Skipped pill when SkippedDisplayMode is Hide", async () => {
@@ -722,6 +740,8 @@ describe("c-record-health-check — skipped display modes", () => {
     const pill = element.shadowRoot.querySelector(".rhc-stat--skipped");
     expect(pill).not.toBeNull();
     expect(pill.textContent).toContain("2 Skipped");
+    expect(pill.classList).toContain("rhc-tooltip-anchor");
+    expect(pill.getAttribute("tabindex")).toBe("0");
     expect(pill.getAttribute("data-tooltip")).toContain("Check A");
     expect(pill.getAttribute("data-tooltip")).toContain("Check B");
   });
@@ -995,7 +1015,7 @@ describe("c-record-health-check — _parseAuraError", () => {
   });
 });
 
-describe("c-record-health-check — reactive recordId reload (H1)", () => {
+describe("c-record-health-check — reactive recordId reload", () => {
   const RECORD_A = "001000000000001AAA";
   const RECORD_B = "001000000000002AAA";
   let element;
@@ -1046,7 +1066,7 @@ describe("c-record-health-check — reactive recordId reload (H1)", () => {
     ).toBe(2);
   });
 
-  it("never exceeds five concurrent evaluations across a mid-run record swap (LWC-01)", async () => {
+  it("never exceeds five concurrent evaluations across a mid-run record swap", async () => {
     const checks = Array.from({ length: 12 }, (_, i) => ({
       developerName: `Check_${i}`,
       label: `Check ${i}`,
@@ -1350,7 +1370,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     ).toContain("Pass");
   });
 
-  it("makes only rows with a tooltip a tab stop (LWC-05)", async () => {
+  it("makes only rows with a tooltip a tab stop", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         successDisplayMode: "Show",
@@ -1439,7 +1459,7 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     evaluatorType: "Formula"
   });
 
-  it("renders a FAIL with missing severity as Error, not Unable (L-UI-01)", async () => {
+  it("renders a FAIL with missing severity as Error, not Unable", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
@@ -1455,7 +1475,7 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(element.shadowRoot.textContent).not.toContain("1 Unable");
   });
 
-  it("folds the failure message into the row's accessible name (P1-05)", async () => {
+  it("folds the failure message into the row's accessible name", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
@@ -1524,7 +1544,7 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(vals).toEqual(["ISBLANK(BillingCity)"]);
   });
 
-  it("renders a Found chip when the actual value is 0 (LWC-07)", async () => {
+  it("renders a Found chip when the actual value is 0", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
@@ -1574,6 +1594,263 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
   });
 });
 
+describe("annotateCheck — comparison disclosure matrix", () => {
+  const resolved = (result) => ({
+    uiState: "RESOLVED",
+    label: "L",
+    description: null,
+    result
+  });
+
+  const passWithValues = {
+    status: "PASS",
+    actualValue: '"Technology"',
+    expectedValue: 'to equal "Technology"'
+  };
+  const failWithValuesAndProvenance = {
+    status: "FAIL",
+    severity: "Error",
+    message: "Nope.",
+    actualValue: "0",
+    expectedValue: 'at least "1"',
+    actualValueDetail: "Contacts → 0 rows (query returned no matching rows)",
+    expectedValueDetail: "Fixed value → 1"
+  };
+
+  it("OnDemand: a passing row with values gets a caret but no inline chips", () => {
+    const a = annotateCheck(resolved(passWithValues), false, "OnDemand", false);
+    expect(a.showInlineComparison).toBe(false);
+    expect(a.showCaret).toBe(true);
+    expect(a.detailExpanded).toBe(false);
+  });
+
+  it("OnDemand: expanding a passing row reveals Found/Expected values", () => {
+    const a = annotateCheck(resolved(passWithValues), false, "OnDemand", true);
+    expect(a.detailExpanded).toBe(true);
+    expect(a.showExpandedActual).toBe(true);
+    expect(a.showExpandedExpected).toBe(true);
+  });
+
+  it("OnDemand: a failing row shows values inline and provenance behind the caret", () => {
+    const collapsed = annotateCheck(
+      resolved(failWithValuesAndProvenance),
+      false,
+      "OnDemand",
+      false
+    );
+    expect(collapsed.showInlineComparison).toBe(true);
+    expect(collapsed.showActual).toBe(true);
+    expect(collapsed.showCaret).toBe(true); // provenance is behind the caret
+    expect(collapsed.showActualDetail).toBe(false); // not until expanded
+
+    const open = annotateCheck(
+      resolved(failWithValuesAndProvenance),
+      false,
+      "OnDemand",
+      true
+    );
+    expect(open.showActualDetail).toBe(true);
+    expect(open.showExpectedDetail).toBe(true);
+    // values were already inline, so they are not repeated in the expanded region
+    expect(open.showExpandedActual).toBe(false);
+  });
+
+  it("gates provenance: with no *Detail, expanding shows values but no provenance line", () => {
+    const a = annotateCheck(resolved(passWithValues), false, "OnDemand", true);
+    expect(a.showExpandedActual).toBe(true);
+    expect(a.showActualDetail).toBe(false);
+    expect(a.showExpectedDetail).toBe(false);
+  });
+
+  it("FailuresOnly: a passing row has no caret and shows nothing", () => {
+    const a = annotateCheck(
+      resolved(passWithValues),
+      false,
+      "FailuresOnly",
+      true // even if a placement asked to expand
+    );
+    expect(a.showCaret).toBe(false);
+    expect(a.showInlineComparison).toBe(false);
+    expect(a.detailExpanded).toBe(false);
+  });
+
+  it("AllRows: a passing row shows Found/Expected inline, no caret when there is no provenance", () => {
+    const a = annotateCheck(resolved(passWithValues), false, "AllRows", false);
+    expect(a.showInlineComparison).toBe(true);
+    expect(a.showActual).toBe(true);
+    expect(a.showCaret).toBe(false);
+  });
+
+  it("falls back to OnDemand for an unrecognized mode", () => {
+    const a = annotateCheck(resolved(passWithValues), false, "Whatever", false);
+    expect(a.showInlineComparison).toBe(false);
+    expect(a.showCaret).toBe(true);
+  });
+
+  it("renders a value of 0 rather than treating it as missing", () => {
+    const a = annotateCheck(
+      resolved({ status: "PASS", actualValue: 0, expectedValue: "" }),
+      false,
+      "AllRows",
+      false
+    );
+    expect(a.showActual).toBe(true);
+    expect(a.actualValue).toBe(0);
+    expect(a.showExpected).toBe(true); // empty string is a real value
+    expect(a.expectedValue).toBe("");
+  });
+
+  it("keeps comparison values out of the accessible name until they are visible", () => {
+    const collapsed = annotateCheck(
+      resolved(passWithValues),
+      false,
+      "OnDemand",
+      false
+    );
+    expect(collapsed.accessibleLabel).not.toContain("Found");
+    const open = annotateCheck(
+      resolved(passWithValues),
+      false,
+      "OnDemand",
+      true
+    );
+    expect(open.accessibleLabel).toContain('Found "Technology"');
+  });
+});
+
+describe("c-record-health-check — comparison disclosure (integration)", () => {
+  let element;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    element = createComponent();
+  });
+
+  afterEach(() => {
+    if (element.isConnected) {
+      document.body.removeChild(element);
+    }
+  });
+
+  const PASS_WITH_VALUES = {
+    checkDeveloperName: "Check_A",
+    label: "Check_A",
+    status: "PASS",
+    priority: 1,
+    evaluatorType: "Query",
+    actualValue: '"Technology"',
+    expectedValue: 'to equal "Technology"',
+    actualValueDetail: 'Industry → "Technology"',
+    expectedValueDetail: 'Fixed value → "Technology"'
+  };
+
+  const onePassCheck = (overrides = {}) =>
+    makeDefinitions({
+      successDisplayMode: "Show",
+      comparisonDisplay: "OnDemand",
+      checks: [makeDefinitions().checks[0]],
+      ...overrides
+    });
+
+  it("OnDemand: passing row shows a caret; clicking it reveals values and provenance", async () => {
+    getCheckDefinitions.mockResolvedValue(onePassCheck());
+    evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    // Collapsed by default: caret present, no inline comparison, no detail.
+    const caret = element.shadowRoot.querySelector(".rhc-caret");
+    expect(caret).not.toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-row__comparison")).toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-row__detail")).toBeNull();
+
+    caret.click();
+    await flushPromises();
+
+    const detail = element.shadowRoot.querySelector(".rhc-row__detail");
+    expect(detail).not.toBeNull();
+    const vals = [...detail.querySelectorAll(".rhc-cmp__val")].map((n) =>
+      n.textContent.trim()
+    );
+    expect(vals).toEqual(['"Technology"', 'to equal "Technology"']);
+    const provenance = [...detail.querySelectorAll(".rhc-row__provenance")];
+    expect(provenance).toHaveLength(2);
+    expect(detail.textContent).toContain('Industry → "Technology"');
+    expect(caret.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("gates provenance: no *Detail means the expanded row shows values but no provenance line", async () => {
+    getCheckDefinitions.mockResolvedValue(onePassCheck());
+    evaluateCheck.mockResolvedValue({
+      ...PASS_WITH_VALUES,
+      actualValueDetail: null,
+      expectedValueDetail: null
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    element.shadowRoot.querySelector(".rhc-caret").click();
+    await flushPromises();
+
+    const detail = element.shadowRoot.querySelector(".rhc-row__detail");
+    expect(detail).not.toBeNull();
+    expect(detail.querySelector(".rhc-cmp__val")).not.toBeNull();
+    expect(detail.querySelector(".rhc-row__provenance")).toBeNull();
+  });
+
+  it("FailuresOnly: a passing row shows neither a caret nor comparison", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      onePassCheck({ comparisonDisplay: "FailuresOnly" })
+    );
+    evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(element.shadowRoot.querySelector(".rhc-caret")).toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-row__comparison")).toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-row__detail")).toBeNull();
+  });
+
+  it("AllRows: a passing row shows Found/Expected inline", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      onePassCheck({ comparisonDisplay: "AllRows" })
+    );
+    evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const comparison = element.shadowRoot.querySelector(".rhc-row__comparison");
+    expect(comparison).not.toBeNull();
+    const keys = [...comparison.querySelectorAll(".rhc-cmp__key")].map((n) =>
+      n.textContent.trim()
+    );
+    expect(keys).toEqual(["Found", "Expected"]);
+  });
+
+  it("comparisonDisclosure=Expanded pre-opens the caret on an OnDemand pass row", async () => {
+    element.comparisonDisclosure = "Expanded";
+    getCheckDefinitions.mockResolvedValue(onePassCheck());
+    evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(element.shadowRoot.querySelector(".rhc-row__detail")).not.toBeNull();
+  });
+
+  it("comparisonDisclosure=Expanded cannot widen a FailuresOnly pass row", async () => {
+    element.comparisonDisclosure = "Expanded";
+    getCheckDefinitions.mockResolvedValue(
+      onePassCheck({ comparisonDisplay: "FailuresOnly" })
+    );
+    evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(element.shadowRoot.querySelector(".rhc-caret")).toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-row__detail")).toBeNull();
+  });
+});
+
 describe("buildSummaryStats — label pluralization", () => {
   const resolved = (label, status, severity) => ({
     label,
@@ -1594,20 +1871,29 @@ describe("buildSummaryStats — label pluralization", () => {
     ).toBe("2 Warnings");
   });
 
-  it("caps the tooltip name list with 'and N more' (LWC-19)", () => {
+  it("leaves visible buckets as plain summary pills without tooltips", () => {
+    const passes = ["A", "B"].map((n) => resolved(n, "PASS", null));
+    const stat = buildSummaryStats(passes).find((s) => s.key === "pass");
+    expect(stat.cssClass).toBe("rhc-stat rhc-stat--pass");
+    expect(stat.tooltip).toBeNull();
+    expect(stat.tabIndex).toBeNull();
+  });
+
+  it("lists every name in the tooltip for hidden buckets, even when the bucket is large", () => {
     const passes = ["A", "B", "C", "D", "E", "F", "G"].map((n) =>
       resolved(n, "PASS", null)
     );
-    const stat = buildSummaryStats(passes).find((s) => s.key === "pass");
-    expect(stat.tooltip).toBe("7 Passed: A, B, C, D, E, and 2 more");
-    // The overflow names are summarized, not listed.
-    expect(stat.tooltip).not.toContain("F");
-    expect(stat.tooltip).not.toContain("G");
+    const stat = buildSummaryStats(passes, new Set(["pass"])).find(
+      (s) => s.key === "pass"
+    );
+    expect(stat.tooltip).toBe("7 Passed: A, B, C, D, E, F, G");
   });
 
-  it("lists every name when the bucket is within the cap (LWC-19)", () => {
+  it("lists every name for small hidden buckets", () => {
     const passes = ["A", "B", "C"].map((n) => resolved(n, "PASS", null));
-    const stat = buildSummaryStats(passes).find((s) => s.key === "pass");
+    const stat = buildSummaryStats(passes, new Set(["pass"])).find(
+      (s) => s.key === "pass"
+    );
     expect(stat.tooltip).toBe("3 Passed: A, B, C");
   });
 });

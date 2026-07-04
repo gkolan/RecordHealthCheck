@@ -17,9 +17,9 @@ All framework log lines flow through `RecordHealthCheckLogger`: the engine, cont
 | `user` | `UserInfo.getUserId()`: authoritative, not client-supplied. |
 | Levels | `ERROR`, `WARN`, `INFO`, `DEBUG` (maps to `FINE` in `System.debug`). |
 
-### Client-side diagnostics (Debug Mode)
+### Client-side diagnostics (Show Troubleshooting Details)
 
-Requires **both** `DebugMode__c` on the Check Set **and** `Record_Health_Check_Debug` on the running user (included in permission set `Record_Health_Check_Admin`). See [Debug Mode guide](../guides/debug-mode.md).
+Requires **both** `DebugMode__c` on the Check Set **and** `Record_Health_Check_Debug` on the running user (included in permission set `Record_Health_Check_Admin`). See [Show Troubleshooting Details guide](../guides/debug-mode.md).
 
 When enabled, after a run completes the LWC:
 
@@ -27,3 +27,7 @@ When enabled, after a run completes the LWC:
 - Shows expandable **Debug detail** (`adminDetailMessage`) on errors.
 - Shows footnote: **Check console (F12) for diagnostics.**
 - Logs to the browser console: `[RHC] Health Check run …` with full run JSON and `console.table` of per-check results.
+
+### Comparison provenance (separate from debug)
+
+`actualValueDetail` / `expectedValueDetail` on each result are gated by **`Record_Health_Check_View_Details`** (also in `Record_Health_Check_Admin`). This is independent of `DebugMode__c` and `Record_Health_Check_Debug`. The LWC shows provenance only when the user expands a row's comparison caret.

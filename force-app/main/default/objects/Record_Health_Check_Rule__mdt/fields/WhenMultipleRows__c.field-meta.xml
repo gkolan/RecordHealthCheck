@@ -12,22 +12,22 @@
             <value>
                 <fullName>OneResult</fullName>
                 <default>true</default>
-                <label>One result (or aggregate)</label>
+                <label>The query returns one result</label>
             </value>
             <value>
                 <fullName>AnyRowPasses</fullName>
                 <default>false</default>
-                <label>At least one row must pass</label>
+                <label>At least one record must pass</label>
             </value>
             <value>
                 <fullName>AllRowsPass</fullName>
                 <default>false</default>
-                <label>Every row must pass</label>
+                <label>Every record must pass</label>
             </value>
             <value>
                 <fullName>CompareAsLists</fullName>
                 <default>false</default>
-                <label>Compare as two lists</label>
+                <label>Compare both results as lists</label>
             </value>
         </valueSetDefinition>
     </valueSet>

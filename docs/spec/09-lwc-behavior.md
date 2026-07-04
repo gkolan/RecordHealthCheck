@@ -37,7 +37,7 @@ lives in `healthCheckPresentation.js`.
 - Renders as a custom card (`rhc-card`) with a visible border and elevation: not `slds-card`: so it reads as a contained panel on white Lightning tabs.
 - **Rounded corners** match standard Lightning cards: `border-radius: var(--lwc-borderRadiusMedium, 0.25rem)`. The card uses **`overflow: visible`** so row and summary tooltips are **not clipped** at the card boundary (especially the last row's below-row bubble). Bottom corner rounding is applied to **`.rhc-body > :last-child`** so the outline still matches standard Lightning related lists and record panels without trapping popovers.
 - **No header icon**: the card does not render a header icon. There is no icon field on the Check Set; titles are text-only.
-- Header layout: **title** and **action button** share one row (vertically centered); **Display Description** spans the full width on the row beneath (eliminates a tall empty column beside a short button).
+- Header layout: **title** and **action button** share one row (vertically centered); **Panel Subtitle** spans the full width on the row beneath (eliminates a tall empty column beside a short button).
 - Shows a **First 25 shown** badge when `checksOmittedByLimit` is true (does not show `totalAvailableCheckCount`).
 
 ### Row status accent
@@ -87,9 +87,11 @@ Before the first Manual run (both `OneAtATime` and `AllAtOnce`), shows one line:
 - Row status icons are **CSS-drawn** circles (`rhc-status-icon--*`): not `lightning-icon`.
 - Always renders `FAIL` (Error), `Warning`, `Info`, and `UNABLE_TO_EVALUATE` outcomes as full rows: these are actionable and are never collapsed into the summary bar. Only `PASS` and `SKIPPED` outcomes can be collapsed (via `PassedChecksDisplay__c` / `SkippedChecksDisplay__c`).
 - Applies `PassedChecksDisplay__c` and `SkippedChecksDisplay__c`: rows in `Hide` mode are filtered from the list even when `RowAppearance__c` is `AllAtOnce`.
-- On resolved **non-passing** rows, shows a **Found** / **Expected** comparison block beneath `MessageWhenFailed__c` when the evaluator populated `actualValue` and/or `expectedValue`: rendered as stacked labelled chips (see [9](05-result-contract-and-reason-codes.md#comparison-display-contract)). Example: Found `"Cold"` on one line; Expected `does not equal "Cold"` on the next. Formula failures show Expected only (quoted formula text) unless `FoundValueFormula__c` / `ExpectedValueFormula__c` are configured, in which case both resolved scalars render. Not shown on `PASS`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`.
+- Shows **Found** / **Expected** comparison chips per Check Set **`ComparisonDisplay__c`** (see [9](05-result-contract-and-reason-codes.md#comparison-display-contract)): failing rows show values inline in every mode; passing rows show inline only when `AllRows`, otherwise behind a disclosure caret (`OnDemand`) or hidden (`FailuresOnly`).
+- Applies the App Builder **`comparisonDisclosure`** property only to the initial state of allowed comparison carets: `Inherit` and `Collapsed` start closed, `Expanded` pre-opens rows that already have a caret. The placement property cannot widen the Check Set's `ComparisonDisplay__c` policy.
+- When the viewer has **`Record_Health_Check_View_Details`**, expanding the caret also reveals **provenance** lines (`actualValueDetail` / `expectedValueDetail`) beneath the chips.
 - Renders `MessageWhenFailed__c` / `MessageWhenCannotRun__c` across multiple lines: newlines authored in Setup become separate visual lines (interior blank lines are preserved as spacing), and the lines are folded into one sentence for the row `aria-label`.
-- Shows `adminDetailMessage` **inline** (no click-to-expand), per-row debug-meta, and console footnote when `DebugMode__c` is on **and** the user has `Record_Health_Check_Debug` (see [Debug Mode guide](../guides/debug-mode.md)).
+- Shows `adminDetailMessage` **inline** (no click-to-expand), per-row debug-meta, and console footnote when `DebugMode__c` is on **and** the user has `Record_Health_Check_Debug` (see [Show Troubleshooting Details guide](../guides/debug-mode.md)).
 
 ### Summary bar
 
@@ -128,7 +130,10 @@ CSS-drawn hover/focus popovers (`rhc-tooltip-anchor` + `::before` / `::after`). 
 
 ### Diagnostics (debug mode)
 
-Requires `Record_Health_Check_Debug` plus **Debug Mode** on the Check Set. Per-row debug lines, **Debug detail** on errors, console footnote, and `[RHC]` browser console summary after run completion. See [Debug Mode guide](../guides/debug-mode.md).
+Requires `Record_Health_Check_Debug` plus **Show Troubleshooting Details** on the Check Set. Per-row debug lines, **Debug detail** on errors, console footnote, and `[RHC]` browser console summary after run completion. See [Show Troubleshooting Details guide](../guides/debug-mode.md).
+
+**Comparison provenance** (separate from debug mode): when the viewer has **`Record_Health_Check_View_Details`**, expanding a row's comparison caret may show provenance notes (`actualValueDetail` / `expectedValueDetail`). This does not require Show Troubleshooting Details.
+
 - Error banner (setup/load failures) still uses `lightning-icon`.
 
 ### Component design property

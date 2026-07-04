@@ -579,6 +579,100 @@
   word-break: break-word;
 }
 
+/* ── Comparison disclosure caret ───────────────────────────────────────────── */
+/* Small, quiet toggle in the row heading. Keeps the default card calm: the
+   affordance is present but low-contrast until hover/focus, and the detail it
+   reveals stays collapsed. */
+.rhc-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: 0.35rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
+  flex: 0 0 auto;
+}
+
+.rhc-caret:hover,
+.rhc-caret:focus-visible {
+  color: var(--slds-g-color-neutral-base-20, #2b2826);
+  background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+}
+
+/* Chevron drawn from two borders so it needs no icon dependency; rotates from
+   pointing-right (collapsed) to pointing-down (open). */
+.rhc-caret__glyph {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.12s ease;
+}
+
+.rhc-caret--open .rhc-caret__glyph {
+  transform: rotate(45deg);
+}
+
+/* ── Expanded comparison detail ────────────────────────────────────────────── */
+/* Reuses the inline comparison layout for any values revealed here, then stacks
+   the provenance notes beneath. */
+.rhc-row__detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  margin-top: 0.55rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Provenance note: source → raw value (coercion). De-emphasized relative to the
+   value chips — it explains where a value came from, it is not the value. */
+.rhc-row__provenance {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--slds-g-color-neutral-base-30, #444240);
+}
+
+.rhc-row__provenance:first-of-type {
+  align-self: stretch;
+  margin-top: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
+}
+
+.rhc-row__provenance-key {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
+  flex: 0 0 auto;
+}
+
+.rhc-row__provenance-val {
+  font-family: var(
+    --slds-g-font-family-monospace,
+    "SF Mono",
+    sfmono-regular,
+    ui-monospace,
+    menlo,
+    consolas,
+    monospace
+  );
+  font-size: 0.7rem;
+  word-break: break-word;
+}
+
 /* ── Hover/focus tooltips ──────────────────────────────────────────────────── */
 /* Dwell-before-show delays live on :host (the component root), NOT on
    .rhc-tooltip-anchor. The summary-pill arrow (.rhc-stat__nubbin) is a *sibling*
@@ -829,9 +923,6 @@
   text-align: right;
 }
 
-/* LWC-18: honor the user's reduced-motion preference. Disable the spinner spin
-   and the tooltip open transitions so the component does not animate for users
-   who have asked the OS to minimize motion; tooltips simply appear/disappear. */
 @media (prefers-reduced-motion: reduce) {
   .rhc-action-button__spinner {
     animation: none;

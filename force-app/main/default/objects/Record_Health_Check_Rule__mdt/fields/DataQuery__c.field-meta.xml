@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>DataQuery__c</fullName>
-    <label>Data Query</label>
+    <label>Primary Query (SOQL)</label>
     <description
   >The SOQL that fetches what you are checking. Use merge tokens like {!Id} or {!AccountNumber} to insert values from the current record. Leave blank only when using the List includes any of / List excludes all of operators (use Pass/Fail Formula instead).</description>
     <type>LongTextArea</type>

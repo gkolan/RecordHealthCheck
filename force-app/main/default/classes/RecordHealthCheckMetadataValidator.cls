@@ -31,7 +31,6 @@ public with sharing class RecordHealthCheckMetadataValidator {
   // Valid-value sets and caps are owned by RecordHealthCheckConstants so this
   // deploy-time validator and RecordHealthCheckConfigService (runtime) can never
   // drift. Local aliases keep the call sites below readable.
-  //
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps the baseline + Check Set + dependency-graph checks (inline) plus a
   // collect-all adapter (toIssue). The comparator/source/null-empty value sets live with
@@ -51,6 +50,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
    * Returns a list of ValidationIssues — empty list means everything is valid.
    */
   public List<ValidationIssue> validate() {
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Validator intentionally reads framework Custom Metadata setup records.
     List<Record_Health_Check_Set__mdt> checkSets = [
       SELECT
         DeveloperName,
@@ -66,6 +66,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       WHERE IsActive__c = TRUE
     ];
 
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Validator intentionally reads framework Custom Metadata setup records.
     List<Record_Health_Check_Rule__mdt> allRules = [
       SELECT
         DeveloperName,
@@ -125,7 +126,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   ) {
     List<ValidationIssue> issues = new List<ValidationIssue>();
 
-    // SCAN-49: removed an unused `checkSetDeveloperNames` Set that was populated
+    // removed an unused `checkSetDeveloperNames` Set that was populated
     // here but never read. Dependency validation scopes by Check Set Id below.
     for (Record_Health_Check_Set__mdt cs : checkSets) {
       issues.addAll(validateCheckSet(cs));
@@ -411,7 +412,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       issues.addAll(validateDualSoqlRule(rule));
     }
 
-    // MaxRowsOverride (SCAN-20) + NullBehavior / EmptyResultBehavior — validated for ALL check
+    // MaxRows, null behavior, and empty-result behavior — validated for all check types.
     // types at top level, exactly as before. Shared producers emit the findings; toIssue maps
     // each to this class's reason code / field.
     addIssues(
@@ -440,7 +441,6 @@ public with sharing class RecordHealthCheckMetadataValidator {
   }
 
   // ─── Per-type validation — collect-all adapter over RecordHealthCheckRuleValidator ───
-  //
   // The per-type decision tree lives in RecordHealthCheckRuleValidator; these wrappers collect
   // every finding and map each via toIssue. Issue order within a rule follows the shared
   // (ConfigService) ordering.
@@ -488,7 +488,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   }
 
   /**
-   * Maps a shared Finding to this deploy-time path's ERROR ValidationIssue (field name, message,
+   * Maps a shared Finding to this deploy-time path's ERROR ValidationIssue (field name, message
    * reason code). This switch is the ONLY place MetadataValidator's output vocabulary lives — the
    * decision tree that produced the finding is shared. Field names / messages / reason codes here
    * are byte-for-byte the originals so packaged metadata still validates clean and the

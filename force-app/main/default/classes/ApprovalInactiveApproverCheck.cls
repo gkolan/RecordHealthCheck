@@ -6,17 +6,14 @@
 /**
  * Example RecordHealthCheckRule — flags pending approval steps whose assigned
  * user is inactive, and names the offending user(s) in the failure message.
- *
  * Built for Salesforce Advanced Approvals (managed package "sbaa"), but every
  * object and field API name is read dynamically and may be overridden through
  * ApexSettingsJson__c. Because nothing references the managed package at compile
  * time, this class compiles and deploys in orgs that do NOT have Advanced
  * Approvals installed — it simply returns UNABLE_TO_EVALUATE there.
- *
- *   {"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c",
- *    "userField":"sbaa__User__c","statusField":"sbaa__Status__c",
- *    "pendingStatuses":["Requested"],"maxNames":5}
- *
+ * {"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c"
+ * "userField":"sbaa__User__c","statusField":"sbaa__Status__c"
+ * "pendingStatuses":["Requested"],"maxNames":5}
  * Unlike the other Apex examples, this class sets its own failure message so it
  * can list the inactive approver names. The dispatcher preserves a non-blank
  * plugin message; severity and label still come from the metadata record.
@@ -130,6 +127,20 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       inactiveNames.add(assignee.Name);
     }
 
+    // Populate on pass and fail so an entitled viewer can audit a green row too .
+    result.actualValue = inactiveNames.size() + ' inactive';
+    result.expectedValue = '0 inactive';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Inactive approvers on pending requests',
+      String.valueOf(inactiveNames.size()),
+      null
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Allowed inactive approvers',
+      '0',
+      null
+    );
+
     if (inactiveNames.isEmpty()) {
       result.status = 'PASS';
       return result;
@@ -137,8 +148,6 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
 
     result.status = 'FAIL';
     result.message = buildMessage(inactiveNames, settings.maxNames);
-    result.actualValue = inactiveNames.size() + ' inactive';
-    result.expectedValue = '0 inactive';
     return result;
   }
 
@@ -213,7 +222,8 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
           settings.maxNames = parsed;
         }
       } catch (Exception ex) {
-        // Out of range or unparseable keeps the default.
+        // Invalid JSON settings are non-fatal; keep the default maxNames value.
+        settings.maxNames = settings.maxNames;
       }
     }
     return settings;

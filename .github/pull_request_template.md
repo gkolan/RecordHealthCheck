@@ -20,7 +20,7 @@ See CONTRIBUTING.md for the full workflow.
 
 - [ ] `npm run prettier:verify`
 - [ ] `npm run lint`
-- [ ] `npm test` (61 Jest tests)
+- [ ] `npm test` (90 Jest tests)
 - [ ] `npm run test:unit:coverage` (coverage thresholds enforced)
 - [ ] Apex: `sf project deploy validate` with `RunLocalTests` in a clean scratch org (if Apex changed)
 

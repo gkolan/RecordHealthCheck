@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Single query |
+| **Evaluator** | Check records with a query |
 | **Sample** | [`Account_Source_Not_Manually_Set`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Account_Source_Not_Manually_Set.md-meta.xml) |
 | **Check Set** | `Account_Examples_Query` · [`package-Account_Examples_Query.xml`](../../../manifest/package-Account_Examples_Query.xml) |
 
@@ -22,10 +22,10 @@ Query-based blank-required check for fields audited via SOQL.
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `ISBLANK(AccountSource)` | Simpler on-record equivalent. |
-| Single query | One result + Is empty | **This example.** |
+| Check fields on this record | `ISBLANK(AccountSource)` | Simpler on-record equivalent. |
+| Check records with a query | One result + Is empty | **This example.** |
 | Compare two queries | | No comparison pair. |
-| Custom Apex | | Unnecessary. |
+| Use custom Apex | | Unnecessary. |
 
 **When the simpler option is enough**
 
@@ -34,7 +34,7 @@ Query-based blank-required check for fields audited via SOQL.
 | Field must be populated | [Is not blank](11-is-not-blank.md) |
 | On-record blank formula | [Single required field](../formula/01-single-required-field.md) inverted |
 
-**Verdict:** Single query with Is empty fits query-centric sets that need a must-stay-blank rule. Record formula `ISBLANK(...)` is the lighter on-record option.
+**Verdict:** Check records with a query with Is empty fits query-centric sets that need a must-stay-blank rule. Check fields on this record `ISBLANK(...)` is the lighter on-record option.
 
 ## Configuration
 
@@ -42,12 +42,12 @@ Query-based blank-required check for fields audited via SOQL.
 | ----------- | ----- |
 | Check Name | Account Source Not Manually Set |
 | Developer Name | Account_Source_Not_Manually_Set |
-| Check Method | Single query |
-| Data Query | `SELECT AccountSource FROM Account WHERE Id = {!Id} LIMIT 1` |
-| Field To Read | AccountSource |
-| If Query Returns Multiple Rows | One result (or aggregate) |
+| Check Type | Check records with a query |
+| Primary Query (SOQL) | `SELECT AccountSource FROM Account WHERE Id = {!Id} LIMIT 1` |
+| Primary Query Field/Alias | AccountSource |
+| If Query Returns Multiple Rows | The query returns one result |
 | Operator | Is empty |
-| Run This Check When | Always |
+| Applies To | All records |
 | Severity | Error |
 | Message When Failed | Account Source has been manually set: this field is owned by automation. |
 

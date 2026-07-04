@@ -46,4 +46,8 @@
         <field>IsActive__c</field>
         <value xsi:type="xsd:boolean">true</value>
     </values>
+    <values>
+        <field>ComparisonDisplay__c</field>
+        <value xsi:type="xsd:string">OnDemand</value>
+    </values>
 </CustomMetadata>

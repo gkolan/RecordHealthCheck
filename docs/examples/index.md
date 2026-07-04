@@ -237,7 +237,9 @@ Deploy `package-Account_Examples_Apex.xml` for all four Apex sample classes (`Ac
 
 ## Seeing Found / Expected on a failing check
 
-The **Found** / **Expected** block is computed at runtime: no new Custom Metadata fields. It appears on **failed** rows only, beneath `MessageWhenFailed__c`, as stacked labelled chips (uppercase **Found** / **Expected** captions beside monospace values).
+The **Found** / **Expected** block is computed at runtime. Query and Compare Two Queries checks derive it from the comparator and comparison value; Formula checks can opt in with `FoundValueFormula__c` / `ExpectedValueFormula__c`; Apex checks can set `actualValue` / `expectedValue`. Failed rows show comparison values inline whenever values are available. Passing rows are controlled by the Check Set **Comparison Display** setting: **On demand** gives passing rows a disclosure caret, **Failures only** hides pass-row values, and **All rows** shows pass-row values inline.
+
+The App Builder **Comparison Disclosure** property only controls the initial caret state (`Inherit`, `Collapsed`, or `Expanded`) for rows that already have a caret. It cannot reveal values that the Check Set's Comparison Display setting hides.
 
 | To see it | Check Set | Rule | Setup |
 | --------- | --------- | ---- | ----- |

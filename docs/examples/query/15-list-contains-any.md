@@ -4,17 +4,17 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Single query |
+| **Evaluator** | Check records with a query |
 | **Sample** | [`Billing_State_In_Contact_Mailing_States`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Billing_State_In_Contact_Mailing_States.md-meta.xml) |
 | **Check Set** | `Account_Examples_Query` · [`package-Account_Examples_Query.xml`](../../../manifest/package-Account_Examples_Query.xml) |
 
 ## What it checks
 
-The Account's Billing State must appear in at least one Contact's Mailing State on the same Account. Value To Test supplies the scalar from the Account; Compare-To Query builds the Contact list. The check runs only when at least one Contact has Mailing State set.
+The Account's Billing State must appear in at least one Contact's Mailing State on the same Account. Value To Test supplies the scalar from the Account; Second Query builds the Contact list. The check runs only when at least one Contact has Mailing State set.
 
 ## When to use this
 
-Reach for this pattern when a parent scalar must appear somewhere in a child list: billing state among contact states, tier among product lines, account code among child references. List includes any of is the Single query list operator (Compare as two lists mode).
+Reach for this pattern when a parent scalar must appear somewhere in a child list: billing state among contact states, tier among product lines, account code among child references. List includes any of is the Check records with a query list operator (Compare both results as lists mode).
 
 ## Why this evaluator
 
@@ -22,10 +22,10 @@ Scalar-from-parent tested against a query-built list: not a row-by-row All rows 
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | | Cannot list-scan Contact states. |
-| Single query | Value To Test + Compare-To Query + List includes any of | **This example.** |
-| Compare two queries | Two full queries compared | Single query list mode uses Value To Test instead of Data Query. |
-| Custom Apex | Apex list contains | Same outcome when list operator suffices. |
+| Check fields on this record | | Cannot list-scan Contact states. |
+| Check records with a query | Value To Test + Second Query + List includes any of | **This example.** |
+| Compare two queries | Two full queries compared | Check records with a query list mode uses Value To Test instead of Primary Query (SOQL). |
+| Use custom Apex | Apex list contains | Same outcome when list operator suffices. |
 
 **When the simpler option is enough**
 
@@ -34,7 +34,7 @@ Scalar-from-parent tested against a query-built list: not a row-by-row All rows 
 | Every Contact state must equal Billing State | [All rows Account field](08-all-rows-account-field.md) |
 | Scalar must not appear in list | [List does not contain](16-list-does-not-contain.md) |
 
-**Verdict:** Single query with Compare as two lists and List includes any of is the right evaluator when a record field must appear in a query result list. Use Compare two queries when both sides come from full queries without Value To Test.
+**Verdict:** Check records with a query with Compare both results as lists and List includes any of is the right evaluator when a record field must appear in a query result list. Use Compare two queries when both sides come from full queries without Value To Test.
 
 ## Configuration
 
@@ -42,44 +42,44 @@ Scalar-from-parent tested against a query-built list: not a row-by-row All rows 
 | ----------- | ----- |
 | Check Name | Billing State Appears in Contact Mailing States |
 | Developer Name | Billing_State_In_Contact_Mailing_States |
-| Check Method | Single query |
-| Value To Test (List Checks) | BillingState |
-| Compare-To Query | `SELECT MailingState FROM Contact WHERE AccountId = {!Id} AND MailingState != null` |
-| Compare-To Field | MailingState |
-| If Query Returns Multiple Rows | Compare as two lists |
+| Check Type | Check records with a query |
+| Value To Test (list checks only) | BillingState |
+| Second Query | `SELECT MailingState FROM Contact WHERE AccountId = {!Id} AND MailingState != null` |
+| Second Query Field/Alias | MailingState |
+| If Query Returns Multiple Rows | Compare both results as lists |
 | Operator | List includes any of |
-| Run This Check When | Only when a count query matches |
-| Run When Count Query Matches | `SELECT COUNT() FROM Contact WHERE AccountId = {!Id} AND MailingState != null` |
-| Applicability Count Comparison | Greater than |
-| Applicability Count Threshold | `0` |
+| Applies To | Only records where a count query matches |
+| Applies When Count Query Matches | `SELECT COUNT() FROM Contact WHERE AccountId = {!Id} AND MailingState != null` |
+| Count Must Be | Greater than |
+| Count Value | `0` |
 | Severity | Warning |
 | Message When Failed | Account Billing State does not match any Contact Mailing State. |
 
 > [!NOTE]
-> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Value To Test (List Checks) to test a different Account field against the Contact list.
+> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Value To Test (list checks only) to test a different Account field against the Contact list.
 
 ## How it works
 
-When the applicability count query returns greater than zero, the engine resolves Value To Test from the Account, loads Mailing State from Compare-To Query, and passes if List includes any of finds a match.
+When the applicability count query returns greater than zero, the engine resolves Value To Test from the Account, loads Mailing State from Second Query, and passes if List includes any of finds a match.
 
 ```sql
--- Compare-To Query
+-- Second Query
 SELECT MailingState FROM Contact
 WHERE AccountId = {!Id} AND MailingState != null
 
--- Applicability (Run When Count Query Matches)
+-- Applicability (Applies When Count Query Matches)
 SELECT COUNT() FROM Contact
 WHERE AccountId = {!Id} AND MailingState != null
 ```
 
 ```text
--- Value To Test (List Checks): resolved from the Account
+-- Value To Test (list checks only): resolved from the Account
 BillingState
 ```
 
 **What this demonstrates**
 
-- **Value To Test (List Checks)**: parent scalar without a Data Query.
+- **Value To Test (list checks only)**: parent scalar without a Primary Query (SOQL).
 - **List includes any of**: membership test, not full equality.
 
 ## Get this example

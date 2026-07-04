@@ -69,7 +69,7 @@ private class AccountHasRecentActivityCheckTest {
       ActivityDate = Date.today()
     );
 
-    // Out-of-range and unparseable values both fall back to the 30-day default,
+    // Out-of-range and unparseable values both fall back to the 30-day default
     // which still includes today's task.
     System.assertEquals(
       'PASS',

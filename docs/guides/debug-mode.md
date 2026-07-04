@@ -1,29 +1,37 @@
-# Debug Mode: Troubleshooting Guide
+# Show Troubleshooting Details: Troubleshooting Guide
 
-Debug Mode shows extra technical detail on the health check card and in the browser console. It is for troubleshooting only: leave it **off** on production Check Sets when not actively investigating a problem.
+Show Troubleshooting Details shows extra technical detail on the health check card and in the browser console. It is for troubleshooting only: leave it **off** on production Check Sets when not actively investigating a problem.
 
-Debug Mode does **not** save history and does **not** write any records: it only adds on-screen and console detail for the current run.
+Show Troubleshooting Details does **not** save history and does **not** write any records: it only adds on-screen and console detail for the current run.
 
 > [!WARNING]
-> Turning on **Debug Mode** on the Check Set alone does **nothing** visible. Both the Check Set flag **and** the `Record_Health_Check_Debug` permission are required.
+> Turning on **Show Troubleshooting Details** on the Check Set alone does **nothing** visible. Both the Check Set flag **and** the `Record_Health_Check_Debug` permission are required.
 
 ## Both steps are required
 
 | Step | What to do | Where in Setup |
 | ---- | ---------- | -------------- |
-| **1. Check Set** | Check **Debug Mode** | **Custom Metadata Types** → **Record Health Check Set** → open your Check Set → **Debug Mode** (`DebugMode__c`) |
+| **1. Check Set** | Check **Show Troubleshooting Details** | **Custom Metadata Types** → **Record Health Check Set** → open your Check Set → **Show Troubleshooting Details** (`DebugMode__c`) |
 | **2. User** | Assign permission set `Record_Health_Check_Admin` | **Permission Sets** → open `Record_Health_Check_Admin` → **Manage Assignments** → add the troubleshooting user |
 
 Step 2 grants the **`Record_Health_Check_Debug`** custom permission. That permission is what unlocks debug output on the card.
 
 ### Permission sets: which one unlocks debug detail?
 
-| API name | Setup label | Debug Mode detail? |
-| -------- | ----------- | ------------------ |
-| `Record_Health_Check_User` | Record Health Check User | **No**: can run the card, but sees only normal pass/fail messages |
-| `Record_Health_Check_Admin` | Record Health Check Admin | **Yes**: includes `Record_Health_Check_Debug` |
+| API name | Setup label | Show Troubleshooting Details detail? | Comparison provenance (`*Detail`)? |
+| -------- | ----------- | ------------------------------------ | -------------------------------- |
+| `Record_Health_Check_User` | Record Health Check User | **No**: can run the card, but sees only normal pass/fail messages | **No** |
+| `Record_Health_Check_Admin` | Record Health Check Admin | **Yes**: includes `Record_Health_Check_Debug` | **Yes**: includes `Record_Health_Check_View_Details` |
 
-If you checked Debug Mode on the Check Set but still see a normal card, the most common cause is missing **`Record_Health_Check_Admin`** on the viewing user.
+If you checked Show Troubleshooting Details on the Check Set but still see a normal card, the most common cause is missing **`Record_Health_Check_Admin`** on the viewing user.
+
+### Three custom permissions (Admin set only)
+
+| Custom permission | What it unlocks |
+| ----------------- | --------------- |
+| `Record_Health_Check_Debug` | Gray debug lines, **Debug detail** blocks, console footnote, `[RHC]` console summary. Requires **Show Troubleshooting Details** on the Check Set **and** this permission. |
+| `Record_Health_Check_View_Details` | Comparison **provenance** notes (`actualValueDetail` / `expectedValueDetail`) behind the row caret. Does **not** require Show Troubleshooting Details. |
+| `Record_Health_Check_Configure` | Reserved for future admin tooling (Rule Tester). Shipped in the Admin set; no runtime feature gates on it yet. |
 
 After changing the Check Set or permission set assignment, **refresh the record page**.
 
@@ -33,12 +41,13 @@ After you **run** the checks (automatic or manual), and only when both steps abo
 
 | What | Description |
 | ---- | ----------- |
-| **Gray line under each result** | Compact summary, for example `FAIL · FORMULA_FALSE · 38ms · Formula`: status, reason code, time taken, Check Method (API value) |
+| **Gray line under each result** | Compact summary, for example `FAIL · FORMULA_FALSE · 38ms · Formula`: status, reason code, time taken, Check Type (API value) |
 | **Debug detail** | On checks that errored or could not run, a **Debug detail** block showing the technical message inline (SOQL problems, missing field access, and similar) — no need to click to expand it |
-| **Found / Expected** | On failing checks, labelled chips when the engine captured values (visible to all users on failures: not unique to debug mode) |
+| **Found / Expected** | On failing checks, labelled chips when the engine captured values (visible per **Comparison Display** on the Check Set: not unique to debug mode). |
+| **Comparison provenance** | When the viewer has `Record_Health_Check_View_Details`, expanding a row's comparison caret may show provenance lines (source → raw value). Independent of Show Troubleshooting Details. |
 | **Console hint** | Small footnote at the bottom of the card: **Check console (F12) for diagnostics.** |
 
-Users **without** `Record_Health_Check_Debug` never see the gray lines, Debug detail panels, or the console hint: even when Debug Mode is checked on the Check Set. This is intentional so technical detail is not exposed to everyday users.
+Users **without** `Record_Health_Check_Debug` never see the gray lines, Debug detail panels, or the console hint: even when Show Troubleshooting Details is checked on the Check Set. This is intentional so technical detail is not exposed to everyday users.
 
 ## What you see in the browser console
 
@@ -56,11 +65,11 @@ Use the **run id** to match lines in **Setup → Debug Logs** when Apex logging 
 
 ## Checklist
 
-- [ ] **Debug Mode** checked on the **same** Check Set the component uses (App Builder **Check Set Developer Name** must match).
+- [ ] **Show Troubleshooting Details** checked on the **same** Check Set the component uses (App Builder **Check Set Developer Name** must match).
 - [ ] **`Record_Health_Check_Admin`** assigned to the user viewing the page.
 - [ ] Record page **refreshed** after metadata or permission changes.
 - [ ] Checks **run** to completion (debug detail appears after the run, not on first load while rows are still pending).
-- [ ] **Debug Mode turned off** on production Check Sets when troubleshooting is finished.
+- [ ] **Show Troubleshooting Details turned off** on production Check Sets when troubleshooting is finished.
 
 ## Related documentation
 

@@ -4,7 +4,7 @@
  */
 
 public with sharing class RecordHealthCheckConfigService {
-  // ─── Reason codes (Section 4.3) ──────────────────────────────────────────
+  // ─── Reason codes ──────────────────────────────────────────
 
   public static final String RC_CONFIG_NOT_FOUND = 'CONFIG_NOT_FOUND';
   public static final String RC_CONFIG_INACTIVE = 'CONFIG_INACTIVE';
@@ -17,13 +17,13 @@ public with sharing class RecordHealthCheckConfigService {
   // Valid-value sets and caps are owned by RecordHealthCheckConstants so this
   // runtime validator and RecordHealthCheckMetadataValidator (deploy-time) can
   // never drift. Local aliases keep the call sites below readable.
-  //
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps only the baseline checks below (inline) plus a first-fail adapter
   // (toResult). The comparator/source/null-empty value sets live with those producers.
   private static final Set<String> VALID_DISPLAY_MODES = RecordHealthCheckConstants.VALID_DISPLAY_MODES;
   private static final Set<String> VALID_TRIGGER_MODES = RecordHealthCheckConstants.VALID_TRIGGER_MODES;
   private static final Set<String> VALID_REVEAL_MODES = RecordHealthCheckConstants.VALID_REVEAL_MODES;
+  private static final Set<String> VALID_COMPARISON_DISPLAYS = RecordHealthCheckConstants.VALID_COMPARISON_DISPLAYS;
   private static final Set<String> VALID_APPLICABILITY_MODES = RecordHealthCheckConstants.VALID_APPLICABILITY_MODES;
   private static final Set<String> VALID_CHECK_TYPES = RecordHealthCheckConstants.VALID_CHECK_TYPES;
   private static final Set<String> VALID_SEVERITIES = RecordHealthCheckConstants.VALID_SEVERITIES;
@@ -45,7 +45,7 @@ public with sharing class RecordHealthCheckConfigService {
 
   /**
    * Loads and validates a Check Set and its active rules.
-   * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND,
+   * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND
    * CONFIG_INACTIVE, OBJECT_MISMATCH, NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS).
    * Returns a fully populated RecordHealthCheckDefinitionResponse on success.
    */
@@ -71,6 +71,7 @@ public with sharing class RecordHealthCheckConfigService {
     }
 
     // Load Check Set
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
     List<Record_Health_Check_Set__mdt> checkSets = [
       SELECT
         DeveloperName,
@@ -83,6 +84,7 @@ public with sharing class RecordHealthCheckConfigService {
         PassedChecksDisplay__c,
         SkippedChecksDisplay__c,
         RowAppearance__c,
+        ComparisonDisplay__c,
         StopOnSystemError__c,
         DebugMode__c
       FROM Record_Health_Check_Set__mdt
@@ -102,6 +104,7 @@ public with sharing class RecordHealthCheckConfigService {
 
     // Load active rules — only the fields needed to build RecordHealthCheckDefinition.
     // Full evaluation fields are fetched per-rule at evaluation time via loadRule().
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
     List<Record_Health_Check_Rule__mdt> allRules = [
       SELECT
         DeveloperName,
@@ -132,6 +135,7 @@ public with sharing class RecordHealthCheckConfigService {
     response.revealMode = checkSet.RowAppearance__c;
     response.successDisplayMode = checkSet.PassedChecksDisplay__c;
     response.skippedDisplayMode = checkSet.SkippedChecksDisplay__c;
+    response.comparisonDisplay = checkSet.ComparisonDisplay__c;
     response.stopOnFirstError = checkSet.StopOnSystemError__c;
     response.debugMode =
       checkSet.DebugMode__c == true &&
@@ -191,7 +195,7 @@ public with sharing class RecordHealthCheckConfigService {
     if (String.isBlank(checkSet.ObjectApiName__c)) {
       // A blank Base Object is a misconfiguration of an existing Check Set, not a
       // missing Check Set — classify it as INVALID_CONFIG for consistency with the
-      // non-existent-object branch below (L-RC-01).
+      // Blank object name is INVALID_CONFIG, not CONFIG_NOT_FOUND.
       throw new ConfigException(
         'Check Set "' + configName + '" has a blank BaseObjectApiName.',
         RC_INVALID_CONFIG
@@ -254,6 +258,14 @@ public with sharing class RecordHealthCheckConfigService {
         RC_INVALID_CONFIG
       );
     }
+    if (!VALID_COMPARISON_DISPLAYS.contains(checkSet.ComparisonDisplay__c)) {
+      throw new ConfigException(
+        'ComparisonDisplay "' +
+          checkSet.ComparisonDisplay__c +
+          '" is not recognized. Valid values: OnDemand, FailuresOnly, AllRows.',
+        RC_INVALID_CONFIG
+      );
+    }
   }
 
   @TestVisible
@@ -283,7 +295,7 @@ public with sharing class RecordHealthCheckConfigService {
 
   /**
    * Validates a single rule's metadata configuration for runtime evaluation.
-   * Returns a UNABLE_TO_EVALUATE RecordHealthCheckResult if the rule is invalid,
+   * Returns a UNABLE_TO_EVALUATE RecordHealthCheckResult if the rule is invalid
    * or null if the rule is valid and may proceed to the evaluator.
    */
   public RecordHealthCheckResult validateRuleForEvaluation(
@@ -369,6 +381,7 @@ public with sharing class RecordHealthCheckConfigService {
     String checkDeveloperName,
     String configName
   ) {
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before rule evaluation.
     List<Record_Health_Check_Rule__mdt> rules = [
       SELECT
         DeveloperName,
@@ -421,7 +434,6 @@ public with sharing class RecordHealthCheckConfigService {
   }
 
   // ─── Per-type validation — first-fail adapter over RecordHealthCheckRuleValidator ───
-  //
   // The per-type decision tree lives in RecordHealthCheckRuleValidator; these wrappers take
   // the FIRST finding (first-fail order) and map it via toResult. MaxRows and null/empty-behavior
   // are appended only for Query / CompareTwoQueries.

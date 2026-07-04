@@ -4,13 +4,13 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Single query |
+| **Evaluator** | Check records with a query |
 | **Sample** | [`Industry_Is_Unique_Across_Accounts`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Industry_Is_Unique_Across_Accounts.md-meta.xml) |
 | **Check Set** | `Account_Examples_Query` · [`package-Account_Examples_Query.xml`](../../../manifest/package-Account_Examples_Query.xml) |
 
 ## What it checks
 
-The Account's Industry must not appear in the Industry values of any other Account in the org. Value To Test resolves Industry from the record under test; Compare-To Query loads peer Industries excluding the current Account.
+The Account's Industry must not appear in the Industry values of any other Account in the org. Value To Test resolves Industry from the record under test; Second Query loads peer Industries excluding the current Account.
 
 ## When to use this
 
@@ -22,10 +22,10 @@ Scalar tested for absence across a query-built list spanning other records.
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | | Cannot query peer Account Industries. |
-| Single query | Value To Test + List excludes all of | **This example.** |
+| Check fields on this record | | Cannot query peer Account Industries. |
+| Check records with a query | Value To Test + List excludes all of | **This example.** |
 | Duplicate rules | Duplicate rule on Industry | Save-time only; does not surface the overlap at read time across the peer set. |
-| Custom Apex | Apex uniqueness scan | Same outcome when list operator suffices. |
+| Use custom Apex | Apex uniqueness scan | Same outcome when list operator suffices. |
 
 **When the simpler option is enough**
 
@@ -34,7 +34,7 @@ Scalar tested for absence across a query-built list spanning other records.
 | Scalar must appear in child list | [List contains any](15-list-contains-any.md) |
 | Two query lists compared | [Lists overlap](../compare-two-queries/04-lists-overlap.md) |
 
-**Verdict:** Single query with List excludes all of is the right evaluator when a record field must be absent from a Compare-To Query list. Use List includes any of for the positive membership case.
+**Verdict:** Check records with a query with List excludes all of is the right evaluator when a record field must be absent from a Second Query list. Use List includes any of for the positive membership case.
 
 ## Configuration
 
@@ -42,13 +42,13 @@ Scalar tested for absence across a query-built list spanning other records.
 | ----------- | ----- |
 | Check Name | Industry Is Unique Across Accounts |
 | Developer Name | Industry_Is_Unique_Across_Accounts |
-| Check Method | Single query |
-| Value To Test (List Checks) | Industry |
-| Compare-To Query | `SELECT Industry FROM Account WHERE Id != {!Id} AND Industry != null` |
-| Compare-To Field | Industry |
-| If Query Returns Multiple Rows | Compare as two lists |
+| Check Type | Check records with a query |
+| Value To Test (list checks only) | Industry |
+| Second Query | `SELECT Industry FROM Account WHERE Id != {!Id} AND Industry != null` |
+| Second Query Field/Alias | Industry |
+| If Query Returns Multiple Rows | Compare both results as lists |
 | Operator | List excludes all of |
-| Run This Check When | Always |
+| Applies To | All records |
 | Severity | Info |
 | Message When Failed | This Industry is shared with one or more other accounts. |
 
@@ -57,16 +57,16 @@ Scalar tested for absence across a query-built list spanning other records.
 
 ## How it works
 
-The engine resolves Value To Test from the Account, loads Industries from Compare-To Query, and passes only when List excludes all of finds no match.
+The engine resolves Value To Test from the Account, loads Industries from Second Query, and passes only when List excludes all of finds no match.
 
 ```sql
--- Compare-To Query
+-- Second Query
 SELECT Industry FROM Account
 WHERE Id != {!Id} AND Industry != null
 ```
 
 ```text
--- Value To Test (List Checks): resolved from the Account
+-- Value To Test (list checks only): resolved from the Account
 Industry
 ```
 

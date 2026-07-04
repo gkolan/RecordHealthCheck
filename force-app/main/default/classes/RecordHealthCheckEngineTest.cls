@@ -224,9 +224,84 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals('CONFIG_NOT_FOUND', result.reasonCode);
   }
 
+  @isTest
+  static void applicabilityBranchesReturnSkipUnableOrProceed() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
+    Record_Health_Check_Rule__mdt rule = applicabilityRule();
+
+    rule.RunThisCheckWhen__c = null;
+    System.assertEquals(
+      null,
+      engine.checkApplicability(rule, accountRecord.Id, accountRecord),
+      'Blank applicability mode should proceed like Always.'
+    );
+
+    rule.RunThisCheckWhen__c = 'Formula';
+    rule.RunWhenFormula__c = 'FALSE';
+    RecordHealthCheckResult skipped = engine.checkApplicability(
+      rule,
+      accountRecord.Id,
+      accountRecord
+    );
+    System.assertEquals('SKIPPED', skipped.status);
+    System.assertEquals('APPLICABILITY_NOT_MET', skipped.reasonCode);
+
+    rule.RunWhenFormula__c = 'NOT_A_REAL_FIELD__c > 0';
+    RecordHealthCheckResult invalidFormula = engine.checkApplicability(
+      rule,
+      accountRecord.Id,
+      accountRecord
+    );
+    System.assertEquals('UNABLE_TO_EVALUATE', invalidFormula.status);
+
+    rule.RunThisCheckWhen__c = 'Unsupported';
+    RecordHealthCheckResult invalidMode = engine.checkApplicability(
+      rule,
+      accountRecord.Id,
+      accountRecord
+    );
+    System.assertEquals('UNABLE_TO_EVALUATE', invalidMode.status);
+    System.assertEquals('INVALID_CONFIG', invalidMode.reasonCode);
+  }
+
+  @isTest
+  static void soqlApplicabilityDefensiveBranchesReturnUnable() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
+    Record_Health_Check_Rule__mdt rule = applicabilityRule();
+    rule.RunThisCheckWhen__c = 'SOQL';
+
+    rule.RunWhenCountQuery__c = null;
+    System.assertEquals(
+      'INVALID_SOQL_TEMPLATE',
+      engine.checkSoqlApplicability(rule, accountRecord).reasonCode
+    );
+
+    rule.RunWhenCountQuery__c = 'SELECT Id FROM Account';
+    System.assertEquals(
+      'INVALID_SOQL_TEMPLATE',
+      engine.checkSoqlApplicability(rule, accountRecord).reasonCode
+    );
+
+    rule.RunWhenCountQuery__c = 'SELECT COUNT(Id) FROM Contact';
+    rule.CountThreshold__c = null;
+    System.assertEquals(
+      'INVALID_CONFIG',
+      engine.checkSoqlApplicability(rule, accountRecord).reasonCode
+    );
+
+    rule.CountThreshold__c = 0;
+    rule.CountOperator__c = 'Nope';
+    System.assertEquals(
+      'INVALID_COMPARATOR',
+      engine.checkSoqlApplicability(rule, accountRecord).reasonCode
+    );
+  }
+
   /**
-   * T-03: second top-level evaluate() in the same transaction must not return
-   * a memoized result from the first call (P1-01 cache clear).
+   * Second top-level evaluate() in the same transaction must not return a
+   * memoized result from the first call.
    */
   @isTest
   static void secondTopLevelEvaluateReEvaluatesAfterRecordChange() {
@@ -309,6 +384,23 @@ private class RecordHealthCheckEngineTest {
         accountRecord.Id,
         String.valueOf(accountRecord.Id)
       )
+    );
+  }
+
+  private static Record_Health_Check_Rule__mdt applicabilityRule() {
+    return new Record_Health_Check_Rule__mdt(
+      DeveloperName = 'Test_Applicability_Branches',
+      MasterLabel = 'Test Applicability Branches',
+      CheckName__c = 'Applicability Branches',
+      CheckMethod__c = 'Formula',
+      Severity__c = 'Warning',
+      PassFailFormula__c = 'TRUE',
+      MessageWhenFailed__c = 'Failed.',
+      MessageWhenCannotRun__c = 'Cannot run.',
+      RunOrder__c = 10,
+      RunThisCheckWhen__c = 'Always',
+      CountOperator__c = 'GreaterThan',
+      CountThreshold__c = 0
     );
   }
 }

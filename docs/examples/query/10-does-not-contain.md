@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Single query |
+| **Evaluator** | Check records with a query |
 | **Sample** | [`Website_Does_Not_Use_Plain_HTTP`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Website_Does_Not_Use_Plain_HTTP.md-meta.xml) |
 | **Check Set** | `Account_Examples_Query` · [`package-Account_Examples_Query.xml`](../../../manifest/package-Account_Examples_Query.xml) |
 
@@ -22,10 +22,10 @@ Forbidden-substring rule on a field loaded via query, with applicability when We
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `NOT(CONTAINS(Website, "http://"))` | On-record alternative; query shown for SOQL-based pattern. |
-| Single query | One result + Does not contain text | **This example.** |
+| Check fields on this record | `NOT(CONTAINS(Website, "http://"))` | On-record alternative; query shown for SOQL-based pattern. |
+| Check records with a query | One result + Does not contain text | **This example.** |
 | Compare two queries | | Not a dual-query comparison. |
-| Custom Apex | Apex string guard | Same outcome for simple substring exclusion. |
+| Use custom Apex | Apex string guard | Same outcome for simple substring exclusion. |
 
 **When the simpler option is enough**
 
@@ -34,7 +34,7 @@ Forbidden-substring rule on a field loaded via query, with applicability when We
 | Require presence of substring | [Contains substring](09-contains-substring.md) |
 | Picklist not equal to value | [Not equals rating](14-not-equals-rating.md) |
 
-**Verdict:** Single query with Does not contain text is the right evaluator to flag forbidden substrings via Data Query. Pair with example 09 for full HTTP/HTTPS coverage.
+**Verdict:** Check records with a query with Does not contain text is the right evaluator to flag forbidden substrings via Primary Query (SOQL). Pair with example 09 for full HTTP/HTTPS coverage.
 
 ## Configuration
 
@@ -42,31 +42,31 @@ Forbidden-substring rule on a field loaded via query, with applicability when We
 | ----------- | ----- |
 | Check Name | Website Does Not Use Plain HTTP |
 | Developer Name | Website_Does_Not_Use_Plain_HTTP |
-| Check Method | Single query |
-| Data Query | `SELECT Website FROM Account WHERE Id = {!Id} LIMIT 1` |
-| Field To Read | Website |
-| If Query Returns Multiple Rows | One result (or aggregate) |
+| Check Type | Check records with a query |
+| Primary Query (SOQL) | `SELECT Website FROM Account WHERE Id = {!Id} LIMIT 1` |
+| Primary Query Field/Alias | Website |
+| If Query Returns Multiple Rows | The query returns one result |
 | Operator | Does not contain text |
-| Compare Against | A fixed value |
-| Fixed Value | http:// |
-| Run This Check When | Only when a formula is true |
-| Run When Formula Is True | `NOT(ISBLANK(Website))` |
+| Compare To Source | A fixed value |
+| Expected Value or Threshold | http:// |
+| Applies To | Only records where a formula is true |
+| Applies When Formula Is True | `NOT(ISBLANK(Website))` |
 | Severity | Warning |
 | Message When Failed | Website uses an insecure HTTP prefix. |
 
 > [!NOTE]
-> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Fixed Value to change the forbidden substring.
+> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Expected Value or Threshold to change the forbidden substring.
 
 ## How it works
 
-When Run When Formula Is True passes, the engine reads Website and fails if Does not contain text is violated.
+When Applies When Formula Is True passes, the engine reads Website and fails if Does not contain text is violated.
 
 ```sql
 SELECT Website FROM Account WHERE Id = {!Id} LIMIT 1
 ```
 
 ```text
--- Applicability (Run When Formula Is True)
+-- Applicability (Applies When Formula Is True)
 NOT(ISBLANK(Website))
 ```
 

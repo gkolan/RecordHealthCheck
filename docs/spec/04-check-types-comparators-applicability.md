@@ -1,11 +1,11 @@
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 
-## 6. Check Methods
+## 6. Check Types
 
-Setup field: **Check Method** (`CheckMethod__c`). Subsections below use API values; Setup picklist labels are in parentheses.
+Setup field: **Check Type** (`CheckMethod__c`). Subsections below use API values; Setup picklist labels are in parentheses.
 
-### Record formula (`Formula`)
+### Check fields on this record (`Formula`)
 
 Evaluates `PassFailFormula__c` against the loaded record. Formula must return Boolean.
 
@@ -19,7 +19,7 @@ Evaluates `PassFailFormula__c` against the loaded record. Formula must return Bo
 
 Uses Salesforce FormulaEval API (`Formula.builder()`). Requires API v63.0+ (Spring '25). Salesforce platform limit: **100 FormulaEval calls per Apex transaction**. The framework tracks calls for the whole transaction and throws `FORMULA_EVAL_LIMIT` when the count reaches **95** (a 5-call safety margin). A single Rule can consume multiple FormulaEval calls (formula body, applicability, merge-field resolution). Flow or batch jobs that evaluate many checks in one transaction share one budget.
 
-### Single query (`Query`)
+### Check records with a query (`Query`)
 
 Runs `DataQuery__c` and compares the extracted result to a static value, formula value, query value, unary blank check, or list.
 
@@ -43,9 +43,9 @@ Runs `DataQuery__c` and `CompareToQuery__c`.
 | `OneResult` | Scalar comparators (`Equals`, `GreaterThan`, `Contains`, and so on). |
 | `CompareAsLists` | `ListsOverlap`, `ListContainsAll`, `ExactListMatch`. |
 
-### Custom Apex (`Apex`)
+### Use custom Apex (`Apex`)
 
-Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, passes `RecordHealthCheckContext`. Custom Apex may return `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. Any other status string is rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and failure message. Plugins may also set `actualValue` and `expectedValue` on the returned result; the engine passes them through unchanged.
+Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, passes `RecordHealthCheckContext`. Use custom Apex may return `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. Any other status string is rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and failure message. Plugins may also set `actualValue` and `expectedValue` on the returned result; the engine passes them through unchanged.
 
 **Plugin contract:** Implementations must use `with sharing`, enforce CRUD/FLS on
 their own queries, avoid unbounded DML/callouts, and return only a documented
@@ -92,6 +92,6 @@ Ordered comparisons try `Decimal`, then `DateTime`, then `Date`. Incompatible ty
 
 | Mode | Contract |
 | ---- | -------- |
-| `Always` | Rule proceeds to evaluation. |
+| `All records` | Rule proceeds to evaluation. |
 | `Formula` | `RunWhenFormula__c` must return Boolean `true` to proceed. |
 | `SOQL` | `RunWhenCountQuery__c` returns a COUNT; `CountOperator__c` compares it to `CountThreshold__c`. |

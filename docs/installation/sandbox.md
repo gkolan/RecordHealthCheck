@@ -74,7 +74,7 @@ the card.
 4. Click **Manage Assignments** → **Add Assignment**.
 5. Check the box next to **your own name**, then click **Assign** → **Done**.
 
-> Two permission sets were installed. **`Record_Health_Check_User`** is enough to run the card. **`Record_Health_Check_Admin`** adds troubleshooting (`Record_Health_Check_Debug`). See [Getting Started: Step 1b](getting-started.md#step-1b-assign-permission-sets).
+> Two permission sets were installed. **`Record_Health_Check_User`** is enough to run the card. **`Record_Health_Check_Admin`** adds troubleshooting (`Record_Health_Check_Debug`), comparison provenance (`Record_Health_Check_View_Details`), and a reserved configure permission. See [Getting Started: Step 1b](getting-started.md#step-1b-assign-permission-sets).
 
 ## Step 5: Add the card to a page and see it work
 

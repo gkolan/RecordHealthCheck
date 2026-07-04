@@ -24,7 +24,9 @@
 | Stop on first error | Only `ERROR` stops the run; `FAIL` and `UNABLE_TO_EVALUATE` do not. Enables sequential execution. | Document intent; use dependencies if sequencing matters. |
 | Validator gaps | Metadata Validator does not reject blank `PanelHeading__c` at **runtime** (only at deploy-time). Apex class validation uses `Type.forName` at deploy/validate time. | Run `validateAsJson()` in CI plus manual review; test on representative records. |
 | Static comparison values | `FixedValue__c` is untyped text. | Use simple literals; normalize in SOQL or Apex for locale-specific formats. |
-| Blank `PanelHeading__c` at runtime | Required in CMT field metadata and caught by the validator, but **not** rejected by `getDefinitionResponse` if blank. | Always set Display Title before activation. |
+| Blank `PanelHeading__c` at runtime | Required in CMT field metadata and caught by the validator, but **not** rejected by `getDefinitionResponse` if blank. | Always set Panel Title before activation. |
 | Record save | No automatic re-run after inline edit. | User clicks **Rerun** or refreshes the page. |
 | Component placement | Record-page only (`lightning__RecordPage`). | Use `RecordHealthCheck.run` or Flow for non-record-page automation. |
 | `checksOmittedByLimit` not logged | UI shows the badge but the framework does not emit a WARN log when Rules are truncated. | Review Check Set active Rule count during configuration. |
+| Category / remediation UI | `Category__c`, `FixInstructions__c`, and primary-action fields are editable in Setup but not rendered on the card yet. | Author for future UI; do not expect grouping or fix links on the record page today. |
+| `Record_Health_Check_Configure` | Custom permission is assigned via Admin set but no feature gates on it yet (reserved for Rule Tester). | Assign Admin for validator/debug/view-details access; Configure permission is forward-compatible only. |

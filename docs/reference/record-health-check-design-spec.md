@@ -125,11 +125,11 @@ Dependency contract:
 
 Applicability is evaluated before the Rule evaluator. If false, the Rule returns `SKIPPED` with `APPLICABILITY_NOT_MET`. If it cannot be evaluated safely, the Rule returns `UNABLE_TO_EVALUATE`.
 
-## 6. Check Methods
+## 6. Check Types
 
-Setup field: **Check Method** (`CheckMethod__c`). Subsections below use API values; Setup picklist labels are in parentheses.
+Setup field: **Check Type** (`CheckMethod__c`). Subsections below use API values; Setup picklist labels are in parentheses.
 
-### Record formula (`Formula`)
+### Check fields on this record (`Formula`)
 
 Evaluates `PassFailFormula__c` against the loaded record. Formula must return Boolean.
 
@@ -147,7 +147,7 @@ Operands in `PassFailFormula__c` may be **calculated fields** (formula, roll-up)
 
 Uses Salesforce FormulaEval API (`Formula.builder()`). Requires API v63.0+ (Spring '25). Salesforce platform limit: **100 FormulaEval calls per Apex transaction**. The framework tracks calls for the whole transaction and throws `FORMULA_EVAL_LIMIT` when the count reaches **95** (a 5-call safety margin). A single Rule can consume multiple FormulaEval calls (formula body, applicability, merge-field resolution). Flow or batch jobs that evaluate many checks in one transaction share one budget.
 
-### Single query (`Query`)
+### Check records with a query (`Query`)
 
 Runs `DataQuery__c` and compares the extracted result to a static value, formula value, query value, unary blank check, or list.
 
@@ -171,9 +171,9 @@ Runs `DataQuery__c` and `CompareToQuery__c`.
 | `OneResult` | Scalar comparators (`Equals`, `GreaterThan`, `Contains`, and so on). |
 | `CompareAsLists` | `ListsOverlap`, `ListContainsAll`, `ExactListMatch`. |
 
-### Custom Apex (`Apex`)
+### Use custom Apex (`Apex`)
 
-Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, passes `RecordHealthCheckContext`. Custom Apex may return `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. Any other status string is rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and failure message. Plugins may also set `actualValue` and `expectedValue` on the returned result; the engine passes them through unchanged.
+Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, passes `RecordHealthCheckContext`. Use custom Apex may return `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. Any other status string is rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and failure message. Plugins may also set `actualValue` and `expectedValue` on the returned result; the engine passes them through unchanged.
 
 **Plugin contract:** Implementations must use `with sharing`, enforce CRUD/FLS on
 their own queries, avoid unbounded DML/callouts, and return only a documented
@@ -214,13 +214,13 @@ Ordered comparisons try `Decimal`, then `DateTime`, then `Date`. Incompatible ty
 
 **Case sensitivity:** `Contains` and `DoesNotContain` are case-sensitive. `Equals` / `NotEquals` use typed comparison when possible; otherwise they compare string forms case-sensitively. List membership and list-mode overlap comparators (`ListContainsAny`, `ListDoesNotContainAny`, `ListsOverlap`, `ListContainsAll`, `ExactListMatch`) compare case-insensitively.
 
-**Display formatting:** On a determinate `PASS` or `FAIL`, Query and CompareTwoQueries evaluators populate `actualValue` and `expectedValue` on the result using `RecordHealthCheckComparatorEngine` helpers (`humanComparator`, `formatValue`, `formatList`, `describeExpected`). `formatValue` wraps **every** non-blank scalar in double quotes (text, number, Boolean, date/time) so mixed-type comparisons read uniformly: e.g. `"1"` beside `at least "2"` instead of bare `1` beside `"2"`. `humanComparator` returns verb phrases for the expected side: e.g. `to equal "Technology"`, `at least "50000"`, `to be one of ["North", "South"]`. Null/blank values render as `(blank)`; empty lists as `(none)`. List previews cap at 10 values with a `(N total)` suffix when truncated. `IsBlank` / `IsNotBlank` show the comparator phrase only (no operand). Formula evaluators route `PassFailFormula__c` through `formatValue` for `expectedValue` (e.g. `"NOT(ISBLANK(BillingCity))"`). The LWC renders these on **non-passing** rows only as labelled **Found** / **Expected** chips (see [15](#15-lwc-behavior)).
+**Display formatting:** On a determinate `PASS` or `FAIL`, Query and CompareTwoQueries evaluators populate `actualValue` and `expectedValue` on the result using `RecordHealthCheckComparatorEngine` helpers (`humanComparator`, `formatValue`, `formatList`, `describeExpected`). `formatValue` wraps **every** non-blank scalar in double quotes (text, number, Boolean, date/time) so mixed-type comparisons read uniformly: e.g. `"1"` beside `at least "2"` instead of bare `1` beside `"2"`. `humanComparator` returns verb phrases for the expected side: e.g. `to equal "Technology"`, `at least "50000"`, `to be one of ["North", "South"]`. Null/blank values render as `(blank)`; empty lists as `(none)`. List previews cap at 10 values with a `(N total)` suffix when truncated. `IsBlank` / `IsNotBlank` show the comparator phrase only (no operand). Formula evaluators route `PassFailFormula__c` through `formatValue` for `expectedValue` (e.g. `"NOT(ISBLANK(BillingCity))"`). The LWC renders these as labelled **Found** / **Expected** chips per **`ComparisonDisplay__c`** (see [9](#comparison-display-contract) and [15](#15-lwc-behavior)).
 
 ## 8. Applicability
 
 | Mode | Contract |
 | ---- | -------- |
-| `Always` | Rule proceeds to evaluation. |
+| `All records` | Rule proceeds to evaluation. |
 | `Formula` | `RunWhenFormula__c` must return Boolean `true` to proceed. |
 | `SOQL` | `RunWhenCountQuery__c` returns a COUNT; `CountOperator__c` compares it to `CountThreshold__c`. |
 
@@ -238,21 +238,38 @@ Ordered comparisons try `Decimal`, then `DateTime`, then `Date`. Incompatible ty
 | `message` | Safe user-facing message (from `MessageWhenFailed__c` on `FAIL`, or unable/skip text otherwise). |
 | `actualValue` | What the record or query produced: the **Found** side in the UI. Populated on a determinate `PASS` or `FAIL` when the evaluator can name a primary value (Query, CompareTwoQueries, Apex when set). Left null for Formula checks unless `FoundValueFormula__c` is configured (then it carries that scalar). |
 | `expectedValue` | The comparator and operand as readable text: the **Expected** side in the UI. Populated on a determinate `PASS` or `FAIL` for Query and CompareTwoQueries; for Formula checks, set to the resolved `ExpectedValueFormula__c` scalar when configured, otherwise the quoted `PassFailFormula__c` condition text. Apex plugins may set either field. |
+| `actualValueDetail` | Human-readable provenance note for the **Found** side (for example `Rating → "Cold"`). Populated when the evaluator sets `actualProvenance` **and** the running user has **`Record_Health_Check_View_Details`**. Not tied to `DebugMode__c`. |
+| `expectedValueDetail` | Provenance note for the **Expected** side. Same gating as `actualValueDetail`. |
 | `detailMessage` | Diagnostic detail (server-side; not `@AuraEnabled`). |
 | `adminDetailMessage` | Populated only when `DebugMode__c` is on **and** the user has **`Record_Health_Check_Debug`** (permission set `Record_Health_Check_Admin`). |
 | `durationMs` | Evaluator execution time; excludes configuration, dependencies, base-record loading, applicability, and event delivery. |
+
+Evaluators populate internal `RecordHealthCheckProvenance.Detail` on `actualProvenance` / `expectedProvenance` (not `@AuraEnabled`). `RecordHealthCheckEngine.applyDetailProvenance` renders them into the two `*Detail` strings and gates on `RecordHealthCheckAccess.canViewDetails()`.
 
 ### Comparison display contract
 
 | Topic | Contract |
 | ----- | -------- |
-| Metadata | No CMT fields: values are computed at evaluation time from comparator, operand, and query results. |
-| UI visibility | The LWC shows **Found** / **Expected** only on resolved **non-passing** rows (`FAIL`) when at least one side is present. Passing rows do not show the block even when values were captured. |
-| UI layout | Each side renders as a **labelled chip**: an uppercase caption (`Found` / `Expected`) beside the value in a monospace chip. The two sides **stack vertically** (Found on its own line, then Expected) so layout does not reflow with value length. |
-| Screen readers | Both sides are folded into the row `aria-label` when shown (`Found …`, `Expected …`). |
+| Value metadata | No Rule CMT fields for Found/Expected text: values are computed at evaluation time from comparator, operand, and query results. |
+| Display policy metadata | Check Set **`ComparisonDisplay__c`**: `OnDemand` (default), `FailuresOnly`, or `AllRows`. Returned to the LWC as `comparisonDisplay` on the definition response. |
+| UI visibility (values) | Governed by `ComparisonDisplay__c` and row outcome. **Failures:** Found/Expected inline in every mode when captured. **Passes:** inline only when `AllRows`; otherwise behind the disclosure caret (`OnDemand`) or hidden (`FailuresOnly`). |
+| UI visibility (provenance) | Provenance lines appear only when the caret region is expanded **and** `actualValueDetail` / `expectedValueDetail` are non-null (permission-gated). Provenance is always behind the caret, never inline with the chips. |
+| UI layout | Each value side renders as a **labelled chip**: uppercase caption (`Found` / `Expected`) beside the value in a monospace chip. Values **stack vertically**. Provenance renders as de-emphasized lines beneath (`Found` / `Expected` keys + note text). |
+| Disclosure caret | Shown when values or provenance would be revealed on expand. Hidden on passing rows when mode is `FailuresOnly`. `aria-expanded` on the caret; label toggles **Show comparison detail** / **Hide comparison detail**. |
+| Screen readers | Values enter `aria-label` when visible (inline or expanded). Provenance enters `aria-label` only when expanded and entitled. |
 | Formula checks | By default no separable scalar "found" value: `expectedValue` carries the quoted formula text, `actualValue` stays null, only the Expected side renders. Optional display-only `FoundValueFormula__c` / `ExpectedValueFormula__c` scalars populate the two sides for balance/comparison checks; pass/fail stays decided solely by the Boolean `PassFailFormula__c`, and an unresolvable display formula falls back to the default. |
-| Skipped / unable / error | Neither field is shown: these outcomes have no determinate comparison. |
+| Skipped / unable / error | Neither value nor provenance is shown: these outcomes have no determinate comparison. |
 | Programmatic API | `RecordHealthCheck.run` returns the same fields on `RecordHealthCheckResult`. |
+
+### Comparison provenance
+
+| Topic | Contract |
+| ----- | -------- |
+| Purpose | One note per side explaining *where* a value came from and its raw form before display coercion — for example `NumberOfEmployees → null (blank treated as 0)` or `COUNT() of Contacts = 0 rows`. |
+| Internal shape | `RecordHealthCheckProvenance.Detail { sourceLabel, rawValueLabel, coercionLabel }` on `actualProvenance` / `expectedProvenance`. |
+| Render format | `RecordHealthCheckProvenance.render`: `source → raw` with optional `(coercion)` suffix. Returns null when empty so the public string stays null. |
+| Permission | **`Record_Health_Check_View_Details`** — lighter than `Record_Health_Check_Debug`. Included in `Record_Health_Check_Admin`. Independent of `DebugMode__c`. |
+| Evaluator duty | Query, CompareTwoQueries, Formula (display formulas), and Apex plugins populate provenance when they can name a source. Omission is valid when there is nothing useful to say. |
 
 | Status | Contract |
 | ------ | -------- |
@@ -269,6 +286,7 @@ Ordered comparisons try `Decimal`, then `DateTime`, then `Date`. Incompatible ty
 | `displayTitle`, `displayDescription` | Header presentation from Check Set. |
 | `triggerMode`, `revealMode` | Run and reveal behavior. |
 | `successDisplayMode`, `skippedDisplayMode` | Row visibility rules. |
+| `comparisonDisplay` | `OnDemand`, `FailuresOnly`, or `AllRows` from `ComparisonDisplay__c`. |
 | `stopOnFirstError`, `debugMode` | Run control and diagnostics. |
 | `totalAvailableCheckCount` | Active Rules before the 25-check cap. |
 | `checksOmittedByLimit` | True when Rules were truncated. |
@@ -284,7 +302,7 @@ Ordered comparisons try `Decimal`, then `DateTime`, then `Date`. Incompatible ty
 | `NO_RECORD_CONTEXT` | No record Id was provided. |
 | `NO_ACTIVE_CHECKS` | Check Set has no active Rules. |
 | `INVALID_CONFIG` | Check Set or Rule configuration is invalid. |
-| `INVALID_CHECK_TYPE` | Check Method is not recognized. |
+| `INVALID_CHECK_TYPE` | Check Type is not recognized. |
 | `INVALID_COMPARATOR` | Operator is missing, invalid, or invalid for the Rule shape. |
 | `INVALID_FORMULA` | Formula is missing, malformed, or returns the wrong type. |
 | `INVALID_SOQL_TEMPLATE` | SOQL is missing, malformed, or unsafe. |
@@ -298,7 +316,7 @@ Ordered comparisons try `Decimal`, then `DateTime`, then `Date`. Incompatible ty
 | `FORMULA_EVAL_LIMIT` | FormulaEval call budget exceeded in the transaction. |
 | `APEX_CLASS_NOT_FOUND` | Apex class is missing or does not implement the required interface. |
 | `INVALID_APEX_PARAMETERS` | Apex parameter JSON is invalid. |
-| `APEX_EVALUATOR_ERROR` | Custom Apex or framework code threw unexpectedly. |
+| `APEX_EVALUATOR_ERROR` | Use custom Apex or framework code threw unexpectedly. |
 | `APPLICABILITY_NOT_MET` | Applicability returned false or empty-result skip. |
 | `DEPENDENCY_NOT_PASSED` | Prerequisite Rule did not pass. |
 | `STOPPED_AFTER_ERROR` | Run stopped after a framework error. |
@@ -393,9 +411,9 @@ All framework log lines flow through `RecordHealthCheckLogger`: the engine, cont
 | `user` | `UserInfo.getUserId()`: authoritative, not client-supplied. |
 | Levels | `ERROR`, `WARN`, `INFO`, `DEBUG` (maps to `FINE` in `System.debug`). |
 
-### Client-side diagnostics (Debug Mode)
+### Client-side diagnostics (Show Troubleshooting Details)
 
-Requires **both** `DebugMode__c` on the Check Set **and** `Record_Health_Check_Debug` on the running user (included in permission set `Record_Health_Check_Admin`). See [Debug Mode guide](../guides/debug-mode.md).
+Requires **both** `DebugMode__c` on the Check Set **and** `Record_Health_Check_Debug` on the running user (included in permission set `Record_Health_Check_Admin`). See [Show Troubleshooting Details guide](../guides/debug-mode.md).
 
 When enabled, after a run completes the LWC:
 
@@ -440,7 +458,7 @@ lives in `healthCheckPresentation.js`.
 - Renders as a custom card (`rhc-card`) with a visible border and elevation: not `slds-card`: so it reads as a contained panel on white Lightning tabs.
 - **Rounded corners** match standard Lightning cards: `border-radius: var(--lwc-borderRadiusMedium, 0.25rem)`. The card uses **`overflow: visible`** so row and summary tooltips are **not clipped** at the card boundary (especially the last row's below-row bubble). Bottom corner rounding is applied to **`.rhc-body > :last-child`** so the outline still matches standard Lightning related lists and record panels without trapping popovers.
 - **No header icon**: the card does not render a header icon. There is no icon field on the Check Set; titles are text-only.
-- Header layout: **title** and **action button** share one row (vertically centered); **Display Description** spans the full width on the row beneath (eliminates a tall empty column beside a short button).
+- Header layout: **title** and **action button** share one row (vertically centered); **Panel Subtitle** spans the full width on the row beneath (eliminates a tall empty column beside a short button).
 - Shows a **First 25 shown** badge when `checksOmittedByLimit` is true (does not show `totalAvailableCheckCount`).
 
 ### Row status accent
@@ -490,9 +508,10 @@ Before the first Manual run (both `OneAtATime` and `AllAtOnce`), shows one line:
 - Row status icons are **CSS-drawn** circles (`rhc-status-icon--*`): not `lightning-icon`.
 - Always renders `FAIL` (Error), `Warning`, `Info`, and `UNABLE_TO_EVALUATE` outcomes as full rows: these are actionable and are never collapsed into the summary bar. Only `PASS` and `SKIPPED` outcomes can be collapsed (via `PassedChecksDisplay__c` / `SkippedChecksDisplay__c`).
 - Applies `PassedChecksDisplay__c` and `SkippedChecksDisplay__c`: rows in `Hide` mode are filtered from the list even when `RowAppearance__c` is `AllAtOnce`.
-- On resolved **non-passing** rows, shows a **Found** / **Expected** comparison block beneath `MessageWhenFailed__c` when the evaluator populated `actualValue` and/or `expectedValue`: rendered as stacked labelled chips (see [9](#comparison-display-contract)). Example: Found `"Cold"` on one line; Expected `does not equal "Cold"` on the next. Formula failures show Expected only (quoted formula text) unless `FoundValueFormula__c` / `ExpectedValueFormula__c` are configured, in which case both resolved scalars render. Not shown on `PASS`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`.
+- Shows **Found** / **Expected** comparison chips per Check Set **`ComparisonDisplay__c`** (see [9](#comparison-display-contract)): failing rows show values inline in every mode; passing rows show inline only when `AllRows`, otherwise behind a disclosure caret (`OnDemand`) or hidden (`FailuresOnly`). Formula checks may show Expected only unless display formulas populate both sides.
+- When the viewer has **`Record_Health_Check_View_Details`**, expanding the caret also reveals **provenance** lines (`actualValueDetail` / `expectedValueDetail`) beneath the chips. Provenance is never inline.
 - Renders `MessageWhenFailed__c` / `MessageWhenCannotRun__c` across multiple lines: newlines authored in Setup become separate visual lines (interior blank lines preserved as spacing), folded into one sentence for the row `aria-label`.
-- Shows `adminDetailMessage` **inline** (no click-to-expand), per-row debug-meta, and console footnote when `DebugMode__c` is on **and** the user has `Record_Health_Check_Debug` (see [Debug Mode guide](../guides/debug-mode.md)).
+- Shows `adminDetailMessage` **inline** (no click-to-expand), per-row debug-meta, and console footnote when `DebugMode__c` is on **and** the user has `Record_Health_Check_Debug` (see [Show Troubleshooting Details guide](../guides/debug-mode.md)).
 
 ### Summary bar
 
@@ -531,7 +550,7 @@ CSS-drawn hover/focus popovers (`rhc-tooltip-anchor` + `::before` / `::after`). 
 
 ### Diagnostics (debug mode)
 
-Requires `Record_Health_Check_Debug` plus **Debug Mode** on the Check Set. Per-row debug lines, **Debug detail** on errors, console footnote, and `[RHC]` browser console summary after run completion. See [Debug Mode guide](../guides/debug-mode.md).
+Requires `Record_Health_Check_Debug` plus **Show Troubleshooting Details** on the Check Set. Per-row debug lines, **Debug detail** on errors, console footnote, and `[RHC]` browser console summary after run completion. See [Show Troubleshooting Details guide](../guides/debug-mode.md).
 - Error banner (setup/load failures) still uses `lightning-icon`.
 
 ### Component design property
@@ -550,15 +569,16 @@ query output fields, plugin class/interface/JSON, row caps, and dependencies. Th
 deploy-time validator warns when the first-25 cap omits rules or prerequisites and
 exposes structured JSON through `validateAsJson()` for CI.
 
-Validation must catch: missing required fields, unknown modes and Check Methods, invalid Operator / **If Query Returns Multiple Rows** combinations, invalid **If Query Returns Zero Rows** values, invalid Apex JSON, missing or cyclic dependencies, and row safety values outside framework caps.
+Validation must catch: missing required fields, unknown modes and Check Types, invalid **`ComparisonDisplay__c`**, invalid Operator / **If Query Returns Multiple Rows** combinations, invalid **If Query Returns Zero Rows** values, invalid Apex JSON, missing or cyclic dependencies, and row safety values outside framework caps.
 
 ## 17. Deployment Contents
 
-- Apex classes and interfaces (including `RecordHealthCheck` façade, `RecordHealthCheckLogger`, `RecordHealthCheckConstants`, `RecordHealthCheckSoqlTemplate`, `RecordHealthCheckValueResolver`)
+- Apex classes and interfaces (including `RecordHealthCheck` façade, `RecordHealthCheckLogger`, `RecordHealthCheckConstants`, `RecordHealthCheckSoqlTemplate`, `RecordHealthCheckValueResolver`, `RecordHealthCheckProvenance`)
 - Lightning Web Component
 - Custom Metadata Type definitions and fields
 - Sample Custom Metadata records (10 Check Sets, 88 Rules)
 - Layout metadata for Custom Metadata editing
+- Custom permissions: `Record_Health_Check_Debug`, `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`
 - Permission sets: `Record_Health_Check_User`, `Record_Health_Check_Admin`
 - Documentation and anonymous Apex runner script
 
@@ -570,6 +590,7 @@ Deploy via `force-app` or `manifest/package.xml`.
 | ----- | ----------- | -------------------------- |
 | `WhenValueIsEmpty__c` | `SkipRecordsWithMissingValue` | Same: blank aligns with skip-on-null for row comparisons. |
 | `WhenZeroRows__c` | `Skip` | Same: blank resolves to `Skip`. |
+| `ComparisonDisplay__c` | `OnDemand` | Same: unrecognized values fall back to `OnDemand` at runtime. |
 
 For `AnyRowPasses`, `AllRowsPass`, and `CompareAsLists`, set `WhenZeroRows__c` explicitly so intent is visible in metadata.
 
@@ -612,6 +633,10 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | B32 | Action button `min-width` is **5rem** with a fixed **0.75rem** glyph slot: label must not shift when play swaps to spinner. |
 | B33 | Summary-pill tooltip bubble must **wrap** at card width: never a narrow pill-width column (`position: relative` wrapper between anchor and stats bar). |
 | B34 | Summary-pill nubbin must **attach to the tooltip bubble bottom** (`.rhc-stat__nubbin-host` sibling pattern): never float above the pill detached from the bubble. |
+| B35 | `ComparisonDisplay__c` controls Found/Expected visibility: `OnDemand` (default), `FailuresOnly`, `AllRows`; disclosure caret on rows that have values or provenance behind it. |
+| B36 | `actualValueDetail` / `expectedValueDetail` provenance notes gated by `Record_Health_Check_View_Details`; rendered from `RecordHealthCheckProvenance` by the engine. |
+| B37 | Category and remediation Rule fields ship in metadata; LWC grouping and fix-instruction rendering are not implemented yet. |
+| B38 | `Record_Health_Check_Configure` custom permission ships in Admin set for future admin tooling; no runtime branch today. |
 
 ## 20. Open Limitations and Edge Cases
 
@@ -636,7 +661,9 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | Stop on first error | Only `ERROR` stops the run; `FAIL` and `UNABLE_TO_EVALUATE` do not. Enables sequential execution. | Document intent; use dependencies if sequencing matters. |
 | Validator gaps | Metadata Validator does not reject blank `PanelHeading__c` at **runtime** (only at deploy-time). Apex class validation uses `Type.forName` at deploy/validate time. | Run `validateAsJson()` in CI plus manual review; test on representative records. |
 | Static comparison values | `FixedValue__c` is untyped text. | Use simple literals; normalize in SOQL or Apex for locale-specific formats. |
-| Blank `PanelHeading__c` at runtime | Required in CMT field metadata and caught by the validator, but **not** rejected by `getDefinitionResponse` if blank. | Always set Display Title before activation. |
+| Blank `PanelHeading__c` at runtime | Required in CMT field metadata and caught by the validator, but **not** rejected by `getDefinitionResponse` if blank. | Always set Panel Title before activation. |
 | Record save | No automatic re-run after inline edit. | User clicks **Rerun** or refreshes the page. |
 | Component placement | Record-page only (`lightning__RecordPage`). | Use `RecordHealthCheck.run` or Flow for non-record-page automation. |
 | `checksOmittedByLimit` not logged | UI shows the badge but the framework does not emit a WARN log when Rules are truncated. | Review Check Set active Rule count during configuration. |
+| Category / remediation UI | `Category__c`, `FixInstructions__c`, and primary-action fields are editable in Setup but not rendered on the card yet. | Author for future UI; do not expect grouping or fix links on the record page today. |
+| `Record_Health_Check_Configure` | Custom permission is assigned via Admin set but no feature gates on it yet (reserved for Rule Tester). | Assign Admin for validator/debug/view-details access; Configure permission is forward-compatible only. |

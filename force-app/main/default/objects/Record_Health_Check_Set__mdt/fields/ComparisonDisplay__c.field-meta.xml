@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ComparisonDisplay__c</fullName>
+    <label>Comparison Display</label>
+    <description
+  >Controls how the Found/Expected comparison reveals per row. On demand = every resolved row (including a pass) shows a caret to reveal the values; failures still show their values inline. Failures only = a caret to reveal detail appears on failing rows only. Show on every row = the values are shown inline on every row without a caret. Source/query provenance behind the caret is a separate permission (Record Health Check View Details).</description>
+    <inlineHelpText
+  >On demand = caret on every row, including passes (values inline on failures). Failures only = caret on failing rows only. Show on every row = values inline everywhere.</inlineHelpText>
+    <required>true</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>OnDemand</fullName>
+                <default>true</default>
+                <label>On demand (caret on every row)</label>
+            </value>
+            <value>
+                <fullName>FailuresOnly</fullName>
+                <default>false</default>
+                <label>Failures only</label>
+            </value>
+            <value>
+                <fullName>AllRows</fullName>
+                <default>false</default>
+                <label>Show on every row</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

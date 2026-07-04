@@ -4,17 +4,17 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Single query |
+| **Evaluator** | Check records with a query |
 | **Sample** | [`Rating_Is_Set`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Rating_Is_Set.md-meta.xml) |
 | **Check Set** | `Account_Examples_Query` · [`package-Account_Examples_Query.xml`](../../../manifest/package-Account_Examples_Query.xml) |
 
 ## What it checks
 
-Account Rating must be set: non-blank. The Is not empty operator needs no Compare Against or Fixed Value; the operator alone tests population.
+Account Rating must be set: non-blank. The Is not empty operator needs no Compare To Source or Expected Value or Threshold; the operator alone tests population.
 
 ## When to use this
 
-Reach for this pattern when a query-based blank check is preferred over Record formula: for example to feed a Requires Passing Check dependency chain or to keep all checks in Single query form. For a simple on-record blank test, Record formula is usually shorter.
+Reach for this pattern when a query-based blank check is preferred over Check fields on this record: for example to feed a Prerequisite Check (Developer Name) dependency chain or to keep all checks in Check records with a query form. For a simple on-record blank test, Check fields on this record is usually shorter.
 
 ## Why this evaluator
 
@@ -22,10 +22,10 @@ Query path for a blank test on a field readable via SOQL on the same record.
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `NOT(ISBLANK(TEXT(Rating)))` | Simpler for on-record picklist blank test. |
-| Single query | One result + Is not empty | **This example.** Query-based blank check. |
+| Check fields on this record | `NOT(ISBLANK(TEXT(Rating)))` | Simpler for on-record picklist blank test. |
+| Check records with a query | One result + Is not empty | **This example.** Query-based blank check. |
 | Compare two queries | | No second value to compare. |
-| Custom Apex | | Unnecessary for blank test. |
+| Use custom Apex | | Unnecessary for blank test. |
 
 **When the simpler option is enough**
 
@@ -34,7 +34,7 @@ Query path for a blank test on a field readable via SOQL on the same record.
 | Text field blank on Account | [Single required field](../formula/01-single-required-field.md) |
 | Must be blank | [Is blank](12-is-blank.md) |
 
-**Verdict:** Single query with Is not empty suits query-centric check sets and dependency wiring. Use Record formula for the same on-record blank test with less configuration.
+**Verdict:** Check records with a query with Is not empty suits query-centric check sets and dependency wiring. Use Check fields on this record for the same on-record blank test with less configuration.
 
 ## Configuration
 
@@ -42,12 +42,12 @@ Query path for a blank test on a field readable via SOQL on the same record.
 | ----------- | ----- |
 | Check Name | Rating Is Set |
 | Developer Name | Rating_Is_Set |
-| Check Method | Single query |
-| Data Query | `SELECT Rating FROM Account WHERE Id = {!Id} LIMIT 1` |
-| Field To Read | Rating |
-| If Query Returns Multiple Rows | One result (or aggregate) |
+| Check Type | Check records with a query |
+| Primary Query (SOQL) | `SELECT Rating FROM Account WHERE Id = {!Id} LIMIT 1` |
+| Primary Query Field/Alias | Rating |
+| If Query Returns Multiple Rows | The query returns one result |
 | Operator | Is not empty |
-| Run This Check When | Always |
+| Applies To | All records |
 | Severity | Warning |
 | Message When Failed | Account Rating has not been set. |
 
@@ -56,7 +56,7 @@ Query path for a blank test on a field readable via SOQL on the same record.
 
 ## How it works
 
-The engine reads Rating from Data Query and passes when Is not empty is satisfied.
+The engine reads Rating from Primary Query (SOQL) and passes when Is not empty is satisfied.
 
 ```sql
 SELECT Rating FROM Account WHERE Id = {!Id} LIMIT 1

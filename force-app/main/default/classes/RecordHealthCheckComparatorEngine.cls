@@ -5,7 +5,6 @@
 
 /**
  * Shared comparator + null/empty-behavior engine for the SOQL evaluators.
- *
  * The scalar comparator core (Equals / NotEquals / Contains / ordered), value
  * equality, and EmptyResultBehavior resolution were previously duplicated in
  * RecordHealthCheckSoqlEvaluator and RecordHealthCheckDualSoqlEvaluator (and had
@@ -13,7 +12,6 @@
  * dual-query checks compare values identically. The richer single-query
  * comparators (multi-row, list, unary, NullBehavior-aware) live here too so all
  * comparator logic has one home.
- *
  * Throws RecordHealthCheckEvaluatorException so both evaluators map the same
  * reason codes onto UNABLE_TO_EVALUATE results.
  */
@@ -105,7 +103,7 @@ public with sharing class RecordHealthCheckComparatorEngine {
       return isBlank;
     if (comparator == 'IsNotBlank')
       return !isBlank;
-    // SCAN-28: an unrecognized unary operator is a configuration error, not an
+    // an unrecognized unary operator is a configuration error, not an
     // indeterminate value. Returning null here previously misrouted it to the
     // empty/zero-rows behavior; fail loudly so it surfaces as UNABLE instead.
     throw new RecordHealthCheckEvaluatorException(
@@ -253,7 +251,7 @@ public with sharing class RecordHealthCheckComparatorEngine {
     String pStr = String.valueOf(primaryValue);
 
     if (comparator == 'ListContainsAny') {
-      // B8 fix: case-insensitive comparison
+      // case-insensitive comparison
       String pLower = pStr.toLowerCase();
       for (Object item : comparisonList) {
         if (item != null && String.valueOf(item).toLowerCase() == pLower)
@@ -263,7 +261,7 @@ public with sharing class RecordHealthCheckComparatorEngine {
     }
 
     if (comparator == 'ListDoesNotContainAny') {
-      // B8 fix: case-insensitive comparison
+      // case-insensitive comparison
       String pLower = pStr.toLowerCase();
       for (Object item : comparisonList) {
         if (item != null && String.valueOf(item).toLowerCase() == pLower)
@@ -322,7 +320,7 @@ public with sharing class RecordHealthCheckComparatorEngine {
       return 'to contain all of';
     if (comparator == 'ExactListMatch')
       return 'to exactly match';
-    // SCAN-40 (2026-06-23, re-opened): an unknown comparator falls back to its
+    // an unknown comparator falls back to its
     // raw API name. Config validation blocks unknown operators upstream, so this
     // is purely defensive; surfacing the literal name keeps a misconfiguration
     // diagnosable rather than dressing it up as a sentence fragment ("using …").
@@ -333,7 +331,7 @@ public with sharing class RecordHealthCheckComparatorEngine {
    * Renders a single value for display; null/blank shows as "(blank)". Every
    * non-blank value — text, numeric, Boolean, or date/time — is wrapped in
    * double quotes so the comparison reads consistently regardless of type. This
-   * matters because the two sides of one comparison can be different Apex types:
+   * matters because the two sides of one comparison can be different Apex types
    * a COUNT check yields an Integer actual (1) but a String operand ("2") from
    * metadata, and leaving numbers bare produced the jarring `Found 1 … at least
    * "2"`. Uniform quoting renders that as `Found "1" … at least "2"`, and also
@@ -389,7 +387,7 @@ public with sharing class RecordHealthCheckComparatorEngine {
       return false;
     if (nullBehavior == 'SkipRecordsWithMissingValue')
       return null;
-    // B1 fix: blank WhenValueIsEmpty__c aligns with CMT field default (SkipRecordsWithMissingValue → Skip)
+    // blank WhenValueIsEmpty__c aligns with CMT field default (SkipRecordsWithMissingValue → Skip)
     return null;
   }
 }

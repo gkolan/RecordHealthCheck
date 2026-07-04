@@ -6,8 +6,7 @@
 /**
  * Reference RecordHealthCheckRule — weighted readiness score for Strategic Accounts.
  * Not included in package-core.xml; deploy this class before referencing it in a Rule.
- *
- *   {"minScore": 80, "activityDaysBack": 60}
+ * {"minScore": 80, "activityDaysBack": 60}
  */
 public with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_MIN_SCORE = 80;
@@ -57,10 +56,20 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = score >= minScore ? 'PASS' : 'FAIL';
-    if (score < minScore) {
-      result.actualValue = String.valueOf(score);
-      result.expectedValue = String.valueOf(minScore) + '+';
-    }
+    // Populate on pass and fail so an entitled viewer can audit a green row too
+    // . The disclosure keeps these off the default card.
+    result.actualValue = String.valueOf(score);
+    result.expectedValue = String.valueOf(minScore) + '+';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Strategic readiness score',
+      String.valueOf(score),
+      'sum of met criteria'
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Minimum required score',
+      String.valueOf(minScore),
+      null
+    );
     return result;
   }
 

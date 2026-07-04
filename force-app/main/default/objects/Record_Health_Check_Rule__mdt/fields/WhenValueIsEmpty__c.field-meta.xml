@@ -3,7 +3,7 @@
     <fullName>WhenValueIsEmpty__c</fullName>
     <label>If A Value Is Empty</label>
     <description
-  >How to handle empty (null) field values while comparing rows. Applies to Single query and Compare two queries checks. Ignored for Record formula and Custom Apex checks and for pure aggregate queries.</description>
+  >How to handle empty (null) field values while comparing rows. Applies to Single query and Compare two queries checks. Ignored for Record formula and Use custom Apex checks and for pure aggregate queries.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -12,17 +12,17 @@
             <value>
                 <fullName>SkipRecordsWithMissingValue</fullName>
                 <default>true</default>
-                <label>Ignore rows with empty values</label>
+                <label>Ignore records with empty values</label>
             </value>
             <value>
                 <fullName>TreatMissingAsBlank</fullName>
                 <default>false</default>
-                <label>Treat empty as blank</label>
+                <label>Treat empty values as blank</label>
             </value>
             <value>
                 <fullName>MissingMeansNoMatch</fullName>
                 <default>false</default>
-                <label>Empty never matches</label>
+                <label>Treat empty values as not matching</label>
             </value>
         </valueSetDefinition>
     </valueSet>

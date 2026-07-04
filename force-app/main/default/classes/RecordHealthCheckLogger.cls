@@ -5,21 +5,19 @@
 
 /**
  * Single logging facade for the Record Health Check framework.
- *
  * EVERY framework log line flows through this class. The engine, controller, and
  * evaluators never call System.debug directly — they call this logger — so the
  * destination ("sink") can be changed in exactly one place. To adopt Nebula
  * Logger (or any other logging framework) later, replace the body of `emit`
  * with the equivalent Nebula calls; no other class needs to change.
- *
- * Two things make a line useful for debugging:
- *   - runId  — a correlation id generated once per page load / run in the LWC and
- *              threaded through every Apex call, so an admin can filter a debug
- *              log down to a single user interaction.
- *   - user   — captured automatically from UserInfo.getUserId(), so every line is
- *              attributable to the running user without any caller passing it in.
- *              This is authoritative (it cannot be spoofed by the client) and means
- *              "show me everything that happened for user X" is a simple log filter.
+ * Two things make a line useful for debugging
+ * runId — a correlation id generated once per page load / run in the LWC and
+ * threaded through every Apex call, so an admin can filter a debug
+ * log down to a single user interaction.
+ * user — captured automatically from UserInfo.getUserId(), so every line is
+ * attributable to the running user without any caller passing it in.
+ * This is authoritative (it cannot be spoofed by the client) and means
+ * "show me everything that happened for user X" is a simple log filter.
  */
 public with sharing class RecordHealthCheckLogger {
   /**
@@ -102,10 +100,10 @@ public with sharing class RecordHealthCheckLogger {
     String line = render(lvl, checkName, event, fields, ex);
 
     // The ONE place that decides where framework logs go. To switch to Nebula
-    // Logger, replace this switch with (roughly):
-    //   Logger.newEntry(toSystemLevel(lvl), line);
-    //   // Logger.saveLog() is then called once at the transaction boundary
-    //   // (controller) so async work is not flushed mid-evaluation.
+    // Logger, replace this switch with (roughly)
+    // Logger.newEntry(toSystemLevel(lvl), line);
+    // // Logger.saveLog() is then called once at the transaction boundary
+    // // (controller) so async work is not flushed mid-evaluation.
     switch on lvl {
       when ERROR {
         System.debug(LoggingLevel.ERROR, line);
@@ -123,8 +121,8 @@ public with sharing class RecordHealthCheckLogger {
   }
 
   /**
-   * Renders one structured, greppable line:
-   *   [RHC] WARN METADATA_INVALID | runId=.. user=.. config=.. check=.. <fields>
+   * Renders one structured, greppable line
+   * [RHC] WARN METADATA_INVALID | runId=.. user=.. config=.. check=.. <fields>
    * Fields are sorted by key so output is deterministic regardless of map order.
    */
   private String render(

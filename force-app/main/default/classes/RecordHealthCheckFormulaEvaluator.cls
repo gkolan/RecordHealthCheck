@@ -9,11 +9,11 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     '\\{!([A-Za-z0-9_\\.]+)\\}'
   );
 
-  // B6 / RB-07: track FormulaEval calls for the WHOLE Apex transaction to avoid
-  // hitting Salesforce's 100-call platform limit, which is itself transaction-wide
+  // Track FormulaEval calls for the whole Apex transaction to avoid hitting
+  // Salesforce's 100-call platform limit, which is itself transaction-wide
   // and uncatchable. This static accumulates for the life of the transaction and
   // is intentionally NEVER reset per check: resetting a framework counter mid
-  // transaction made the guard lie when a caller loops evaluate() (Flow, batch,
+  // transaction made the guard lie when a caller loops evaluate() (Flow, batch
   // anonymous Apex). Each real LWC request is its own transaction, so the counter
   // naturally starts at zero there without any reset. A 5-call safety margin
   // leaves room for applicability gates on the remaining checks to still resolve.
@@ -23,7 +23,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   private static final Integer FORMULA_EVAL_TX_LIMIT = 100;
   private static final Integer FORMULA_EVAL_SAFETY_MARGIN = 5;
 
-  // SCAN-01: evaluateFormulaAnyType probes up to 8 return types and every failed
+  // evaluateFormulaAnyType probes up to 8 return types and every failed
   // attempt consumes a real, platform-counted FormulaEval call. When a caller
   // loops evaluate() over many records in one transaction (Flow, batch, anonymous
   // Apex), re-probing the same scalar formula per record multiplies that cost and
@@ -35,10 +35,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Evaluates a Formula check (CheckMethod__c = Formula).
-   * Also used internally by the SOQL evaluator for:
-   *   - RunWhenFormula__c evaluation
-   *   - RecordFormulaValue__c (comparison-side resolution, Tier 5/8)
-   *   - ValueToTest__c as primary scalar (Tier 6, ListContainsAny/ListDoesNotContainAny)
+   * Also used internally by the SOQL evaluator for
+   * RunWhenFormula__c evaluation
+   * RecordFormulaValue__c (comparison-side resolution, Tier 5/8)
+   * ValueToTest__c as primary scalar (Tier 6, ListContainsAny/ListDoesNotContainAny)
    */
   public RecordHealthCheckResult evaluate(
     Record_Health_Check_Rule__mdt rule,
@@ -97,7 +97,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     if (evalResult == null) {
       // Null from FormulaEval means the formula could not resolve — typically
       // a null relationship traversal (e.g. Parent.Field when Parent is null)
-      // or an inaccessible field. Treating null as FAIL produces false failures,
+      // or an inaccessible field. Treating null as FAIL produces false failures
       // so we surface it as UNABLE_TO_EVALUATE instead.
       result.status = 'UNABLE_TO_EVALUATE';
       result.reasonCode = 'INVALID_FORMULA';
@@ -132,13 +132,11 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   /**
    * Sets a Formula check's Found (actualValue) and Expected (expectedValue)
    * display values.
-   *
-   * - Found: only when FoundValueFormula__c is populated — resolved as a scalar
-   *   and formatted like Query checks. Blank leaves actualValue null (no Found
-   *   chip), matching the original behavior.
-   * - Expected: the resolved ExpectedValueFormula__c scalar when populated,
-   *   otherwise the quoted PassFailFormula__c text (original behavior).
-   *
+   * Found: only when FoundValueFormula__c is populated — resolved as a scalar
+   * and formatted like Query checks. Blank leaves actualValue null (no Found
+   * chip), matching the original behavior.
+   * Expected: the resolved ExpectedValueFormula__c scalar when populated
+   * otherwise the quoted PassFailFormula__c text (original behavior).
    * Display is purely additive: pass/fail has already been decided by the
    * boolean PassFailFormula__c. A scalar formula that fails to resolve (non-scalar
    * result, null traversal, FormulaEval budget) must never change the row's
@@ -160,6 +158,11 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         result.actualValue = RecordHealthCheckComparatorEngine.formatValue(
           found
         );
+        result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+          'Found formula',
+          found == null ? 'null' : String.valueOf(found),
+          null
+        );
       }
     }
 
@@ -173,6 +176,11 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         result.expectedValue = RecordHealthCheckComparatorEngine.formatValue(
           expected
         );
+        result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+          'Expected formula',
+          expected == null ? 'null' : String.valueOf(expected),
+          null
+        );
         return;
       }
     }
@@ -182,6 +190,11 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     if (result.expectedValue == null) {
       result.expectedValue = RecordHealthCheckComparatorEngine.formatValue(
         rule.PassFailFormula__c
+      );
+      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+        'Pass/Fail condition',
+        rule.PassFailFormula__c,
+        null
       );
     }
   }
@@ -210,11 +223,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Evaluates the applicability formula for a rule.
-   * Returns:
-   *   true  — gate passes, main evaluator should run
-   *   false — gate fails, return SKIPPED
-   *   null  — gate could not be evaluated, return UNABLE_TO_EVALUATE
-   *
+   * Returns
+   * true — gate passes, main evaluator should run
+   * false — gate fails, return SKIPPED
+   * null — gate could not be evaluated, return UNABLE_TO_EVALUATE
    * The out-param reasonCode[0] is populated when null is returned.
    */
   public Boolean evaluateApplicabilityFormula(
@@ -231,7 +243,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       reasonCodeOut[0] = 'INVALID_FORMULA';
       return null;
     } catch (FormulaEvaluationException fex) {
-      // P1-02: preserve the typed reason (e.g. FORMULA_EVAL_LIMIT) instead of
+      // preserve the typed reason (e.g. FORMULA_EVAL_LIMIT) instead of
       // re-deriving it from the message, which would collapse it to
       // INVALID_FORMULA and hide the real cause from the admin. Mirrors the
       // resolveScalar path, which already preserves the typed reason code.
@@ -245,9 +257,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Resolves a formula expression to a scalar value for use as the primary
-   * operand in Tier 6 (ListContainsAny / ListDoesNotContainAny) checks,
+   * operand in Tier 6 (ListContainsAny / ListDoesNotContainAny) checks
    * or as the comparison value in Tier 5/8 checks.
-   *
    * Returns null if the formula resolves to null (blank parent traversal etc.).
    * Throws RecordHealthCheckFormulaException if the formula cannot be evaluated.
    */
@@ -256,9 +267,9 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   }
 
   /**
-   * SCAN-01: overload accepting the admin-declared return type (the
-   * ScalarFormulaReturnType__c picklist value). When non-blank and not 'Auto',
-   * the formula is evaluated once with that type instead of probing up to eight,
+   * overload accepting the admin-declared return type (the
+   * ScalarFormulaReturnType__c picklist value). When non-blank and not 'Auto'
+   * the formula is evaluated once with that type instead of probing up to eight
    * saving FormulaEval calls in bulk/Flow loops. An unrecognized or mis-declared
    * type degrades gracefully to the full probe, so a wrong declaration never
    * fails a check that would otherwise resolve.
@@ -285,7 +296,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   }
 
   /**
-   * Maps the ScalarFormulaReturnType__c picklist value to a FormulaReturnType,
+   * Maps the ScalarFormulaReturnType__c picklist value to a FormulaReturnType
    * or null for 'Auto'/blank/unrecognized (caller probes all types).
    */
   @TestVisible
@@ -324,7 +335,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
    * Calls the FormulaEval API (requires API v63.0+, Spring '25 GA).
    * Null parent traversal returns null rather than throwing — the caller
    * is responsible for treating null as false / no-match as appropriate.
-   *
    * withReturnType() is required by the FormulaBuilder API; defaults to Boolean
    * for all formula-check and applicability paths.
    */
@@ -341,7 +351,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     SObject record,
     formulaeval.FormulaReturnType returnType
   ) {
-    // B6 fix: guard against the 100-call-per-transaction FormulaEval platform limit
+    // guard against the 100-call-per-transaction FormulaEval platform limit
     if (
       formulaEvalCallCount >= FORMULA_EVAL_TX_LIMIT - FORMULA_EVAL_SAFETY_MARGIN
     ) {
@@ -378,7 +388,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     SObject record,
     formulaeval.FormulaReturnType declaredType
   ) {
-    // SCAN-01: try a preferred return type before probing — first the
+    // try a preferred return type before probing — first the
     // admin-declared type (ScalarFormulaReturnType__c), else the type that
     // already resolved this formula in this transaction. Either way a single
     // call replaces the up-to-eight-call probe for repeated evaluations
@@ -409,7 +419,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     }
 
     // Order matters: each failed attempt burns a FormulaEval API call (limit 100/tx).
-    // BOOLEAN first (most formula checks), DECIMAL next (numbers/currency/percent),
+    // BOOLEAN first (most formula checks), DECIMAL next (numbers/currency/percent)
     // DATE/DATETIME before STRING so temporal fields resolve in 3–4 calls rather than 7–8.
     // STRING is a catch-all that can coerce almost any type, so it comes after specifics.
     List<formulaeval.FormulaReturnType> typesToTry = new List<formulaeval.FormulaReturnType>{

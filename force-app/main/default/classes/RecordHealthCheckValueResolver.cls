@@ -4,15 +4,13 @@
  */
 
 /**
- * Shared value extraction, coercion, and comparison for the SOQL evaluators (M-01).
- *
+ * Shared value extraction, coercion, and comparison for the SOQL evaluators.
  * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckDualSoqlEvaluator
  * previously carried their own copies of scalar/list extraction, QueryException
  * classification, type coercion, equality, and ordered comparison — and the copies
- * had drifted (notably Date/DateTime coercion, H-07/L6). Centralizing them here
+ * had drifted (notably Date/DateTime coercion). Centralizing them here
  * guarantees single-query and dual-query checks behave identically.
- *
- * Apex boxes Date values through the Datetime branch when they are held as Object,
+ * Apex boxes Date values through the Datetime branch when they are held as Object
  * so temporal comparisons consistently use Datetime semantics after the numeric
  * comparison attempt.
  */
@@ -254,7 +252,7 @@ public with sharing class RecordHealthCheckValueResolver {
 
   @TestVisible
   private static Datetime coerceDateTime(Object value) {
-    // SCAN-10 (2026-06-23): in Apex a pure Date is `instanceof Datetime` (true),
+    // in Apex a pure Date is `instanceof Datetime` (true)
     // but casting it to Datetime yields midnight GMT — not the running user's local
     // start of day — so a Date never compared equal to its same-day midnight
     // Datetime. A real Datetime is NOT `instanceof Date`, so this branch matches

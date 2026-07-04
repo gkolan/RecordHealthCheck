@@ -103,7 +103,6 @@
                   <div class="rhc-dot rhc-dot--pending"></div>
                 </template>
                 <template if:true={check.isLoading}>
-                  <!-- AUDIT (LWC-11): parent .rhc-row__icon is aria-hidden; empty alt avoids duplicate "Evaluating". -->
                   <lightning-spinner
                     alternative-text=""
                     size="x-small"
@@ -122,6 +121,19 @@
                       Status: {check.statusLabel}
                     </span>
                   </template>
+                  <template if:true={check.showCaret}>
+                    <button
+                      type="button"
+                      class={check.caretClass}
+                      onclick={handleToggleDetail}
+                      data-check={check.developerName}
+                      aria-expanded={check.caretExpanded}
+                      aria-label={check.caretLabel}
+                      title={check.caretLabel}
+                    >
+                      <span class="rhc-caret__glyph" aria-hidden="true"></span>
+                    </button>
+                  </template>
                 </div>
                 <template if:true={check.showMessage}>
                   <span class={check.messageClass}>
@@ -132,7 +144,7 @@
                     </template>
                   </span>
                 </template>
-                <template if:true={check.showComparison}>
+                <template if:true={check.showInlineComparison}>
                   <span class="rhc-row__comparison">
                     <template if:true={check.showActual}>
                       <span class="rhc-cmp__pair">
@@ -147,6 +159,38 @@
                       </span>
                     </template>
                   </span>
+                </template>
+                <template if:true={check.detailExpanded}>
+                  <div class="rhc-row__detail">
+                    <template if:true={check.showExpandedActual}>
+                      <span class="rhc-cmp__pair">
+                        <span class="rhc-cmp__key">Found</span>
+                        <span class="rhc-cmp__val">{check.actualValue}</span>
+                      </span>
+                    </template>
+                    <template if:true={check.showExpandedExpected}>
+                      <span class="rhc-cmp__pair">
+                        <span class="rhc-cmp__key">Expected</span>
+                        <span class="rhc-cmp__val">{check.expectedValue}</span>
+                      </span>
+                    </template>
+                    <template if:true={check.showActualDetail}>
+                      <p class="rhc-row__provenance">
+                        <span class="rhc-row__provenance-key">Found</span>
+                        <span class="rhc-row__provenance-val"
+                          >{check.actualValueDetail}</span
+                        >
+                      </p>
+                    </template>
+                    <template if:true={check.showExpectedDetail}>
+                      <p class="rhc-row__provenance">
+                        <span class="rhc-row__provenance-key">Expected</span>
+                        <span class="rhc-row__provenance-val"
+                          >{check.expectedValueDetail}</span
+                        >
+                      </p>
+                    </template>
+                  </div>
                 </template>
                 <template if:true={check.showDebugMeta}>
                   <span class="rhc-debug-meta">{check.debugMeta}</span>
@@ -171,7 +215,7 @@
                 <span
                   class={stat.cssClass}
                   data-tooltip={stat.tooltip}
-                  tabindex="0"
+                  tabindex={stat.tabIndex}
                 >
                   <span class={stat.iconClass} aria-hidden="true"></span>
                   {stat.label}

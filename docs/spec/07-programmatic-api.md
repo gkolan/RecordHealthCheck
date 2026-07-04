@@ -29,6 +29,8 @@ RecordHealthCheck.run(configName, checkName, recordId, 'ticket-12345'); // custo
 
 Checks always evaluate with the **running** user's access (`WITH USER_MODE`); to evaluate as another user, run while that user is current or wrap in `System.runAs(thatUser)` in a test.
 
+Each call returns a `RecordHealthCheckResult` with the same fields the LWC receives, including `actualValue`, `expectedValue`, and permission-gated `actualValueDetail` / `expectedValueDetail` when the running user has **`Record_Health_Check_View_Details`**.
+
 Each call logs `RUN_INVOKED` and `RUN_COMPLETE` events through `RecordHealthCheckLogger`.
 
 ### Flow (not packaged)

@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Single query |
+| **Evaluator** | Check records with a query |
 | **Sample** | [`Rating_Is_Not_Cold`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Rating_Is_Not_Cold.md-meta.xml) |
 | **Check Set** | `Account_Examples_Query` · [`package-Account_Examples_Query.xml`](../../../manifest/package-Account_Examples_Query.xml) |
 
@@ -14,7 +14,7 @@ On Accounts where Rating is populated, the value must not equal the configured e
 
 ## When to use this
 
-Reach for this pattern to flag a specific bad picklist or text value rather than testing presence alone. Does not equal with an applicability formula prevents blank from silently passing.
+Reach for this pattern to flag a specific bad picklist or text value rather than testing presence alone. Not equal to with an applicability formula prevents blank from silently passing.
 
 ## Why this evaluator
 
@@ -22,10 +22,10 @@ Specific disallowed value on a field read via query, with blank guard.
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `TEXT(Rating) != "Cold"` | On-record option when Rating is always set. |
-| Single query | Does not equal + applicability | **This example.** |
+| Check fields on this record | `TEXT(Rating) != "Cold"` | On-record option when Rating is always set. |
+| Check records with a query | Not equal to + applicability | **This example.** |
 | Compare two queries | | Single scalar vs fixed value. |
-| Custom Apex | | Unnecessary. |
+| Use custom Apex | | Unnecessary. |
 
 **When the simpler option is enough**
 
@@ -34,7 +34,7 @@ Specific disallowed value on a field read via query, with blank guard.
 | Rating must be set at all | [Is not blank](11-is-not-blank.md) |
 | Forbidden substring in text | [Does not contain](10-does-not-contain.md) |
 
-**Verdict:** Single query with Does not equal suits disallowed picklist values when query-based evaluation is preferred. Add Run When Formula Is True when blank should skip rather than pass.
+**Verdict:** Check records with a query with Not equal to suits disallowed picklist values when query-based evaluation is preferred. Add Applies When Formula Is True when blank should skip rather than pass.
 
 ## Configuration
 
@@ -42,37 +42,37 @@ Specific disallowed value on a field read via query, with blank guard.
 | ----------- | ----- |
 | Check Name | Rating Is Not Cold |
 | Developer Name | Rating_Is_Not_Cold |
-| Check Method | Single query |
-| Data Query | `SELECT Rating FROM Account WHERE Id = {!Id} LIMIT 1` |
-| Field To Read | Rating |
-| If Query Returns Multiple Rows | One result (or aggregate) |
-| Operator | Does not equal |
-| Compare Against | A fixed value |
-| Fixed Value | Cold |
-| Run This Check When | Only when a formula is true |
-| Run When Formula Is True | `NOT(ISBLANK(TEXT(Rating)))` |
+| Check Type | Check records with a query |
+| Primary Query (SOQL) | `SELECT Rating FROM Account WHERE Id = {!Id} LIMIT 1` |
+| Primary Query Field/Alias | Rating |
+| If Query Returns Multiple Rows | The query returns one result |
+| Operator | Not equal to |
+| Compare To Source | A fixed value |
+| Expected Value or Threshold | Cold |
+| Applies To | Only records where a formula is true |
+| Applies When Formula Is True | `NOT(ISBLANK(TEXT(Rating)))` |
 | Severity | Warning |
 | Message When Failed | Account Rating is Cold. |
 
 > [!NOTE]
-> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Fixed Value to change the disallowed picklist value.
+> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Expected Value or Threshold to change the disallowed picklist value.
 
 ## How it works
 
-When Run When Formula Is True passes, the engine compares Rating to the fixed value with Does not equal.
+When Applies When Formula Is True passes, the engine compares Rating to the fixed value with Not equal to.
 
 ```sql
 SELECT Rating FROM Account WHERE Id = {!Id} LIMIT 1
 ```
 
 ```text
--- Applicability (Run When Formula Is True)
+-- Applicability (Applies When Formula Is True)
 NOT(ISBLANK(TEXT(Rating)))
 ```
 
 **What this demonstrates**
 
-- **Does not equal**: flags one specific bad value.
+- **Not equal to**: flags one specific bad value.
 - **TEXT() in applicability**: picklist blank guard for formula context.
 
 ## Get this example

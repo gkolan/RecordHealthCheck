@@ -161,12 +161,12 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
     </div>
     <div class="teaser-grid">
       <a class="teaser" href="{{ '/examples/formula/02-either-or-field.html' | relative_url }}">
-        <div class="tt"><span class="ref">Record formula</span></div>
+        <div class="tt"><span class="ref">Check fields on this record</span></div>
         <h4>Phone or Website required</h4>
         <p>At least one of Phone or Website must be populated; both blank fails.</p>
       </a>
       <a class="teaser" href="{{ '/examples/query/01-child-count-minimum-one.html' | relative_url }}">
-        <div class="tt"><span class="ref">Single query</span></div>
+        <div class="tt"><span class="ref">Check records with a query</span></div>
         <h4>At least one Contact</h4>
         <p>The Account must have one or more related Contacts (COUNT vs a threshold).</p>
       </a>
@@ -176,7 +176,7 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
         <p>Contact count must not exceed the count of open Opportunities on the Account.</p>
       </a>
       <a class="teaser" href="{{ '/examples/apex/03-strategic-readiness.html' | relative_url }}">
-        <div class="tt"><span class="ref">Custom Apex</span></div>
+        <div class="tt"><span class="ref">Use custom Apex</span></div>
         <h4>Strategic account readiness</h4>
         <p>Strategic Accounts get one weighted readiness score versus a minimum.</p>
       </a>
@@ -280,8 +280,12 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
         <div class="dd">Call the engine and write custom Apex checks.</div>
       </a>
       <a class="doc-card" href="{{ '/guides/debug-mode.html' | relative_url }}">
-        <div class="dt">Debug Mode</div>
+        <div class="dt">Show Troubleshooting Details</div>
         <div class="dd">Optional troubleshooting detail on the card and console.</div>
+      </a>
+      <a class="doc-card" href="{{ '/guides/cli-commands.html' | relative_url }}">
+        <div class="dt">CLI commands</div>
+        <div class="dd">Deploy, test, lint, and regenerate docs with sf CLI.</div>
       </a>
       <a class="doc-card" href="{{ '/spec/' | relative_url }}">
         <div class="dt">Design Specification</div>

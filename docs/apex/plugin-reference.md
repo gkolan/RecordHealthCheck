@@ -316,9 +316,9 @@ On **`FAIL`**, the dispatcher sets:
 - **`severity`** from Rule `Severity__c` (not set by the plugin)
 - **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!Field}` merge tokens resolved
 
-### Found / Expected (optional, on fail)
+### Found / Expected (optional)
 
-When a single failure message is not enough, set comparison chips on the card:
+When a single message is not enough, set comparison chips on the card. Failed rows show comparison values inline whenever values are available. Passing-row visibility follows the Check Set **Comparison Display** setting.
 
 ```apex
 result.status = 'FAIL';
@@ -327,6 +327,18 @@ result.expectedValue = '0 unhealthy';
 ```
 
 See [Design spec 9 comparison display](../reference/record-health-check-design-spec.md#comparison-display-contract).
+
+### Provenance detail (optional)
+
+When the check can explain where a value came from, populate `actualProvenance` / `expectedProvenance` with `RecordHealthCheckProvenance.Detail`. The engine converts those internal details to `actualValueDetail` / `expectedValueDetail` only for users with `Record_Health_Check_View_Details`; it is independent of Show Troubleshooting Details.
+
+```apex
+result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+  'Open Opportunities',
+  '2 unhealthy',
+  'filtered by Amount and Close Date'
+);
+```
 
 ### Custom failure message from Apex (rare)
 

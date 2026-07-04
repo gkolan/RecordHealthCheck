@@ -4,7 +4,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>1. Identity &amp; Target Object</label>
+        <label>1. Basics</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -18,12 +18,12 @@
                 <behavior>Required</behavior>
                 <field>IsActive__c</field>
             </layoutItems>
-        </layoutColumns>
-        <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
                 <field>ObjectApiName__c</field>
             </layoutItems>
+        </layoutColumns>
+        <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>IsProtected</field>
@@ -39,7 +39,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>2. Panel Appearance</label>
+        <label>2. Panel Text</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -58,7 +58,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>3. When Checks Run</label>
+        <label>3. Run Behavior</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -77,7 +77,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>4. How Results Appear</label>
+        <label>4. Result Display</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -92,6 +92,10 @@
             <layoutItems>
                 <behavior>Required</behavior>
                 <field>SkippedChecksDisplay__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Required</behavior>
+                <field>ComparisonDisplay__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>

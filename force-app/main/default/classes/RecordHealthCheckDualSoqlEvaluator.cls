@@ -6,7 +6,7 @@
 public with sharing class RecordHealthCheckDualSoqlEvaluator {
   private static final Integer DEFAULT_MAX_ROWS = 2000;
 
-  // P1-04: sentinel representing a missing value under MissingMeansNoMatch in a
+  // sentinel representing a missing value under MissingMeansNoMatch in a
   // list comparison. The reserved leading-space token will not realistically
   // collide with field data, and toStringList appends the side + a per-null index
   // so every missing value is distinct — a null then matches nothing, not even
@@ -88,9 +88,9 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
 
     if (mode == 'OneResult') {
       // Tier 7 — both sides resolve to a single value.
-      // SCAN-46: a zero-row query is governed by WhenZeroRows__c, NOT by the
+      // a zero-row query is governed by WhenZeroRows__c, NOT by the
       // null-value behavior (WhenValueIsEmpty__c). evaluateSingleVsSingle
-      // collapses an empty query and a present-but-null field to the same null,
+      // collapses an empty query and a present-but-null field to the same null
       // so without this early route an empty side with MissingMeansNoMatch would
       // wrongly FAIL (and TreatMissingAsBlank would wrongly compare '') instead
       // of honoring WhenZeroRows__c. Mirrors the single-query evaluator, which
@@ -113,10 +113,10 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
     }
 
     if (passed == null) {
-      // P1-05 / SCAN-06: separate a genuine zero-rows result (governed by
+      // separate a genuine zero-rows result (governed by
       // WhenZeroRows__c) from a present-but-null value (governed by the null
       // behavior, resolving to SKIPPED). For OneResult an empty query is already
-      // routed above (SCAN-46), so a null here is a present-row null field;
+      // A null here is a present-row null field, not a zero-row query result.
       // CompareAsLists returns null when a side is empty (zero rows).
       Boolean zeroRows = primaryRows.isEmpty() || comparisonRows.isEmpty();
       return zeroRows
@@ -133,7 +133,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
     } else {
       result.status = 'FAIL';
       result.severity = rule.Severity__c;
-      // Merge-field resolution is handled by the Engine (Section 5.1 / S55),
+      // Merge-field resolution is handled by the Engine
       // but the SOQL evaluator also sets it here for consistency
       result.message = String.isNotBlank(rule.MessageWhenFailed__c)
         ? rule.MessageWhenFailed__c
@@ -175,6 +175,16 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
         rule.Operator__c,
         comparisonValue
       );
+      result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+        provenanceSource(rule.FieldToRead__c, 'Primary query'),
+        primaryValue == null ? 'null' : String.valueOf(primaryValue),
+        primaryRows.size() + ' row(s)'
+      );
+      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+        provenanceSource(rule.CompareToField__c, 'Comparison query'),
+        comparisonValue == null ? 'null' : String.valueOf(comparisonValue),
+        comparisonRows.size() + ' row(s)'
+      );
     } else {
       // CompareAsLists — show both result sets
       List<Object> primaryList = RecordHealthCheckValueResolver.scalarList(
@@ -192,7 +202,23 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
         rule.Operator__c,
         comparisonList
       );
+      result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+        provenanceSource(rule.FieldToRead__c, 'Primary query'),
+        primaryList.size() + ' row(s)',
+        null
+      );
+      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+        provenanceSource(rule.CompareToField__c, 'Comparison query'),
+        comparisonList.size() + ' row(s)',
+        null
+      );
     }
+  }
+
+  // Prefers the field name (what the viewer recognizes) as the provenance
+  // source, falling back to the query role when no field is configured.
+  private String provenanceSource(String field, String fallback) {
+    return String.isNotBlank(field) ? field : fallback;
   }
 
   // ─── Tier 7 — single-value vs single-value ────────────────────────────────
@@ -225,7 +251,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
       } else if (nb == 'MissingMeansNoMatch') {
         return false;
       } else {
-        // B1 fix: blank WhenValueIsEmpty__c aligns with CMT field default (SkipRecordsWithMissingValue → Skip)
+        // blank WhenValueIsEmpty__c aligns with CMT field default (SkipRecordsWithMissingValue → Skip)
         return null;
       }
     }
@@ -244,7 +270,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
     String side
   ) {
     if (rows.isEmpty()) {
-      // SELECT COUNT(Id) always returns 1 row even with 0 matching records,
+      // SELECT COUNT(Id) always returns 1 row even with 0 matching records
       // so this branch is only reached by non-aggregate queries with no rows.
       return null; // NullBehavior on the caller decides what to do
     }
@@ -295,8 +321,8 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
       rule.WhenValueIsEmpty__c
     );
 
-    // SCAN-44: rows existed (the zero-row guard above already returned), but a
-    // side's values were ALL null and dropped by SkipRecordsWithMissingValue,
+    // rows existed (the zero-row guard above already returned), but a
+    // side's values were ALL null and dropped by SkipRecordsWithMissingValue
     // leaving an empty list. That is indeterminate — every value under test was
     // missing — not a determinate FAIL/PASS from comparing empty sets. Return
     // null so the null behavior governs it (SKIPPED via buildNullIndeterminateResult)
@@ -305,7 +331,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
       return null;
     }
 
-    // B8 fix: normalise to lowercase so set operations are case-insensitive
+    // normalise to lowercase so set operations are case-insensitive
     Set<String> primarySet = new Set<String>();
     for (String s : primaryList) {
       primarySet.add(s != null ? s.toLowerCase() : '');
@@ -318,7 +344,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
     String comparator = rule.Operator__c;
 
     if (comparator == 'ListsOverlap') {
-      // At least one value appears in both lists (S31)
+      // At least one value appears in both lists.
       for (String val : primarySet) {
         if (comparisonSet.contains(val))
           return true;
@@ -327,7 +353,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
     }
 
     if (comparator == 'ListContainsAll') {
-      // Every value in the primary list appears somewhere in the comparison list (S32)
+      // Every primary value appears in the comparison list.
       for (String val : primarySet) {
         if (!comparisonSet.contains(val))
           return false;
@@ -369,7 +395,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
           values.add(String.valueOf(val));
           continue;
         }
-        // P1-04: null handling now depends on the configured null behavior.
+        // null handling now depends on the configured null behavior.
         if (nullBehavior == 'SkipRecordsWithMissingValue') {
           // Drop the missing value from the list entirely.
           continue;
@@ -489,7 +515,7 @@ public with sharing class RecordHealthCheckDualSoqlEvaluator {
   }
 
   /**
-   * P1-05 / SCAN-06: result for a present-but-null value (both queries returned
+   * result for a present-but-null value (both queries returned
    * rows, but a field under test was null and the null behavior resolves to Skip).
    * Reported as SKIPPED and deliberately NOT governed by WhenZeroRows__c.
    */

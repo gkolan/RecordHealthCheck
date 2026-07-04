@@ -3,7 +3,7 @@
     <fullName>WhenZeroRows__c</fullName>
     <label>If Query Returns Zero Rows</label>
     <description
-  >What the check should do when the Data Query returns no rows. If left blank, the check is marked Skipped. Required when "If Query Returns Multiple Rows" is At least one row must pass, Every row must pass, or Compare as two lists.</description>
+  >What the check should do when the Primary Query (SOQL) returns no rows. If left blank, the check is marked Skipped. Required when "If Query Returns Multiple Rows" is At least one row must pass, Every row must pass, or Compare as two lists.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -12,22 +12,22 @@
             <value>
                 <fullName>Pass</fullName>
                 <default>false</default>
-                <label>Treat as passed</label>
+                <label>Pass the check</label>
             </value>
             <value>
                 <fullName>Fail</fullName>
                 <default>false</default>
-                <label>Treat as failed</label>
+                <label>Fail the check</label>
             </value>
             <value>
                 <fullName>Skip</fullName>
                 <default>false</default>
-                <label>Mark as skipped</label>
+                <label>Skip the check</label>
             </value>
             <value>
                 <fullName>UnableToEvaluate</fullName>
                 <default>false</default>
-                <label>Mark as can't run</label>
+                <label>Show unable to check</label>
             </value>
         </valueSetDefinition>
     </valueSet>

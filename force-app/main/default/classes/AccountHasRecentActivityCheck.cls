@@ -5,13 +5,10 @@
 
 /**
  * Example implementation of RecordHealthCheckRule using the Apex evaluator.
- *
  * Checks whether an Account has at least one completed Task or logged Event
  * within a configurable look-back window. The number of days is read from
- * ApexSettingsJson__c so it can be tuned per rule without a code change:
- *
- *   ApexSettingsJson__c: {"daysBack": 90}
- *
+ * ApexSettingsJson__c so it can be tuned per rule without a code change
+ * ApexSettingsJson__c: {"daysBack": 90}
  * Failure message, severity, and label all come from the CMT record — this
  * class only determines PASS or FAIL.
  */

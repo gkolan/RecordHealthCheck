@@ -5,9 +5,8 @@
 
 /**
  * Example RecordHealthCheckRule — flags open Opportunities that are simultaneously
- * stale, missing Next Step, and not closing this quarter. Tunable via:
- *
- *   {"staleDays": 30}
+ * stale, missing Next Step, and not closing this quarter. Tunable via
+ * {"staleDays": 30}
  */
 public with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_STALE_DAYS = 30;
@@ -36,10 +35,22 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = unhealthyCount == 0 ? 'PASS' : 'FAIL';
-    if (unhealthyCount > 0) {
-      result.actualValue = unhealthyCount + ' unhealthy';
-      result.expectedValue = '0 unhealthy';
-    }
+    // Populate on pass and fail so an entitled viewer can audit a green row too .
+    result.actualValue = unhealthyCount + ' unhealthy';
+    result.expectedValue = '0 unhealthy';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Unhealthy open opportunities',
+      String.valueOf(unhealthyCount),
+      openOpps.size() +
+        ' open opportunit' +
+        (openOpps.size() == 1 ? 'y' : 'ies') +
+        ' scanned'
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Allowed unhealthy count',
+      '0',
+      null
+    );
     return result;
   }
 

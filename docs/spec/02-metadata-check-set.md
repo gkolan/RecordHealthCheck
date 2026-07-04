@@ -6,7 +6,7 @@
 A Check Set defines one group of Rules for one component instance on one object.
 
 > [!NOTE]
-> Field reference (Setup labels, API names, picklist values): [Check Set fields](../metadata/check-set.md).
+> Field reference (Setup labels, API names, picklist values): [Check Set fields](../metadata/check-set.md). Includes **`ComparisonDisplay__c`** (Found/Expected disclosure policy).
 
 ### 4.1 Framework limits (not configurable)
 

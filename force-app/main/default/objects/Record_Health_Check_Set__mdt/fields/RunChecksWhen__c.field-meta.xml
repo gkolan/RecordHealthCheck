@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>RunChecksWhen__c</fullName>
-    <label>Run Checks When</label>
+    <label>Start Checks</label>
     <description
   >Decides whether checks run on their own when the page opens, or only after the user clicks the Run button. Pick "Wait for the user to click Run" for checks that are slow or that users should run on demand.</description>
     <type>Picklist</type>

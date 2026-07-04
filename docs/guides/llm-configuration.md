@@ -33,7 +33,7 @@ Name the pattern (e.g. "Query + OneResult + RecordFormula") and cite a shipped D
 When CheckMethod__c = Apex: list SOQL/objects to read, JSON keys for ApexSettingsJson__c, PASS/FAIL logic, and whether to set actualValue/expectedValue. Cite shipped class if applicable.
 
 ## Applicability & dependencies
-Only if not Always / no dependency.
+Only if not All records / no dependency.
 
 ## Why not a validation rule?
 One sentence when relevant.
@@ -130,21 +130,22 @@ Minimum fields when creating a new Check Set:
 | --- | --- | --- | --- |
 | `DeveloperName` | Developer Name | Yes | `Account_Pipeline_Health` |
 | `MasterLabel` | Label | Yes | `Account Pipeline Health` |
-| `ObjectApiName__c` | Base Object API Name | Yes | `Account` |
-| `PanelHeading__c` | Display Title | Yes | `Pipeline Health` |
-| `PanelSubheading__c` | Display Description | No | `Open pipeline vs revenue targets` |
-| `RunChecksWhen__c` | Run Checks When | Yes | `Automatic` or `Manual` |
-| `RowAppearance__c` | Reveal Mode | Yes | `AllAtOnce` or `OneAtATime` |
-| `PassedChecksDisplay__c` | Passed Checks Display | Yes | `Show` or `Hide` |
-| `SkippedChecksDisplay__c` | Skipped Checks Display | Yes | `Show` or `Hide` |
+| `ObjectApiName__c` | Record Object API Name | Yes | `Account` |
+| `PanelHeading__c` | Panel Title | Yes | `Pipeline Health` |
+| `PanelSubheading__c` | Panel Subtitle | No | `Open pipeline vs revenue targets` |
+| `RunChecksWhen__c` | Start Checks | Yes | `Automatic` or `Manual` |
+| `RowAppearance__c` | Result Display Style | Yes | `AllAtOnce` or `OneAtATime` |
+| `PassedChecksDisplay__c` | Passed Checks | Yes | `Show` or `Hide` |
+| `SkippedChecksDisplay__c` | Skipped Checks | Yes | `Show` or `Hide` |
+| `ComparisonDisplay__c` | Comparison Display | Yes | `OnDemand` (default), `FailuresOnly`, or `AllRows` |
 | `IsActive__c` | Active | No | `true` |
-| `DebugMode__c` | Debug Mode | No | `false` in production. When `true`, user also needs `Record_Health_Check_Debug` (from `Record_Health_Check_Admin`). See [Debug Mode guide](debug-mode.md). |
+| `DebugMode__c` | Show Troubleshooting Details | No | `false` in production. When `true`, user also needs `Record_Health_Check_Debug` (from `Record_Health_Check_Admin`). See [Show Troubleshooting Details guide](debug-mode.md). |
 
 **Component wiring:** Lightning record page component property **Check Set Developer Name** (`configName`) must equal Check Set `DeveloperName` exactly.
 
 ### 4.3 Rule table
 
-Always include (all Check Methods):
+Always include (all Check Types):
 
 | API field | Setup label | Required | Example |
 | --- | --- | --- | --- |
@@ -152,14 +153,20 @@ Always include (all Check Methods):
 | `MasterLabel` | Label | Yes | `Pipeline Meets 1.5x Revenue` |
 | `Record_Health_Check_Set__c` | Check Set | Yes | `Account_Pipeline_Health` |
 | `CheckName__c` | Check Name (user-facing row title) | Yes | `Open pipeline ≥ 1.5× annual revenue` |
-| `CheckMethod__c` | Check Method | Yes | `Query` |
-| `RunOrder__c` | Run Order | Yes | `10` (use gaps: 10, 20, 30…) |
-| `Severity__c` | Severity | Yes | `Error`, `Warning`, or `Info` |
+| `CheckMethod__c` | Check Type | Yes | `Query` |
+| `RunOrder__c` | Priority (lower runs first) | Yes | `10` (use gaps: 10, 20, 30…) |
+| `Category__c` | Category | No | `Pipeline`, `Completeness`, `Data Quality`, or blank. Metadata only — UI grouping not implemented yet. |
+| `Severity__c` | Severity (only if it fails) | Yes | `Error`, `Warning`, or `Info` |
 | `MessageWhenFailed__c` | Message When Failed | Yes | `{!Name} pipeline is below 1.5× annual revenue.` |
-| `RunThisCheckWhen__c` | Run This Check When | Yes | `Always`, `Formula`, or `SOQL` |
+| `FixInstructions__c` | Fix Instructions | No | `Review open opportunities…` (schema only — not rendered on card yet) |
+| `PrimaryActionLabel__c` | Primary Action Label | No | `Open pipeline playbook` (schema only) |
+| `PrimaryActionUrl__c` | Primary Action URL | No | `https://example.com/pipeline-playbook` (schema only) |
+| `RunThisCheckWhen__c` | Applies To | Yes | `Always`, `Formula`, or `SOQL` |
 | `IsActive__c` | Active | No | `true` |
 
 Add type-specific fields from Section 5.
+
+Use remediation fields only for read-only guidance or deep links. Do not describe an automatic write action; the card remains advisory.
 
 ### 4.4 Pattern citation
 
@@ -182,7 +189,7 @@ When `CheckMethod__c` = `Apex`, add a section after the Rule table. See [Apex pl
 
 ### 5.1 Formula (`CheckMethod__c` = `Formula`)
 
-Setup label: **Record formula**.
+Setup label: **Check fields on this record**.
 
 | API field | Required | Value |
 | --- | --- | --- |
@@ -209,7 +216,7 @@ NOT(ISBLANK(Parent.BillingCity))
 
 ### 5.2 Query (`CheckMethod__c` = `Query`)
 
-Setup label: **Single query**.
+Setup label: **Check records with a query**.
 
 | API field | When required |
 | --- | --- |
@@ -308,9 +315,9 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | `Equals` | Equals | Yes | Query, CompareTwoQueries |
 | `NotEquals` | Not equals | Yes | Query, CompareTwoQueries |
 | `GreaterThan` | Greater than | Yes | Query, CompareTwoQueries |
-| `GreaterThanOrEqual` | Greater than or equal | Yes | Query, CompareTwoQueries |
+| `GreaterThanOrEqual` | At least | Yes | Query, CompareTwoQueries |
 | `LessThan` | Less than | Yes | Query, CompareTwoQueries |
-| `LessThanOrEqual` | Less than or equal | Yes | Query, CompareTwoQueries |
+| `LessThanOrEqual` | At most | Yes | Query, CompareTwoQueries |
 | `Contains` | Contains | Yes | Query, CompareTwoQueries (case-sensitive) |
 | `DoesNotContain` | Does not contain | Yes | Query, CompareTwoQueries (case-sensitive) |
 | `IsBlank` | Is empty | No | Query |
@@ -360,7 +367,7 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 | Shape | Problem | Workaround |
 | --- | --- | --- |
-| Formula check + Compare Against | Formula path ignores comparison fields | Put full logic in `PassFailFormula__c` |
+| Formula check + Compare To Source | Formula path ignores comparison fields | Put full logic in `PassFailFormula__c` |
 | Formula left, SOQL scalar right (Equals, GreaterThan, …) | Primary must be `DataQuery__c` for scalar comparators | Flip: query left, `RecordFormula` right; or CompareTwoQueries; or Apex |
 | `SELECT SUM(x) FROM ...` without alias | Framework cannot read column | Add alias: `SUM(Amount) totalAmt` + `FieldToRead__c = totalAmt` |
 | Multiplier on CompareTwoQueries right side | Both sides are raw query values only | Use Query + `RecordFormula`, or Apex |
@@ -546,7 +553,7 @@ Full rule list: [Examples: Sample Check Set packages](../examples/index.md#sampl
 | Active rules per run | 25 (lowest `RunOrder__c` first) |
 | SOQL rows per query | 2000 default (`MaxRows__c` can lower, not raise) |
 | Formula eval calls per Apex transaction | 100 platform; framework guards at ~95 |
-| Concurrent evaluate calls (LWC) | 5 when Stop On First Error is off |
+| Concurrent evaluate calls (LWC) | 5 when Stop After System Error is off |
 | Component placement | Record pages only (needs `recordId`) |
 | Base object | Check Set `ObjectApiName__c` must match page object |
 
@@ -565,7 +572,7 @@ Full rule list: [Examples: Sample Check Set packages](../examples/index.md#sampl
 | --- | --- |
 | Every Setup field explained | [Configuration Guide](configuration-guide.md) |
 | Pattern matrix + merge tokens | [Examples README](../examples/index.md) |
-| When to use which Check Method | [Configuration Guide: what it can check](configuration-guide.md#2-what-it-can-check) |
+| When to use which Check Type | [Configuration Guide: what it can check](configuration-guide.md#2-what-it-can-check) |
 | Copy-paste examples by type | [Formula](../examples/index.md#example-catalog), [Query](../examples/index.md#example-catalog), [Compare two queries](../examples/index.md#example-catalog), [Aggregates](../examples/index.md#pattern-reference-aggregates) |
 | Reason codes & contracts | [Design Specification](../reference/record-health-check-design-spec.md) |
 | Install & first rule | [Getting Started](../installation/getting-started.md) |

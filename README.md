@@ -160,7 +160,7 @@ For working on the framework itself rather than configuring checks in an org. Se
 
 ```bash
 npm run lint
-npm test                    # 61 Jest tests
+npm test                    # 90 Jest tests
 npm run test:unit:coverage  # enforces LWC coverage thresholds
 npm run prettier:verify
 ```

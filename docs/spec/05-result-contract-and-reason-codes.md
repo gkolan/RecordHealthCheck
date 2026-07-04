@@ -14,22 +14,35 @@
 | `reasonCode` | Machine-readable reason for skipped, unable, or error results. |
 | `message` | Safe user-facing message (from `MessageWhenFailed__c` on `FAIL`, or unable/skip text otherwise). |
 | `actualValue` | What the record or query produced: the **Found** side in the UI. Populated on a determinate `PASS` or `FAIL` when the evaluator can name a primary value (Query, CompareTwoQueries, Apex when set). Left null for Formula checks unless `FoundValueFormula__c` is configured (then it carries that scalar). |
-| `expectedValue` | The comparator and operand as readable text: the **Expected** side in the UI. Populated on a determinate `PASS` or `FAIL` for Query and CompareTwoQueries; for Formula checks, set to the resolved `ExpectedValueFormula__c` scalar when configured, otherwise to the quoted `PassFailFormula__c` condition text. Apex plugins may set either field. |
+| `expectedValue` | The comparator and operand as readable text: the **Expected** side in the UI. Populated on a determinate `PASS` or `FAIL` for Query and CompareTwoQueries; for Formula checks, set to the resolved `ExpectedValueFormula__c` scalar when configured, otherwise the quoted `PassFailFormula__c` condition text. Apex plugins may set either field. |
+| `actualValueDetail` | Human-readable provenance note for the **Found** side. Populated when the evaluator sets `actualProvenance` **and** the running user has **`Record_Health_Check_View_Details`**. |
+| `expectedValueDetail` | Provenance note for the **Expected** side. Same gating as `actualValueDetail`. |
 | `detailMessage` | Diagnostic detail (server-side; not `@AuraEnabled`). |
 | `adminDetailMessage` | Populated only when `DebugMode__c` is on **and** the user has **`Record_Health_Check_Debug`** (permission set `Record_Health_Check_Admin`). |
 | `durationMs` | Evaluator execution time; excludes configuration, dependencies, base-record loading, applicability, and event delivery. |
+
+Evaluators populate internal `RecordHealthCheckProvenance.Detail` on `actualProvenance` / `expectedProvenance` (not `@AuraEnabled`). The engine renders and permission-gates the public `*Detail` strings.
 
 ### Comparison display contract
 
 | Topic | Contract |
 | ----- | -------- |
-| Metadata | No CMT fields: values are computed at evaluation time from comparator, operand, and query results. |
-| UI visibility | The LWC shows **Found** / **Expected** only on resolved **non-passing** rows (`FAIL`) when at least one side is present. Passing rows do not show the block even when values were captured. |
-| UI layout | Each side renders as a **labelled chip**: an uppercase caption (`Found` / `Expected`) beside the value in a monospace chip. The two sides **stack vertically** (Found on its own line, then Expected) so layout does not reflow with value length. |
-| Screen readers | Both sides are folded into the row `aria-label` when shown (`Found …`, `Expected …`). |
-| Formula checks | By default no separable scalar "found" value: `expectedValue` carries the quoted formula text, `actualValue` stays null, only the Expected side renders. Optional `FoundValueFormula__c` / `ExpectedValueFormula__c` (display-only scalars) populate the two sides for balance/comparison checks; pass/fail is still decided solely by the Boolean `PassFailFormula__c`, and an unresolvable display formula falls back to the default. |
-| Skipped / unable / error | Neither field is shown: these outcomes have no determinate comparison. |
+| Value metadata | No Rule CMT fields for Found/Expected text: values are computed at evaluation time. |
+| Display policy metadata | Check Set **`ComparisonDisplay__c`**: `OnDemand` (default), `FailuresOnly`, or `AllRows`. |
+| UI visibility (values) | **Failures:** Found/Expected inline in every mode when captured. **Passes:** inline only when `AllRows`; otherwise behind the disclosure caret (`OnDemand`) or hidden (`FailuresOnly`). |
+| UI visibility (provenance) | Provenance lines appear only when the caret region is expanded **and** `*Detail` strings are non-null (permission-gated). Always behind the caret. |
+| UI layout | Values as stacked labelled chips; provenance as de-emphasized lines beneath when expanded. |
+| Formula checks | By default no separable scalar "found" value: `expectedValue` carries the quoted formula text, `actualValue` stays null, only the Expected side renders. Optional `FoundValueFormula__c` / `ExpectedValueFormula__c` populate display-only scalars. |
+| Skipped / unable / error | Neither value nor provenance is shown. |
 | Programmatic API | `RecordHealthCheck.run` returns the same fields on `RecordHealthCheckResult`. |
+
+### Comparison provenance
+
+| Topic | Contract |
+| ----- | -------- |
+| Purpose | One note per side: where a value came from and its raw form (for example `Rating → "Cold"`). |
+| Permission | **`Record_Health_Check_View_Details`** — included in `Record_Health_Check_Admin`. Independent of `DebugMode__c`. |
+| Render format | `RecordHealthCheckProvenance.render`: `source → raw` with optional `(coercion)` suffix. |
 
 | Status | Contract |
 | ------ | -------- |
@@ -46,6 +59,7 @@
 | `displayTitle`, `displayDescription` | Header presentation from Check Set. |
 | `triggerMode`, `revealMode` | Run and reveal behavior. |
 | `successDisplayMode`, `skippedDisplayMode` | Row visibility rules. |
+| `comparisonDisplay` | `OnDemand`, `FailuresOnly`, or `AllRows` from `ComparisonDisplay__c`. |
 | `stopOnFirstError`, `debugMode` | Run control and diagnostics. |
 | `totalAvailableCheckCount` | Active Rules before the 25-check cap. |
 | `checksOmittedByLimit` | True when Rules were truncated. |
@@ -61,7 +75,7 @@
 | `NO_RECORD_CONTEXT` | No record Id was provided. |
 | `NO_ACTIVE_CHECKS` | Check Set has no active Rules. |
 | `INVALID_CONFIG` | Check Set or Rule configuration is invalid. |
-| `INVALID_CHECK_TYPE` | Check Method is not recognized. |
+| `INVALID_CHECK_TYPE` | Check Type is not recognized. |
 | `INVALID_COMPARATOR` | Operator is missing, invalid, or invalid for the Rule shape. |
 | `INVALID_FORMULA` | Formula is missing, malformed, or returns the wrong type. |
 | `INVALID_SOQL_TEMPLATE` | SOQL is missing, malformed, or unsafe. |
@@ -75,7 +89,7 @@
 | `FORMULA_EVAL_LIMIT` | FormulaEval call budget exceeded in the transaction. |
 | `APEX_CLASS_NOT_FOUND` | Apex class is missing or does not implement the required interface. |
 | `INVALID_APEX_PARAMETERS` | Apex parameter JSON is invalid. |
-| `APEX_EVALUATOR_ERROR` | Custom Apex or framework code threw unexpectedly. |
+| `APEX_EVALUATOR_ERROR` | Use custom Apex or framework code threw unexpectedly. |
 | `APPLICABILITY_NOT_MET` | Applicability returned false or empty-result skip. |
 | `DEPENDENCY_NOT_PASSED` | Prerequisite Rule did not pass. |
 | `STOPPED_AFTER_ERROR` | Run stopped after a framework error. |

@@ -1,17 +1,9 @@
-/*
- * Copyright 2026 Record Health Check contributors
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * Pure view-formatting helpers for the Record Health Check component. These map
- * raw check/result data into the template-ready flags, class strings, and
- * summary rows the markup binds to. LWC templates can't evaluate expressions,
- * so all of that branching lives here instead of in the HTML.
- */
-
-// status/severity → display label and CSS modifier suffix. Order is irrelevant;
-// lookup is keyed by the resolved outcome computed in annotateCheck.
+/** View-formatting helpers: map check results into template-ready flags and classes. */
 const OUTCOME_STYLES = {
   pass: { label: "Pass", modifier: "pass", message: false },
   error: { label: "Failed", modifier: "error", message: true },
@@ -21,10 +13,7 @@ const OUTCOME_STYLES = {
   unable: { label: "Unable to Check", modifier: "unable", message: true }
 };
 
-// Summary-bar rows, rendered in this fixed order when their count is non-zero.
-// `suffix` is shared with the per-row status icon modifier (rhc-status-icon--*)
-// so the pill icon is rendered by the SAME CSS as the row icon — identical
-// symbol/colour in both places (✓ ! i – ?), and no dependency on lightning-icon.
+// Summary pills reuse the same status-icon CSS modifiers as rows.
 const SUMMARY_ROWS = [
   { key: "pass", suffix: "pass", label: (n) => `${n} Passed` },
   { key: "error", suffix: "error", label: (n) => `${n} Failed` },
@@ -38,22 +27,7 @@ const SUMMARY_ROWS = [
   { key: "unable", suffix: "unable", label: (n) => `${n} Unable` }
 ];
 
-/**
- * Splits an admin-authored message (Message When Failed / Message When It Can't
- * Run) into display lines, honoring newlines typed in Setup. Returns one entry
- * per line so the template can stack them as block elements — LWC can't render a
- * `\n` as a visual break inside a single text node.
- *
- * - Normalizes CRLF / CR to LF, then splits on LF.
- * - Trims blank lines only at the very start and end (so a stray trailing Enter
- *   doesn't add an empty row), but preserves intentional interior blank lines as
- *   paragraph spacing.
- * - Each entry carries `isBlank` and a precomputed `lineClass` so blank lines can
- *   render as fixed-height spacers instead of collapsing to nothing.
- *
- * A single-line message yields a one-entry array, so existing messages render
- * exactly as before (one line, no extra spacing).
- */
+/** Split admin-authored messages on newlines for stacked display in the template. */
 export function splitMessageLines(message) {
   if (message == null) return [];
   const lines = String(message)
@@ -75,13 +49,7 @@ export function splitMessageLines(message) {
   });
 }
 
-/**
- * Joins message lines into one sentence for a screen-reader aria-label. Lines
- * are separated by a sentence break so a reader pauses between them, but a line
- * that already ends in terminal punctuation (. ! ? : ;) is joined with a plain
- * space — otherwise authored sentences would read back with a doubled period
- * ("Out of balance.. Contact Finance."). Each line is trimmed first.
- */
+/** Join message lines for screen-reader aria-labels. */
 function joinForSpeech(lines) {
   const parts = lines.map((line) => line.trim()).filter(Boolean);
   return parts.reduce((acc, part, idx) => {
@@ -102,9 +70,6 @@ function classifyOutcome(status, severity) {
     case "FAIL":
       if (severity === "Warning") return "warning";
       if (severity === "Info") return "info";
-      // L-UI-01: a FAIL with Error severity OR a missing/unrecognized severity
-      // defaults to error styling, so a failing check is never rendered as an
-      // unstyled row or miscounted as "Unable" in the summary bar.
       return "error";
     case "SKIPPED":
       return "skipped";
@@ -116,12 +81,13 @@ function classifyOutcome(status, severity) {
   }
 }
 
-/**
- * Adds template-ready computed boolean flags and display strings to a check
- * object. Called from the visibleChecks getter so the template can use simple
- * property bindings instead of inline expressions (which LWC doesn't support).
- */
-export function annotateCheck(c, debugMode) {
+const COMPARISON_MODES = new Set(["OnDemand", "FailuresOnly", "AllRows"]);
+function normalizeComparisonMode(mode) {
+  return COMPARISON_MODES.has(mode) ? mode : "OnDemand";
+}
+
+/** Add template-ready display flags for one check row. */
+export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
   const uiState = c.uiState;
   const result = c.result || {};
   const status = result.status || "";
@@ -134,9 +100,6 @@ export function annotateCheck(c, debugMode) {
   const outcome = isResolved ? classifyOutcome(status, severity) : null;
   const style = outcome ? OUTCOME_STYLES[outcome] : null;
 
-  // isPass gates the message/comparison blocks below; the other outcome booleans
-  // (isFailError/isFailWarning/isFailInfo/isSkipped/isUnable) were never read by
-  // the template and have been removed (LWC-13).
   const isPass = outcome === "pass";
 
   const statusLabel = style ? style.label : "";
@@ -158,65 +121,88 @@ export function annotateCheck(c, debugMode) {
     rowClass += " rhc-row--pending";
   }
 
-  // The row description is shown only as a hover/focus tooltip (Section 15) to
-  // keep rows compact. Add the tooltip-anchor classes only when a description
-  // exists, otherwise the empty `data-tooltip` would render a blank bubble.
   if (c.description) {
     rowClass += " rhc-tooltip-anchor rhc-tooltip-anchor--row";
   }
 
-  // LWC-05: only rows that carry a tooltip (a description) are keyboard tab stops,
-  // so a focus pass reaches the hover content. Rows without a tooltip have nothing
-  // to reveal on focus and should not add an empty stop to the tab order.
   const tabIndex = c.description ? 0 : -1;
 
   const showMessage = isResolved && !isPass && !!(c.result && c.result.message);
 
-  // Split the per-check message into display lines so admins can author
-  // multi-line Failed / Unable guidance (headline + detail + action) and have it
-  // render as stacked lines instead of one collapsed paragraph. Single-line
-  // messages yield a one-entry array and render unchanged.
   const messageLines = showMessage ? splitMessageLines(c.result.message) : [];
 
-  // Actual-vs-expected comparison, shown on a non-passing resolved row when the
-  // evaluator captured it. Either side may be absent (e.g. Formula checks carry
-  // only the expected condition), so each part renders independently.
-  // LWC-07: use nullish checks, not truthiness — a legitimate actual/expected of
-  // 0 or "" must still render. Only null/undefined counts as "no value captured".
+  const mode = normalizeComparisonMode(comparisonMode);
+  const rowExpanded = isExpanded === true;
   const actualValue =
     isResolved && result.actualValue != null ? result.actualValue : null;
   const expectedValue =
     isResolved && result.expectedValue != null ? result.expectedValue : null;
-  const showComparison =
-    isResolved && !isPass && (actualValue != null || expectedValue != null);
+  const hasValues = actualValue != null || expectedValue != null;
 
-  // The comparison renders as labelled key/value chips ("Found" + actual,
-  // "Expected" + expected) so the template can style the captions and the
-  // monospaced values independently. Either side may be absent — Formula
-  // failures carry only the expected condition, so they render "Expected …"
-  // alone. (The screen-reader sentence is folded into accessibleLabel below.)
-  const showActual = showComparison && actualValue != null;
-  const showExpected = showComparison && expectedValue != null;
+  // Provenance is permission-gated on the server; null *Detail means not entitled.
+  const actualValueDetail =
+    isResolved && result.actualValueDetail != null
+      ? result.actualValueDetail
+      : null;
+  const expectedValueDetail =
+    isResolved && result.expectedValueDetail != null
+      ? result.expectedValueDetail
+      : null;
+  const hasProvenance =
+    actualValueDetail != null || expectedValueDetail != null;
 
-  // P1-05 a11y: the <li> carries aria-label, which overrides its descendant text
-  // for screen readers — so the actionable failure/skip message must be folded
-  // into the accessible name or it is never announced.
-  // Fold multi-line messages into a single coherent sentence: join the non-blank
-  // lines with ". " so a screen reader announces a short pause between lines
-  // instead of a run-on string with raw newline characters.
+  const showInlineComparison =
+    isResolved && hasValues && (!isPass || mode === "AllRows");
+
+  let valuesBehindCaret = false;
+  let provenanceBehindCaret = false;
+  if (isResolved && !(mode === "FailuresOnly" && isPass)) {
+    valuesBehindCaret = hasValues && !showInlineComparison;
+    provenanceBehindCaret = hasProvenance;
+  }
+  const showCaret = valuesBehindCaret || provenanceBehindCaret;
+  const detailExpanded = showCaret && rowExpanded;
+
+  // Inline chips
+  const showActual = showInlineComparison && actualValue != null;
+  const showExpected = showInlineComparison && expectedValue != null;
+
+  // Expanded region: values only when they were not already inline, provenance
+  // whenever present and entitled.
+  const showExpandedActual =
+    detailExpanded && valuesBehindCaret && actualValue != null;
+  const showExpandedExpected =
+    detailExpanded && valuesBehindCaret && expectedValue != null;
+  const showActualDetail = detailExpanded && actualValueDetail != null;
+  const showExpectedDetail = detailExpanded && expectedValueDetail != null;
+
+  const caretExpanded = detailExpanded;
+  const caretLabel = detailExpanded
+    ? "Hide comparison detail"
+    : "Show comparison detail";
+  const caretClass = detailExpanded ? "rhc-caret rhc-caret--open" : "rhc-caret";
+
   const accessibleMessage = showMessage
     ? joinForSpeech(
         messageLines.filter((line) => !line.isBlank).map((line) => line.text)
       )
     : null;
 
+  // Fold message and visible comparison values into aria-label (li text is overridden).
+  const comparisonAudible =
+    showInlineComparison || (detailExpanded && valuesBehindCaret);
+
   const accessibleLabel = [
     c.label,
     isLoading ? "Evaluating" : isPending ? "Pending" : statusLabel,
     c.description,
     accessibleMessage,
-    showComparison && actualValue != null ? `Found ${actualValue}` : null,
-    showComparison && expectedValue != null ? `Expected ${expectedValue}` : null
+    comparisonAudible && actualValue != null ? `Found ${actualValue}` : null,
+    comparisonAudible && expectedValue != null
+      ? `Expected ${expectedValue}`
+      : null,
+    showActualDetail ? actualValueDetail : null,
+    showExpectedDetail ? expectedValueDetail : null
   ]
     .filter(Boolean)
     .join(". ");
@@ -225,8 +211,6 @@ export function annotateCheck(c, debugMode) {
     (isResolved && c.result && c.result.adminDetailMessage) || null;
   const showAdminDetail = debugMode && !!adminDetailMessage;
 
-  // Compact per-check diagnostics line (debug mode only): the machine-readable
-  // facts an admin needs — status, reason code, evaluator, and timing.
   const r = c.result || {};
   const debugMeta =
     debugMode && isResolved
@@ -258,9 +242,20 @@ export function annotateCheck(c, debugMode) {
     messageLines,
     actualValue,
     expectedValue,
-    showComparison,
+    actualValueDetail,
+    expectedValueDetail,
+    showInlineComparison,
     showActual,
     showExpected,
+    showCaret,
+    caretExpanded,
+    caretLabel,
+    caretClass,
+    detailExpanded,
+    showExpandedActual,
+    showExpandedExpected,
+    showActualDetail,
+    showExpectedDetail,
     adminDetailMessage,
     showAdminDetail,
     debugMeta,
@@ -269,14 +264,8 @@ export function annotateCheck(c, debugMode) {
   };
 }
 
-/**
- * Tallies resolved checks into the summary-bar rows. FAIL is split by severity:
- * Warning and Info get their own buckets, while a FAIL with Error severity OR a
- * missing/unrecognized severity counts as "error" (Failed) — see L-UI-01 in
- * classifyOutcome. SKIPPED is its own bucket; UNABLE_TO_EVALUATE, ERROR, and any
- * unrecognized status fall through to "unable".
- */
-export function buildSummaryStats(checks) {
+/** Build summary-bar pill rows from resolved check results. */
+export function buildSummaryStats(checks, tooltipKeys = new Set()) {
   const buckets = {
     pass: [],
     error: [],
@@ -298,33 +287,26 @@ export function buildSummaryStats(checks) {
     buckets[key].push(c.label);
   }
 
-  // Each pill is a hover/focus tooltip anchor listing the rules in its bucket —
-  // this is the single summary surface (the old per-status footer notes are
-  // gone). The label string ("13 Passed") prefixes the names so the tooltip is
-  // self-describing.
   return SUMMARY_ROWS.filter((row) => buckets[row.key].length > 0).map(
     (row) => {
       const names = buckets[row.key];
       const label = row.label(names.length);
+      const hasTooltip = tooltipKeys.has(row.key);
+      const baseClass = `rhc-stat rhc-stat--${row.suffix}`;
       return {
         key: row.key,
         label,
-        cssClass: `rhc-stat rhc-stat--${row.suffix} rhc-tooltip-anchor rhc-tooltip-anchor--footer rhc-tooltip-anchor--stat`,
-        tooltip: `${label}: ${tooltipNames(names)}`,
+        cssClass: hasTooltip
+          ? `${baseClass} rhc-tooltip-anchor rhc-tooltip-anchor--footer rhc-tooltip-anchor--stat`
+          : baseClass,
+        tooltip: hasTooltip ? `${label}: ${tooltipNames(names)}` : null,
+        tabIndex: hasTooltip ? "0" : null,
         iconClass: `rhc-status-icon rhc-status-icon--${row.suffix}`
       };
     }
   );
 }
 
-// LWC-19: a bucket can hold up to 25 rule labels; listing them all produces an
-// unwieldy tooltip. Show at most the first few names and summarize the rest as
-// "and N more" so the bubble stays readable.
-const TOOLTIP_NAME_CAP = 5;
 function tooltipNames(names) {
-  if (names.length <= TOOLTIP_NAME_CAP) {
-    return names.join(", ");
-  }
-  const shown = names.slice(0, TOOLTIP_NAME_CAP).join(", ");
-  return `${shown}, and ${names.length - TOOLTIP_NAME_CAP} more`;
+  return names.join(", ");
 }

@@ -7,6 +7,7 @@
 | ----- | ----------- | -------------------------- |
 | `WhenValueIsEmpty__c` | `SkipRecordsWithMissingValue` | Same: blank aligns with skip-on-null for row comparisons. |
 | `WhenZeroRows__c` | `Skip` | Same: blank resolves to `Skip`. |
+| `ComparisonDisplay__c` | `OnDemand` | Same: unrecognized values fall back to `OnDemand` at runtime. |
 
 For `AnyRowPasses`, `AllRowsPass`, and `CompareAsLists`, set `WhenZeroRows__c` explicitly so intent is visible in metadata.
 
@@ -49,3 +50,7 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | B32 | Action button `min-width` is **5rem** with a fixed **0.75rem** glyph slot: label must not shift when play swaps to spinner. |
 | B33 | Summary-pill tooltip bubble must **wrap** at card width: never a narrow pill-width column (`position: relative` wrapper between anchor and stats bar). |
 | B34 | Summary-pill nubbin must **attach to the tooltip bubble bottom** (`.rhc-stat__nubbin-host` sibling pattern): never float above the pill detached from the bubble. |
+| B35 | `ComparisonDisplay__c` controls Found/Expected visibility: `OnDemand` (default), `FailuresOnly`, `AllRows`; disclosure caret on rows that have values or provenance behind it. |
+| B36 | `actualValueDetail` / `expectedValueDetail` provenance notes gated by `Record_Health_Check_View_Details`; rendered from `RecordHealthCheckProvenance` by the engine. |
+| B37 | Category and remediation Rule fields ship in metadata; LWC grouping and fix-instruction rendering are not implemented yet. |
+| B38 | `Record_Health_Check_Configure` custom permission ships in Admin set for future admin tooling; no runtime branch today. |

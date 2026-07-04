@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Single query |
+| **Evaluator** | Check records with a query |
 | **Sample** | [`Fewer_Than_Ten_Open_Cases`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Fewer_Than_Ten_Open_Cases.md-meta.xml) |
 | **Check Set** | `Account_Examples_Query` · [`package-Account_Examples_Query.xml`](../../../manifest/package-Account_Examples_Query.xml) |
 
@@ -22,10 +22,10 @@ Upper-bound child count via aggregate query.
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | | Cannot count open Cases. |
-| Single query | `COUNT()` less than fixed value | **This example.** |
+| Check fields on this record | | Cannot count open Cases. |
+| Check records with a query | `COUNT()` less than fixed value | **This example.** |
 | Compare two queries | Contact count vs Case count | Compares two counts to each other, not to a fixed cap. |
-| Custom Apex | Apex count cap | Same outcome when metadata suffices. |
+| Use custom Apex | Apex count cap | Same outcome when metadata suffices. |
 
 **When the simpler option is enough**
 
@@ -34,7 +34,7 @@ Upper-bound child count via aggregate query.
 | Minimum child count | [Child count minimum one](01-child-count-minimum-one.md) |
 | Compare two counts | [Count vs second query](17-count-vs-second-query.md) |
 
-**Verdict:** Single query with Less than and a static Fixed Value is the right evaluator for an upper bound on child row count. Use Compare two queries when the cap is another query's count, not a literal.
+**Verdict:** Check records with a query with Less than and a static Expected Value or Threshold is the right evaluator for an upper bound on child row count. Use Compare two queries when the cap is another query's count, not a literal.
 
 ## Configuration
 
@@ -42,22 +42,22 @@ Upper-bound child count via aggregate query.
 | ----------- | ----- |
 | Check Name | Fewer Than Ten Open Cases |
 | Developer Name | Fewer_Than_Ten_Open_Cases |
-| Check Method | Single query |
-| Data Query | `SELECT COUNT() FROM Case WHERE AccountId = {!Id} AND IsClosed = false` |
-| If Query Returns Multiple Rows | One result (or aggregate) |
+| Check Type | Check records with a query |
+| Primary Query (SOQL) | `SELECT COUNT() FROM Case WHERE AccountId = {!Id} AND IsClosed = false` |
+| If Query Returns Multiple Rows | The query returns one result |
 | Operator | Less than |
-| Compare Against | A fixed value |
-| Fixed Value | 10 |
-| Run This Check When | Always |
+| Compare To Source | A fixed value |
+| Expected Value or Threshold | 10 |
+| Applies To | All records |
 | Severity | Warning |
 | Message When Failed | This account has 10 or more open cases. |
 
 > [!NOTE]
-> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Fixed Value to change the open Case cap.
+> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Expected Value or Threshold to change the open Case cap.
 
 ## How it works
 
-The engine runs Data Query and passes when the open Case count is less than the fixed value.
+The engine runs Primary Query (SOQL) and passes when the open Case count is less than the fixed value.
 
 ```sql
 SELECT COUNT() FROM Case

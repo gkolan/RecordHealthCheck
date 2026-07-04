@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ScalarFormulaReturnType__c</fullName>
-    <label>Scalar Formula Return Type</label>
+    <label>Advanced: Formula Result Type</label>
     <description
   >Declares the return type of the scalar formula used as a comparison value (Record formula) or as the value to test (list checks). When set to anything other than Auto, the framework evaluates the formula once with that type instead of probing up to eight types. Reduces FormulaEval API usage in bulk/Flow loops. Auto (default) keeps the original probing behavior. Ignored when the check uses no scalar formula.</description>
     <type>Picklist</type>
