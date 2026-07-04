@@ -112,6 +112,7 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
     Settings settings
   ) {
     if (assignedUserIds == null || assignedUserIds.isEmpty()) {
+      populateComparison(result, 0);
       result.status = 'PASS';
       return result;
     }
@@ -127,19 +128,8 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       inactiveNames.add(assignee.Name);
     }
 
-    // Populate on pass and fail so an entitled viewer can audit a green row too .
-    result.actualValue = inactiveNames.size() + ' inactive';
-    result.expectedValue = '0 inactive';
-    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
-      'Inactive approvers on pending requests',
-      String.valueOf(inactiveNames.size()),
-      null
-    );
-    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
-      'Allowed inactive approvers',
-      '0',
-      null
-    );
+    // Populate on pass and fail so an entitled viewer can audit a green row too.
+    populateComparison(result, inactiveNames.size());
 
     if (inactiveNames.isEmpty()) {
       result.status = 'PASS';
@@ -149,6 +139,24 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
     result.status = 'FAIL';
     result.message = buildMessage(inactiveNames, settings.maxNames);
     return result;
+  }
+
+  private static void populateComparison(
+    RecordHealthCheckResult result,
+    Integer inactiveCount
+  ) {
+    result.actualValue = inactiveCount + ' inactive';
+    result.expectedValue = '0 inactive';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Inactive approvers on pending requests',
+      String.valueOf(inactiveCount),
+      null
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Allowed inactive approvers',
+      '0',
+      null
+    );
   }
 
   @TestVisible

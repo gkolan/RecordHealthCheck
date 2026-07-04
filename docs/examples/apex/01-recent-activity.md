@@ -23,7 +23,7 @@ The reason this is Apex and not metadata is a single requirement: **one** pass/f
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
 | Formula | `NOT(ISBLANK(LastActivityDate))` on the Account | Reads the rolled-up activity field only. Cannot separate completed Tasks from logged Events, and the rollup can disagree with the underlying timelines. |
-| Single query | `SELECT COUNT() FROM Task WHERE WhatId = {!Id} AND IsClosed = true AND ActivityDate >= LAST_N_DAYS:90`, compared to `> 0` | Sees **Tasks only**. Events on the same Account are invisible. The mirror query sees Events only. |
+| Check records with a query | `SELECT COUNT() FROM Task WHERE WhatId = {!Id} AND IsClosed = true AND ActivityDate >= LAST_N_DAYS:90`, compared to `> 0` | Sees **Tasks only**. Events on the same Account are invisible. The mirror query sees Events only. |
 | Two queries (two rules) | One rule counts Tasks, one counts Events | Produces **two rows**. There is no declarative way to merge them into a single "recent activity" pass/fail. |
 | Compare two queries | Compare Task `COUNT()` against Event `COUNT()` | Compares two numbers against each other. It cannot answer "is **either** count greater than zero?": that is OR logic, which `GreaterThan` does not express. |
 
@@ -32,7 +32,7 @@ The reason this is Apex and not metadata is a single requirement: **one** pass/f
 | Need | Use instead |
 | ---- | ----------- |
 | "Account `LastActivityDate` is recent" is sufficient | Formula on `LastActivityDate`; the `Account_Everyday_Use_Cases` sample set ships `Account_EU_RecentAccountActivity` |
-| "Has recent Task" and "Has recent Event" as separate rows | Two [Query](../query/01-child-count-minimum-one.md) rules |
+| "Has recent Task" and "Has recent Event" as separate rows | Two [Query](../soql/single-query/01-child-count-minimum-one.md) rules |
 
 **Verdict:** Apex earns its place here only because the result must be **one** combined row with per-object filters and a tunable window. Drop to two Query rules the moment two separate rows are acceptable.
 
@@ -42,12 +42,12 @@ The reason this is Apex and not metadata is a single requirement: **one** pass/f
 | ----------- | ----- |
 | Check Name | Has Recent Activity |
 | Developer Name | Has_Recent_Activity |
-| Check Method | Custom Apex |
+| Check Type | Custom Apex |
 | Apex Class | `AccountHasRecentActivityCheck` |
 | Apex Settings (JSON) | `{"daysBack": 90}` |
 | Run This Check When | Always |
 | Severity | Warning |
-| Message When Failed | `{!Name} has no completed tasks or logged events in the last 90 days.` |
+| Message When Check Fails | `{!Name} has no completed tasks or logged events in the last 90 days.` |
 
 > [!NOTE]
 > This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. The sample rule `Has_Recent_Activity` sets the window to 90 through `daysBack`; change that one value to retune the check, and the class reads it at run time.
@@ -118,7 +118,7 @@ sf project deploy start --manifest manifest/package-core.xml                   #
 sf project deploy start --manifest manifest/package-Account_Examples_Apex.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

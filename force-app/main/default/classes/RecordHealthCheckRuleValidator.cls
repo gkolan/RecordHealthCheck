@@ -14,11 +14,11 @@
  * The divergent reason codes / messages / field names live only in those two
  * mapping tables, never in the branching logic below.
  * Intentionally NOT shared (do not "consolidate" these)
- * The baseline checks (Label, Priority, Message When Failed, Check Method
+ * The baseline checks (Label, Run Order, Message When Check Fails, Check Type,
  * Severity, Applicability Mode) stay inline in each caller — divergent ordering
  * granularity (ConfigService combines Label+Priority into one message), and
  * short-circuit semantics (MetadataValidator validates Severity/Message before
- * its terminating bad-Check-Method return).
+ * its terminating bad-Check-Type return).
  * MaxRows and null/empty-behavior are standalone producers — ConfigService scopes
  * them to Query/CompareTwoQueries; MetadataValidator runs them once at top level
  * for all types. Keeping them separate avoids double-counting and adds no findings
@@ -249,7 +249,7 @@ public with sharing class RecordHealthCheckRuleValidator {
       out.add(f(FindingCode.COMPARATOR_INVALID, rule.Operator__c));
     }
 
-    // Multiple Records Handling — at most one finding.
+    // Query result interpretation — at most one finding.
     if (String.isBlank(rule.WhenMultipleRows__c)) {
       out.add(f(FindingCode.MULTI_ROWS_MISSING));
     } else if (
@@ -260,7 +260,7 @@ public with sharing class RecordHealthCheckRuleValidator {
       out.add(f(FindingCode.COMPARE_AS_LISTS_ON_SINGLE));
     }
 
-    // Comparison Value Source — required unless IsBlank/IsNotBlank or a list comparator.
+    // Expected value source — required unless IsBlank/IsNotBlank or a list comparator.
     Boolean needsSource = !isUnary && !isList;
     if (needsSource && String.isBlank(rule.CompareAgainst__c)) {
       out.add(f(FindingCode.COMPARE_AGAINST_MISSING));
@@ -337,7 +337,7 @@ public with sharing class RecordHealthCheckRuleValidator {
       out.add(f(FindingCode.DUAL_COMPARATOR_INVALID, rule.Operator__c));
     }
 
-    // Multiple Records Handling — only OneResult / CompareAsLists are valid.
+    // Query result interpretation — only OneResult / CompareAsLists are valid.
     if (String.isBlank(rule.WhenMultipleRows__c)) {
       out.add(f(FindingCode.DUAL_MULTI_ROWS_MISSING));
     } else if (

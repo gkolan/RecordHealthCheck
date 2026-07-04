@@ -1,5 +1,7 @@
 # Getting Started
 
+Use this when you are ready to create your first Rule and connect it to a real record page.
+
 **You need:** Permission to edit Lightning record pages and manage Custom Metadata in Setup (typically **Customize Application** on your profile or permission set).  
 **You do not need:** Apex, Flow, or command-line tools to complete this guide.
 
@@ -10,7 +12,7 @@ This guide gets Record Health Check running on a Salesforce org and walks you th
 
 ## What you are building
 
-Record Health Check adds a **card** to a record page (for example, an Account page). The card runs a list of **Rules** you define in Setup and shows whether each Rule passed, failed, was skipped, or could not run.
+Record Health Check adds a **card** to a record page (for example, an Account page). The card runs a list of **Rules** you define in Setup and shows whether each Rule passed, failed, was skipped, or did not run.
 
 You configure two record types in **Setup → Custom Metadata Types**:
 
@@ -30,7 +32,7 @@ The card does **not** block saves or change field values. It only **shows** heal
 > [!IMPORTANT]
 > **API version:** The project ships at API **66.0** (`sfdx-project.json`). The v63.0 minimum applies to **FormulaEval** on the org, not the deploy package version.
 
-After deployment, assign permission sets so users can run the component (see Step 1b).
+After deployment, assign Permission Sets so users can run the component (see Step 1b).
 
 ## Step 1: Deploy the package
 
@@ -50,7 +52,7 @@ Then add only the sample Check Sets you actually want, one manifest at a time:
 sf project deploy start --manifest manifest/package-Account_Data_Quality.xml   # example: 4 formula rules
 ```
 
-See [Sample Check Set packages](../examples/index.md#sample-check-set-packages) for all set manifests. The `Account_Examples_*` sets are teaching material — deploy them in a sandbox or scratch org to learn from, and leave them out of production.
+See [Sample Check Set packages](../examples/index.md#sample-check-set-packages) for all set manifests. The `Account_Examples_*` sets are example material. Deploy them in a sandbox or scratch org to inspect patterns, and leave them out of production.
 
 **Full deploy** — the framework plus _every_ sample and example Check Set. Convenient for a scratch or dev org where you want the examples on hand:
 
@@ -66,31 +68,31 @@ sf project deploy start --manifest manifest/package.xml
 
 ### Option B: Without the CLI
 
-For a clean install, deploy `manifest/package-core.xml` first (framework only, no examples), then add individual `manifest/package-<CheckSet>.xml` files for any sample sets you want (see [Sample Check Set packages](../examples/index.md#sample-check-set-packages)). To get everything at once — examples included — deploy the `force-app` folder or `manifest/package.xml` through your org’s normal process: change set, DevOps Center, Copado, etc.
+For a clean install, deploy `manifest/package-core.xml` first (framework only, no examples), then add individual `manifest/package-<CheckSet>.xml` files for any sample sets you want (see [Sample Check Set packages](../examples/index.md#sample-check-set-packages)). To get everything at once — examples included — deploy the `force-app` folder or `manifest/package.xml` through your org’s normal process, such as change sets, DevOps Center, Copado, or another metadata deployment tool.
 
 ### After deployment you will have
 
 - The **recordHealthCheck** Lightning component
 - Custom Metadata Types for Check Sets and Rules
-- The sample Check Sets and Rules you chose to deploy — none with the clean install; a full deploy adds all **10 sample** Check Sets (88 Rules) plus **4 example** Check Sets (34 Rules), all on Account, which you can copy or turn off
-- Two permission sets (assign in Step 1b)
+- The sample Check Sets and Rules you chose to deploy — none with the clean install; a full deploy adds all **10 reusable sample** Check Sets (88 Rules), **4 teaching example** Check Sets (35 Rules), and **1 Account 360 demo** Check Set (9 Rules), all on Account, which you can copy or turn off
+- Two Permission Sets (assign in Step 1b)
 
-### Step 1b: Assign permission sets
+### Step 1b: Assign Permission Sets
 
-Users need Apex access to run the component. Assign the least-privilege permission set that matches what they need:
+Users need Apex access to run the component. Assign the least-privilege Permission Set that matches what they need:
 
 | API name | Setup label | Assign when |
 | -------- | ----------- | ----------- |
-| `Record_Health_Check_User` | Record Health Check User | Run the card on record pages (no debug detail, no provenance) |
+| `Record_Health_Check_User` | Record Health Check User | Run the card on record pages (no troubleshooting detail, no provenance) |
 | `Record_Health_Check_Admin` | Record Health Check Admin | Troubleshooting and audit: includes `Record_Health_Check_Debug`, `Record_Health_Check_View_Details`, and `Record_Health_Check_Configure` (configure is reserved for future tooling). Required for [Show Troubleshooting Details](../guides/debug-mode.md) and comparison provenance. |
 
-In **Setup → Permission Sets**, open the set → **Manage Assignments** → **Add Assignments**.
+In **Setup → Permission Sets**, open the Permission Set → **Manage Assignments** → **Add Assignments**.
 
-`Record_Health_Check_User` grants Apex class access to `RecordHealthCheckController` and `RecordHealthCheck` only. It does **not** grant debug detail.
+The Permission Set named `Record_Health_Check_User` grants Apex class access to `RecordHealthCheckController` and `RecordHealthCheck` only. It does **not** grant troubleshooting detail.
 
-**Verify assignment (release gate):** After assigning `Record_Health_Check_User`, open an Account on a page with the component and confirm checks run with pass/fail rows only: no **Debug detail** expander and no `[RHC]` console block. Assign `Record_Health_Check_Admin` only when you need Show Troubleshooting Details (see below).
+**Verify assignment:** After assigning the Permission Set named `Record_Health_Check_User`, open an Account on a page with the component and confirm checks run with pass/fail rows only: no **Troubleshooting detail** block and no `[RHC]` console block. Assign the Permission Set named `Record_Health_Check_Admin` only when you need Show Troubleshooting Details.
 
-**Show Troubleshooting Details:** If you enable **Show Troubleshooting Details** on a Check Set, you must also assign `Record_Health_Check_Admin` to see the extra lines on the card and console output. See [Show Troubleshooting Details guide](../guides/debug-mode.md).
+**Show Troubleshooting Details:** If you enable **Show Troubleshooting Details** on a Check Set, you must also assign the Permission Set named `Record_Health_Check_Admin` to see the extra lines on the card and console output. See [Show Troubleshooting Details guide](../guides/debug-mode.md).
 
 ## Step 2: Add the component to a record page
 
@@ -113,7 +115,7 @@ The component only works on **record pages** because it needs the current record
 
 1. Open any Account on the page you edited.
 2. If the Check Set **Start Checks** (`RunChecksWhen__c`) is **Run automatically when the page opens**, checks run after the page loads. If it is **Wait for the user to click Run**, click **Run** on the card.
-3. If the component is configured correctly, you will see a health check card with Rule rows and pass/fail results. When a Rule **fails**, look beneath the failure message for **Found** / **Expected** labelled chips (Query and Compare Two Queries checks) that show what the record produced versus what the rule required. Use **Comparison Display** on the Check Set to control whether passing rows also show values (see [Check Set fields](../metadata/check-set.md#comparison-display-comparisondisplay__c)). If you do not see the card at all, see [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
+3. If the component is configured correctly, you will see a health check card with checks and pass/fail results. When a Rule **fails**, look beneath the failure message for **Found** / **Expected** labelled chips (Query and Compare Two Queries checks) that show what the record produced versus what the rule required. Use **Found/Expected Display** on the Check Set to control whether passing checks also show values (see [Check Set fields](../metadata/check-set.md#foundexpected-display-comparisondisplay__c)). If you do not see the card at all, see [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
 
 **To view the sample configuration in Setup**
 
@@ -135,13 +137,13 @@ The simplest Rule is a **Check fields on this record** check: Billing City must 
    | Label | Master Label | `Billing City Required` |
    | Check Name | `CheckName__c` | `Billing City Required` |
    | Check Set | `Record_Health_Check_Set__c` | Your Check Set |
-   | Priority (lower runs first) | `RunOrder__c` | `100` (lower numbers run first) |
+   | Run Order (lower runs first) | `RunOrder__c` | `100` (lower numbers run first) |
    | Active | `IsActive__c` | Checked |
    | Check Type | `CheckMethod__c` | `Check fields on this record` |
    | Pass Condition (Formula) | `PassFailFormula__c` | `NOT(ISBLANK(BillingCity))` |
    | Applies To | `RunThisCheckWhen__c` | `All records` |
    | Severity | `Severity__c` | `Error` |
-   | Message When Failed | `MessageWhenFailed__c` | `Billing City is required.` |
+   | Message When Check Fails | `MessageWhenFailed__c` | `Billing City is required.` |
 
 3. **Save**, refresh the Account record page, and confirm the new Rule appears.
 
@@ -183,3 +185,5 @@ Details: [Design Specification 13](../reference/record-health-check-design-spec.
 | Review runtime contract | [Design Specification](../reference/record-health-check-design-spec.md) |
 | Navigate source code | [Architecture Map](../reference/architecture-map.md) |
 | Fix a failure | [Configuration Guide: troubleshooting](../guides/configuration-guide.md#13-troubleshooting) |
+
+More patterns: [Examples catalog](../examples/index.md#core-examples).

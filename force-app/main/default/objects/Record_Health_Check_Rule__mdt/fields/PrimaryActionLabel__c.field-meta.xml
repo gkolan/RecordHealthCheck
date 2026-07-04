@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>PrimaryActionLabel__c</fullName>
-    <label>Primary Action Label</label>
+    <label>Action Button Label</label>
     <description
   >Optional label for a read-only remediation link shown with fix instructions.</description>
     <type>Text</type>

@@ -3,11 +3,11 @@
     <fullName>PassFailFormula__c</fullName>
     <label>Pass Condition (Formula)</label>
     <description
-  >Salesforce formula syntax for Record formula checks only - return true (pass) or false (fail), e.g. NOT(ISBLANK(BillingCity)). For Single query list checks ("List includes any of" / "List excludes all of"), use Value To Test (list checks only) instead. Not used for any other Check Type.</description>
+  >Salesforce formula syntax used only when Check Type is Check fields on this record. Return true (pass) or false (fail), e.g. NOT(ISBLANK(BillingCity)). For list checks ("List includes any of" / "List excludes all of"), use Value To Test (list checks only) instead. Not used for any other Check Type.</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>5</visibleLines>
         <inlineHelpText
-  >Record formula checks: return true/false (e.g. NOT(ISBLANK(BillingCity))). For list checks ("List includes any of"/"List excludes all of"), use Value To Test (list checks only) instead.</inlineHelpText>
+  >Check fields on this record: return true/false (e.g. NOT(ISBLANK(BillingCity))). For list checks ("List includes any of"/"List excludes all of"), use Value To Test (list checks only) instead.</inlineHelpText>
     <required>false</required>
 </CustomField>

@@ -27,8 +27,8 @@ contributing, you agree that your contributions are licensed under the
    - What you expected vs. what happened.
    - The **Check Set** and **Rule** Developer Names involved (not screenshots of labels only).
    - The object and a sketch of the field/query values that triggered it.
-   - Whether **Debug Mode** was on, and the `[RHC]` summary from the browser console
-     (see [Debug Mode guide](docs/guides/debug-mode.md)). **Redact record data and Org IDs.**
+   - Whether **Show Troubleshooting Details** was on, and the `[RHC]` summary from the browser console
+     (see [Troubleshooting Details](docs/guides/debug-mode.md)). **Redact record data and Org IDs.**
    - Org type (Production / Sandbox / Scratch) and API version.
 4. Submit. A maintainer will triage and may ask for a minimal reproduction.
 

@@ -107,10 +107,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       Boolean passed = (Boolean) evalResult;
       // Populate Found / Expected for display. By default a Formula check has no
       // separable record value vs operand — the condition lives inside the
-      // expression — so we echo the formula as the expected condition (quoted via
-      // formatValue, e.g. Expected "ISBLANK(BillingCity)"). When the admin has
-      // declared explicit Found/Expected scalar formulas, those resolved values
-      // replace the echo so a balance check can show readable numbers instead.
+      // expression — so we echo the formula as the pass/fail condition under a
+      // "Passes when" key (e.g. Passes when ISBLANK(BillingCity)). When the admin
+      // has declared explicit Found/Expected scalar formulas, those resolved
+      // values replace the echo so a balance check can show readable numbers.
       applyFoundExpectedValues(rule, record, result);
       if (passed) {
         result.status = 'PASS';
@@ -186,11 +186,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     }
 
     // No explicit Expected formula (or it could not resolve): echo the boolean
-    // condition so the row still shows what was required.
+    // condition so the row still shows what was required. This is a pass/fail
+    // *condition*, not a comparison value, so it carries its own key ("Passes
+    // when") and is shown unquoted — quoting it like a scalar (Expected
+    // "ISBLANK(City)") framed the formula as an expected value and misread.
     if (result.expectedValue == null) {
-      result.expectedValue = RecordHealthCheckComparatorEngine.formatValue(
-        rule.PassFailFormula__c
-      );
+      result.expectedValue = rule.PassFailFormula__c;
+      result.expectedValueLabel = 'Passes when';
       result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
         'Pass/Fail condition',
         rule.PassFailFormula__c,
@@ -467,10 +469,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     if (String.isBlank(template) || record == null) {
       return template;
     }
-    String resolved = template;
+    String resolved = '';
+    Integer lastEnd = 0;
     Matcher m = PATTERN_TOKEN.matcher(template);
     while (m.find()) {
-      String token = m.group(0);
       String fieldPath = m.group(1);
       String value = '';
       try {
@@ -483,9 +485,43 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       } catch (Exception ex) {
         value = '';
       }
-      resolved = resolved.replace(token, value);
+      resolved += template.substring(lastEnd, m.start()) + value;
+      lastEnd = m.end();
     }
-    return resolved;
+    return resolved + template.substring(lastEnd);
+  }
+
+  /**
+   * Like resolveMergeFields, but URL-encodes each substituted value so a token
+   * such as {!Name} (which may contain spaces or reserved characters) is safe to
+   * drop into a URL query string. The surrounding URL template is left untouched;
+   * only the resolved token values are encoded. Used for remediation deep links.
+   */
+  public String resolveUrlMergeFields(String template, SObject record) {
+    if (String.isBlank(template) || record == null) {
+      return template;
+    }
+    String resolved = '';
+    Integer lastEnd = 0;
+    Matcher m = PATTERN_TOKEN.matcher(template);
+    while (m.find()) {
+      String fieldPath = m.group(1);
+      String value = '';
+      try {
+        Object raw = resolveFieldPath(record, fieldPath);
+        if (raw != null) {
+          String asString = String.valueOf(raw);
+          if (asString != 'null') {
+            value = EncodingUtil.urlEncode(asString, 'UTF-8');
+          }
+        }
+      } catch (Exception ex) {
+        value = '';
+      }
+      resolved += template.substring(lastEnd, m.start()) + value;
+      lastEnd = m.end();
+    }
+    return resolved + template.substring(lastEnd);
   }
 
   @TestVisible

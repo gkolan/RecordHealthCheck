@@ -118,6 +118,9 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   renderedCallback() {
+    // Content grows as checks resolve, so re-measure clamped value chips on every
+    // render to reveal a "Show more" toggle only on those that overflow two lines.
+    this._measureClampedValues();
     if (this._tooltipListenersBound) {
       return;
     }
@@ -399,6 +402,44 @@ export default class RecordHealthCheck extends LightningElement {
     };
   }
 
+  // Value chips clamp to two lines by default (see .rhc-cmp__val--clampable). A
+  // long formula or list therefore needs an in-place "Show more" affordance; we
+  // only want it on chips that actually overflow, which is only knowable after
+  // layout. Scan the rendered chips and reveal the sibling toggle on the ones
+  // whose full content is taller than the clamped box. Skip already-expanded
+  // chips so a re-render (another check resolving) does not hide their toggle.
+  _measureClampedValues() {
+    const chips = this.template.querySelectorAll("[data-clampval]");
+    for (const chip of chips) {
+      const pair = chip.closest(".rhc-cmp__pair");
+      const toggle = pair && pair.querySelector("[data-clamptoggle]");
+      if (!toggle) {
+        continue;
+      }
+      if (chip.classList.contains("rhc-cmp__val--expanded")) {
+        continue;
+      }
+      const overflowing = chip.scrollHeight - chip.clientHeight > 1;
+      toggle.hidden = !overflowing;
+    }
+  }
+
+  // Expand or re-clamp a single value chip in place. Imperative because the
+  // clamp/expand state is purely presentational and per-chip — threading it
+  // through the annotateCheck pipeline would need a stable key per chip for no
+  // functional gain.
+  handleToggleValue(event) {
+    const toggle = event.currentTarget;
+    const pair = toggle.closest(".rhc-cmp__pair");
+    const chip = pair && pair.querySelector("[data-clampval]");
+    if (!chip) {
+      return;
+    }
+    const expanded = chip.classList.toggle("rhc-cmp__val--expanded");
+    toggle.textContent = expanded ? "Show less" : "Show more";
+    toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+  }
+
   get checkCountLabel() {
     const n = this.totalCheckCount;
     return `${n} ${n === 1 ? "Check" : "Checks"}`;
@@ -471,6 +512,10 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   handleAction() {
+    // A Rerun starts a fresh evaluation, so per-row carets the user opened on the
+    // previous run should collapse back to the placement default rather than
+    // linger open over rows whose values are being recomputed.
+    this._expandedNames = {};
     this._runner.run(false);
   }
 

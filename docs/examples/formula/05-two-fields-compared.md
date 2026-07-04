@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Record formula |
+| **Evaluator** | Check fields on this record |
 | **Sample** | [`Billing_City_Matches_Shipping_City`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Billing_City_Matches_Shipping_City.md-meta.xml) |
 | **Check Set** | `Account_Examples_Formula` · [`package-Account_Examples_Formula.xml`](../../../manifest/package-Account_Examples_Formula.xml) |
 
@@ -22,8 +22,8 @@ Both operands are fields on the Account. No child query is needed.
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `BillingCity = ShippingCity` + applicability | **This example.** Equality and skip-when-empty in metadata. |
-| Single query | | Query compares query results to fixed values or other queries: not two on-record text fields directly. |
+| Check fields on this record | `BillingCity = ShippingCity` + applicability | **This example.** Equality and skip-when-empty in metadata. |
+| Check records with a query | | Query compares query results to fixed values or other queries: not two on-record text fields directly. |
 | Compare two queries | Two scalar queries returning each city | Overkill: both values are already on the record. |
 | Custom Apex | Apex string equality | Same outcome with unnecessary code. |
 
@@ -32,9 +32,9 @@ Both operands are fields on the Account. No child query is needed.
 | Need | Use instead |
 | ---- | ----------- |
 | Only check that one field is not blank | [Single required field](01-single-required-field.md) |
-| Compare an aggregate to an Account field | [Compare aggregate vs Account scalar](../compare-two-queries/02-aggregate-vs-account-scalar.md) |
+| Compare an aggregate to an Account field | [Compare aggregate vs Account scalar](../soql/compare-two-queries/02-aggregate-vs-account-scalar.md) |
 
-**Verdict:** Record formula with an applicability gate is the right evaluator for on-record field equality. Step up to Compare two queries only when one side of the comparison comes from a related query.
+**Verdict:** Check fields on this record with an applicability gate is the right evaluator for on-record field equality. Step up to Compare two queries only when one side of the comparison comes from a related query.
 
 ## Configuration
 
@@ -42,25 +42,25 @@ Both operands are fields on the Account. No child query is needed.
 | ----------- | ----- |
 | Check Name | Billing City Matches Shipping City |
 | Developer Name | Billing_City_Matches_Shipping_City |
-| Check Method | Record formula |
-| Pass/Fail Formula | `BillingCity = ShippingCity` |
+| Check Type | Check fields on this record |
+| Pass Condition (Formula) | `BillingCity = ShippingCity` |
 | Run This Check When | Only when a formula is true |
 | Run When Formula Is True | `NOT(ISBLANK(ShippingCity))` |
 | Severity | Warning |
-| Message When Failed | Billing City does not match Shipping City. |
+| Message When Check Fails | Billing City does not match Shipping City. |
 
 > [!NOTE]
-> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Run When Formula Is True to change when the comparison runs; edit Pass/Fail Formula to compare different fields.
+> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Run When Formula Is True to change when the comparison runs; edit Pass Condition (Formula) to compare different fields.
 
 ## How it works
 
-When Run When Formula Is True evaluates to true, the engine evaluates Pass/Fail Formula. Otherwise the check is skipped.
+When Run When Formula Is True evaluates to true, the engine evaluates Pass Condition (Formula). Otherwise the check is skipped.
 
 ```text
 -- Applicability (Run When Formula Is True)
 NOT(ISBLANK(ShippingCity))
 
--- Pass/Fail Formula
+-- Pass Condition (Formula)
 BillingCity = ShippingCity
 ```
 
@@ -81,7 +81,7 @@ sf project deploy start --manifest manifest/package-core.xml                    
 sf project deploy start --manifest manifest/package-Account_Examples_Formula.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

@@ -77,7 +77,7 @@ One line each. Lines counts flag the four refactor hotspots (see 6).
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
 | `RecordHealthCheckLogger` | 190 | Single logging facade for the framework. |
-| `RecordHealthCheckAccess` | 34 | Gates debug detail (`Record_Health_Check_Debug`) and comparison provenance (`Record_Health_Check_View_Details`). |
+| `RecordHealthCheckAccess` | 34 | Gates troubleshooting detail (`Record_Health_Check_Debug`) and comparison provenance (`Record_Health_Check_View_Details`). |
 | `RecordHealthCheckProvenance` | 73 | Renders structured provenance `Detail` into `actualValueDetail` / `expectedValueDetail` strings. |
 
 ### DTOs & contracts (data carriers: no behavior)
@@ -109,7 +109,7 @@ by concern: do **not** split into separate LWCs):
 |----------|------|------|
 | `Record_Health_Check_Set__mdt` | Custom Metadata | A named group of checks bound to one object + display settings. |
 | `Record_Health_Check_Rule__mdt` | Custom Metadata | One check: type, query/formula, comparator, severity, applicability, dependencies. |
-| Permission sets / custom permissions | | `Record_Health_Check_User`; `Record_Health_Check_Admin` (includes `Record_Health_Check_Debug`, `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`). |
+| Permission Sets / Custom Permissions | | `Record_Health_Check_User`; `Record_Health_Check_Admin` (includes `Record_Health_Check_Debug`, `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`). |
 
 ## 6. "Where do I change X?" index
 

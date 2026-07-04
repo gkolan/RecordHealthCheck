@@ -3,11 +3,11 @@
     <fullName>ValueToTest__c</fullName>
     <label>Value To Test (list checks only)</label>
     <description
-  >Required for a Single query check using the "List includes any of" / "List excludes all of" operators: enter the formula that returns the scalar field value to test against the list from the Second Query (e.g. BillingCountry). Leave blank for every other Check Type.</description>
+  >Required for a Check records with a query check using the "List includes any of" / "List excludes all of" operators: enter the formula that returns the value to test against the list from the Second Query (e.g. BillingCountry). Leave blank for every other Check Type.</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>5</visibleLines>
         <inlineHelpText
-  >List checks only ("List includes any of" / "List excludes all of"). Return the single field value to test against the Second Query list, e.g. BillingCountry. Leave blank for record-formula and all other query checks.</inlineHelpText>
+  >List checks only ("List includes any of" / "List excludes all of"). Return the single value to test against the Second Query list, e.g. BillingCountry. Leave blank for Check fields on this record and all other query checks.</inlineHelpText>
     <required>false</required>
 </CustomField>

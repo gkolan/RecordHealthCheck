@@ -1,3 +1,5 @@
+# LWC Behavior
+
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 
@@ -87,9 +89,10 @@ Before the first Manual run (both `OneAtATime` and `AllAtOnce`), shows one line:
 - Row status icons are **CSS-drawn** circles (`rhc-status-icon--*`): not `lightning-icon`.
 - Always renders `FAIL` (Error), `Warning`, `Info`, and `UNABLE_TO_EVALUATE` outcomes as full rows: these are actionable and are never collapsed into the summary bar. Only `PASS` and `SKIPPED` outcomes can be collapsed (via `PassedChecksDisplay__c` / `SkippedChecksDisplay__c`).
 - Applies `PassedChecksDisplay__c` and `SkippedChecksDisplay__c`: rows in `Hide` mode are filtered from the list even when `RowAppearance__c` is `AllAtOnce`.
-- Shows **Found** / **Expected** comparison chips per Check Set **`ComparisonDisplay__c`** (see [9](05-result-contract-and-reason-codes.md#comparison-display-contract)): failing rows show values inline in every mode; passing rows show inline only when `AllRows`, otherwise behind a disclosure caret (`OnDemand`) or hidden (`FailuresOnly`).
+- Shows **Found** / **Expected** comparison chips per Check Set **Found/Expected Display** (`ComparisonDisplay__c`; see [9](05-result-contract-and-reason-codes.md#comparison-display-contract)): failed checks show values inline in every mode; passing checks show inline only with **Show on every check** (`AllRows`), otherwise behind an expander with **On demand** (`OnDemand`) or hidden with **Failed checks only** (`FailuresOnly`).
 - Applies the App Builder **`comparisonDisclosure`** property only to the initial state of allowed comparison carets: `Inherit` and `Collapsed` start closed, `Expanded` pre-opens rows that already have a caret. The placement property cannot widen the Check Set's `ComparisonDisplay__c` policy.
 - When the viewer has **`Record_Health_Check_View_Details`**, expanding the caret also reveals **provenance** lines (`actualValueDetail` / `expectedValueDetail`) beneath the chips.
+- Shows a read-only remediation block on `FAIL` rows when Apex returns `actionUrl` and/or `fixInstructions`: the link uses `actionLabel` (defaulting to `Fix this` server-side when needed), and instructions render as quiet helper text. If URL sanitization drops the link, instructions can still render.
 - Renders `MessageWhenFailed__c` / `MessageWhenCannotRun__c` across multiple lines: newlines authored in Setup become separate visual lines (interior blank lines are preserved as spacing), and the lines are folded into one sentence for the row `aria-label`.
 - Shows `adminDetailMessage` **inline** (no click-to-expand), per-row debug-meta, and console footnote when `DebugMode__c` is on **and** the user has `Record_Health_Check_Debug` (see [Show Troubleshooting Details guide](../guides/debug-mode.md)).
 
@@ -128,11 +131,11 @@ CSS-drawn hover/focus popovers (`rhc-tooltip-anchor` + `::before` / `::after`). 
 - **Downward nubbin** is **`.rhc-stat__nubbin`** inside **`.rhc-stat__nubbin-host`**: a **grid sibling** of the footer anchor (not an ancestor). Host is `position: relative` and pill-sized; footer anchor stays `position: static`. Nubbin sits at `bottom: calc(100% + 0.25rem)` on the host so it **meets the bubble bottom** (same 0.25rem / 0.5rem spacing as row tooltips). **Do not** place the nubbin on the pill top or detach it from the bubble.
 - **Do not** center a `max-content` bubble on the pill with a very large `max-width`: that produces an unreadably wide one-line tooltip.
 
-### Diagnostics (debug mode)
+### Troubleshooting Details
 
-Requires `Record_Health_Check_Debug` plus **Show Troubleshooting Details** on the Check Set. Per-row debug lines, **Debug detail** on errors, console footnote, and `[RHC]` browser console summary after run completion. See [Show Troubleshooting Details guide](../guides/debug-mode.md).
+Requires `Record_Health_Check_Debug` plus **Show Troubleshooting Details** on the Check Set. Per-row troubleshooting lines, **Troubleshooting detail** on errors, console footnote, and `[RHC]` browser console summary after run completion. See [Troubleshooting Details](../guides/debug-mode.md).
 
-**Comparison provenance** (separate from debug mode): when the viewer has **`Record_Health_Check_View_Details`**, expanding a row's comparison caret may show provenance notes (`actualValueDetail` / `expectedValueDetail`). This does not require Show Troubleshooting Details.
+**Comparison provenance** is separate from Show Troubleshooting Details: when the viewer has **`Record_Health_Check_View_Details`**, expanding a row's comparison caret may show provenance notes (`actualValueDetail` / `expectedValueDetail`). This does not require Show Troubleshooting Details.
 
 - Error banner (setup/load failures) still uses `lightning-icon`.
 

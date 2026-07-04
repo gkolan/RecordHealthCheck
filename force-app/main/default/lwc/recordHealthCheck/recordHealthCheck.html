@@ -144,18 +144,83 @@
                     </template>
                   </span>
                 </template>
+                <template if:true={check.showActionBlock}>
+                  <div class="rhc-row__action">
+                    <template if:true={check.showAction}>
+                      <a
+                        class="rhc-row__action-link"
+                        href={check.actionUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >{check.actionLabel}</a
+                      >
+                    </template>
+                    <template if:true={check.showFixInstructions}>
+                      <p class="rhc-row__fix-instructions">
+                        {check.fixInstructions}
+                      </p>
+                    </template>
+                  </div>
+                </template>
+                <template if:true={check.showComparisonDivider}>
+                  <hr class="rhc-row__divider" aria-hidden="true" />
+                </template>
                 <template if:true={check.showInlineComparison}>
                   <span class="rhc-row__comparison">
                     <template if:true={check.showActual}>
                       <span class="rhc-cmp__pair">
-                        <span class="rhc-cmp__key">Found</span>
-                        <span class="rhc-cmp__val">{check.actualValue}</span>
+                        <span class="rhc-cmp__main">
+                          <span class="rhc-cmp__key">Found</span>
+                          <span
+                            class="rhc-cmp__val rhc-cmp__val--clampable"
+                            data-clampval
+                            >{check.actualValue}</span
+                          >
+                        </span>
+                        <button
+                          class="rhc-cmp__toggle"
+                          type="button"
+                          data-clamptoggle
+                          hidden
+                          aria-expanded="false"
+                          onclick={handleToggleValue}
+                        >
+                          Show more
+                        </button>
+                        <template if:true={check.showActualDetail}>
+                          <span class="rhc-cmp__source"
+                            >{check.actualValueDetail}</span
+                          >
+                        </template>
                       </span>
                     </template>
                     <template if:true={check.showExpected}>
                       <span class="rhc-cmp__pair">
-                        <span class="rhc-cmp__key">Expected</span>
-                        <span class="rhc-cmp__val">{check.expectedValue}</span>
+                        <span class="rhc-cmp__main">
+                          <span class="rhc-cmp__key"
+                            >{check.expectedKeyLabel}</span
+                          >
+                          <span
+                            class="rhc-cmp__val rhc-cmp__val--clampable"
+                            data-clampval
+                            >{check.expectedValue}</span
+                          >
+                        </span>
+                        <button
+                          class="rhc-cmp__toggle"
+                          type="button"
+                          data-clamptoggle
+                          hidden
+                          aria-expanded="false"
+                          onclick={handleToggleValue}
+                        >
+                          Show more
+                        </button>
+                        <template if:true={check.showExpectedDetail}>
+                          <span class="rhc-cmp__source"
+                            >{check.expectedValueDetail}</span
+                          >
+                        </template>
                       </span>
                     </template>
                   </span>
@@ -164,40 +229,59 @@
                   <div class="rhc-row__detail">
                     <template if:true={check.showExpandedActual}>
                       <span class="rhc-cmp__pair">
-                        <span class="rhc-cmp__key">Found</span>
-                        <span class="rhc-cmp__val">{check.actualValue}</span>
+                        <span class="rhc-cmp__main">
+                          <span class="rhc-cmp__key">Found</span>
+                          <span
+                            class="rhc-cmp__val rhc-cmp__val--clampable"
+                            data-clampval
+                            >{check.actualValue}</span
+                          >
+                        </span>
+                        <button
+                          class="rhc-cmp__toggle"
+                          type="button"
+                          data-clamptoggle
+                          hidden
+                          aria-expanded="false"
+                          onclick={handleToggleValue}
+                        >
+                          Show more
+                        </button>
+                        <template if:true={check.showActualDetail}>
+                          <span class="rhc-cmp__source"
+                            >{check.actualValueDetail}</span
+                          >
+                        </template>
                       </span>
                     </template>
                     <template if:true={check.showExpandedExpected}>
                       <span class="rhc-cmp__pair">
-                        <span class="rhc-cmp__key">Expected</span>
-                        <span class="rhc-cmp__val">{check.expectedValue}</span>
-                      </span>
-                    </template>
-                    <template if:true={check.showProvenance}>
-                      <div class="rhc-row__provenance-group">
-                        <span class="rhc-row__provenance-label"
-                          >Where these values came from</span
+                        <span class="rhc-cmp__main">
+                          <span class="rhc-cmp__key"
+                            >{check.expectedKeyLabel}</span
+                          >
+                          <span
+                            class="rhc-cmp__val rhc-cmp__val--clampable"
+                            data-clampval
+                            >{check.expectedValue}</span
+                          >
+                        </span>
+                        <button
+                          class="rhc-cmp__toggle"
+                          type="button"
+                          data-clamptoggle
+                          hidden
+                          aria-expanded="false"
+                          onclick={handleToggleValue}
                         >
-                        <template if:true={check.showActualDetail}>
-                          <p class="rhc-row__provenance">
-                            <span class="rhc-row__provenance-key">Found</span>
-                            <span class="rhc-row__provenance-val"
-                              >{check.actualValueDetail}</span
-                            >
-                          </p>
-                        </template>
+                          Show more
+                        </button>
                         <template if:true={check.showExpectedDetail}>
-                          <p class="rhc-row__provenance">
-                            <span class="rhc-row__provenance-key"
-                              >Expected</span
-                            >
-                            <span class="rhc-row__provenance-val"
-                              >{check.expectedValueDetail}</span
-                            >
-                          </p>
+                          <span class="rhc-cmp__source"
+                            >{check.expectedValueDetail}</span
+                          >
                         </template>
-                      </div>
+                      </span>
                     </template>
                   </div>
                 </template>

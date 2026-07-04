@@ -1,3 +1,5 @@
+# Check Types, Comparators, and Applicability
+
 > [!NOTE]
 > **Canonical source:** Section numbers and anchors in the [full design specification](../reference/record-health-check-design-spec.md) are stable for cross-links.
 
@@ -45,7 +47,7 @@ Runs `DataQuery__c` and `CompareToQuery__c`.
 
 ### Use custom Apex (`Apex`)
 
-Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, passes `RecordHealthCheckContext`. Use custom Apex may return `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. Any other status string is rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and failure message. Plugins may also set `actualValue` and `expectedValue` on the returned result; the engine passes them through unchanged.
+Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, passes `RecordHealthCheckContext`. Use custom Apex may return `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. Any other status string is rejected with `APEX_EVALUATOR_ERROR`. Determinate Apex results (`PASS` / `FAIL`) must set both `actualValue` and `expectedValue`; missing Found/Expected values are rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and failure message.
 
 **Plugin contract:** Implementations must use `with sharing`, enforce CRUD/FLS on
 their own queries, avoid unbounded DML/callouts, and return only a documented
@@ -86,7 +88,7 @@ Ordered comparisons try `Decimal`, then `DateTime`, then `Date`. Incompatible ty
 
 **Case sensitivity:** `Contains` and `DoesNotContain` are case-sensitive. `Equals` / `NotEquals` use typed comparison when possible; otherwise they compare string forms case-sensitively. List membership and list-mode overlap comparators (`ListContainsAny`, `ListDoesNotContainAny`, `ListsOverlap`, `ListContainsAll`, `ExactListMatch`) compare case-insensitively.
 
-**Display formatting:** On a determinate `PASS` or `FAIL`, Query and CompareTwoQueries evaluators populate `actualValue` and `expectedValue` on the result using `RecordHealthCheckComparatorEngine` helpers (`humanComparator`, `formatValue`, `formatList`, `describeExpected`). `formatValue` wraps **every** non-blank scalar in double quotes (text, number, Boolean, date/time) so mixed-type comparisons read uniformly: e.g. `"1"` beside `at least "2"` instead of bare `1` beside `"2"`. `humanComparator` returns verb phrases for the expected side: e.g. `to equal "Technology"`, `at least "50000"`, `to be one of ["North", "South"]`. Null/blank values render as `(blank)`; empty lists as `(none)`. List previews cap at 10 values with a `(N total)` suffix when truncated. `IsBlank` / `IsNotBlank` show the comparator phrase only (no operand). Formula evaluators route `PassFailFormula__c` through `formatValue` for `expectedValue` (e.g. `"NOT(ISBLANK(BillingCity))"`). The LWC renders these on **non-passing** rows only as labelled **Found** / **Expected** chips (see [15](09-lwc-behavior.md#15-lwc-behavior)).
+**Display formatting:** On a determinate `PASS` or `FAIL`, Query and CompareTwoQueries evaluators populate `actualValue` and `expectedValue` on the result using `RecordHealthCheckComparatorEngine` helpers (`humanComparator`, `formatValue`, `formatList`, `describeExpected`). `formatValue` wraps **every** non-blank scalar in double quotes (text, number, Boolean, date/time) so mixed-type comparisons read uniformly (`"1"` beside `at least "2"` instead of bare `1` beside `"2"`), and humanizes the value first: numbers gain thousands separators (`"50,000"`; a trailing `.0` is dropped), Booleans read `"Yes"` / `"No"`, dates/datetimes render in the running user's locale and time zone, and semicolon-delimited multi-select values render comma-separated (`"Hot, Warm, Cold"`). Typed values are converted directly; the same shapes arriving as metadata operand strings (the Expected side) are matched textually so both sides humanize identically. `humanComparator` returns verb phrases for the expected side: e.g. `to equal "Technology"`, `at least "50,000"`, `to be one of ["North", "South"]`. Null/blank values render as `(blank)`; empty lists as `(none)`. List previews cap at 10 values with a `(N total)` suffix when truncated. `IsBlank` / `IsNotBlank` show the comparator phrase only (no operand). Formula evaluators route `PassFailFormula__c` through `formatValue` for `expectedValue` (e.g. `"NOT(ISBLANK(BillingCity))"`). The LWC renders these on **non-passing** rows only as labelled **Found** / **Expected** chips (see [15](09-lwc-behavior.md#15-lwc-behavior)).
 
 ## 8. Applicability
 

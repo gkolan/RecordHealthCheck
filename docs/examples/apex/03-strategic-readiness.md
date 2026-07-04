@@ -14,7 +14,7 @@ For Accounts where Type is Strategic, a readiness score from zero to one hundred
 
 ## When to use this
 
-Reach for this pattern when the outcome must be **one collapsed pass/fail** driven by a **numeric readiness score** with partial credit: not four separate Rule rows. Each criterion alone can be a Formula or Query rule, but metadata cannot sum partial passes into a single score or tune the passing bar through JSON without re-wiring Rules.
+Reach for this pattern when the outcome must be **one collapsed pass/fail** driven by a **numeric readiness score** with partial credit: not four separate Rule checks. Each criterion alone can be a Formula or Query rule, but metadata cannot sum partial passes into a single score or tune the passing bar through JSON without re-wiring Rules.
 
 ## Why this evaluator
 
@@ -23,7 +23,7 @@ The reason this is Apex and not metadata is **weighted scoring**: four unrelated
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
 | Formula | `ISPICKVAL(Type, "Strategic")` as applicability only | Can gate **when** checks run, not score four unrelated signals. |
-| Single query (four rules) | Contact `COUNT() > 0`; open pipeline `SUM(Amount) > 0`; billing field blanks; activity via Task query | Produces **four rows**. Each is pass/fail: no partial score such as 75 out of 100. Changing "need three of four" versus "need 80 points" means re-wiring Rules, not JSON. |
+| Check records with a query (four rules) | Contact `COUNT() > 0`; open pipeline `SUM(Amount) > 0`; billing field blanks; activity via Task query | Produces **four rows**. Each is pass/fail: no partial score such as 75 out of 100. Changing "need three of four" versus "need 80 points" means re-wiring Rules, not JSON. |
 | Query + dependency chain | All four must pass in sequence | Still four rows. Failing one shows one failure: not "readiness score 50/80." Dependencies are AND between **Rules**, not weighted points. |
 | Compare two queries | Compare pipeline SUM to a static threshold | One slice only. Does not add contact, activity, and billing into one score. |
 | Custom Apex (example 01) | Task + Event activity in code | Solves activity OR across objects but not **adding** four criteria into one number. |
@@ -32,7 +32,7 @@ The reason this is Apex and not metadata is **weighted scoring**: four unrelated
 
 | Need | Use instead |
 | ---- | ----------- |
-| Strategic Accounts must have contacts **and** pipeline **and** billing (all mandatory) | Four [Query](../query/01-child-count-minimum-one.md) or [Formula](../formula/01-single-required-field.md) Rules, or a dependency chain: accept four rows |
+| Strategic Accounts must have contacts **and** pipeline **and** billing (all mandatory) | Four [Query](../soql/single-query/01-child-count-minimum-one.md) or [Formula](../formula/01-single-required-field.md) Rules, or a dependency chain: accept four rows |
 | Strategic Accounts need **any one** of several signals | Query Rules with applicability; no score |
 | Single readiness **score** with partial credit | **Apex** (this example) |
 
@@ -44,13 +44,13 @@ The reason this is Apex and not metadata is **weighted scoring**: four unrelated
 | ----------- | ----- |
 | Check Name | Strategic Account Is Ready |
 | Developer Name | Strategic_Account_Is_Ready |
-| Check Method | Custom Apex |
+| Check Type | Custom Apex |
 | Apex Class | `AccountStrategicReadinessCheck` |
 | Apex Settings (JSON) | `{"minScore": 80, "activityDaysBack": 60}` |
 | Run This Check When | Only when a formula is true |
 | Run When Formula Is True | `ISPICKVAL(Type, "Strategic")` |
 | Severity | Error |
-| Message When Failed | `This strategic account is not ready: readiness score is below the required minimum.` |
+| Message When Check Fails | `This strategic account is not ready: readiness score is below the required minimum.` |
 
 > [!NOTE]
 > This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. The sample rule sets the passing bar and activity window through `minScore` and `activityDaysBack`; change those values to retune the check, and the class reads them at run time.
@@ -166,7 +166,7 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
 - **Weighted scoring**: four criteria at equal weight; the passing bar changes through `minScore` in JSON without a code deploy.
 - **Reuse of sub-patterns**: activity OR logic from example 01 inside a composite evaluator.
 - **Applicability formula**: only Strategic Accounts invoke the queries.
-- **Found/Expected on pass and fail**: shows actual score versus required minimum, with passing-row visibility controlled by the Check Set's Comparison Display setting.
+- **Found/Expected on pass and fail**: shows actual score versus required minimum, with passing-check visibility controlled by the Check Set's Found/Expected Display setting.
 - **Provenance from Apex**: `actualProvenance` and `expectedProvenance` explain the score and threshold when the viewer has `Record_Health_Check_View_Details`.
 
 > [!NOTE]
@@ -181,7 +181,7 @@ sf project deploy start --manifest manifest/package-core.xml                   #
 sf project deploy start --manifest manifest/package-Account_Examples_Apex.xml  # this example's Check Set + class
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

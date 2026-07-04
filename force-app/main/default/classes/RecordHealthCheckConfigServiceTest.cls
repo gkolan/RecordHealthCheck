@@ -44,7 +44,8 @@ private class RecordHealthCheckConfigServiceTest {
   @isTest
   static void validateRejectsUnrecognizedComparisonDisplay() {
     // A fully-valid Set except for an unrecognized ComparisonDisplay reaches the
-    // strict validation added for (no legacy/blank fallback — ).
+    // strict validation branch. Blank is treated as the OnDemand default for
+    // upgraded metadata, but non-blank unknown values still fail.
     Record_Health_Check_Set__mdt checkSet = new Record_Health_Check_Set__mdt(
       IsActive__c = true,
       ObjectApiName__c = 'Account',

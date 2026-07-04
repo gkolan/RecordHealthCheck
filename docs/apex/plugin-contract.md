@@ -32,8 +32,8 @@ Source: [`RecordHealthCheckRule.cls`](../../force-app/main/default/classes/Recor
 | Field | Plugin sets | Notes |
 | ----- | ------- | ----- |
 | `status` | **Yes** | `PASS` or `FAIL` for normal checks |
-| `actualValue` | Optional | **Found** comparison value |
-| `expectedValue` | Optional | **Expected** comparison value |
+| `actualValue` | **Required for `PASS` / `FAIL`** | **Found** comparison value. Blank determinate Apex results are rejected with `APEX_EVALUATOR_ERROR`. |
+| `expectedValue` | **Required for `PASS` / `FAIL`** | **Expected** comparison value. Blank determinate Apex results are rejected with `APEX_EVALUATOR_ERROR`. |
 | `actualProvenance` | Optional | Internal detail for the Found side; rendered only as `actualValueDetail` when the viewer has `Record_Health_Check_View_Details` |
 | `expectedProvenance` | Optional | Internal detail for the Expected side; rendered only as `expectedValueDetail` when the viewer has `Record_Health_Check_View_Details` |
 | `message` | Optional | Used on `FAIL` when non-blank; else metadata message |

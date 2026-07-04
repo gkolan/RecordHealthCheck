@@ -6,12 +6,10 @@
 /**
  * Shared comparator + null/empty-behavior engine for the SOQL evaluators.
  * The scalar comparator core (Equals / NotEquals / Contains / ordered), value
- * equality, and EmptyResultBehavior resolution were previously duplicated in
- * RecordHealthCheckSoqlEvaluator and RecordHealthCheckDualSoqlEvaluator (and had
- * drifted). They now live here as pure static functions so single-query and
- * dual-query checks compare values identically. The richer single-query
- * comparators (multi-row, list, unary, NullBehavior-aware) live here too so all
- * comparator logic has one home.
+ * equality, and EmptyResultBehavior resolution live here as pure static
+ * functions so single-query and dual-query checks compare values identically.
+ * The richer single-query comparators (multi-row, list, unary, NullBehavior-
+ * aware) live here too, giving all comparator logic one home.
  * Throws RecordHealthCheckEvaluatorException so both evaluators map the same
  * reason codes onto UNABLE_TO_EVALUATE results.
  */
@@ -103,9 +101,9 @@ public with sharing class RecordHealthCheckComparatorEngine {
       return isBlank;
     if (comparator == 'IsNotBlank')
       return !isBlank;
-    // an unrecognized unary operator is a configuration error, not an
-    // indeterminate value. Returning null here previously misrouted it to the
-    // empty/zero-rows behavior; fail loudly so it surfaces as UNABLE instead.
+    // An unrecognized unary operator is a configuration error, not an
+    // indeterminate value. Fail loudly so it surfaces as UNABLE rather than
+    // being misrouted into the empty/zero-rows behavior.
     throw new RecordHealthCheckEvaluatorException(
       'INVALID_COMPARATOR',
       'Unary comparator "' + comparator + '" is not recognized.'
@@ -179,14 +177,36 @@ public with sharing class RecordHealthCheckComparatorEngine {
       // ConfigService.validateQueryRule blocks this at config time; guard at runtime too.
       throw new RecordHealthCheckEvaluatorException(
         'INVALID_COMPARATOR',
-        'Compare as two lists is only supported when Check Method is Compare two queries.'
+        'Compare query results as lists is only supported when Check Type is Compare two queries.'
       );
     }
 
     throw new RecordHealthCheckEvaluatorException(
       'INVALID_COMPARATOR',
-      'Multiple Records Handling "' + mode + '" is not recognized.'
+      'How To Interpret Query Results "' + mode + '" is not recognized.'
     );
+  }
+
+  /**
+   * Counts rows in a multi-row primary list that fail the per-row comparator, for
+   * building a readable "N of M …" summary. Rows the null behavior skips (row
+   * comparator returns null) are not counted as failing.
+   */
+  public static Integer countFailingRows(
+    Record_Health_Check_Rule__mdt rule,
+    List<Object> primaryList,
+    Object comparisonValue
+  ) {
+    Integer failing = 0;
+    if (primaryList == null) {
+      return 0;
+    }
+    for (Object val : primaryList) {
+      if (applyRowComparator(rule, val, comparisonValue) == false) {
+        failing++;
+      }
+    }
+    return failing;
   }
 
   public static Boolean applyRowComparator(
@@ -336,14 +356,174 @@ public with sharing class RecordHealthCheckComparatorEngine {
    * metadata, and leaving numbers bare produced the jarring `Found 1 … at least
    * "2"`. Uniform quoting renders that as `Found "1" … at least "2"`, and also
    * delimits values with surrounding spaces or embedded punctuation.
+   *
+   * Before quoting, values are humanized for readability: numbers gain thousands
+   * separators, Booleans read Yes/No, and dates/datetimes render in the running
+   * user's locale and time zone. Typed values (a checkbox or datetime field, a
+   * scalar formula) are converted directly; the same shapes arriving as metadata
+   * operand *strings* (the Expected side) are matched textually so both sides of
+   * one comparison humanize the same way.
    */
   public static String formatValue(Object value) {
     if (value == null)
       return '(blank)';
+
+    // Typed values carry their Apex type here, so humanize them before
+    // String.valueOf flattens them into a raw, unformatted string.
+    if (value instanceof Boolean) {
+      return '"' + (((Boolean) value) ? 'Yes' : 'No') + '"';
+    }
+    if (value instanceof Datetime) {
+      // .format() honors the user's locale and time zone; String.valueOf would
+      // emit a raw GMT "2026-07-04 17:30:00".
+      return '"' + ((Datetime) value).format() + '"';
+    }
+    if (value instanceof Date) {
+      return '"' + ((Date) value).format() + '"';
+    }
+
     String s = String.valueOf(value);
     if (s == null || s.trim() == '')
       return '(blank)';
+    String humanized = humanizeString(s);
+    if (humanized != null)
+      s = humanized;
     return '"' + s + '"';
+  }
+
+  /**
+   * Humanizes a raw display string that arrived without its Apex type (a metadata
+   * operand, or a value already flattened by String.valueOf). Tries each shape in
+   * order and returns the first match, or null when the text should stand as-is.
+   * Number is tried first (its pattern excludes the others); Boolean before date;
+   * multi-select last since only it keys off a delimiter that plain text may hold.
+   */
+  private static String humanizeString(String s) {
+    String asNumber = humanizeNumber(s);
+    if (asNumber != null)
+      return asNumber;
+    String asBoolean = humanizeBooleanText(s);
+    if (asBoolean != null)
+      return asBoolean;
+    String asDate = humanizeDateText(s);
+    if (asDate != null)
+      return asDate;
+    return humanizeMultiSelect(s);
+  }
+
+  // Matches a plain integer or decimal (optionally signed). Anything with letters,
+  // separators, currency symbols, or exponents falls through untouched so IDs,
+  // codes, and pre-formatted text keep their exact spelling.
+  private static final Pattern NUMERIC_PATTERN = Pattern.compile(
+    '^-?\\d+(\\.\\d+)?$'
+  );
+
+  // ISO date (YYYY-MM-DD) and datetime (date + space/T + HH:MM:SS) — the shapes a
+  // date/datetime operand or a String.valueOf'd temporal value takes. Trailing
+  // fractional seconds / zone offsets are tolerated but ignored; groups feed
+  // Date/Datetime.newInstance so parsing is deterministic and never locale-bound.
+  private static final Pattern DATE_PATTERN = Pattern.compile(
+    '^(\\d{4})-(\\d{2})-(\\d{2})$'
+  );
+  private static final Pattern DATETIME_PATTERN = Pattern.compile(
+    '^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2}):(\\d{2}).*$'
+  );
+
+  /** Boolean operand text → Yes/No; null when the string is not a boolean. */
+  private static String humanizeBooleanText(String raw) {
+    String s = raw.trim();
+    if (s.equalsIgnoreCase('true'))
+      return 'Yes';
+    if (s.equalsIgnoreCase('false'))
+      return 'No';
+    return null;
+  }
+
+  /**
+   * ISO date/datetime text → the running user's locale/time-zone format (e.g.
+   * "7/4/2026" or "7/4/2026, 5:30 PM"). Returns null when the string is not an
+   * ISO temporal value so ordinary text is left alone.
+   */
+  private static String humanizeDateText(String raw) {
+    String s = raw.trim();
+    Matcher dt = DATETIME_PATTERN.matcher(s);
+    if (dt.matches()) {
+      return Datetime.newInstance(
+          Integer.valueOf(dt.group(1)),
+          Integer.valueOf(dt.group(2)),
+          Integer.valueOf(dt.group(3)),
+          Integer.valueOf(dt.group(4)),
+          Integer.valueOf(dt.group(5)),
+          Integer.valueOf(dt.group(6))
+        )
+        .format();
+    }
+    Matcher d = DATE_PATTERN.matcher(s);
+    if (d.matches()) {
+      return Date.newInstance(
+          Integer.valueOf(d.group(1)),
+          Integer.valueOf(d.group(2)),
+          Integer.valueOf(d.group(3))
+        )
+        .format();
+    }
+    return null;
+  }
+
+  /**
+   * Semicolon-delimited multi-select picklist text → a comma-separated list
+   * ("Hot;Warm;Cold" → "Hot, Warm, Cold"). Returns null when there is no
+   * delimiter so single values fall through unchanged.
+   */
+  private static String humanizeMultiSelect(String raw) {
+    if (!raw.contains(';'))
+      return null;
+    List<String> cleaned = new List<String>();
+    for (String part : raw.split(';')) {
+      String trimmed = part.trim();
+      if (trimmed != '')
+        cleaned.add(trimmed);
+    }
+    return cleaned.isEmpty() ? null : String.join(cleaned, ', ');
+  }
+
+  /**
+   * Renders a bare number for humans: groups the integer part with thousands
+   * separators and drops a fractional part that is all zeros, so a Decimal
+   * "70000.0" reads "70,000" and a metadata operand string "500000" reads
+   * "500,000". A genuine fraction like "70000.5" keeps its digits ("70,000.5").
+   * Returns null when the input is not a plain number, signalling the caller to
+   * leave the original string alone.
+   */
+  private static String humanizeNumber(String raw) {
+    if (raw == null)
+      return null;
+    String s = raw.trim();
+    if (!NUMERIC_PATTERN.matcher(s).matches())
+      return null;
+
+    Boolean negative = s.startsWith('-');
+    if (negative)
+      s = s.substring(1);
+
+    String intPart = s;
+    String fracPart = '';
+    Integer dot = s.indexOf('.');
+    if (dot >= 0) {
+      intPart = s.substring(0, dot);
+      // Trim trailing zeros so a scale-1 Decimal's ".0" disappears while real
+      // fractional digits survive.
+      fracPart = s.substring(dot + 1).replaceFirst('0+$', '');
+    }
+
+    // Insert a comma before every group of three digits that is followed only by
+    // complete groups of three — standard right-to-left thousands grouping.
+    String grouped = intPart.replaceAll('(\\d)(?=(\\d{3})+$)', '$1,');
+
+    String out = (negative ? '-' : '') + grouped;
+    if (fracPart != '')
+      out += '.' + fracPart;
+    return out;
   }
 
   /** Renders a list for display, capped so a large query result stays readable. */

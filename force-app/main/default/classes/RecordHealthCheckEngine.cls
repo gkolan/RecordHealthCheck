@@ -14,8 +14,8 @@ public with sharing class RecordHealthCheckEngine {
   private static final Pattern PATTERN_WORD = Pattern.compile(
     '\\b[A-Za-z_][A-Za-z0-9_]*\\b'
   );
-  // GROUP BY / aggregate detection lives in RecordHealthCheckSoqlTemplate
-  // (the single SOQL-shape authority); the local patterns here were dead.
+  // GROUP BY / aggregate detection lives in RecordHealthCheckSoqlTemplate,
+  // the single SOQL-shape authority.
 
   // Caps how deep a formula → formula → … chain is walked when expanding
   // calculated-field dependencies, so a misconfigured or cyclic graph can never
@@ -24,8 +24,8 @@ public with sharing class RecordHealthCheckEngine {
 
   // Salesforce formula function names and literals — a word matching one of these
   // is part of the expression syntax, not a field, so it is never added to the
-  // SELECT. Static so it is built once per transaction rather than per scan
-  // (the scan now runs recursively across the whole dependency chain).
+  // SELECT. Static so it is built once per transaction rather than once per
+  // scan (a scan walks the whole formula dependency chain recursively).
   private static final Set<String> FORMULA_FUNCTION_WORDS = new Set<String>{
     'ABS',
     'AND',
@@ -155,13 +155,13 @@ public with sharing class RecordHealthCheckEngine {
     Long startMs = System.currentTimeMillis();
 
     // do NOT reset the FormulaEval budget here. Salesforce's 100-call
-    // FormulaEval limit is transaction-wide and only clears at the end of the
-    // Apex transaction — not per check. Resetting a framework counter per check
-    // made the guard lie: in any caller that loops evaluate() in one transaction
-    // (Flow, batch, anonymous Apex), the framework count returned to zero while
-    // the real platform count kept climbing, so the guard could green-light the
-    // call that hits the uncatchable governor limit. The counter is now allowed
-    // to accumulate across the whole transaction, matching the platform.
+    // The platform FormulaEval limit is transaction-wide and only clears at the
+    // end of the Apex transaction, not per check, so the framework counter must
+    // accumulate across the whole transaction too. Resetting it per check would
+    // let any caller that loops evaluate() in one transaction (Flow, batch,
+    // anonymous Apex) drive the framework count back to zero while the real
+    // platform count keeps climbing — the guard would then green-light the call
+    // that hits the uncatchable governor limit.
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.checkDeveloperName = checkDeveloperName;
@@ -451,23 +451,14 @@ public with sharing class RecordHealthCheckEngine {
     RecordHealthCheckResult evalResult = routeEvaluator(rule, recordId, record);
 
     // 6. Resolve merge fields in result messages; a bad token must not change status.
-    // FAIL re-derives its message from MessageWhenFailed__c; every other non-PASS
-    // status (UNABLE_TO_EVALUATE / ERROR / SKIPPED) carries a
-    // MessageWhenCannotRun__c or skip template the evaluator already placed on
-    // the result. Both can contain {!FieldName} tokens, so a token like {!Name}
-    // must never reach the UI for any check type (Query, CompareTwoQueries
-    // Apex, Formula).
-    if (
-      evalResult.status == 'FAIL' &&
-      String.isNotBlank(rule.MessageWhenFailed__c)
-    ) {
-      evalResult.message = formulaEvaluator.resolveMergeFields(
-        rule.MessageWhenFailed__c,
-        record
-      );
-    } else {
-      resolveResultMessage(evalResult, record);
-    }
+    resolveEvalResultMessage(evalResult, rule, record);
+
+    // 6b. Guided remediation: a FAIL may carry a read-only deep link the admin
+    // authored per rule. Populated only on FAIL (remediation is meaningless on a
+    // pass, and a non-determinate status may not have a loaded record to resolve
+    // tokens against). The URL is token-resolved against the record and then
+    // sanitized before it can reach the UI as an href.
+    populateRemediationAction(evalResult, rule, record);
 
     // 7. Result logging (severity-mapped) and adminDetailMessage propagation.
     // PASS/SKIPPED are routine (DEBUG); FAIL is noteworthy (INFO); anything
@@ -567,7 +558,7 @@ public with sharing class RecordHealthCheckEngine {
     result.priority = rule.RunOrder__c;
     result.status = 'UNABLE_TO_EVALUATE';
     result.reasonCode = 'INVALID_CHECK_TYPE';
-    result.message = 'This Check Method is not recognized.';
+    result.message = 'This Check Type is not recognized.';
     return result;
   }
 
@@ -837,6 +828,11 @@ public with sharing class RecordHealthCheckEngine {
     // turns them into blanks and they must never make record loading fail.
     addMergeFields(fields, objectType, rule.MessageWhenFailed__c);
     addMergeFields(fields, objectType, rule.MessageWhenCannotRun__c);
+    // Remediation link fields may carry {!FieldName} tokens (including relationship
+    // paths like {!Owner.ManagerId}); load their fields so the token resolves.
+    addMergeFields(fields, objectType, rule.PrimaryActionUrl__c);
+    addMergeFields(fields, objectType, rule.PrimaryActionLabel__c);
+    addMergeFields(fields, objectType, rule.FixInstructions__c);
     addMergeFields(fields, objectType, rule.DataQuery__c);
     addMergeFields(fields, objectType, rule.CompareToQuery__c);
     addMergeFields(fields, objectType, rule.RunWhenCountQuery__c);
@@ -853,6 +849,10 @@ public with sharing class RecordHealthCheckEngine {
       // List checks read the scalar from ValueToTest__c; RecordFormula compares to RecordFormulaValue__c.
       addFormulaFields(fields, objectType, rule.ValueToTest__c);
       addFormulaFields(fields, objectType, rule.RecordFormulaValue__c);
+      // Multi-row summary overrides may reference record fields alongside the
+      // computed {!failCount}/{!totalCount} count tokens.
+      addMergeFields(fields, objectType, rule.FoundSummaryOverride__c);
+      addMergeFields(fields, objectType, rule.ExpectedSummaryOverride__c);
     }
     // CompareTwoQueries: both sides are SOQL — merge tokens already handled above
     if (rule.RunThisCheckWhen__c == 'Formula') {
@@ -1190,13 +1190,38 @@ public with sharing class RecordHealthCheckEngine {
   }
 
   /**
-   * Resolves {!FieldName} merge tokens in a result's user-facing message so a
-   * token like {!Name} never reaches the UI. Applies to every check type because
-   * it runs on the final result rather than per-evaluator. Framework messages
-   * carry no tokens (no-op) and PASS rows usually have no message. A bad token
-   * collapses to empty string and never changes status. Requires the base
-   * record to be loaded; callers invoke it only after step 3.
+   * Resolves merge tokens on the final result message. On FAIL, a non-blank
+   * evaluator message (for example a custom Apex plugin message naming specific
+   * records) is preserved; MessageWhenFailed__c is the fallback when the
+   * evaluator left message blank. Every other non-PASS status carries a
+   * MessageWhenCannotRun__c or skip template the evaluator already placed on
+   * the result. A bad token collapses to empty string and never changes status.
    */
+  @TestVisible
+  private void resolveEvalResultMessage(
+    RecordHealthCheckResult evalResult,
+    Record_Health_Check_Rule__mdt rule,
+    SObject record
+  ) {
+    if (evalResult == null) {
+      return;
+    }
+    if (evalResult.status == 'FAIL') {
+      if (String.isBlank(evalResult.message)) {
+        evalResult.message = String.isNotBlank(rule.MessageWhenFailed__c)
+          ? formulaEvaluator.resolveMergeFields(
+              rule.MessageWhenFailed__c,
+              record
+            )
+          : 'Check failed.';
+      } else {
+        resolveResultMessage(evalResult, record);
+      }
+      return;
+    }
+    resolveResultMessage(evalResult, record);
+  }
+
   private void resolveResultMessage(
     RecordHealthCheckResult result,
     SObject record
@@ -1207,6 +1232,95 @@ public with sharing class RecordHealthCheckEngine {
         record
       );
     }
+  }
+
+  /**
+   * Populates the read-only remediation link on a FAIL result from the rule's
+   * PrimaryAction / FixInstructions fields. The URL is token-resolved against the
+   * record (with each substituted value URL-encoded) and then sanitized; an
+   * unsafe or over-length URL is dropped rather than surfaced as an href, but any
+   * FixInstructions still render so the row keeps its guidance. Non-FAIL statuses
+   * carry no link — remediation is meaningless on a pass and non-determinate
+   * statuses may lack a loaded record to resolve tokens against.
+   */
+  @TestVisible
+  private void populateRemediationAction(
+    RecordHealthCheckResult result,
+    Record_Health_Check_Rule__mdt rule,
+    SObject record
+  ) {
+    if (result == null || result.status != 'FAIL') {
+      return;
+    }
+
+    // Instructions (and an optional label) can stand on their own even without a
+    // link, so resolve them regardless of URL validity.
+    result.fixInstructions = String.isBlank(rule.FixInstructions__c)
+      ? null
+      : formulaEvaluator.resolveMergeFields(rule.FixInstructions__c, record);
+
+    if (String.isBlank(rule.PrimaryActionUrl__c)) {
+      return;
+    }
+
+    String resolvedUrl = formulaEvaluator.resolveUrlMergeFields(
+      rule.PrimaryActionUrl__c,
+      record
+    );
+    String safeUrl = sanitizeActionUrl(resolvedUrl);
+    if (safeUrl == null) {
+      // Suppress the link but leave a breadcrumb in the admin-only detail channel.
+      if (String.isBlank(result.detailMessage)) {
+        result.detailMessage =
+          'Remediation link suppressed: resolved URL failed validation (scheme or length). Resolved value: ' +
+          resolvedUrl;
+      }
+      return;
+    }
+
+    result.actionUrl = safeUrl;
+    result.actionLabel = String.isBlank(rule.PrimaryActionLabel__c)
+      ? 'Fix this'
+      : formulaEvaluator.resolveMergeFields(rule.PrimaryActionLabel__c, record);
+  }
+
+  /**
+   * Returns a URL safe to render as an href, or null if it must be rejected.
+   * Allowed: a same-org relative path (single leading slash, not protocol-relative
+   * "//") or an absolute https:// URL. Everything else — javascript:, data:,
+   * plain http:, protocol-relative, whitespace-obfuscated schemes, or anything
+   * over the 2000-char field ceiling — is rejected.
+   */
+  @TestVisible
+  private String sanitizeActionUrl(String url) {
+    if (String.isBlank(url)) {
+      return null;
+    }
+    String trimmed = url.trim();
+    if (trimmed.length() > 2000) {
+      return null;
+    }
+    // Control characters can smuggle a scheme past the check (e.g. "java\nscript:").
+    if (
+      trimmed.contains('\n') ||
+      trimmed.contains('\r') ||
+      trimmed.contains('\t')
+    ) {
+      return null;
+    }
+    if (trimmed.contains('\\')) {
+      return null;
+    }
+    if (trimmed.startsWith('//')) {
+      return null; // protocol-relative → resolves off-org
+    }
+    if (trimmed.startsWith('/')) {
+      return trimmed; // same-org relative path
+    }
+    if (trimmed.toLowerCase().startsWith('https://')) {
+      return trimmed;
+    }
+    return null;
   }
 
   @TestVisible

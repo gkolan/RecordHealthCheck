@@ -61,11 +61,15 @@ public class RecordHealthCheckProvenance {
       note = d.sourceLabel.trim() + ' → ' + d.rawValueLabel.trim();
     } else if (hasSource) {
       note = d.sourceLabel.trim();
-    } else {
+    } else if (hasRaw) {
       note = d.rawValueLabel.trim();
+    } else {
+      note = '';
     }
     if (hasCoercion) {
-      note += ' (' + d.coercionLabel.trim() + ')';
+      note += String.isBlank(note)
+        ? '(' + d.coercionLabel.trim() + ')'
+        : ' (' + d.coercionLabel.trim() + ')';
     }
     return note;
   }

@@ -23,12 +23,12 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
             href="https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main"
             >Deploy to Salesforce</a
           >
-          <a class="btn btn-ghost btn-lg" href="#install">Install in your org</a>
+          <a class="btn btn-ghost btn-lg" href="{{ '/quick-start.html' | relative_url }}">Quick Start</a>
         </div>
         <div class="badge-row">
           <span class="ghbadge"><span class="k">license</span><span class="v ok">Apache-2.0</span></span>
           <span class="ghbadge"><span class="k">Salesforce API</span><span class="v">66.0</span></span>
-          <span class="ghbadge"><span class="k">sample sets</span><span class="v">10 · 88 rules</span></span>
+          <span class="ghbadge"><span class="k">Account sets</span><span class="v">15 · 132 rules</span></span>
         </div>
       </div>
 
@@ -65,7 +65,7 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
             </div>
             <div class="rhc-row">
               <span class="ic pass">✓</span>
-              <span class="txt"><b>Activity in the last 90 days</b></span>
+              <span class="txt"><b>Recent Activity in the last 90 days</b></span>
               <span class="pass-lbl">Pass</span>
             </div>
           </div>
@@ -80,10 +80,10 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
   <div class="wrap">
     <div class="sec-head">
       <div class="kicker">Install</div>
-      <h2>Up and running in minutes</h2>
+      <h2>Install in a sandbox</h2>
       <p>
-        The component is read-only, so deploying never changes your data. Pick
-        the path that suits you.
+        The component is read-only, so deploying never changes your data. Use
+        the deploy button or the Salesforce CLI.
       </p>
     </div>
 
@@ -148,15 +148,15 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
   </div>
 </section>
 
-<!-- ── Example use cases (high priority — users want these first) ────────── -->
+<!-- ── Example use cases (curated first, catalog second) ─────────────────── -->
 <section class="band">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker">Example use cases</div>
-      <h2>From a single formula to custom Apex</h2>
+      <div class="kicker">Curated examples</div>
+      <h2>Learn the pattern, then explore</h2>
       <p>
-        The repo ships 10 sample Check Sets and 88 Rules for Account. Each links
-        to a full, copy-paste walkthrough.
+        Start with the four core examples. Use the full catalog after first
+        setup when a business rule needs a specific variation.
       </p>
     </div>
     <div class="teaser-grid">
@@ -165,12 +165,12 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
         <h4>Phone or Website required</h4>
         <p>At least one of Phone or Website must be populated; both blank fails.</p>
       </a>
-      <a class="teaser" href="{{ '/examples/query/01-child-count-minimum-one.html' | relative_url }}">
+      <a class="teaser" href="{{ '/examples/soql/single-query/01-child-count-minimum-one.html' | relative_url }}">
         <div class="tt"><span class="ref">Check records with a query</span></div>
         <h4>At least one Contact</h4>
         <p>The Account must have one or more related Contacts (COUNT vs a threshold).</p>
       </a>
-      <a class="teaser" href="{{ '/examples/compare-two-queries/01-aggregate-counts.html' | relative_url }}">
+      <a class="teaser" href="{{ '/examples/soql/compare-two-queries/01-aggregate-counts.html' | relative_url }}">
         <div class="tt"><span class="ref">Compare two queries</span></div>
         <h4>Contacts vs open Opportunities</h4>
         <p>Contact count must not exceed the count of open Opportunities on the Account.</p>
@@ -182,7 +182,7 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
       </a>
     </div>
     <div class="morelink">
-      <a href="{{ '/examples/' | relative_url }}">Browse the full examples catalog →</a>
+      <a href="{{ '/examples/' | relative_url }}">Browse examples after first setup →</a>
     </div>
   </div>
 </section>
@@ -244,54 +244,97 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
 </section>
 
 <!-- ── Documentation ─────────────────────────────────────────────────────── -->
-<section class="band">
+<section class="band" id="docs">
   <div class="wrap">
     <div class="sec-head">
       <div class="kicker">Documentation</div>
-      <h2>Everything, by topic</h2>
+      <h2>Choose the smallest useful next step</h2>
+      <p>
+        First setup stays short. Reference pages hold the field-level details.
+      </p>
     </div>
-    <div class="docs-grid">
-      <a class="doc-card" href="{{ '/installation/getting-started.html' | relative_url }}">
-        <div class="dt">Getting Started</div>
-        <div class="dd">Deploy the package and create your first Rule.</div>
+
+    <div class="doc-paths">
+      <a class="doc-path primary" href="{{ '/quick-start.html' | relative_url }}">
+        <div class="path-kicker">New here</div>
+        <h3>Start quickly</h3>
+        <p>One card, one Rule, one business-rule pattern.</p>
+        <span>Open Quick Start</span>
       </a>
-      <a class="doc-card" href="{{ '/installation/sandbox.html' | relative_url }}">
-        <div class="dt">Install in a sandbox</div>
-        <div class="dd">Click-by-click walkthrough using the Deploy button.</div>
+      <a class="doc-path" href="{{ '/installation/admin-quick-start.html' | relative_url }}">
+        <div class="path-kicker">Admin</div>
+        <h3>Understand what users see</h3>
+        <p>The plain-English model and result statuses.</p>
+        <span>Read Admin Quick Start</span>
       </a>
-      <a class="doc-card" href="{{ '/guides/configuration-guide.html' | relative_url }}">
-        <div class="dt">Configuration Guide</div>
-        <div class="dd">Every Check Set and Rule field, picklist, and evaluator.</div>
-      </a>
-      <a class="doc-card" href="{{ '/metadata/' | relative_url }}">
-        <div class="dt">Metadata reference</div>
-        <div class="dd">Custom Metadata types, Check Set and Rule fields.</div>
-      </a>
-      <a class="doc-card" href="{{ '/examples/' | relative_url }}">
-        <div class="dt">Examples catalog</div>
-        <div class="dd">Copy-paste patterns for every check type.</div>
-      </a>
-      <a class="doc-card" href="{{ '/guides/llm-configuration.html' | relative_url }}">
-        <div class="dt">Configure with AI</div>
-        <div class="dd">Paste the system prompt into ChatGPT, Gemini, or Cursor.</div>
-      </a>
-      <a class="doc-card" href="{{ '/apex/plugin-reference.html' | relative_url }}">
-        <div class="dt">Apex plugin reference</div>
-        <div class="dd">Call the engine and write custom Apex checks.</div>
-      </a>
-      <a class="doc-card" href="{{ '/guides/debug-mode.html' | relative_url }}">
-        <div class="dt">Show Troubleshooting Details</div>
-        <div class="dd">Optional troubleshooting detail on the card and console.</div>
-      </a>
-      <a class="doc-card" href="{{ '/guides/cli-commands.html' | relative_url }}">
-        <div class="dt">CLI commands</div>
-        <div class="dd">Deploy, test, lint, and regenerate docs with sf CLI.</div>
-      </a>
-      <a class="doc-card" href="{{ '/spec/' | relative_url }}">
-        <div class="dt">Design Specification</div>
-        <div class="dd">The formal contract, split by topic.</div>
+      <a class="doc-path" href="{{ '/examples/' | relative_url }}">
+        <div class="path-kicker">Builder</div>
+        <h3>Explore the example library</h3>
+        <p>Optional patterns to use by need.</p>
+        <span>Open examples</span>
       </a>
     </div>
+
+    <div class="doc-library">
+      <div class="doc-shelf">
+        <h3>Install and first setup</h3>
+        <a href="{{ '/installation/sandbox.html' | relative_url }}">
+          <span>Install in a sandbox</span>
+          <small>Click-by-click deploy button walkthrough.</small>
+        </a>
+        <a href="{{ '/installation/getting-started.html' | relative_url }}">
+          <span>Getting Started</span>
+          <small>Deploy the package and create your first Rule.</small>
+        </a>
+        <a href="{{ '/start/first-10-minutes.html' | relative_url }}">
+          <span>First 10 Minutes</span>
+          <small>One working card before deeper configuration.</small>
+        </a>
+      </div>
+
+      <div class="doc-shelf">
+        <h3>Configure checks</h3>
+        <a href="{{ '/examples/' | relative_url }}">
+          <span>Examples catalog</span>
+          <small>Optional patterns to explore by need.</small>
+        </a>
+        <a href="{{ '/guides/configuration-guide.html' | relative_url }}">
+          <span>Configuration Guide</span>
+          <small>Every Check Set and Rule field.</small>
+        </a>
+        <a href="{{ '/guides/action-links.html' | relative_url }}">
+          <span>Action links</span>
+          <small>Report links, related lists, and fix instructions.</small>
+        </a>
+        <a href="{{ '/guides/llm-configuration.html' | relative_url }}">
+          <span>Configure with AI</span>
+          <small>Prompt an assistant to draft metadata tables.</small>
+        </a>
+      </div>
+
+      <div class="doc-shelf">
+        <h3>Reference and extension</h3>
+        <a href="{{ '/metadata/' | relative_url }}">
+          <span>Metadata reference</span>
+          <small>Custom Metadata types and field definitions.</small>
+        </a>
+        <a href="{{ '/apex/plugin-reference.html' | relative_url }}">
+          <span>Apex plugin reference</span>
+          <small>Call the engine and write custom checks.</small>
+        </a>
+        <a href="{{ '/spec/' | relative_url }}">
+          <span>Design Specification</span>
+          <small>The formal contract, split by topic.</small>
+        </a>
+      </div>
+    </div>
+
+    <p class="doc-fineprint">
+      Need operational help? Use
+      <a href="{{ '/guides/debug-mode.html' | relative_url }}">Show Troubleshooting Details</a>
+      or the <a href="{{ '/guides/cli-commands.html' | relative_url }}">CLI commands</a>
+      page.
+    </p>
   </div>
 </section>
 
@@ -309,7 +352,7 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
         href="https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main"
         >Deploy to Salesforce</a
       >
-      <a class="btn btn-ghost btn-lg" href="{{ '/installation/getting-started.html' | relative_url }}" style="color: #e9eef4; border-color: rgba(255,255,255,0.25)">Getting Started</a>
+      <a class="btn btn-ghost btn-lg" href="{{ '/quick-start.html' | relative_url }}" style="color: #e9eef4; border-color: rgba(255,255,255,0.25)">Quick Start</a>
     </div>
   </div>
 </section>

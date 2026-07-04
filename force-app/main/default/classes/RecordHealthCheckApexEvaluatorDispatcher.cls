@@ -150,7 +150,7 @@ public with sharing class RecordHealthCheckApexEvaluatorDispatcher {
       apexResult = evaluator.evaluate(context);
     } catch (Exception ex) {
       // Pluggable Apex must catch its own exceptions, but if it doesn't
-      // we catch here and return ERROR with a safe message .
+      // we catch here and return ERROR with a safe message.
       fallbackResult.status = 'ERROR';
       fallbackResult.reasonCode = 'APEX_EVALUATOR_ERROR';
       fallbackResult.message = safeCannotEvaluateMessage(rule);
@@ -195,6 +195,26 @@ public with sharing class RecordHealthCheckApexEvaluatorDispatcher {
         '" returned an unsupported status: "' +
         apexResult.status +
         '". Expected one of PASS, FAIL, SKIPPED, UNABLE_TO_EVALUATE, ERROR.';
+      return fallbackResult;
+    }
+
+    // Determinate Apex results must provide the comparison values the UI needs
+    // for the standard Found / Expected display. The interface cannot enforce
+    // field population at compile time, so the dispatcher enforces it here.
+    if (
+      (apexResult.status == 'PASS' || apexResult.status == 'FAIL') &&
+      (String.isBlank(apexResult.actualValue) ||
+      String.isBlank(apexResult.expectedValue))
+    ) {
+      fallbackResult.status = 'ERROR';
+      fallbackResult.reasonCode = 'APEX_EVALUATOR_ERROR';
+      fallbackResult.message = safeCannotEvaluateMessage(rule);
+      fallbackResult.detailMessage =
+        '"' +
+        rule.ApexClass__c +
+        '" returned ' +
+        apexResult.status +
+        ' without required Found / Expected values. Apex checks must set both result.actualValue and result.expectedValue for PASS and FAIL.';
       return fallbackResult;
     }
 

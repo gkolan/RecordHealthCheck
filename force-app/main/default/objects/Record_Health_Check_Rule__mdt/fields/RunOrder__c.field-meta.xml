@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>RunOrder__c</fullName>
-    <label>Priority (lower runs first)</label>
+    <label>Run Order (lower runs first)</label>
     <description
   >Sets the order checks run and appear in the panel. Lower numbers come first. Ties are broken alphabetically by DeveloperName.</description>
     <type>Number</type>

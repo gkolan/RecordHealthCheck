@@ -135,7 +135,9 @@ public with sharing class RecordHealthCheckConfigService {
     response.revealMode = checkSet.RowAppearance__c;
     response.successDisplayMode = checkSet.PassedChecksDisplay__c;
     response.skippedDisplayMode = checkSet.SkippedChecksDisplay__c;
-    response.comparisonDisplay = checkSet.ComparisonDisplay__c;
+    response.comparisonDisplay = String.isBlank(checkSet.ComparisonDisplay__c)
+      ? 'OnDemand'
+      : checkSet.ComparisonDisplay__c;
     response.stopOnFirstError = checkSet.StopOnSystemError__c;
     response.debugMode =
       checkSet.DebugMode__c == true &&
@@ -258,7 +260,10 @@ public with sharing class RecordHealthCheckConfigService {
         RC_INVALID_CONFIG
       );
     }
-    if (!VALID_COMPARISON_DISPLAYS.contains(checkSet.ComparisonDisplay__c)) {
+    if (
+      String.isNotBlank(checkSet.ComparisonDisplay__c) &&
+      !VALID_COMPARISON_DISPLAYS.contains(checkSet.ComparisonDisplay__c)
+    ) {
       throw new ConfigException(
         'ComparisonDisplay "' +
           checkSet.ComparisonDisplay__c +
@@ -312,7 +317,7 @@ public with sharing class RecordHealthCheckConfigService {
       return buildUnableResult(
         rule,
         RC_INVALID_CONFIG,
-        'Message When Failed is required on every rule.'
+        'Message When Check Fails is required on every rule.'
       );
     }
     // Unknown check type
@@ -320,7 +325,7 @@ public with sharing class RecordHealthCheckConfigService {
       return buildUnableResult(
         rule,
         'INVALID_CHECK_TYPE',
-        'Check Method "' + rule.CheckMethod__c + '" is not recognized.'
+        'Check Type "' + rule.CheckMethod__c + '" is not recognized.'
       );
     }
 
@@ -408,8 +413,13 @@ public with sharing class RecordHealthCheckConfigService {
         WhenMultipleRows__c,
         WhenZeroRows__c,
         WhenValueIsEmpty__c,
+        FoundSummaryOverride__c,
+        ExpectedSummaryOverride__c,
         MessageWhenFailed__c,
         MessageWhenCannotRun__c,
+        PrimaryActionLabel__c,
+        PrimaryActionUrl__c,
+        FixInstructions__c,
         ApexClass__c,
         ApexSettingsJson__c,
         MaxRows__c,
@@ -601,7 +611,7 @@ public with sharing class RecordHealthCheckConfigService {
         return buildUnableResult(
           rule,
           'INVALID_COMPARATOR',
-          'Operator "' + val + '" requires Check Method Compare two queries.'
+          'Operator "' + val + '" requires Check Type Compare two queries.'
         );
       }
       when COMPARATOR_INVALID {
@@ -622,56 +632,56 @@ public with sharing class RecordHealthCheckConfigService {
         return buildUnableResult(
           rule,
           RC_UNABLE_TO_EVALUATE,
-          'Multiple Records Handling is required for Query checks.'
+          'How To Interpret Query Results is required for Query checks.'
         );
       }
       when MULTI_ROWS_INVALID {
         return buildUnableResult(
           rule,
           RC_INVALID_CONFIG,
-          'Multiple Records Handling "' + val + '" is not recognized.'
+          'How To Interpret Query Results "' + val + '" is not recognized.'
         );
       }
       when COMPARE_AS_LISTS_ON_SINGLE {
         return buildUnableResult(
           rule,
           'INVALID_COMPARATOR',
-          'Compare as two lists requires Check Method Compare two queries, not Single query.'
+          'Compare query results as lists requires Check Type Compare two queries, not Check records with a query.'
         );
       }
       when COMPARE_AGAINST_MISSING {
         return buildUnableResult(
           rule,
           RC_UNABLE_TO_EVALUATE,
-          'Comparison Value Source is required for Query checks except IsBlank/IsNotBlank.'
+          'Expected Value Comes From is required for Query checks except IsBlank/IsNotBlank.'
         );
       }
       when COMPARE_AGAINST_INVALID {
         return buildUnableResult(
           rule,
           RC_INVALID_CONFIG,
-          'Comparison Value Source "' + val + '" is not recognized.'
+          'Expected Value Comes From "' + val + '" is not recognized.'
         );
       }
       when FIXED_VALUE_MISSING {
         return buildUnableResult(
           rule,
           RC_UNABLE_TO_EVALUATE,
-          'Comparison Value is required when Comparison Value Source is Static Value.'
+          'Expected Value is required when Expected Value Comes From is A fixed value.'
         );
       }
       when RECORD_FORMULA_MISSING {
         return buildUnableResult(
           rule,
           'INVALID_FORMULA',
-          'Comparison Formula is required when Comparison Value Source is Formula Result.'
+          'Expected Formula (on this record) is required when Expected Value Comes From is A formula on this record.'
         );
       }
       when ANOTHER_QUERY_MISSING {
         return buildUnableResult(
           rule,
           'INVALID_SOQL_TEMPLATE',
-          'Comparison Query is required when Comparison Value Source is Query Result.'
+          'Second Query is required when Expected Value Comes From is A second query result.'
         );
       }
       when ANOTHER_QUERY_FIELD_MISSING {
@@ -728,14 +738,14 @@ public with sharing class RecordHealthCheckConfigService {
         return buildUnableResult(
           rule,
           RC_UNABLE_TO_EVALUATE,
-          'Multiple Records Handling is required for CompareTwoQueries checks.'
+          'How To Interpret Query Results is required for Compare two queries checks.'
         );
       }
       when DUAL_MULTI_ROWS_INVALID {
         return buildUnableResult(
           rule,
           'INVALID_COMPARATOR',
-          'CompareTwoQueries requires Multiple Records Handling of OneResult or CompareAsLists.'
+          'Compare two queries requires How To Interpret Query Results to be Expect one row or aggregate result, or Compare query results as lists.'
         );
       }
       when DUAL_LIST_MODE_NEEDS_LIST_COMPARATOR {

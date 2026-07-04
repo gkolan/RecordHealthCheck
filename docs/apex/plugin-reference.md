@@ -53,7 +53,7 @@ The engine loads only fields it knows the Rule needs:
 
 | Source on the Rule | Fields added to `context.record` |
 | ------------------ | -------------------------------- |
-| `{!Field}` merge tokens in **Message When Failed** / **Message When Cannot Run** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
+| `{!Field}` merge tokens in **Message When Check Fails** / **Message When Check Cannot Run** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
 | **Run When Formula** (applicability) | Fields referenced in that formula |
 | SOQL templates on Query rules | Merge tokens in those queries |
 
@@ -314,11 +314,11 @@ return result;
 On **`FAIL`**, the dispatcher sets:
 
 - **`severity`** from Rule `Severity__c` (not set by the plugin)
-- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!Field}` merge tokens resolved
+- **`message`** from `result.message` when non-blank; otherwise **Message When Check Fails** with `{!Field}` merge tokens resolved
 
-### Found / Expected (optional)
+### Found / Expected (required for PASS / FAIL)
 
-When a single message is not enough, set comparison chips on the card. Failed rows show comparison values inline whenever values are available. Passing-row visibility follows the Check Set **Comparison Display** setting.
+Apex checks must set both comparison chips for every determinate result (`PASS` or `FAIL`). If either `actualValue` or `expectedValue` is blank, the dispatcher rejects the result with `ERROR` / `APEX_EVALUATOR_ERROR`. Failed checks show comparison values inline; passing-check visibility follows the Check Set **Found/Expected Display** setting.
 
 ```apex
 result.status = 'FAIL';
@@ -364,7 +364,7 @@ result.status = 'FAIL';
 result.message = 'Custom detail for this run only.';
 ```
 
-When `message` is blank, metadata **Message When Failed** wins.
+When `message` is blank, metadata **Message When Check Fails** wins.
 
 ### Status values
 
@@ -433,6 +433,7 @@ Walkthrough: [01: Recent activity](../examples/apex/01-recent-activity.md).
 - [ ] All SOQL uses **`WITH USER_MODE`** and binds **`:context.recordId`** (or fields from a plugin query).
 - [ ] JSON keys documented in class header comment; defaults in Apex when JSON is blank or invalid.
 - [ ] Returns only valid `status` values; normal checks use `PASS` / `FAIL` only.
+- [ ] Sets both `result.actualValue` and `result.expectedValue` for every `PASS` / `FAIL`.
 - [ ] Apex test class covers `evaluate` with at least pass and fail paths.
 - [ ] Rule **Apex Class** API name matches deployed class exactly.
 

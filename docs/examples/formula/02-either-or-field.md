@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Record formula |
+| **Evaluator** | Check fields on this record |
 | **Sample** | [`Phone_Or_Website_Is_Required`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Phone_Or_Website_Is_Required.md-meta.xml) |
 | **Check Set** | `Account_Examples_Formula` · [`package-Account_Examples_Formula.xml`](../../../manifest/package-Account_Examples_Formula.xml) |
 
@@ -22,8 +22,8 @@ The decision is a boolean combination of two fields on the same row. No related 
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website)))` | **This example.** Native `OR` on two on-record fields. |
-| Single query | Two separate Query rules: one per field | Produces **two rows** instead of one combined pass/fail. |
+| Check fields on this record | `OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website)))` | **This example.** Native `OR` on two on-record fields. |
+| Check records with a query | Two separate Query rules: one per field | Produces **two rows** instead of one combined pass/fail. |
 | Compare two queries | | Nothing here compares two query results. |
 | Custom Apex | Apex OR on two fields | Same outcome with unnecessary code. |
 
@@ -34,7 +34,7 @@ The decision is a boolean combination of two fields on the same row. No related 
 | Exactly one field must be present | [Single required field](01-single-required-field.md) |
 | All of several fields required | [Multiple required fields (AND)](04-multiple-required-and.md) |
 
-**Verdict:** Record formula with `OR` is the right evaluator for "at least one of these on-record fields." Split into separate rules only when each field deserves its own row in the component.
+**Verdict:** Check fields on this record with `OR` is the right evaluator for "at least one of these on-record fields." Split into separate rules only when each field deserves its own row in the component.
 
 ## Configuration
 
@@ -42,18 +42,18 @@ The decision is a boolean combination of two fields on the same row. No related 
 | ----------- | ----- |
 | Check Name | Phone or Website Is Required |
 | Developer Name | Phone_Or_Website_Is_Required |
-| Check Method | Record formula |
-| Pass/Fail Formula | `OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website)))` |
+| Check Type | Check fields on this record |
+| Pass Condition (Formula) | `OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website)))` |
 | Run This Check When | Always |
 | Severity | Warning |
-| Message When Failed | Neither Phone nor Website is set. |
+| Message When Check Fails | Neither Phone nor Website is set. |
 
 > [!NOTE]
 > This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change.
 
 ## How it works
 
-The engine evaluates Pass/Fail Formula on the Account. If either Phone or Website is non-blank, the check passes.
+The engine evaluates Pass Condition (Formula) on the Account. If either Phone or Website is non-blank, the check passes.
 
 ```text
 OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website)))
@@ -73,7 +73,7 @@ sf project deploy start --manifest manifest/package-core.xml                    
 sf project deploy start --manifest manifest/package-Account_Examples_Formula.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

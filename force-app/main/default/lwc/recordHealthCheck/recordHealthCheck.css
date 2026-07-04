@@ -24,12 +24,13 @@
 }
 
 .rhc-error-banner__msg {
-  font-size: 0.75rem;
+  /* SLDS body_regular (13px). */
+  font-size: 0.8125rem;
   color: var(--slds-g-color-neutral-base-40, #706e6b);
 }
 
 .rhc-error-banner__hint {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--slds-g-color-neutral-base-40, #706e6b);
   margin-top: 0.375rem;
   padding-top: 0.375rem;
@@ -99,17 +100,19 @@
 
 .rhc-header__title {
   display: block;
-  font-size: 1.0625rem;
+  /* SLDS text-heading_small (16px / bold) — matches the standard Lightning card
+     title so the component title sits at the same level as native page cards. */
+  font-size: 1rem;
   font-weight: 700;
   color: var(--slds-g-color-neutral-base-10, #181818);
   line-height: 1.25;
-  letter-spacing: -0.01em;
   margin: 0;
 }
 
 .rhc-header__desc {
   display: block;
-  font-size: 0.75rem;
+  /* SLDS body_regular (13px) — the card's supporting body text. */
+  font-size: 0.8125rem;
   font-weight: 400;
   color: var(--slds-g-color-neutral-base-50, #706e6b);
   line-height: 1.35;
@@ -477,7 +480,9 @@
 }
 
 .rhc-row__label {
-  font-size: 0.875rem;
+  /* SLDS body_regular (13px) at semibold — the primary line of each row, one
+     tier below the card title. */
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--slds-g-color-neutral-base-10, #181818);
   line-height: 1.3;
@@ -490,14 +495,15 @@
 }
 
 .rhc-row__message {
-  font-size: 0.75rem;
+  /* SLDS body_regular (13px). */
+  font-size: 0.8125rem;
   line-height: 1.35;
   margin-top: 0.25rem;
   color: var(--slds-g-color-neutral-base-30, #3e3e3c);
 }
 
 /* Each admin-authored message line renders as its own block so newlines typed in
-   Setup (Message When Failed / Can't Run) become visual line breaks instead of
+   Setup (Message When Check Fails / Cannot Run) become visual line breaks instead of
    collapsing to one paragraph. A single-line message is one block and looks
    exactly as before. */
 .rhc-row__message-line {
@@ -525,6 +531,45 @@
   color: var(--slds-g-color-neutral-base-40, #706e6b);
 }
 
+/* ── Guided remediation (read-only Fix-it link + instructions) ──────────────── */
+/* The link is a normal brand-blue link on every severity — only the row accent
+   and icon carry the severity color. It sits under the message as the call to
+   action, above the Found/Expected evidence. */
+.rhc-row__action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  margin-top: 0.3rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.rhc-row__action-link {
+  color: var(--slds-g-color-brand-base-50, #0b5cab);
+  font-weight: 600;
+  text-decoration: none;
+}
+.rhc-row__action-link:hover,
+.rhc-row__action-link:focus {
+  text-decoration: underline;
+}
+
+.rhc-row__fix-instructions {
+  margin: 0;
+  color: var(--slds-g-color-neutral-base-40, #706e6b);
+}
+
+/* Thin rule separating the message/action zone from the comparison evidence on a
+   busy inline row. */
+.rhc-row__divider {
+  width: 100%;
+  height: 0;
+  margin: 0.5rem 0 0.1rem;
+  border: 0;
+  border-top: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+
 /* ── Found / expected comparison ────────────────────────────────────────────── */
 /* Stack the two clauses so the layout is identical whether the values are short
    or long — "Found …" always on its own line, "Expected …" on the next — rather
@@ -535,13 +580,23 @@
   align-items: flex-start;
   gap: 0.25rem;
   margin-top: 0.3rem;
-  font-size: 0.75rem;
+  /* SLDS body_regular (13px). */
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
-/* One clause: caption + value, kept together on a single line (value wraps
-   within the line if very long). */
+/* One clause: caption + value, with an optional muted source note directly
+   beneath it. */
 .rhc-cmp__pair {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rhc-cmp__main {
   display: inline-flex;
   align-items: baseline;
   gap: 0.4rem;
@@ -552,7 +607,9 @@
 /* Caption ("Found" / "Expected") — small uppercase label that de-emphasizes the
    connective words so the eye lands on the value chip beside it. */
 .rhc-cmp__key {
-  font-size: 0.625rem;
+  /* SLDS text-title (12px) — the caption tier: uppercase, weak, one step below
+     body so it labels the value without competing with it. */
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -571,11 +628,65 @@
     consolas,
     monospace
   );
-  font-size: 0.75rem;
+  /* Monospace by design (values read as data), sized to the SLDS body tier (13px)
+     so it aligns with the surrounding text rather than sitting a step below. */
+  font-size: 0.8125rem;
   color: var(--slds-g-color-neutral-base-20, #2b2826);
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
   padding: 0.05rem 0.3rem;
   border-radius: 0.2rem;
+  word-break: break-word;
+}
+
+/* Long values (a multi-clause formula, a wide list) clamp to two lines so one
+   verbose rule cannot dominate the card. The full text stays selectable/readable
+   behind the "Show more" toggle, which JS reveals only when the content actually
+   overflows this box. */
+.rhc-cmp__val--clampable {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Toggled open: drop the clamp and let the chip grow to its natural height. */
+.rhc-cmp__val--expanded {
+  display: inline;
+  -webkit-line-clamp: none;
+  line-clamp: none;
+  overflow: visible;
+}
+
+/* Quiet inline "Show more" / "Show less" control sitting under a clamped value.
+   Reads as a text link, not a button, to stay subordinate to the value itself. */
+.rhc-cmp__toggle {
+  align-self: flex-start;
+  margin-top: 0.05rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--slds-g-color-brand-base-50, #0176d3);
+}
+
+.rhc-cmp__toggle[hidden] {
+  display: none;
+}
+
+.rhc-cmp__toggle:hover,
+.rhc-cmp__toggle:focus-visible {
+  text-decoration: underline;
+}
+
+.rhc-cmp__source {
+  margin-left: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
   word-break: break-word;
 }
 
@@ -621,78 +732,16 @@
 }
 
 /* ── Expanded comparison detail ────────────────────────────────────────────── */
-/* Reuses the inline comparison layout for any values revealed here, then stacks
-   the provenance notes beneath. */
+/* Reuses the inline comparison layout for any values revealed here. */
 .rhc-row__detail {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.25rem;
   margin-top: 0.55rem;
-  font-size: 0.75rem;
+  /* SLDS body_regular (13px). */
+  font-size: 0.8125rem;
   line-height: 1.4;
-}
-
-/* Provenance sub-section: a labeled group ("Where these values came from") that
-   sits below the value chips, separated by a rule. The label gives the second
-   Found/Expected pair a clear identity so it reads as supporting detail — where
-   each value was sourced — rather than a second, inconsistent copy of the values
-   above it. */
-.rhc-row__provenance-group {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  margin-top: 0.35rem;
-  padding-top: 0.45rem;
-  border-top: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
-}
-
-.rhc-row__provenance-label {
-  font-size: 0.625rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--slds-g-color-neutral-base-50, #706e6b);
-}
-
-/* Provenance note: source → raw value (coercion). Explains where a value came
-   from; the raw value carries the same chip treatment as the comparison values
-   above so the two Found/Expected pairs read as a consistent set. */
-.rhc-row__provenance {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  margin: 0;
-  color: var(--slds-g-color-neutral-base-30, #444240);
-}
-
-.rhc-row__provenance-key {
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--slds-g-color-neutral-base-50, #706e6b);
-  flex: 0 0 auto;
-}
-
-.rhc-row__provenance-val {
-  font-family: var(
-    --slds-g-font-family-monospace,
-    "SF Mono",
-    sfmono-regular,
-    ui-monospace,
-    menlo,
-    consolas,
-    monospace
-  );
-  font-size: 0.7rem;
-  color: var(--slds-g-color-neutral-base-20, #2b2826);
-  background: var(--slds-g-color-neutral-base-95, #f3f3f3);
-  padding: 0.05rem 0.3rem;
-  border-radius: 0.2rem;
-  word-break: break-word;
 }
 
 /* ── Hover/focus tooltips ──────────────────────────────────────────────────── */
@@ -750,7 +799,8 @@
   color: var(--slds-g-color-neutral-base-10, #181818);
   border: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
   box-shadow: var(--slds-g-shadow-3, 0 2px 8px rgba(0, 0, 0, 0.2));
-  font-size: 0.75rem;
+  /* SLDS body_regular (13px) — tooltip copy sits on the body tier. */
+  font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.4;
   white-space: normal;

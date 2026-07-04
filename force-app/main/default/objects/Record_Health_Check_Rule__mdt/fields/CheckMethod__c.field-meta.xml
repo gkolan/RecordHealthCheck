@@ -32,6 +32,6 @@
         </valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >Record formula = a true/false formula on the record. Single query = run one SOQL and compare the result. Compare two queries = compare two SOQL results. Use custom Apex = run your own Apex class.</inlineHelpText>
+  >Check fields on this record = a true/false formula on the record. Check records with a query = run one SOQL query and compare the result. Compare two queries = compare two SOQL results. Use custom Apex = run your own Apex class.</inlineHelpText>
     <required>true</required>
 </CustomField>

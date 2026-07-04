@@ -35,7 +35,7 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = unhealthyCount == 0 ? 'PASS' : 'FAIL';
-    // Populate on pass and fail so an entitled viewer can audit a green row too .
+    // Populate on pass and fail so an entitled viewer can audit a green row too.
     result.actualValue = unhealthyCount + ' unhealthy';
     result.expectedValue = '0 unhealthy';
     result.actualProvenance = new RecordHealthCheckProvenance.Detail(
