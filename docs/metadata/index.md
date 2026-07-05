@@ -17,7 +17,7 @@ Field reference for the two Custom Metadata Types that hold Record Health Check 
 | [Examples index](../examples/index.md) | Copy-paste patterns and per-Check Set install manifests |
 | [Design Specification](../reference/record-health-check-design-spec.md) | Formal runtime contract |
 
-For merge tokens, applicability, and evaluator semantics, see the [Configuration Guide](../guides/configuration-guide.md) and [Design spec topics](../spec/index.md).
+For merge tokens, applicability, and evaluator semantics, see the [Configuration Guide](../guides/configuration-guide.md) and the [design spec](../reference/record-health-check-design-spec.md).
 
 ## Related
 
