@@ -91,6 +91,7 @@ docs/_templates/
 scripts/
 
 # Internal planning / roadmap docs — kept local, not published with the project.
+docs/spec/
 docs/reference/product-roadmap.md
 docs/reference/label-simplification-plan.md
 docs/guides/cli-commands.md

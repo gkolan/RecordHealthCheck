@@ -98,5 +98,4 @@ Docs must match the code at the same commit. Follow these authoring standards:
 - **No em-dashes**: replace each em-dash by hand with a period, comma, or parentheses, never a blanket swap to a colon.
 
 The design specification is canonical
-in [`docs/reference/record-health-check-design-spec.md`](docs/reference/record-health-check-design-spec.md);
-the per-topic files under [`docs/spec/`](docs/spec/index.md) are **generated** from it.
+in [`docs/reference/record-health-check-design-spec.md`](docs/reference/record-health-check-design-spec.md).

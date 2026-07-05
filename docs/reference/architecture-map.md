@@ -1,6 +1,6 @@
 # Architecture Map
 
-The fastest way to navigate the codebase and find the right file to change. This file is an index, not a spec: for contracts and behavior see the [design spec](record-health-check-design-spec.md) or the [modular spec index](../spec/index.md).
+The fastest way to navigate the codebase and find the right file to change. This file is an index, not a spec: for contracts and behavior see the [design spec](record-health-check-design-spec.md).
 
 > [!IMPORTANT]
 > Facts here must match the code. If responsibility moves between classes, update this file in the same change.
