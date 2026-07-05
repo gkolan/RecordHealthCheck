@@ -23,9 +23,11 @@ Because it runs at read time rather than save time, it can evaluate across relat
         <li>Any row can reveal <b>Found / Expected</b> detail and the rule behind it.</li>
       </ul>
       <p>The footer tallies <b>Passed / Failed / Warnings / Skipped</b> at a glance, and <b>Rerun</b> re-evaluates on demand.</p>
+      <p>Every row is a <b>check</b> you define declaratively, grouped into a <b>check set</b> per object. Checks can be SOQL, formula, or Apex, so you add or change them in metadata without touching the component.</p>
+      <p>Drop the component on any Lightning <b>record page</b>. It evaluates the open record in place and shows results inline, so a user sees the account's health without leaving the page.</p>
       <!-- Video walkthrough: replace the line below with
-           <p>▶ <b>Watch the two-minute walkthrough:</b> <a href="https://youtu.be/YOUR_VIDEO_ID">youtu.be/YOUR_VIDEO_ID</a></p> -->
-      <p>▶ <b><a href="https://github.com/gkolan/recordHealthCheck/blob/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See the animated GIF for a quick demo</a></b>.</p>
+           <p><sub>▶ <a href="https://youtu.be/YOUR_VIDEO_ID">Watch the two-minute walkthrough</a></sub></p> -->
+      <p><sub>▶ <a href="https://github.com/gkolan/recordHealthCheck/blob/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See it in motion (animated GIF)</a></sub></p>
     </td>
     <td width="42%" valign="top">
       <img src="docs/assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
