@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>CheckMethod__c</fullName>
-    <label>Check Method</label>
+    <label>Check Type</label>
     <description
   >How this check decides pass or fail. Pick one, then fill in only the matching section of fields below.</description>
     <type>Picklist</type>
@@ -12,12 +12,12 @@
             <value>
                 <fullName>Formula</fullName>
                 <default>false</default>
-                <label>Record formula</label>
+                <label>Check fields on this record</label>
             </value>
             <value>
                 <fullName>Query</fullName>
                 <default>false</default>
-                <label>Single query</label>
+                <label>Check records with a query</label>
             </value>
             <value>
                 <fullName>CompareTwoQueries</fullName>
@@ -27,11 +27,11 @@
             <value>
                 <fullName>Apex</fullName>
                 <default>false</default>
-                <label>Custom Apex</label>
+                <label>Use custom Apex</label>
             </value>
         </valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >Record formula = a true/false formula on the record. Single query = run one SOQL and compare the result. Compare two queries = compare two SOQL results. Custom Apex = run your own Apex class.</inlineHelpText>
+  >Check fields on this record = a true/false formula on the record. Check records with a query = run one SOQL query and compare the result. Compare two queries = compare two SOQL results. Use custom Apex = run your own Apex class.</inlineHelpText>
     <required>true</required>
 </CustomField>

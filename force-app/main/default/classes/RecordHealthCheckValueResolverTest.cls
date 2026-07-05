@@ -5,9 +5,9 @@
 
 /**
  * Unit tests for RecordHealthCheckValueResolver. Pure in-memory logic — no DML.
- * Focuses on the consolidated behavior the evaluators will share, especially the
- * L6 parity fix (a native Date is compared as a Date, never a midnight DateTime)
- * and H-07 (relationship-path extraction + missing-field classification).
+ * Focuses on consolidated behavior the evaluators share: native Date comparison
+ * (never coerced to midnight DateTime) and relationship-path extraction with
+ * missing-field classification.
  */
 @isTest
 private class RecordHealthCheckValueResolverTest {
@@ -101,6 +101,26 @@ private class RecordHealthCheckValueResolverTest {
         Date.newInstance(2026, 1, 1),
         Date.newInstance(2026, 1, 1)
       )
+    );
+  }
+
+  @isTest
+  static void valuesEqualDateStringsAndInvalidIds() {
+    System.assertEquals(
+      true,
+      RecordHealthCheckValueResolver.valuesEqual(
+        Date.newInstance(2026, 1, 1),
+        '2026-01-01 00:00:00'
+      ),
+      'Date equality should parse comparable string values.'
+    );
+    assertIncompatibleEquality(Date.newInstance(2026, 1, 1), 'not-a-date');
+
+    Id accountId = '001000000000001AAA';
+    System.assertEquals(
+      false,
+      RecordHealthCheckValueResolver.valuesEqual(accountId, 'not-an-id'),
+      'An Id compared to an unparseable Id string should be false, not an exception.'
     );
   }
 

@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Record formula |
+| **Evaluator** | Check fields on this record |
 | **Sample** | [`Parent_Account_Has_Billing_City`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Parent_Account_Has_Billing_City.md-meta.xml) |
 | **Check Set** | `Account_Examples_Formula` · [`package-Account_Examples_Formula.xml`](../../../manifest/package-Account_Examples_Formula.xml) |
 
@@ -22,8 +22,8 @@ Reach for this pattern when quality on a related parent record should surface on
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `NOT(ISBLANK(Parent.BillingCity))` + ParentId gate | **This example.** Parent field via dot notation on the child. |
-| Single query | `SELECT BillingCity FROM Account WHERE Id = {!ParentId}` | Can read the parent field but adds SOQL and operator wiring for a value formula already exposes. |
+| Check fields on this record | `NOT(ISBLANK(Parent.BillingCity))` + ParentId gate | **This example.** Parent field via dot notation on the child. |
+| Check records with a query | `SELECT BillingCity FROM Account WHERE Id = {!ParentId}` | Can read the parent field but adds SOQL and operator wiring for a value formula already exposes. |
 | Compare two queries | | Nothing here compares two query results. |
 | Custom Apex | Apex parent lookup | Same outcome with unnecessary code when `Parent.Field` resolves in formula. |
 
@@ -32,9 +32,9 @@ Reach for this pattern when quality on a related parent record should surface on
 | Need | Use instead |
 | ---- | ----------- |
 | Check Billing City on this Account only | [Single required field](01-single-required-field.md) |
-| Compare parent aggregate to child field | [Compare two queries](../compare-two-queries/01-aggregate-counts.md) |
+| Compare parent aggregate to child field | [Compare two queries](../soql/compare-two-queries/01-aggregate-counts.md) |
 
-**Verdict:** Record formula with `Parent.Field` is the right evaluator when the parent field is readable from the child via dot notation. Step up to Query when the parent data requires a filter the formula cannot express.
+**Verdict:** Check fields on this record with `Parent.Field` is the right evaluator when the parent field is readable from the child via dot notation. Step up to Query when the parent data requires a filter the formula cannot express.
 
 ## Configuration
 
@@ -42,25 +42,25 @@ Reach for this pattern when quality on a related parent record should surface on
 | ----------- | ----- |
 | Check Name | Parent Account Has Billing City |
 | Developer Name | Parent_Account_Has_Billing_City |
-| Check Method | Record formula |
-| Pass/Fail Formula | `NOT(ISBLANK(Parent.BillingCity))` |
+| Check Type | Check fields on this record |
+| Pass Condition (Formula) | `NOT(ISBLANK(Parent.BillingCity))` |
 | Run This Check When | Only when a formula is true |
 | Run When Formula Is True | `NOT(ISBLANK(ParentId))` |
 | Severity | Warning |
-| Message When Failed | The parent account is missing Billing City. |
+| Message When Check Fails | The parent account is missing Billing City. |
 
 > [!NOTE]
-> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Run When Formula Is True to change when parent traversal runs; edit Pass/Fail Formula to test a different parent field.
+> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Run When Formula Is True to change when parent traversal runs; edit Pass Condition (Formula) to test a different parent field.
 
 ## How it works
 
-When Run When Formula Is True evaluates to true (Parent Account is set), the engine evaluates Pass/Fail Formula against the parent field via dot notation.
+When Run When Formula Is True evaluates to true (Parent Account is set), the engine evaluates Pass Condition (Formula) against the parent field via dot notation.
 
 ```text
 -- Applicability (Run When Formula Is True)
 NOT(ISBLANK(ParentId))
 
--- Pass/Fail Formula
+-- Pass Condition (Formula)
 NOT(ISBLANK(Parent.BillingCity))
 ```
 
@@ -81,7 +81,7 @@ sf project deploy start --manifest manifest/package-core.xml                    
 sf project deploy start --manifest manifest/package-Account_Examples_Formula.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

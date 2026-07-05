@@ -1,5 +1,5 @@
-/*
- * Copyright 2026 Record Health Check contributors
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,7 +11,6 @@ import { annotateCheck, buildSummaryStats } from "./healthCheckPresentation";
 import { HealthCheckRunner } from "./healthCheckRunner";
 
 export default class RecordHealthCheck extends LightningElement {
-  // ─── @api properties (Section 6.4) ───────────────────────────────────────
   _configName;
 
   @api
@@ -47,13 +46,16 @@ export default class RecordHealthCheck extends LightningElement {
     }
   }
 
-  // ─── Check Set level state (Section 6.6) ─────────────────────────────────
+  /** App Builder default for comparison caret expand/collapse; cannot widen FailuresOnly. */
+  @api comparisonDisclosure;
+
   @track displayTitle;
   @track displayDescription;
   @track triggerMode;
   @track revealMode;
   @track successDisplayMode;
   @track skippedDisplayMode;
+  @track comparisonDisplay = "OnDemand";
   @track stopOnFirstError;
   @track debugMode = false;
   @track totalCheckCount = 0;
@@ -64,14 +66,18 @@ export default class RecordHealthCheck extends LightningElement {
    *  false during that window). */
   @track hasCompletedRunOnce = false;
   @track componentError = null; // safe user-facing message
-  @track componentErrorCode = null; // Section 6.1 reason code
+  @track componentErrorCode = null;
   @track checksOmittedByLimit = false;
   @track isLoading = true;
 
-  // ─── Per-check state ──────────────────────────────────────────────────────
   @track checks = [];
 
-  // ─── Internal state ───────────────────────────────────────────────────────
+  // Per-row disclosure overrides, keyed by developerName. Absent → the row
+  // follows the placement default (comparisonDisclosure). Reassigned on toggle so
+  // the visibleChecks getter re-annotates. Lives outside `checks` because the
+  // runner rebuilds that array on every result; expand state must survive that.
+  @track _expandedNames = {};
+
   // Run orchestration (result buffer, reveal pointer, concurrency pool, run id,
   // and the run token that discards stale in-flight results) lives in the runner;
   // the component owns lifecycle, definition loading, display, and diagnostics.
@@ -79,14 +85,9 @@ export default class RecordHealthCheck extends LightningElement {
   _loadToken = 0;
   _initialLoadTimer;
   _tooltipListenersBound = false;
-  // LWC-38: memoize summaryStats keyed on the checks array reference. The runner
-  // always reassigns this.checks (.map(...)) when a result lands, so reference
-  // equality is a sound cache key and avoids re-running buildSummaryStats on
-  // every getter access (showSummaryStats + the template loop) within a render.
   _summaryStatsSource = null;
+  _summaryStatsTooltipSignature = "";
   _summaryStatsCache = [];
-
-  // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   connectedCallback() {
     this._connected = true;
@@ -108,15 +109,7 @@ export default class RecordHealthCheck extends LightningElement {
     // evaluation resolves to a discarded result instead of mutating a dead component.
     this._runner.invalidate();
     if (this._tooltipListenersBound) {
-      // LWC-24: the listener is added as `mouseenter` with capture=true (see
-      // renderedCallback). removeEventListener only unbinds when the event name
-      // AND the capture flag match the add — removing `mouseover` (the old name,
-      // bubbling phase) left the real listener attached. Mirror the add exactly.
-      this.template.removeEventListener(
-        "mouseenter",
-        this._positionTooltip,
-        true
-      );
+      this.template.removeEventListener("mouseover", this._positionTooltip);
       this.template.removeEventListener("focusin", this._positionTooltip);
       this.template.removeEventListener("mouseout", this._clearTooltipFlip);
       this.template.removeEventListener("focusout", this._clearTooltipFlip);
@@ -125,6 +118,9 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   renderedCallback() {
+    // Content grows as checks resolve, so re-measure clamped value chips on every
+    // render to reveal a "Show more" toggle only on those that overflow two lines.
+    this._measureClampedValues();
     if (this._tooltipListenersBound) {
       return;
     }
@@ -134,13 +130,8 @@ export default class RecordHealthCheck extends LightningElement {
     // below, so a tooltip near the bottom of the screen opens upward instead of
     // being clipped. Delegated on the template root — mouseover and focusin both
     // bubble, so one listener pair covers every rule row and summary pill.
-    // AUDIT (LWC-15, 2026-06-23):
-    // BEFORE: mouseover fired on every child boundary crossing inside an anchor.
-    // AFTER: mouseenter fires once per anchor entry (focusin unchanged).
-    this.template.addEventListener("mouseenter", this._positionTooltip, true);
+    this.template.addEventListener("mouseover", this._positionTooltip);
     this.template.addEventListener("focusin", this._positionTooltip);
-    // LWC-04: reset the flip direction when leaving an anchor so a row flipped
-    // upward does not keep that state after the pointer/focus moves away.
     this.template.addEventListener("mouseout", this._clearTooltipFlip);
     this.template.addEventListener("focusout", this._clearTooltipFlip);
   }
@@ -189,10 +180,6 @@ export default class RecordHealthCheck extends LightningElement {
     const loadToken = ++this._loadToken;
     const requestedConfigName = this.configName;
     const requestedRecordId = this.recordId;
-    // LWC-40: this method runs from both the deferred initial-load timer AND a
-    // reactive setter change. Clear the pending timer so a fast setter change
-    // that calls _loadDefinitions directly does not also let the queued timer
-    // fire a second, redundant getCheckDefinitions request.
     if (this._initialLoadTimer) {
       clearTimeout(this._initialLoadTimer);
       this._initialLoadTimer = null;
@@ -207,18 +194,16 @@ export default class RecordHealthCheck extends LightningElement {
     this.runComplete = false;
     this.hasCompletedRunOnce = false;
     this.completedCheckCount = 0;
-    // LWC-25: drop the previous record's rows immediately on (re)load entry.
-    // The check list is not gated by isLoading, so without this the prior
-    // record's rows stay on screen until the new definitions resolve — during a
-    // console record swap that shows stale results under the new record.
     this.checks = [];
+    // Per-row expand state belongs to the previous record's rows; clear it so a
+    // new record starts from the placement default rather than inheriting stale
+    // carets keyed by reused developerNames.
+    this._expandedNames = {};
 
     this.isLoading = true;
     this.componentError = null;
     this.componentErrorCode = null;
 
-    // LWC-36: a whitespace-only configName is truthy, so it slipped past the
-    // blank guard and reached the server as a non-empty-but-invalid name.
     if (!this.configName || !this.configName.trim()) {
       this.isLoading = false;
       this.componentError =
@@ -246,9 +231,6 @@ export default class RecordHealthCheck extends LightningElement {
         );
       }
 
-      // LWC-03: developerName is the for:each key AND the dependency/result-buffer
-      // key, so a blank or duplicate name silently corrupts rendering and gating.
-      // Reject a malformed shape up front; the catch maps it to LOAD_FAILED.
       const seenNames = new Set();
       for (const def of response.checks) {
         if (!def || !def.developerName) {
@@ -266,21 +248,18 @@ export default class RecordHealthCheck extends LightningElement {
 
       this.displayTitle = response.displayTitle;
       this.displayDescription = response.displayDescription;
-      // LWC-27: normalize to a known trigger mode. The run affordances key off
-      // exactly "Manual" (Run button) and "Automatic" (auto-run); an unrecognized
-      // or blank value would render neither, leaving the checks unrunnable. Mirror
-      // the revealMode normalization below: anything not Automatic falls back to
-      // Manual so the user always has a way to run.
       this.triggerMode =
         response.triggerMode === "Automatic" ? "Automatic" : "Manual";
-      // LWC-09: normalize to a known reveal mode. Anything other than the
-      // explicit progressive mode falls back to AllAtOnce (show every row) rather
-      // than silently driving the OneAtATime reveal logic for an unrecognized or
-      // blank value, which would hide rows behind a reveal pointer unexpectedly.
       this.revealMode =
         response.revealMode === "OneAtATime" ? "OneAtATime" : "AllAtOnce";
       this.successDisplayMode = response.successDisplayMode;
       this.skippedDisplayMode = response.skippedDisplayMode;
+      // Normalize comparison mode; unknown values fall back to OnDemand.
+      this.comparisonDisplay = ["OnDemand", "FailuresOnly", "AllRows"].includes(
+        response.comparisonDisplay
+      )
+        ? response.comparisonDisplay
+        : "OnDemand";
       this.stopOnFirstError = response.stopOnFirstError;
       this.debugMode = response.debugMode === true;
       this.totalCheckCount = response.checks.length;
@@ -313,8 +292,6 @@ export default class RecordHealthCheck extends LightningElement {
     }
   }
 
-  // ─── Computed getters for template ────────────────────────────────────────
-
   get hasComponentError() {
     return !!this.componentError;
   }
@@ -327,9 +304,6 @@ export default class RecordHealthCheck extends LightningElement {
     return this.isSetupError ? "utility:setup" : "utility:error";
   }
 
-  // LWC-28: the icon swaps to utility:setup for a setup error, so its assistive
-  // text must match — a "Setup required" graphic announced as "Error" misleads
-  // screen-reader users about why the panel is blocked.
   get errorBannerIconAltText() {
     return this.isSetupError ? "Setup required" : "Error";
   }
@@ -372,10 +346,6 @@ export default class RecordHealthCheck extends LightningElement {
       });
     } else {
       // OneAtATime: reveal every resolved (non-hidden) row as soon as it lands
-      // (LWC-02) — a ready visible result must not wait behind a slow, possibly
-      // hidden check ahead of it. A single in-progress spinner is shown for the
-      // first not-yet-resolved check, so only one row loads at a time even though
-      // checks run concurrently.
       const nextPending = this.checks.find((c) => c.uiState !== "RESOLVED");
       const revealName = nextPending ? nextPending.developerName : null;
       filtered = this.checks.filter((c) => {
@@ -396,7 +366,78 @@ export default class RecordHealthCheck extends LightningElement {
       });
     }
     // Annotate each check with computed display properties for the template
-    return filtered.map((c) => annotateCheck(c, this.debugMode));
+    return filtered.map((c) =>
+      annotateCheck(
+        c,
+        this.debugMode,
+        this.comparisonDisplay,
+        this._isRowExpanded(c.developerName)
+      )
+    );
+  }
+
+  // Whether a row's comparison detail is currently expanded. A user toggle
+  // overrides the placement default; otherwise the App Builder "Expanded"
+  // preference pre-opens carets (rows with no caret ignore this — see
+  // annotateCheck, which is why Expanded cannot widen a FailuresOnly Set).
+  _isRowExpanded(developerName) {
+    if (
+      Object.prototype.hasOwnProperty.call(this._expandedNames, developerName)
+    ) {
+      return this._expandedNames[developerName];
+    }
+    return this.comparisonDisclosure === "Expanded";
+  }
+
+  handleToggleDetail(event) {
+    const developerName = event.currentTarget.dataset.check;
+    if (!developerName) {
+      return;
+    }
+    const next = !this._isRowExpanded(developerName);
+    // Reassign (not mutate) so the tracked field change re-runs visibleChecks.
+    this._expandedNames = {
+      ...this._expandedNames,
+      [developerName]: next
+    };
+  }
+
+  // Value chips clamp to two lines by default (see .rhc-cmp__val--clampable). A
+  // long formula or list therefore needs an in-place "Show more" affordance; we
+  // only want it on chips that actually overflow, which is only knowable after
+  // layout. Scan the rendered chips and reveal the sibling toggle on the ones
+  // whose full content is taller than the clamped box. Skip already-expanded
+  // chips so a re-render (another check resolving) does not hide their toggle.
+  _measureClampedValues() {
+    const chips = this.template.querySelectorAll("[data-clampval]");
+    for (const chip of chips) {
+      const pair = chip.closest(".rhc-cmp__pair");
+      const toggle = pair && pair.querySelector("[data-clamptoggle]");
+      if (!toggle) {
+        continue;
+      }
+      if (chip.classList.contains("rhc-cmp__val--expanded")) {
+        continue;
+      }
+      const overflowing = chip.scrollHeight - chip.clientHeight > 1;
+      toggle.hidden = !overflowing;
+    }
+  }
+
+  // Expand or re-clamp a single value chip in place. Imperative because the
+  // clamp/expand state is purely presentational and per-chip — threading it
+  // through the annotateCheck pipeline would need a stable key per chip for no
+  // functional gain.
+  handleToggleValue(event) {
+    const toggle = event.currentTarget;
+    const pair = toggle.closest(".rhc-cmp__pair");
+    const chip = pair && pair.querySelector("[data-clampval]");
+    if (!chip) {
+      return;
+    }
+    const expanded = chip.classList.toggle("rhc-cmp__val--expanded");
+    toggle.textContent = expanded ? "Show less" : "Show more";
+    toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
   }
 
   get checkCountLabel() {
@@ -471,13 +512,26 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   handleAction() {
+    // A Rerun starts a fresh evaluation, so per-row carets the user opened on the
+    // previous run should collapse back to the placement default rather than
+    // linger open over rows whose values are being recomputed.
+    this._expandedNames = {};
     this._runner.run(false);
   }
 
   get summaryStats() {
-    if (this._summaryStatsSource !== this.checks) {
+    const tooltipKeys = this._summaryTooltipKeys();
+    const tooltipSignature = tooltipKeys.join("|");
+    if (
+      this._summaryStatsSource !== this.checks ||
+      this._summaryStatsTooltipSignature !== tooltipSignature
+    ) {
       this._summaryStatsSource = this.checks;
-      this._summaryStatsCache = buildSummaryStats(this.checks);
+      this._summaryStatsTooltipSignature = tooltipSignature;
+      this._summaryStatsCache = buildSummaryStats(
+        this.checks,
+        new Set(tooltipKeys)
+      );
     }
     return this._summaryStatsCache;
   }
@@ -485,8 +539,6 @@ export default class RecordHealthCheck extends LightningElement {
   get showLimitNotice() {
     return this.checksOmittedByLimit;
   }
-
-  // ─── Internal helpers ─────────────────────────────────────────────────────
 
   _isSkipped(check) {
     return (
@@ -514,11 +566,20 @@ export default class RecordHealthCheck extends LightningElement {
     return this._isSuccess(check) && this.successDisplayMode === "Hide";
   }
 
+  _summaryTooltipKeys() {
+    const keys = [];
+    if (this.checks.some((c) => this._isHiddenSuccess(c))) {
+      keys.push("pass");
+    }
+    if (this.checks.some((c) => this._isHiddenSkipped(c))) {
+      keys.push("skip");
+    }
+    return keys;
+  }
+
   get showDebugConsoleHint() {
     return this.debugMode && this.runComplete;
   }
-
-  // ─── Debug console summary (debug mode only) ─────────────────────────────
 
   _buildRunDiagnostics() {
     return {
@@ -534,7 +595,6 @@ export default class RecordHealthCheck extends LightningElement {
           status: r.status || c.uiState,
           severity: r.severity || null,
           reasonCode: r.reasonCode || null,
-          // LWC-22 / LWC-23: ?? (not ||) so falsy-but-valid values survive in debug diagnostics.
           actualValue: r.actualValue ?? null,
           expectedValue: r.expectedValue ?? null,
           durationMs: r.durationMs != null ? r.durationMs : null,

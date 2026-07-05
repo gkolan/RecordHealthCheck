@@ -14,8 +14,8 @@ public with sharing class RecordHealthCheckEngine {
   private static final Pattern PATTERN_WORD = Pattern.compile(
     '\\b[A-Za-z_][A-Za-z0-9_]*\\b'
   );
-  // SCAN-36: GROUP BY / aggregate detection lives in RecordHealthCheckSoqlTemplate
-  // (the single SOQL-shape authority); the local patterns here were dead.
+  // GROUP BY / aggregate detection lives in RecordHealthCheckSoqlTemplate,
+  // the single SOQL-shape authority.
 
   // Caps how deep a formula → formula → … chain is walked when expanding
   // calculated-field dependencies, so a misconfigured or cyclic graph can never
@@ -24,17 +24,68 @@ public with sharing class RecordHealthCheckEngine {
 
   // Salesforce formula function names and literals — a word matching one of these
   // is part of the expression syntax, not a field, so it is never added to the
-  // SELECT. Static so it is built once per transaction rather than per scan
-  // (the scan now runs recursively across the whole dependency chain).
+  // SELECT. Static so it is built once per transaction rather than once per
+  // scan (a scan walks the whole formula dependency chain recursively).
   private static final Set<String> FORMULA_FUNCTION_WORDS = new Set<String>{
-    'ABS', 'AND', 'BEGINS', 'BLANKVALUE', 'BR', 'CASE', 'CEILING', 'CONTAINS',
-    'CURRENCYRATE', 'DATE', 'DATETIMEVALUE', 'DATEVALUE', 'DAY', 'EXP', 'FALSE',
-    'FIND', 'FLOOR', 'HTMLENCODE', 'HOUR', 'HYPERLINK', 'IF', 'IMAGE',
-    'INCLUDES', 'ISBLANK', 'ISNULL', 'ISPICKVAL', 'JSENCODE', 'JSINHTMLENCODE',
-    'LEFT', 'LEN', 'LN', 'LOG', 'LOWER', 'MAX', 'MID', 'MIN', 'MOD', 'MONTH',
-    'NOT', 'NOW', 'NULL', 'NULLVALUE', 'OR', 'PI', 'POWER', 'REGEX', 'RIGHT',
-    'ROUND', 'SQRT', 'SUBSTITUTE', 'TEXT', 'TODAY', 'TRIM', 'TRUE', 'UPPER',
-    'URLENCODE', 'VALUE', 'WEEKDAY', 'YEAR'
+    'ABS',
+    'AND',
+    'BEGINS',
+    'BLANKVALUE',
+    'BR',
+    'CASE',
+    'CEILING',
+    'CONTAINS',
+    'CURRENCYRATE',
+    'DATE',
+    'DATETIMEVALUE',
+    'DATEVALUE',
+    'DAY',
+    'EXP',
+    'FALSE',
+    'FIND',
+    'FLOOR',
+    'HTMLENCODE',
+    'HOUR',
+    'HYPERLINK',
+    'IF',
+    'IMAGE',
+    'INCLUDES',
+    'ISBLANK',
+    'ISNULL',
+    'ISPICKVAL',
+    'JSENCODE',
+    'JSINHTMLENCODE',
+    'LEFT',
+    'LEN',
+    'LN',
+    'LOG',
+    'LOWER',
+    'MAX',
+    'MID',
+    'MIN',
+    'MOD',
+    'MONTH',
+    'NOT',
+    'NOW',
+    'NULL',
+    'NULLVALUE',
+    'OR',
+    'PI',
+    'POWER',
+    'REGEX',
+    'RIGHT',
+    'ROUND',
+    'SQRT',
+    'SUBSTITUTE',
+    'TEXT',
+    'TODAY',
+    'TRIM',
+    'TRUE',
+    'UPPER',
+    'URLENCODE',
+    'VALUE',
+    'WEEKDAY',
+    'YEAR'
   };
 
   @TestVisible
@@ -52,7 +103,6 @@ public with sharing class RecordHealthCheckEngine {
    * Routes a single check to the correct evaluator and returns exactly one
    * RecordHealthCheckResult. Catchable failures become result statuses; Apex
    * governor-limit exceptions remain uncatchable platform behavior.
-   *
    * configName is required and is used server-side to confirm the rule belongs
    * to the named Check Set and that the Check Set is active, preventing a caller
    * from evaluating arbitrary or inactive rules by DeveloperName alone.
@@ -66,11 +116,8 @@ public with sharing class RecordHealthCheckEngine {
   }
 
   /**
-   * RECONCILIATION STOPGAP: matches the facade's 5-arg call signature so the org
-   * compiles again. `onBehalfOfUserId` (F-07) is a LOG TAG ONLY and is already
-   * recorded by the facade's run() logging, so this overload delegates to the
-   * 4-arg evaluate. Replace with the canonical onBehalfOfUserId implementation
-   * once this workspace is reconciled with the org's (newer) version.
+   * `onBehalfOfUserId` is a log tag only; the facade's run() logging already
+   * records it, so this overload delegates to the 4-arg evaluate.
    */
   public RecordHealthCheckResult evaluate(
     String configName,
@@ -107,14 +154,14 @@ public with sharing class RecordHealthCheckEngine {
     );
     Long startMs = System.currentTimeMillis();
 
-    // RB-07: do NOT reset the FormulaEval budget here. Salesforce's 100-call
-    // FormulaEval limit is transaction-wide and only clears at the end of the
-    // Apex transaction — not per check. Resetting a framework counter per check
-    // made the guard lie: in any caller that loops evaluate() in one transaction
-    // (Flow, batch, anonymous Apex), the framework count returned to zero while
-    // the real platform count kept climbing, so the guard could green-light the
-    // call that hits the uncatchable governor limit. The counter is now allowed
-    // to accumulate across the whole transaction, matching the platform.
+    // do NOT reset the FormulaEval budget here. Salesforce's 100-call
+    // The platform FormulaEval limit is transaction-wide and only clears at the
+    // end of the Apex transaction, not per check, so the framework counter must
+    // accumulate across the whole transaction too. Resetting it per check would
+    // let any caller that loops evaluate() in one transaction (Flow, batch,
+    // anonymous Apex) drive the framework count back to zero while the real
+    // platform count keeps climbing — the guard would then green-light the call
+    // that hits the uncatchable governor limit.
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.checkDeveloperName = checkDeveloperName;
@@ -146,7 +193,7 @@ public with sharing class RecordHealthCheckEngine {
       result.durationMs = System.currentTimeMillis() - startMs;
     }
 
-    // P1-01: the result cache exists ONLY to memoize a shared prerequisite within
+    // the result cache exists ONLY to memoize a shared prerequisite within
     // a single top-level evaluation (dependency recursion in doEvaluate). Clearing
     // it here, once the top-level evaluation has finished, means a later
     // run()/evaluate() in the same Apex transaction (Flow, batch, anonymous Apex)
@@ -197,6 +244,10 @@ public with sharing class RecordHealthCheckEngine {
     copy.message = source.message;
     copy.actualValue = source.actualValue;
     copy.expectedValue = source.expectedValue;
+    copy.actualValueDetail = source.actualValueDetail;
+    copy.expectedValueDetail = source.expectedValueDetail;
+    copy.actualProvenance = source.actualProvenance;
+    copy.expectedProvenance = source.expectedProvenance;
     copy.detailMessage = source.detailMessage;
     copy.adminDetailMessage = source.adminDetailMessage;
     copy.reasonCode = source.reasonCode;
@@ -216,8 +267,8 @@ public with sharing class RecordHealthCheckEngine {
     Boolean debugMode = false;
 
     // 1. Load rule — scoped to the named Check Set and must be active.
-    //    Returns null when rule is missing, inactive, or belongs to a different set,
-    //    preventing evaluation of unauthorized rules via direct Apex invocation.
+    // Returns null when rule is missing, inactive, or belongs to a different set
+    // preventing evaluation of unauthorized rules via direct Apex invocation.
     Record_Health_Check_Rule__mdt rule = configService.loadRule(
       checkDeveloperName,
       configName
@@ -233,7 +284,7 @@ public with sharing class RecordHealthCheckEngine {
     }
 
     // 1a. Validate the parent Check Set is still active and targets the right object.
-    //     Also extract DebugMode__c for this run.
+    // Also extract DebugMode__c for this run.
     SObject checkSetRef = rule.getSObject('Record_Health_Check_Set__r');
     CheckSetContextOutcome checkSetOutcome = validateCheckSetContext(
       checkSetRef,
@@ -264,7 +315,7 @@ public with sharing class RecordHealthCheckEngine {
       }
     );
 
-    // 1b. B2 fix: server-side RequiresCheck__c gate — mirrors LWC client-side logic
+    // server-side RequiresCheck__c gate — mirrors LWC client-side logic
     if (String.isNotBlank(rule.RequiresCheck__c)) {
       String prereqName = rule.RequiresCheck__c.trim();
       if (visitedChain.contains(prereqName)) {
@@ -399,28 +450,19 @@ public with sharing class RecordHealthCheckEngine {
     // 5. Route to evaluator
     RecordHealthCheckResult evalResult = routeEvaluator(rule, recordId, record);
 
-    // 6. Resolve merge fields in result messages (S55 — bad token must not change status).
-    //    FAIL re-derives its message from MessageWhenFailed__c; every other non-PASS
-    //    status (UNABLE_TO_EVALUATE / ERROR / SKIPPED) carries a
-    //    MessageWhenCannotRun__c or skip template the evaluator already placed on
-    //    the result. Both can contain {!FieldName} tokens, so a token like {!Name}
-    //    must never reach the UI for any check type (Query, CompareTwoQueries,
-    //    Apex, Formula).
-    if (
-      evalResult.status == 'FAIL' &&
-      String.isNotBlank(rule.MessageWhenFailed__c)
-    ) {
-      evalResult.message = formulaEvaluator.resolveMergeFields(
-        rule.MessageWhenFailed__c,
-        record
-      );
-    } else {
-      resolveResultMessage(evalResult, record);
-    }
+    // 6. Resolve merge fields in result messages; a bad token must not change status.
+    resolveEvalResultMessage(evalResult, rule, record);
+
+    // 6b. Guided remediation: a FAIL may carry a read-only deep link the admin
+    // authored per rule. Populated only on FAIL (remediation is meaningless on a
+    // pass, and a non-determinate status may not have a loaded record to resolve
+    // tokens against). The URL is token-resolved against the record and then
+    // sanitized before it can reach the UI as an href.
+    populateRemediationAction(evalResult, rule, record);
 
     // 7. Result logging (severity-mapped) and adminDetailMessage propagation.
-    //    PASS/SKIPPED are routine (DEBUG); FAIL is noteworthy (INFO); anything
-    //    else (UNABLE_TO_EVALUATE/ERROR) is a problem worth surfacing (WARN).
+    // PASS/SKIPPED are routine (DEBUG); FAIL is noteworthy (INFO); anything
+    // else (UNABLE_TO_EVALUATE/ERROR) is a problem worth surfacing (WARN).
     Map<String, Object> resultFields = new Map<String, Object>{
       'status' => evalResult.status,
       'severity' => evalResult.severity,
@@ -464,7 +506,30 @@ public with sharing class RecordHealthCheckEngine {
     RecordHealthCheckResult result,
     Boolean debugMode
   ) {
+    applyDetailProvenance(result);
     return applyDebugMode(result, debugMode);
+  }
+
+  // Renders the structured provenance the evaluators captured into the two
+  // public *Detail strings, then gates them on Record_Health_Check_View_Details.
+  // Unlike debug detail, provenance is not tied to DebugMode__c. When the user
+  // lacks Record_Health_Check_View_Details the *Detail strings stay null.
+  @TestVisible
+  private RecordHealthCheckResult applyDetailProvenance(
+    RecordHealthCheckResult result
+  ) {
+    if (RecordHealthCheckAccess.canViewDetails()) {
+      result.actualValueDetail = RecordHealthCheckProvenance.render(
+        result.actualProvenance
+      );
+      result.expectedValueDetail = RecordHealthCheckProvenance.render(
+        result.expectedProvenance
+      );
+    } else {
+      result.actualValueDetail = null;
+      result.expectedValueDetail = null;
+    }
+    return result;
   }
 
   @TestVisible
@@ -493,11 +558,11 @@ public with sharing class RecordHealthCheckEngine {
     result.priority = rule.RunOrder__c;
     result.status = 'UNABLE_TO_EVALUATE';
     result.reasonCode = 'INVALID_CHECK_TYPE';
-    result.message = 'This Check Method is not recognized.';
+    result.message = 'This Check Type is not recognized.';
     return result;
   }
 
-  // ─── Applicability gate (Section 3.5) ────────────────────────────────────
+  // ─── Applicability gate ────────────────────────────────────
 
   @TestVisible
   private class CheckSetContextOutcome {
@@ -514,7 +579,7 @@ public with sharing class RecordHealthCheckEngine {
   ) {
     CheckSetContextOutcome outcome = new CheckSetContextOutcome();
     if (checkSetRef == null) {
-      // SCAN-05: a null Check Set relationship must NOT proceed as if the set were
+      // a null Check Set relationship must NOT proceed as if the set were
       // active and object-matched (that would bypass IsActive__c / ObjectApiName__c
       // enforcement). loadRule only returns a rule whose set relationship is
       // populated, so reaching here is an anomaly — surface it as a config error.
@@ -646,7 +711,7 @@ public with sharing class RecordHealthCheckEngine {
       if (!rows.isEmpty() && rows[0] instanceof AggregateResult) {
         // COUNT(Id) / COUNT() with no alias → expr0. Named aliases (e.g. COUNT(Id) mycount)
         // return null for expr0 — surface a clear config error rather than silently treating as 0.
-        // B9 fix: accept any alias by looking up the first populated field rather
+        // accept any alias by looking up the first populated field rather
         // than hardcoding 'expr0', which is absent when the admin names the alias.
         AggregateResult ar = (AggregateResult) rows[0];
         Map<String, Object> populated = ar.getPopulatedFieldsAsMap();
@@ -658,7 +723,7 @@ public with sharing class RecordHealthCheckEngine {
             'Applicability SOQL aggregate returned no value. Ensure the SELECT clause contains a valid aggregate function such as COUNT(Id).'
           );
         }
-        // SCAN-09: an aggregate value that is not a whole number (or overflows
+        // an aggregate value that is not a whole number (or overflows
         // Integer) would throw an uncaught TypeException; surface it as a config
         // error instead so the check reports UNABLE rather than ERROR.
         try {
@@ -747,6 +812,7 @@ public with sharing class RecordHealthCheckEngine {
       ' FROM ' +
       objectName +
       ' WHERE Id = :recordId WITH USER_MODE LIMIT 1';
+    // code-analyzer-suppress-next-line ApexSOQLInjection: object and field names are derived from Schema describe metadata; recordId is a bind variable and query runs WITH USER_MODE.
     List<SObject> rows = Database.query(soql);
     return rows.isEmpty() ? null : rows[0];
   }
@@ -762,6 +828,11 @@ public with sharing class RecordHealthCheckEngine {
     // turns them into blanks and they must never make record loading fail.
     addMergeFields(fields, objectType, rule.MessageWhenFailed__c);
     addMergeFields(fields, objectType, rule.MessageWhenCannotRun__c);
+    // Remediation link fields may carry {!FieldName} tokens (including relationship
+    // paths like {!Owner.ManagerId}); load their fields so the token resolves.
+    addMergeFields(fields, objectType, rule.PrimaryActionUrl__c);
+    addMergeFields(fields, objectType, rule.PrimaryActionLabel__c);
+    addMergeFields(fields, objectType, rule.FixInstructions__c);
     addMergeFields(fields, objectType, rule.DataQuery__c);
     addMergeFields(fields, objectType, rule.CompareToQuery__c);
     addMergeFields(fields, objectType, rule.RunWhenCountQuery__c);
@@ -778,6 +849,10 @@ public with sharing class RecordHealthCheckEngine {
       // List checks read the scalar from ValueToTest__c; RecordFormula compares to RecordFormulaValue__c.
       addFormulaFields(fields, objectType, rule.ValueToTest__c);
       addFormulaFields(fields, objectType, rule.RecordFormulaValue__c);
+      // Multi-row summary overrides may reference record fields alongside the
+      // computed {!failCount}/{!totalCount} count tokens.
+      addMergeFields(fields, objectType, rule.FoundSummaryOverride__c);
+      addMergeFields(fields, objectType, rule.ExpectedSummaryOverride__c);
     }
     // CompareTwoQueries: both sides are SOQL — merge tokens already handled above
     if (rule.RunThisCheckWhen__c == 'Formula') {
@@ -827,28 +902,26 @@ public with sharing class RecordHealthCheckEngine {
   /**
    * Adds every field a formula expression needs to the SELECT set — including the
    * transitive dependencies of any calculated (formula / roll-up) operand.
-   *
    * FormulaEval regenerates formula-field values from the in-memory SObject at
    * evaluation time, so a check like `FieldA__c > 0` — where `FieldA__c` is a
-   * formula of `FieldX__c + FieldY__c` — needs FieldX__c and FieldY__c loaded,
+   * formula of `FieldX__c + FieldY__c` — needs FieldX__c and FieldY__c loaded
    * not just FieldA__c. Loading only the top-level name makes FormulaEval throw
    * "could not generate the requested field". This walks each referenced field's
    * own `getCalculatedFormula()` definition recursively until it reaches plain
-   * source fields, for formulas of any return type (number, text, date, boolean,
+   * source fields, for formulas of any return type (number, text, date, boolean
    * picklist) and any function — the expansion is driven by Schema, not by the
    * specific syntax used.
-   *
-   * @param fields       accumulating SELECT set (rooted at baseType)
-   * @param baseType     the record's SObjectType — the SELECT root; never changes
-   * @param resolveType  the type the CURRENT formula's tokens resolve against
-   *                     (equals baseType at the top level, or a parent type when
-   *                     recursing into a cross-object formula definition)
-   * @param formula      the formula text being scanned at this level
-   * @param pathPrefix   relationship path from baseType to resolveType, with a
-   *                     trailing '.', or '' at the top level
-   * @param depth        current recursion depth (capped)
-   * @param visited      owner-qualified names of calculated fields already
-   *                     expanded, to break cycles and re-convergent graphs
+   * @param fields accumulating SELECT set (rooted at baseType)
+   * @param baseType the record's SObjectType — the SELECT root; never changes
+   * @param resolveType the type the CURRENT formula's tokens resolve against
+   * (equals baseType at the top level, or a parent type when
+   * recursing into a cross-object formula definition)
+   * @param formula the formula text being scanned at this level
+   * @param pathPrefix relationship path from baseType to resolveType, with a
+   * trailing '.', or '' at the top level
+   * @param depth current recursion depth (capped)
+   * @param visited owner-qualified names of calculated fields already
+   * expanded, to break cycles and re-convergent graphs
    */
   private void expandFormulaDependencies(
     Set<String> fields,
@@ -872,10 +945,16 @@ public with sharing class RecordHealthCheckEngine {
       // If the operand is itself a calculated field, expand the fields ITS
       // definition references so the whole chain can be regenerated.
       FieldPathDescribe info = describeFieldPath(resolveType, token);
-      if (info != null && info.describe != null && info.describe.isCalculated()) {
+      if (
+        info != null &&
+        info.describe != null &&
+        info.describe.isCalculated()
+      ) {
         String nested = info.describe.getCalculatedFormula();
         String visitKey =
-          String.valueOf(info.ownerType) + '.' + info.describe.getName();
+          String.valueOf(info.ownerType) +
+          '.' +
+          info.describe.getName();
         if (String.isNotBlank(nested) && visited.add(visitKey)) {
           expandFormulaDependencies(
             fields,
@@ -1060,7 +1139,7 @@ public with sharing class RecordHealthCheckEngine {
   }
 
   /**
-   * Finds the field whose relationship name matches `relName` (case-insensitive),
+   * Finds the field whose relationship name matches `relName` (case-insensitive)
    * e.g. `Parent` → the ParentId lookup, `Account__r` → the Account__c lookup.
    */
   private Schema.SObjectField findRelationshipField(
@@ -1111,13 +1190,38 @@ public with sharing class RecordHealthCheckEngine {
   }
 
   /**
-   * Resolves {!FieldName} merge tokens in a result's user-facing message so a
-   * token like {!Name} never reaches the UI. Applies to every check type because
-   * it runs on the final result rather than per-evaluator. Framework messages
-   * carry no tokens (no-op) and PASS rows usually have no message. A bad token
-   * collapses to empty string and never changes status (S55). Requires the base
-   * record to be loaded; callers invoke it only after step 3.
+   * Resolves merge tokens on the final result message. On FAIL, a non-blank
+   * evaluator message (for example a custom Apex plugin message naming specific
+   * records) is preserved; MessageWhenFailed__c is the fallback when the
+   * evaluator left message blank. Every other non-PASS status carries a
+   * MessageWhenCannotRun__c or skip template the evaluator already placed on
+   * the result. A bad token collapses to empty string and never changes status.
    */
+  @TestVisible
+  private void resolveEvalResultMessage(
+    RecordHealthCheckResult evalResult,
+    Record_Health_Check_Rule__mdt rule,
+    SObject record
+  ) {
+    if (evalResult == null) {
+      return;
+    }
+    if (evalResult.status == 'FAIL') {
+      if (String.isBlank(evalResult.message)) {
+        evalResult.message = String.isNotBlank(rule.MessageWhenFailed__c)
+          ? formulaEvaluator.resolveMergeFields(
+              rule.MessageWhenFailed__c,
+              record
+            )
+          : 'Check failed.';
+      } else {
+        resolveResultMessage(evalResult, record);
+      }
+      return;
+    }
+    resolveResultMessage(evalResult, record);
+  }
+
   private void resolveResultMessage(
     RecordHealthCheckResult result,
     SObject record
@@ -1128,6 +1232,95 @@ public with sharing class RecordHealthCheckEngine {
         record
       );
     }
+  }
+
+  /**
+   * Populates the read-only remediation link on a FAIL result from the rule's
+   * PrimaryAction / FixInstructions fields. The URL is token-resolved against the
+   * record (with each substituted value URL-encoded) and then sanitized; an
+   * unsafe or over-length URL is dropped rather than surfaced as an href, but any
+   * FixInstructions still render so the row keeps its guidance. Non-FAIL statuses
+   * carry no link — remediation is meaningless on a pass and non-determinate
+   * statuses may lack a loaded record to resolve tokens against.
+   */
+  @TestVisible
+  private void populateRemediationAction(
+    RecordHealthCheckResult result,
+    Record_Health_Check_Rule__mdt rule,
+    SObject record
+  ) {
+    if (result == null || result.status != 'FAIL') {
+      return;
+    }
+
+    // Instructions (and an optional label) can stand on their own even without a
+    // link, so resolve them regardless of URL validity.
+    result.fixInstructions = String.isBlank(rule.FixInstructions__c)
+      ? null
+      : formulaEvaluator.resolveMergeFields(rule.FixInstructions__c, record);
+
+    if (String.isBlank(rule.PrimaryActionUrl__c)) {
+      return;
+    }
+
+    String resolvedUrl = formulaEvaluator.resolveUrlMergeFields(
+      rule.PrimaryActionUrl__c,
+      record
+    );
+    String safeUrl = sanitizeActionUrl(resolvedUrl);
+    if (safeUrl == null) {
+      // Suppress the link but leave a breadcrumb in the admin-only detail channel.
+      if (String.isBlank(result.detailMessage)) {
+        result.detailMessage =
+          'Remediation link suppressed: resolved URL failed validation (scheme or length). Resolved value: ' +
+          resolvedUrl;
+      }
+      return;
+    }
+
+    result.actionUrl = safeUrl;
+    result.actionLabel = String.isBlank(rule.PrimaryActionLabel__c)
+      ? 'Fix this'
+      : formulaEvaluator.resolveMergeFields(rule.PrimaryActionLabel__c, record);
+  }
+
+  /**
+   * Returns a URL safe to render as an href, or null if it must be rejected.
+   * Allowed: a same-org relative path (single leading slash, not protocol-relative
+   * "//") or an absolute https:// URL. Everything else — javascript:, data:,
+   * plain http:, protocol-relative, whitespace-obfuscated schemes, or anything
+   * over the 2000-char field ceiling — is rejected.
+   */
+  @TestVisible
+  private String sanitizeActionUrl(String url) {
+    if (String.isBlank(url)) {
+      return null;
+    }
+    String trimmed = url.trim();
+    if (trimmed.length() > 2000) {
+      return null;
+    }
+    // Control characters can smuggle a scheme past the check (e.g. "java\nscript:").
+    if (
+      trimmed.contains('\n') ||
+      trimmed.contains('\r') ||
+      trimmed.contains('\t')
+    ) {
+      return null;
+    }
+    if (trimmed.contains('\\')) {
+      return null;
+    }
+    if (trimmed.startsWith('//')) {
+      return null; // protocol-relative → resolves off-org
+    }
+    if (trimmed.startsWith('/')) {
+      return trimmed; // same-org relative path
+    }
+    if (trimmed.toLowerCase().startsWith('https://')) {
+      return trimmed;
+    }
+    return null;
   }
 
   @TestVisible

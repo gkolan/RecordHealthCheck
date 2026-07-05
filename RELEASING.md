@@ -35,7 +35,7 @@ git pull
 npm ci
 npm run prettier:verify
 npm run lint
-npm test                    # 61 Jest tests
+npm test                    # 90 Jest tests
 npm run test:unit:coverage  # coverage thresholds enforced
 ```
 

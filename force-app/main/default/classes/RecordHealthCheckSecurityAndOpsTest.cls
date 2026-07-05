@@ -33,6 +33,47 @@ private class RecordHealthCheckSecurityAndOpsTest {
   }
 
   @isTest
+  static void provenanceDetailRequiresViewDetailsPermission() {
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'NumberOfEmployees',
+      'null',
+      'blank treated as 0'
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Fixed value',
+      '10',
+      null
+    );
+    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
+
+    // Not entitled → the public *Detail strings stay null (the Found/Expected
+    // values themselves are unaffected — they are governed by display policy).
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
+    System.assertEquals(false, RecordHealthCheckAccess.canViewDetails());
+    RecordHealthCheckResult gated = engine.applyDetailProvenance(result);
+    System.assertEquals(null, gated.actualValueDetail);
+    System.assertEquals(null, gated.expectedValueDetail);
+
+    // Entitled → the structured provenance renders into the two strings.
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
+    System.assertEquals(true, RecordHealthCheckAccess.canViewDetails());
+    RecordHealthCheckResult shown = engine.applyDetailProvenance(result);
+    System.assertEquals(
+      'NumberOfEmployees → null (blank treated as 0)',
+      shown.actualValueDetail
+    );
+    System.assertEquals('Fixed value → 10', shown.expectedValueDetail);
+
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
+    System.assertNotEquals(
+      null,
+      RecordHealthCheckAccess.canViewDetails(),
+      'The platform permission check must always return a Boolean.'
+    );
+  }
+
+  @isTest
   static void structuredLogValuesCannotForgeNewLines() {
     System.assertEquals(
       'ticket forged value',

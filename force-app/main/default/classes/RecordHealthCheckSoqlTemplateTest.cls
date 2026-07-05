@@ -5,9 +5,8 @@
 
 /**
  * Unit tests for RecordHealthCheckSoqlTemplate — the depth-aware SOQL normalizer.
- * Pure string logic, so no DML/SOQL is needed. Focuses on the RB-08 cases the old
- * substring/regex logic got wrong: clauses inside subqueries, keywords inside
- * string literals, and oversized/childed LIMITs.
+ * Pure string logic, so no DML/SOQL is needed. Covers clauses inside subqueries,
+ * keywords inside string literals, and oversized or nested LIMITs.
  */
 @isTest
 private class RecordHealthCheckSoqlTemplateTest {
@@ -161,7 +160,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   @isTest
   static void userModeGoesOutsideChildSubqueryOrderBy() {
-    // RB-08: the inner ORDER BY must NOT be the injection point.
+    // the inner ORDER BY must NOT be the injection point.
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id, (SELECT Id FROM Contacts ORDER BY LastName) FROM Account WHERE Id = \'001\''
     );
@@ -213,7 +212,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   @isTest
   static void keywordInsideLiteralIsAllowed() {
-    // "update" inside a string literal must NOT be rejected (RB-08).
+    // "update" inside a string literal must not be rejected.
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
       'SELECT Id FROM Account WHERE Name = \'please update me\''
     );
@@ -260,7 +259,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   @isTest
   static void systemModeRejectedByKeywordValidation() {
-    // SCAN-03: WITH SYSTEM_MODE bypasses sharing/FLS and must be rejected.
+    // WITH SYSTEM_MODE bypasses sharing/FLS and must be rejected.
     try {
       RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
         'SELECT Id FROM Account WITH SYSTEM_MODE'
@@ -273,7 +272,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   @isTest
   static void systemModeRejectedByPrepareForExecution() {
-    // SCAN-03: the rejection also fires on the shared execution chokepoint, so
+    // the rejection also fires on the shared execution chokepoint, so
     // the dual-SOQL and applicability paths (which skip validateNoDisallowedKeywords)
     // are protected too.
     try {
@@ -289,8 +288,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   @isTest
   static void systemModeInSubqueryRejected() {
-    // T-11 / SCAN-43: WITH SYSTEM_MODE nested in a subquery (parenthesis depth > 0)
-    // must be rejected too — depth-0-only matching let it bypass validation.
+    // WITH SYSTEM_MODE nested in a subquery must be rejected too.
     String nested =
       'SELECT Id FROM Account WHERE Id IN ' +
       '(SELECT AccountId FROM Contact WITH SYSTEM_MODE)';

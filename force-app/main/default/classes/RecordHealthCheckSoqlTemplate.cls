@@ -4,26 +4,23 @@
  */
 
 /**
- * Parenthesis-depth-aware SOQL template normalizer (RB-08, M-01).
- *
+ * Parenthesis-depth-aware SOQL template normalizer.
  * The single source of truth for turning an admin-authored SOQL template into a
  * query that is safe to execute: it masks string literals, recognizes clauses
  * ONLY at the outermost (depth-0) level, validates a single outer SELECT, injects
  * WITH USER_MODE in the correct place, and enforces an effective outer row cap.
- *
  * Previously this logic was duplicated (and subtly different) across
  * RecordHealthCheckSoqlEvaluator, RecordHealthCheckDualSoqlEvaluator, and the
  * engine's applicability path, using substring/regex scans that ignored
- * parentheses. That allowed several real defects this class fixes:
- *   - an ORDER BY / GROUP BY / LIMIT inside a child subquery becoming the
- *     insertion point for the outer WITH USER_MODE (invalid SOQL);
- *   - a subquery/literal containing LIMIT making the outer query look capped;
- *   - a child aggregate making the outer query look like a pure aggregate and
- *     suppressing the cap;
- *   - an oversized outer LIMIT (e.g. 50000) consuming the governor limit before
- *     the post-query size check;
- *   - keyword rejection firing on words such as "update" inside a string literal.
- *
+ * parentheses. That allowed several real defects this class fixes
+ * an ORDER BY / GROUP BY / LIMIT inside a child subquery becoming the
+ * insertion point for the outer WITH USER_MODE (invalid SOQL);
+ * a subquery/literal containing LIMIT making the outer query look capped;
+ * a child aggregate making the outer query look like a pure aggregate and
+ * suppressing the cap;
+ * an oversized outer LIMIT (e.g. 50000) consuming the governor limit before
+ * the post-query size check;
+ * keyword rejection firing on words such as "update" inside a string literal.
  * Methods are static and side-effect free. Callers map TemplateException.reasonCode
  * onto their own result/exception types.
  */
@@ -56,7 +53,7 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   private static final Pattern PATTERN_WITH = Pattern.compile(
     '(?i)\\bWITH\\s+(USER_MODE|SECURITY_ENFORCED)\\b'
   );
-  // SCAN-03: WITH SYSTEM_MODE runs the query without the sharing rules and FLS
+  // WITH SYSTEM_MODE runs the query without the sharing rules and FLS
   // that WITH USER_MODE enforces. An admin-authored Check Set template must never
   // be allowed to request it, so it is rejected outright rather than recognized.
   private static final Pattern PATTERN_SYSTEM_MODE = Pattern.compile(
@@ -135,13 +132,10 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   }
 
   /**
-   * SCAN-03 / SCAN-43: rejects a `WITH SYSTEM_MODE` access level at ANY
-   * parenthesis depth. SYSTEM_MODE bypasses the sharing rules and FLS that the
-   * framework enforces via `WITH USER_MODE`, so an admin-authored template must
-   * never request it — not at depth 0 and not inside a subquery. Relying on
-   * Database.query to reject a nested SYSTEM_MODE (SCAN-43) is fragile and yields
-   * an opaque error, so the keyword is forbidden everywhere. The literal mask
-   * keeps the keyword inside a string value from being a false positive.
+   * Rejects a `WITH SYSTEM_MODE` access level at any parenthesis depth.
+   * SYSTEM_MODE bypasses the sharing rules and FLS that the framework enforces
+   * via `WITH USER_MODE`, so an admin-authored template must never request it.
+   * The literal mask keeps the keyword inside a string value from being a false positive.
    */
   private static void rejectSystemMode(String soql) {
     if (String.isBlank(soql)) {
@@ -289,10 +283,10 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   }
 
   /**
-   * Enforces an effective outer LIMIT no greater than `cap`:
-   *   - pure aggregates (depth-0 aggregate, no depth-0 GROUP BY) get no LIMIT (illegal);
-   *   - an existing depth-0 LIMIT greater than cap is lowered to cap;
-   *   - otherwise a LIMIT of cap is added (before a depth-0 OFFSET if present).
+   * Enforces an effective outer LIMIT no greater than `cap`
+   * pure aggregates (depth-0 aggregate, no depth-0 GROUP BY) get no LIMIT (illegal);
+   * an existing depth-0 LIMIT greater than cap is lowered to cap;
+   * otherwise a LIMIT of cap is added (before a depth-0 OFFSET if present).
    * Callers still probe with cap+1 by passing maxRows+1 — see the evaluators.
    */
   @TestVisible

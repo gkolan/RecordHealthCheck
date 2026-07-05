@@ -18,6 +18,9 @@ private class AccountOpenOpportunityHealthCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('PASS', result.status);
+    System.assertEquals('0 unhealthy', result.actualValue);
+    System.assertEquals('0 unhealthy', result.expectedValue);
+    System.assertNotEquals(null, result.actualProvenance);
   }
 
   @IsTest
@@ -43,6 +46,8 @@ private class AccountOpenOpportunityHealthCheckTest {
       result.status,
       'A deal with a Next Step closing this quarter is healthy.'
     );
+    System.assertEquals('0 unhealthy', result.actualValue);
+    System.assertEquals('0 unhealthy', result.expectedValue);
   }
 
   @IsTest
@@ -50,7 +55,7 @@ private class AccountOpenOpportunityHealthCheckTest {
     Account account = new Account(Name = 'RHC Opp Health Unhealthy');
     insert account;
 
-    // No Next Step, closing far in the future, and (by default) no activity —
+    // No Next Step, closing far in the future, and (by default) no activity
     // stale, so the deal is unhealthy.
     insert new Opportunity(
       AccountId = account.Id,
@@ -64,6 +69,29 @@ private class AccountOpenOpportunityHealthCheckTest {
     System.assertEquals('FAIL', result.status);
     System.assertEquals('1 unhealthy', result.actualValue);
     System.assertEquals('0 unhealthy', result.expectedValue);
+  }
+
+  @IsTest
+  static void staleDaysParametersFallBackSafely() {
+    Account account = new Account(Name = 'RHC Opp Health Parameters');
+    insert account;
+
+    for (
+      Map<String, Object> parameters : new List<Map<String, Object>>{
+        new Map<String, Object>(),
+        new Map<String, Object>{ 'staleDays' => null },
+        new Map<String, Object>{ 'staleDays' => 0 },
+        new Map<String, Object>{ 'staleDays' => 3651 },
+        new Map<String, Object>{ 'staleDays' => 'not-a-number' },
+        new Map<String, Object>{ 'staleDays' => 1 }
+      }
+    ) {
+      System.assertEquals(
+        'PASS',
+        evaluate(account.Id, parameters).status,
+        'Parameter parsing should never prevent evaluation.'
+      );
+    }
   }
 
   @IsTest
@@ -104,6 +132,25 @@ private class AccountOpenOpportunityHealthCheckTest {
         quarterStart,
         quarterEnd
       )
+    );
+
+    Opportunity explicitlyStale = (Opportunity) JSON.deserialize(
+      '{"attributes":{"type":"Opportunity"},"LastActivityDate":"' +
+        String.valueOf(staleCutoff.addDays(-1)) +
+        '","CloseDate":"' +
+        String.valueOf(quarterEnd.addDays(1)) +
+        '"}',
+      Opportunity.class
+    );
+    System.assertEquals(
+      true,
+      AccountOpenOpportunityHealthCheck.isUnhealthy(
+        explicitlyStale,
+        staleCutoff,
+        quarterStart,
+        quarterEnd
+      ),
+      'An activity date before the stale cutoff should count as stale.'
     );
   }
 

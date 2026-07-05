@@ -24,6 +24,16 @@ private class AccountHasRecentActivityCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('PASS', result.status);
+    System.assertEquals('1 activity', result.actualValue);
+    System.assertEquals('at least 1 activity', result.expectedValue);
+    System.assertNotEquals(null, result.actualProvenance);
+    System.assertEquals(
+      'Completed tasks + events',
+      result.actualProvenance.sourceLabel
+    );
+    System.assertEquals('1', result.actualProvenance.rawValueLabel);
+    System.assertEquals('last 30 days', result.actualProvenance.coercionLabel);
+    System.assertNotEquals(null, result.expectedProvenance);
   }
 
   @IsTest
@@ -34,6 +44,10 @@ private class AccountHasRecentActivityCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('FAIL', result.status);
+    System.assertEquals('0 activities', result.actualValue);
+    System.assertEquals('at least 1 activity', result.expectedValue);
+    System.assertNotEquals(null, result.actualProvenance);
+    System.assertEquals('0', result.actualProvenance.rawValueLabel);
   }
 
   @IsTest
@@ -55,6 +69,13 @@ private class AccountHasRecentActivityCheckTest {
     );
 
     System.assertEquals('FAIL', result.status);
+    System.assertEquals('0 activities', result.actualValue);
+    System.assertEquals('at least 1 activity', result.expectedValue);
+    System.assertEquals('last 90 days', result.actualProvenance.coercionLabel);
+    System.assertEquals(
+      'within 90 days',
+      result.expectedProvenance.coercionLabel
+    );
   }
 
   @IsTest
@@ -69,7 +90,7 @@ private class AccountHasRecentActivityCheckTest {
       ActivityDate = Date.today()
     );
 
-    // Out-of-range and unparseable values both fall back to the 30-day default,
+    // Out-of-range and unparseable values both fall back to the 30-day default
     // which still includes today's task.
     System.assertEquals(
       'PASS',

@@ -4,15 +4,12 @@
  */
 
 /**
- * One-line entry point to run a SINGLE Record Health Check from anywhere —
- * Apex triggers, batch/queueable, scheduled jobs, anonymous Apex, other classes,
+ * One-line entry point to run a SINGLE Record Health Check from anywhere
+ * Apex triggers, batch/queueable, scheduled jobs, anonymous Apex, other classes
  * or tests. This is the simplest adoption surface: no LWC, no record page.
- *
- *   RecordHealthCheckResult r = RecordHealthCheck.run(
- *       'Account_Data_Quality', 'Account_DQ_BillingCity', accountId);
- *
- *   if (r.status == 'FAIL') { ... }
- *
+ * RecordHealthCheckResult r = RecordHealthCheck.run(
+ * 'Account_Data_Quality', 'Account_DQ_BillingCity', accountId);
+ * if (r.status == 'FAIL') { ... }
  * Like the LWC path, the call is correlated by a generated `runId` and every
  * `[RHC]` log line is attributed to the actual running user.
  */

@@ -11,14 +11,12 @@ public with sharing class RecordHealthCheckController {
 
   /**
    * Returns Check Set display settings and ordered check definitions.
-   *
    * Not cacheable: metadata edits to Check Sets/Rules appear on the next
    * component load without requiring a page refresh.
-   *
-   * Throws AuraHandledException for all component-level failures:
-   *   CONFIG_NOT_FOUND, CONFIG_INACTIVE, OBJECT_MISMATCH,
-   *   NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS, and LOAD_FAILED for any
-   *   unexpected (non-ConfigException) error.
+   * Throws AuraHandledException for all component-level failures
+   * CONFIG_NOT_FOUND, CONFIG_INACTIVE, OBJECT_MISMATCH
+   * NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS, and LOAD_FAILED for any
+   * unexpected (non-ConfigException) error.
    */
   @AuraEnabled
   public static RecordHealthCheckDefinitionResponse getCheckDefinitions(
@@ -61,7 +59,7 @@ public with sharing class RecordHealthCheckController {
         null,
         ex
       );
-      // SCAN-02: an unexpected failure here (governor limit, NPE, SOQL error) is
+      // an unexpected failure here (governor limit, NPE, SOQL error) is
       // NOT a missing-config condition. Reporting CONFIG_NOT_FOUND would tell the
       // admin their Check Set does not exist when it does. Use LOAD_FAILED so the
       // LWC surfaces a generic load error (parseAuraError already treats unknown
@@ -78,7 +76,6 @@ public with sharing class RecordHealthCheckController {
    * Evaluates a single check and returns exactly one RecordHealthCheckResult.
    * Catchable failures are normalized by RecordHealthCheckEngine
    * and surfaced as status = ERROR with a safe message.
-   *
    * configName is validated server-side to confirm the rule belongs to the
    * named Check Set, preventing direct invocation of arbitrary rules.
    */

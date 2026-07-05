@@ -3,7 +3,7 @@
 This guide installs Record Health Check into a Salesforce **sandbox** with no coding and no command line.
 
 > [!NOTE]
-> **What is a "sandbox"?** A sandbox is a safe copy of Salesforce for testing. Nothing you
+> **What is a "sandbox"?** A sandbox is a Salesforce testing copy. Nothing you
 > do here touches real customer data or your live (production) org. It is the right place to
 > try something new.
 
@@ -13,10 +13,10 @@ You need:
 
 - **A Salesforce sandbox you can log in to** (whoever provisions sandboxes in your org can create one).
 - **Permission to customize pages and Setup** in that sandbox: typically **Customize Application** on your profile.
-- **Who runs the Deploy button:** the person clicking **Deploy to Salesforce** must be able to install Apex into the target org (deploy tools may require **Author Apex** on that user's profile).
+- **Who runs the Deploy button:** the person clicking **Deploy to Salesforce** must be able to install Apex into the target org. If deployment fails with an Apex-authoring permission error, assign **Author Apex** or ask a Salesforce admin with deploy permissions to run the install.
 - **Do not close the browser tab partway through the deploy.**
 
-Right after install, **Step 4** assigns the **Record Health Check User** permission set so you can run the card: that is separate from deploy permissions.
+Right after install, **Step 4** assigns the Permission Set named **Record Health Check User** so you can run the card. That is separate from deploy permissions.
 
 You do **not** need: the Salesforce CLI, Git, VS Code, or any download.
 
@@ -25,30 +25,25 @@ You do **not** need: the Salesforce CLI, Git, VS Code, or any download.
 On the project's main page (the [README](../../README.md)), find the button that says
 **Deploy to Salesforce** and click it.
 
-It opens a website called **githubsfdeploy**. This is a well-known, free tool that copies
-the project's files into a Salesforce org for you. It does not see your data: it only
-installs the component.
+It opens a website called **githubsfdeploy**. The tool deploys this project's metadata into the Salesforce org you log in to. It installs package metadata; it does not read or export your records.
 
 ## Step 2: Log in to your sandbox
 
 The deploy page asks you to log in.
 
 1. Click **Login to Salesforce**.
-2. Log in to the **sandbox**, not production: the login page should say **test.salesforce.com** at the top, or pick the **Sandbox** option
-   if it asks. If only production login appears, request the sandbox login URL from whoever manages sandboxes
-   (it usually ends in `.sandbox.my.salesforce.com`).
+2. Log in to the **sandbox**, not production. The login page displays **test.salesforce.com**, or the page provides a **Sandbox** option. If only production login appears, request the sandbox login URL from whoever manages sandboxes. Sandbox My Domain URLs end in `.sandbox.my.salesforce.com`.
 3. Enter your sandbox username and password and approve any verification prompt.
 
 > [!WARNING]
-> **Safety check:** If you are ever unsure whether you are in production or sandbox, **stop
-> and confirm with the org owner.** It is always safe to install into a sandbox; only install into
-> production after the org has reviewed it.
+> **Safety check:** If you are unsure whether you are in production or sandbox, **stop
+> and confirm with the org owner.** Use a sandbox for the first install. Install into
+> production only after the org has reviewed the package.
 
 ## Step 3: Click Deploy and wait
 
-1. After logging in you will see a page listing the components to install (Apex classes, a
-   Lightning component, Custom Metadata Types, and sample data). You do not need to
-   understand each line.
+1. After logging in you will see a page listing the components to install: Apex classes,
+   a Lightning component, Custom Metadata Types, and sample data.
 2. Click **Deploy**.
 3. Wait until the deploy finishes and you see a green **success** message.
 
@@ -58,10 +53,10 @@ project with you, or see [Troubleshooting](#if-something-goes-wrong) below.
 **What the deploy installed:**
 
 - The **recordHealthCheck** card you can add to a record page
-- Setup areas for **Check Sets** and **Rules** (the things you configure)
-- **Sample checks** (10 Check Sets and 88 Rules, all on the Account object) so you have something
-  to look at immediately
-- Two **permission sets** that control who can use it
+- Setup areas for **Check Sets** and **Rules**
+- **Sample checks** (15 Account Check Sets and 132 Rules across reusable samples,
+  teaching sets, and a demo set) so you have something to look at immediately
+- Two **Permission Sets** that control who can use it
 
 ## Step 4: Give yourself permission to use it
 
@@ -74,7 +69,7 @@ the card.
 4. Click **Manage Assignments** → **Add Assignment**.
 5. Check the box next to **your own name**, then click **Assign** → **Done**.
 
-> Two permission sets were installed. **`Record_Health_Check_User`** is enough to run the card. **`Record_Health_Check_Admin`** adds troubleshooting (`Record_Health_Check_Debug`). See [Getting Started: Step 1b](getting-started.md#step-1b-assign-permission-sets).
+> Two Permission Sets were installed. **`Record_Health_Check_User`** lets a user run the card. **`Record_Health_Check_Admin`** adds troubleshooting (`Record_Health_Check_Debug`), comparison provenance (`Record_Health_Check_View_Details`), and a reserved configure permission. See [Getting Started: Step 1b](getting-started.md#step-1b-assign-permission-sets).
 
 ## Step 5: Add the card to a page and see it work
 
@@ -96,29 +91,26 @@ the card.
    defaults.
 6. Click **Back** to return to the Account.
 
-You should now see a **Record Health Check** card showing a list of checks with green
-(passed) and red (failed) results.
+The record page now shows a **Record Health Check** card with checks and pass/fail statuses.
 
-That is the whole product. Everything else is configuring your own checks.
+The next step is configuring your own checks.
 
-## What to do next
+## Next
 
-You now have a working installation. To start building your own checks:
+You now have a working installation.
 
-| You want to… | Go to |
-| ------------ | ----- |
-| Understand the basics and build your first check | [Getting Started](getting-started.md) |
-| Draft checks with an AI assistant | [LLM Configuration Guide](../guides/llm-configuration.md) |
-| Copy ready-made examples | [Examples](../examples/index.md) |
-| See every setting explained in plain language | [Configuration Guide](../guides/configuration-guide.md) |
+- Build your first check: [Getting Started](getting-started.md)
+- Draft checks with an AI assistant: [LLM Configuration Guide](../guides/llm-configuration.md)
+- Copy examples: [Examples](../examples/index.md)
+- Look up every setting: [Configuration Guide](../guides/configuration-guide.md)
 
 ## If something goes wrong
 
-| What you see | What it usually means | What to do |
+| What you see | Likely cause | What to do |
 | ------------ | --------------------- | ---------- |
-| The deploy page shows a **red error** | A component could not install (often a permissions or API-version issue) | Take a screenshot and send it to the person who shared this project. Note: **Formula** checks need org API **v63.0 or later** (Spring '25). |
+| The deploy page shows a **red error** | A component did not install, often because of a permissions or API-version issue | Take a screenshot and send it to the person who shared this project. Note: **Formula** checks need org API **v63.0 or later** (Spring '25). |
 | Install succeeded but **you don't see the card** on the page | The card was not added, or the Check Set name is wrong | Re-check **Step 5**. The **Check Set Developer Name** must be exactly `Account_Data_Quality`. |
-| You see the card but it says you **don't have access** | The permission set is not assigned | Go back to **Step 4** and confirm **Record Health Check User** is assigned to you. |
-| You logged in and it deployed to the **wrong org** | You logged in to production or a different sandbox by mistake | The component is harmless and changes no data, but to remove it, contact whoever manages that org. Next time, double-check the login URL in **Step 2**. |
+| You see the card but it says you **don't have access** | The Permission Set is not assigned | Go back to **Step 4** and confirm **Record Health Check User** is assigned to you. |
+| You logged in and it deployed to the **wrong org** | You logged in to production or a different sandbox by mistake | The package does not update business records. To remove the metadata, contact whoever manages that org. Next time, verify the login URL in **Step 2** before clicking **Deploy**. |
 
 More detailed help: [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).

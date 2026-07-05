@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| **Evaluator** | Record formula |
+| **Evaluator** | Check fields on this record |
 | **Sample** | [`Employee_Count_Is_Positive`](../../../force-app/main/default/customMetadata/Record_Health_Check_Rule__mdt.Employee_Count_Is_Positive.md-meta.xml) |
 | **Check Set** | `Account_Examples_Formula` · [`package-Account_Examples_Formula.xml`](../../../manifest/package-Account_Examples_Formula.xml) |
 
@@ -22,8 +22,8 @@ The threshold is a single numeric comparison on one Account field.
 
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
-| Record formula | `NumberOfEmployees > 0` | **This example.** Distinguishes zero from blank in one expression. |
-| Single query | `SELECT COUNT() FROM Account WHERE Id = {!Id} AND NumberOfEmployees > 0` | Same pass/fail via SOQL for a field already on the record. |
+| Check fields on this record | `NumberOfEmployees > 0` | **This example.** Distinguishes zero from blank in one expression. |
+| Check records with a query | `SELECT COUNT() FROM Account WHERE Id = {!Id} AND NumberOfEmployees > 0` | Same pass/fail via SOQL for a field already on the record. |
 | Compare two queries | | Nothing here compares two query results. |
 | Custom Apex | Apex numeric comparison | Same outcome with unnecessary code. |
 
@@ -32,9 +32,9 @@ The threshold is a single numeric comparison on one Account field.
 | Need | Use instead |
 | ---- | ----------- |
 | Any non-blank number is acceptable (zero passes) | `NOT(ISBLANK(NumberOfEmployees))` in [Single required field](01-single-required-field.md) |
-| Threshold should track another field on the record | Single query with Compare Against = A formula on the record |
+| Threshold should track another field on the record | Check records with a query with Expected Value Comes From = A formula on this record |
 
-**Verdict:** Record formula with a numeric comparator is the right evaluator for a fixed threshold on an on-record number. Move to Query when the threshold must come from a related aggregate or another field via formula binding.
+**Verdict:** Check fields on this record with a numeric comparator is the right evaluator for a fixed threshold on an on-record number. Move to Query when the threshold must come from a related aggregate or another field via formula binding.
 
 ## Configuration
 
@@ -42,18 +42,18 @@ The threshold is a single numeric comparison on one Account field.
 | ----------- | ----- |
 | Check Name | Employee Count Is Positive |
 | Developer Name | Employee_Count_Is_Positive |
-| Check Method | Record formula |
-| Pass/Fail Formula | `NumberOfEmployees > 0` |
+| Check Type | Check fields on this record |
+| Pass Condition (Formula) | `NumberOfEmployees > 0` |
 | Run This Check When | Always |
 | Severity | Warning |
-| Message When Failed | Employee count is zero or blank. |
+| Message When Check Fails | Employee count is zero or blank. |
 
 > [!NOTE]
-> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Pass/Fail Formula to change the field or comparison threshold.
+> This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. Edit Pass Condition (Formula) to change the field or comparison threshold.
 
 ## How it works
 
-The engine evaluates Pass/Fail Formula on the Account. Values greater than zero pass; zero or blank fail.
+The engine evaluates Pass Condition (Formula) on the Account. Values greater than zero pass; zero or blank fail.
 
 ```text
 NumberOfEmployees > 0
@@ -73,7 +73,7 @@ sf project deploy start --manifest manifest/package-core.xml                    
 sf project deploy start --manifest manifest/package-Account_Examples_Formula.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Formula`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

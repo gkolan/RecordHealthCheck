@@ -124,7 +124,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     // ── Resolve comparison value / list ───────────────────────────────────
     Object comparisonValue = null;
     List<Object> comparisonList = null;
-    // P1-05 / SCAN-06: distinguishes a null comparison that came from a comparison
+    // distinguishes a null comparison that came from a comparison
     // query returning zero rows (→ WhenZeroRows__c) from one where the field was
     // simply null on a present row (→ null-value, handled by WhenValueIsEmpty__c).
     Boolean comparisonQueryWasEmpty = false;
@@ -206,7 +206,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
 
     if (passed == null) {
-      // P1-05 / SCAN-06: an indeterminate comparator result has two distinct
+      // an indeterminate comparator result has two distinct
       // causes that must NOT be treated alike. A genuine zero-rows result is
       // governed by WhenZeroRows__c; a present-but-null value is governed by the
       // null behavior (WhenValueIsEmpty__c) and resolves to SKIPPED — routing it
@@ -231,19 +231,81 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
 
     // Capture what the record produced vs what the rule required so the UI can
-    // show the comparison on a non-passing row (Section: actual vs expected).
-    result.actualValue = primaryList != null
-      ? RecordHealthCheckComparatorEngine.formatList(primaryList)
-      : RecordHealthCheckComparatorEngine.formatValue(primaryValue);
-    if (isListComparator) {
-      result.expectedValue = RecordHealthCheckComparatorEngine.describeExpectedList(
-        rule.Operator__c,
-        comparisonList
+    // show the comparison on a non-passing row.
+    if (primaryList != null && rule.WhenMultipleRows__c == 'AllRowsPass') {
+      // "Every row must pass" over many rows: a raw value dump does not scale, so
+      // summarize as a count ("1 of 5 Contacts did not pass"). An admin can
+      // override the phrasing per rule for friendlier wording.
+      Integer totalRows = primaryList.size();
+      Integer failingRows = RecordHealthCheckComparatorEngine.countFailingRows(
+        rule,
+        primaryList,
+        comparisonValue
+      );
+      result.actualValue = String.isNotBlank(rule.FoundSummaryOverride__c)
+        ? resolveSummaryTemplate(
+            rule.FoundSummaryOverride__c,
+            failingRows,
+            totalRows,
+            record
+          )
+        : deriveFoundSummary(rule, failingRows, totalRows);
+      result.expectedValue = String.isNotBlank(rule.ExpectedSummaryOverride__c)
+        ? resolveSummaryTemplate(
+            rule.ExpectedSummaryOverride__c,
+            failingRows,
+            totalRows,
+            record
+          )
+        : RecordHealthCheckComparatorEngine.describeExpected(
+            rule.Operator__c,
+            comparisonValue
+          );
+    } else {
+      result.actualValue = primaryList != null
+        ? RecordHealthCheckComparatorEngine.formatList(primaryList)
+        : RecordHealthCheckComparatorEngine.formatValue(primaryValue);
+      if (isListComparator) {
+        result.expectedValue = RecordHealthCheckComparatorEngine.describeExpectedList(
+          rule.Operator__c,
+          comparisonList
+        );
+      } else {
+        result.expectedValue = RecordHealthCheckComparatorEngine.describeExpected(
+          rule.Operator__c,
+          comparisonValue
+        );
+      }
+    }
+
+    // Provenance — where each side came from and its raw value/row count, so an
+    // entitled viewer can tell a true value from an empty/coerced one.
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      describePrimarySource(rule),
+      primaryList != null
+        ? RecordHealthCheckProvenance.rowCount(primaryList.size())
+        : rawLabel(primaryValue),
+      null
+    );
+    if (isUnaryComparator) {
+      // A unary comparator has no comparison value or source, so the "source" of
+      // the requirement is the comparator itself. Labeling it 'Comparator' (not
+      // 'Expected requirement') avoids the row reading "Expected Expected …" once
+      // the UI prefixes it with the "Expected" caption.
+      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+        'Comparator',
+        result.expectedValue,
+        null
       );
     } else {
-      result.expectedValue = RecordHealthCheckComparatorEngine.describeExpected(
-        rule.Operator__c,
-        comparisonValue
+      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+        describeComparisonSource(rule),
+        isListComparator
+          ? RecordHealthCheckProvenance.rowCount(
+              comparisonList == null ? 0 : comparisonList.size()
+            )
+          : rawLabel(comparisonValue),
+        null
       );
     }
 
@@ -260,12 +322,12 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     return result;
   }
 
-  // ─── Token binding (Section 3.2) ──────────────────────────────────────────
+  // ─── Token binding ──────────────────────────────────────────
 
   /**
    * Replaces {!FieldName} tokens with the record's field values.
    * Values are returned as a Map so Database.query can use them as bind vars.
-   * Since Apex dynamic SOQL only supports real bind variables in code scope,
+   * Since Apex dynamic SOQL only supports real bind variables in code scope
    * we inject field values directly — but we use String.escapeSingleQuotes
    * for string values and typed formatting for non-strings to prevent injection.
    */
@@ -283,10 +345,10 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     validateNoDisallowedKeywords(soqlTemplate);
 
     Matcher m = PATTERN_TOKEN.matcher(soqlTemplate);
-    String bound = soqlTemplate;
+    String bound = '';
+    Integer lastEnd = 0;
 
     while (m.find()) {
-      String token = m.group(0);
       String fieldPath = m.group(1);
 
       Object fieldValue;
@@ -304,8 +366,11 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       // two replacements are identical; only a multi-select picklist differs — its
       // unquoted form expands to an INCLUDES list while its quoted form keeps the
       // raw 'A;B;C' value.
-      String quotedToken = '\'' + token + '\'';
-      Boolean quotedPresent = bound.contains(quotedToken);
+      Boolean quotedToken =
+        m.start() > 0 &&
+        m.end() < soqlTemplate.length() &&
+        soqlTemplate.substring(m.start() - 1, m.start()) == '\'' &&
+        soqlTemplate.substring(m.end(), m.end() + 1) == '\'';
 
       // Safe substitution — each Apex type maps to the correct SOQL literal format.
       String unquotedReplacement;
@@ -344,17 +409,16 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         // String, Id, Picklist, Text Area, Auto Number, Encrypted Text, etc.
         String rawStr = String.valueOf(fieldValue);
         // Default: quoted string with single-quote escaping prevents injection.
-        // Multi-select picklist in QUOTED context keeps the raw 'A;B;C' value,
+        // Multi-select picklist in QUOTED context keeps the raw 'A;B;C' value
         // suitable for exact-match (=) or INCLUDES ('A;B') AND-semantics queries.
         String quotedStr = '\'' + String.escapeSingleQuotes(rawStr) + '\'';
         quotedReplacement = quotedStr;
         if (isMultiSelectPicklist(record, fieldPath) && rawStr.contains(';')) {
-          // Multi-select picklist in UNQUOTED context:
-          //   Template:  WHERE Regions__c INCLUDES {!Regions__c}
-          //   Value:     'North;South'
-          //   Result:    WHERE Regions__c INCLUDES ('North', 'South')
+          // Multi-select picklist in UNQUOTED context
+          // Template: WHERE Regions__c INCLUDES {!Regions__c}
+          // Value: 'North;South'
+          // Result: WHERE Regions__c INCLUDES ('North', 'South')
           // Each semicolon-delimited value is individually quoted and comma-joined.
-          //
           // An all-semicolon value (';' or ';;') has no segments after filtering, which
           // would produce '()' — invalid SOQL (INCLUDES ()). Empty quotedVals instead
           // raise MISSING_BIND_VALUE, same as an unresolved token.
@@ -364,19 +428,21 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         }
       }
 
-      // Replace the quoted form first so its inner {!token} is consumed before the
-      // unquoted pass; then replace any remaining bare occurrences. Handling both
-      // forms means a token appearing quoted AND unquoted in one template is fully
-      // substituted (previously only the quoted form was replaced, leaving a stray
-      // {!token} that broke the query). Date/Time/numeric/null literals must not be
-      // double-quoted, so the quoted form strips the surrounding quotes.
-      if (quotedPresent) {
-        bound = bound.replace(quotedToken, quotedReplacement);
+      // Build from original matcher spans so inserted field values are never scanned
+      // for later {!token} text. Quoted tokens consume their outer quotes because
+      // Date/Time/numeric/null replacements must stay unquoted.
+      if (quotedToken) {
+        bound +=
+          soqlTemplate.substring(lastEnd, m.start() - 1) + quotedReplacement;
+        lastEnd = m.end() + 1;
+      } else {
+        bound +=
+          soqlTemplate.substring(lastEnd, m.start()) + unquotedReplacement;
+        lastEnd = m.end();
       }
-      bound = bound.replace(token, unquotedReplacement);
     }
 
-    return bound;
+    return bound + soqlTemplate.substring(lastEnd);
   }
 
   /**
@@ -397,7 +463,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
   }
 
-  // ─── Query execution with row-cap safety (Section 5.1) ───────────────────
+  // ─── Query execution with row-cap safety ───────────────────
 
   @TestVisible
   private List<SObject> runQuery(String soql, Integer maxRows) {
@@ -469,6 +535,17 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     RecordHealthCheckResult result,
     List<Object> primaryList
   ) {
+    // case: "Found 0" is ambiguous. Record that the value came from
+    // an empty result set (not a real zero) so the provenance note reads e.g.
+    // "Contacts → 0 rows (query returned no matching rows)".
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      describePrimarySource(rule),
+      RecordHealthCheckProvenance.rowCount(
+        primaryList != null ? primaryList.size() : 0
+      ),
+      'query returned no matching rows'
+    );
+
     String behavior = rule.WhenZeroRows__c;
     if (behavior == 'Pass') {
       result.status = 'PASS';
@@ -492,7 +569,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   }
 
   /**
-   * P1-05 / SCAN-06: result for a present-but-null value the comparator could not
+   * result for a present-but-null value the comparator could not
    * decide. Reaching this point means the null behavior (WhenValueIsEmpty__c)
    * resolved to Skip — Pass/Fail/MissingMeansNoMatch all yield a determinate
    * boolean earlier — so the check is reported as SKIPPED. This is deliberately
@@ -509,6 +586,104 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     return result;
   }
 
+  // ─── Provenance helpers ───────────────────────────────────────────────────
+
+  // Names the source of the primary/"Found" value: the field read, or the
+  // scalar under test, or a generic query-result label when neither is set.
+  // Derived Found summary for an "every record must pass" check when the admin
+  // authored no override: "1 of 5 Contacts did not pass".
+  private String deriveFoundSummary(
+    Record_Health_Check_Rule__mdt rule,
+    Integer failing,
+    Integer total
+  ) {
+    return failing +
+      ' of ' +
+      total +
+      ' ' +
+      pluralizeObject(rule) +
+      ' did not pass';
+  }
+
+  // Resolves an admin-authored summary template: the count tokens {!failCount} /
+  // {!totalCount} first (they are computed, not record fields), then ordinary
+  // {!FieldName} record tokens via the shared merge-field resolver.
+  private String resolveSummaryTemplate(
+    String template,
+    Integer failing,
+    Integer total,
+    SObject record
+  ) {
+    String withCounts = template
+      .replace('{!failCount}', String.valueOf(failing))
+      .replace('{!totalCount}', String.valueOf(total));
+    return formulaEvaluator.resolveMergeFields(withCounts, record);
+  }
+
+  // Best-effort object label from the query's FROM clause, pluralized; falls back
+  // to a generic noun when the object cannot be parsed.
+  private String pluralizeObject(Record_Health_Check_Rule__mdt rule) {
+    String objectName;
+    if (String.isNotBlank(rule.DataQuery__c)) {
+      Matcher m = Pattern.compile('(?is)\\bFROM\\s+([A-Za-z0-9_]+)')
+        .matcher(rule.DataQuery__c);
+      if (m.find()) {
+        objectName = m.group(1);
+      }
+    }
+    if (String.isBlank(objectName)) {
+      return 'records';
+    }
+    String lower = objectName.toLowerCase();
+    if (lower.endsWith('y')) {
+      return objectName.substring(0, objectName.length() - 1) + 'ies';
+    }
+    if (
+      lower.endsWith('s') ||
+      lower.endsWith('x') ||
+      lower.endsWith('z') ||
+      lower.endsWith('ch') ||
+      lower.endsWith('sh')
+    ) {
+      return objectName + 'es';
+    }
+    return objectName + 's';
+  }
+
+  private String describePrimarySource(Record_Health_Check_Rule__mdt rule) {
+    if (String.isNotBlank(rule.FieldToRead__c)) {
+      return rule.FieldToRead__c;
+    }
+    if (String.isNotBlank(rule.ValueToTest__c)) {
+      return 'Value under test';
+    }
+    return 'Query result';
+  }
+
+  // Names the source of the "Expected" operand.
+  private String describeComparisonSource(Record_Health_Check_Rule__mdt rule) {
+    if (rule.CompareAgainst__c == 'FixedValue') {
+      return 'Fixed value';
+    }
+    if (rule.CompareAgainst__c == 'RecordFormula') {
+      return 'Formula on this record';
+    }
+    if (rule.CompareAgainst__c == 'AnotherQuery') {
+      return String.isNotBlank(rule.CompareToField__c)
+        ? 'Comparison query (' + rule.CompareToField__c + ')'
+        : 'Comparison query';
+    }
+    if (String.isNotBlank(rule.CompareToField__c)) {
+      return rule.CompareToField__c;
+    }
+    return 'Comparison';
+  }
+
+  // Raw scalar label that renders null explicitly rather than as an empty string.
+  private String rawLabel(Object value) {
+    return value == null ? 'null' : String.valueOf(value);
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   /**
@@ -519,7 +694,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   private String buildMultiSelectIncludesClause(String rawStr) {
     List<String> quotedVals = new List<String>();
     for (String v : rawStr.split(';')) {
-      // SCAN-30: drop empty segments so 'A;' / 'A;;B' do not inject '' entries.
+      // drop empty segments so 'A;' / 'A;;B' do not inject '' entries.
       if (String.isBlank(v)) {
         continue;
       }

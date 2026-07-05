@@ -14,7 +14,7 @@ Among **open** Opportunities on the Account, the check looks for rows that are u
 
 ## When to use this
 
-Reach for this pattern when the business rule binds **multiple field conditions to the same child row**: not to the Account as a whole. Separate Query rules can flag stale Opportunities, missing Next Steps, or bad Close Dates independently, but they cannot require that the **same** Opportunity fail all three together. A single dense SOQL WHERE can approximate pass/fail, but per-row clarity, explicit quarter boundaries, and an unhealthy count on fail belong in Apex.
+Reach for this pattern when the business rule binds **multiple field conditions to the same child row**: not to the Account as a whole. Separate Query rules can flag stale Opportunities, missing Next Steps, or bad Close Dates independently, but they cannot require that the **same** Opportunity fail all three together. A single dense SOQL WHERE can approximate pass/fail, but per-row clarity, explicit quarter boundaries, and an auditable unhealthy count belong in Apex.
 
 ## Why this evaluator
 
@@ -23,7 +23,7 @@ The reason this is Apex and not metadata is **same-Opportunity AND**: one open O
 | Alternative | How it compares | Fit for this check |
 | ----------- | --------------- | ------------------ |
 | Formula | | Formula runs on the Account only. It cannot loop open Opportunities and apply three field conditions per child row. |
-| Single query | One `COUNT()` WHERE with all three conditions AND-ed in SOQL | Can produce pass/fail, but the WHERE is hard to read and maintain; SOQL date literals must match the org calendar; blank Next Step handling is brittle; Found/Expected cannot show how many children matched without extra work. |
+| Check records with a query | One `COUNT()` WHERE with all three conditions AND-ed in SOQL | Can produce pass/fail, but the WHERE is hard to read and maintain; SOQL date literals must match the org calendar; blank Next Step handling is brittle; Found/Expected cannot show how many children matched without extra work. |
 | Three queries (three rules) | One rule for stale opps, one for missing Next Step, one for Close Date | Produces **three rows**. An Account can pass stale on one Opportunity and fail Next Step on another: metadata cannot require the **same** child to fail all three. |
 | Query + AllRowsPass | Every open Opportunity row must pass one comparator | Applies **one** comparison per row. Cannot AND three unrelated field conditions with different semantics per row. |
 | Compare two queries | | Nothing here is "compare two query scalars or lists." |
@@ -32,11 +32,11 @@ The reason this is Apex and not metadata is **same-Opportunity AND**: one open O
 
 | Need | Use instead |
 | ---- | ----------- |
-| "Any open Opportunity is stale" (one condition) | [Query](../query/01-child-count-minimum-one.md) + `COUNT()` greater than zero |
-| "Every open Opportunity has a Next Step" | [Query](../query/11-is-not-blank.md) + `AllRowsPass` or `AnyRowPasses` |
+| "Any open Opportunity is stale" (one condition) | [Query](../soql/single-query/01-child-count-minimum-one.md) + `COUNT()` greater than zero |
+| "Every open Opportunity has a Next Step" | [Query](../soql/single-query/11-is-not-blank.md) + `AllRowsPass` or `AnyRowPasses` |
 | Same Opportunity must fail all three checks together | **Apex** (this example) or one dense Query WHERE (harder to own) |
 
-**Verdict:** Apex earns its place when the rule is **per-Opportunity combined logic** with maintainable code and an unhealthy count on fail. Drop to a single Query only if a long SOQL WHERE is acceptable and per-row clarity in the UI is not required.
+**Verdict:** Apex earns its place when the rule is **per-Opportunity combined logic** with maintainable code and an auditable unhealthy count. Drop to a single Query only if a long SOQL WHERE is acceptable and per-row clarity in the UI is not required.
 
 ## Configuration
 
@@ -44,7 +44,7 @@ The reason this is Apex and not metadata is **same-Opportunity AND**: one open O
 | ----------- | ----- |
 | Check Name | Open Opportunities Are Healthy |
 | Developer Name | Open_Opportunities_Are_Healthy |
-| Check Method | Custom Apex |
+| Check Type | Custom Apex |
 | Apex Class | `AccountOpenOpportunityHealthCheck` |
 | Apex Settings (JSON) | `{"staleDays": 30}` |
 | Run This Check When | Only when a count query matches |
@@ -52,14 +52,14 @@ The reason this is Apex and not metadata is **same-Opportunity AND**: one open O
 | Applicability Count Comparison | Greater than |
 | Applicability Count Threshold | `0` |
 | Severity | Error |
-| Message When Failed | `One or more open opportunities are stale, missing a Next Step, or have no close date this quarter.` |
+| Message When Check Fails | `One or more open opportunities are stale, missing a Next Step, or have no close date this quarter.` |
 
 > [!NOTE]
 > This table is the control panel for the check: the single source of truth for every value, so edits here take effect with no code change. The sample rule sets the stale window through `staleDays`; change that one value to retune how old `LastActivityDate` must be before an Opportunity counts as stale, and the class reads it at run time.
 
 ## How it works
 
-The class reads the stale window from the metadata record, loads open Opportunities, evaluates the three conditions per row, and fails when any row matches all three. On fail it sets Found/Expected to show how many Opportunities were unhealthy.
+The class reads the stale window from the metadata record, loads open Opportunities, evaluates the three conditions per row, and fails when any row matches all three. It sets Found/Expected values on both pass and fail so an entitled viewer can expand a green row and audit the count too. It also captures provenance for both sides, which the engine renders only for users with `Record_Health_Check_View_Details`.
 
 ```apex
 public with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
@@ -89,10 +89,18 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = unhealthyCount == 0 ? 'PASS' : 'FAIL';
-    if (unhealthyCount > 0) {
-      result.actualValue = unhealthyCount + ' unhealthy';
-      result.expectedValue = '0 unhealthy';
-    }
+    result.actualValue = unhealthyCount + ' unhealthy';
+    result.expectedValue = '0 unhealthy';
+    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+      'Unhealthy open opportunities',
+      String.valueOf(unhealthyCount),
+      openOpps.size() + ' open opportunities scanned'
+    );
+    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      'Allowed unhealthy count',
+      '0',
+      null
+    );
     return result;
   }
 
@@ -134,10 +142,11 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
 - **Run When Count Query Matches**: the Rule skips Apex when the Account has no open Opportunities.
 - **Per-child boolean logic**: three conditions are AND-ed on each Opportunity in a loop instead of one opaque WHERE clause.
-- **Found/Expected on fail**: surfaces how many children matched the combined bar.
+- **Found/Expected on pass and fail**: surfaces how many children matched the combined bar, with passing-check visibility controlled by the Check Set's Found/Expected Display setting.
+- **Provenance from Apex**: `actualProvenance` and `expectedProvenance` explain where the values came from when the viewer has `Record_Health_Check_View_Details`.
 
 > [!NOTE]
-> Quarter boundaries use calendar quarters in Apex (`getQuarterStart`), not SOQL `THIS_QUARTER`. Both queries run `WITH USER_MODE`. The failure message comes from the configuration record; the class sets status and Found/Expected only.
+> Quarter boundaries use calendar quarters in Apex (`getQuarterStart`), not SOQL `THIS_QUARTER`. Both queries run `WITH USER_MODE`. The failure message comes from the configuration record; the class sets status, Found/Expected, and provenance.
 
 ## Get this example
 
@@ -148,7 +157,7 @@ sf project deploy start --manifest manifest/package-core.xml                   #
 sf project deploy start --manifest manifest/package-Account_Examples_Apex.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#example-doc-check-sets-numbered-walkthroughs) for every Check Set and what it contains.
+Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

@@ -20,6 +20,15 @@ private class AccountStrategicReadinessCheckTest {
     System.assertEquals('FAIL', result.status);
     System.assertEquals('0', result.actualValue);
     System.assertEquals('80+', result.expectedValue);
+    // the Apex check captures structured provenance for both sides so an
+    // entitled viewer can audit where the score came from.
+    System.assertNotEquals(null, result.actualProvenance);
+    System.assertEquals(
+      'Strategic readiness score',
+      result.actualProvenance.sourceLabel
+    );
+    System.assertEquals('0', result.actualProvenance.rawValueLabel);
+    System.assertNotEquals(null, result.expectedProvenance);
   }
 
   @IsTest
@@ -35,6 +44,11 @@ private class AccountStrategicReadinessCheckTest {
     );
 
     System.assertEquals('PASS', result.status);
+    // Values and provenance are populated on a PASS too so a
+    // green row stays auditable through the disclosure.
+    System.assertEquals('25', result.actualValue);
+    System.assertNotEquals(null, result.actualProvenance);
+    System.assertEquals('25', result.actualProvenance.rawValueLabel);
   }
 
   @IsTest
@@ -66,6 +80,9 @@ private class AccountStrategicReadinessCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('PASS', result.status);
+    System.assertEquals('100', result.actualValue);
+    System.assertEquals('80+', result.expectedValue);
+    System.assertNotEquals(null, result.actualProvenance);
   }
 
   @IsTest
@@ -74,7 +91,7 @@ private class AccountStrategicReadinessCheckTest {
     insert account;
     insert new Contact(LastName = 'Buyer', AccountId = account.Id);
 
-    // Unparseable and out-of-range values fall back to defaults (minScore 80),
+    // Unparseable and out-of-range values fall back to defaults (minScore 80)
     // so a lone 25-point criterion still fails.
     System.assertEquals(
       'FAIL',

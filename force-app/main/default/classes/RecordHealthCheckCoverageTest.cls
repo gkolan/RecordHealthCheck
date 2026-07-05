@@ -718,9 +718,24 @@ private class RecordHealthCheckCoverageTest {
     Record_Health_Check_Rule__mdt isNotBlank = queryRule('Q_IsNotBlank');
     isNotBlank.Operator__c = 'IsNotBlank';
     isNotBlank.CompareAgainst__c = null;
-    assertStatus(
-      evaluator.evaluate(isNotBlank, accountRecord.Id, accountRecord),
-      'PASS'
+    RecordHealthCheckResult isNotBlankResult = evaluator.evaluate(
+      isNotBlank,
+      accountRecord.Id,
+      accountRecord
+    );
+    assertStatus(isNotBlankResult, 'PASS');
+    System.assertNotEquals(
+      null,
+      isNotBlankResult.expectedProvenance,
+      'Unary query checks should still expose an Expected provenance row.'
+    );
+    System.assertEquals(
+      'Comparator',
+      isNotBlankResult.expectedProvenance.sourceLabel
+    );
+    System.assertEquals(
+      'to not be blank',
+      isNotBlankResult.expectedProvenance.rawValueLabel
     );
 
     Record_Health_Check_Rule__mdt nullAsBlank = queryRule('Q_Null_As_Blank');
@@ -806,10 +821,10 @@ private class RecordHealthCheckCoverageTest {
       'SKIPPED'
     );
 
-    // P1-05 / SCAN-06: a PRESENT row whose field-under-test is null with the
-    // null behavior set to Skip is indeterminate because of the null VALUE, not
-    // because of zero rows. It must SKIP even when WhenZeroRows = Fail — routing
-    // the null value through WhenZeroRows previously made this wrongly FAIL.
+    // A PRESENT row whose field-under-test is null with the null behavior set
+    // to Skip is indeterminate because of the null VALUE, not because of zero
+    // rows. It must SKIP even when WhenZeroRows = Fail; the null value must not
+    // be routed through the WhenZeroRows path.
     Record_Health_Check_Rule__mdt nullSkipNotFail = queryRule(
       'Q_Null_Skip_Not_Fail'
     );
@@ -1079,10 +1094,10 @@ private class RecordHealthCheckCoverageTest {
       'PASS'
     );
 
-    // SCAN-46 (T-04): a zero-row query in OneResult is governed by
+    // a zero-row query in OneResult is governed by
     // WhenZeroRows__c, NOT by the null-value behavior. The impossible Name filter
-    // guarantees an empty primary regardless of org data. Before the fix, an empty
-    // side with MissingMeansNoMatch wrongly FAILed instead of honoring WhenZeroRows.
+    // guarantees an empty primary regardless of org data. An empty side with
+    // MissingMeansNoMatch must honor WhenZeroRows__c, not fail by default.
     Record_Health_Check_Rule__mdt emptyPrimarySkip = validDualRule(
       'D_Empty_Primary_Skip'
     );
@@ -1170,7 +1185,7 @@ private class RecordHealthCheckCoverageTest {
       'PASS'
     );
 
-    // SCAN-44: CompareAsLists where every primary value is null and dropped by
+    // CompareAsLists where every primary value is null and dropped by
     // SkipRecordsWithMissingValue → empty list with non-empty rows → SKIPPED
     // (indeterminate), not a silent FAIL from comparing empty sets.
     Record_Health_Check_Rule__mdt allNullSkip = listOverlap.clone();
@@ -1383,12 +1398,17 @@ private class RecordHealthCheckCoverageTest {
     );
     assertStatus(failResult, 'FAIL');
     System.assert(failResult.message.contains(accountRecord.Name));
-    // Formula checks surface the expression as the expected condition, quoted
-    // for uniformity with every other expected value.
+    // Formula checks surface the expression as the pass/fail condition, unquoted
+    // and under its own "Passes when" key rather than framed as an expected value.
     System.assertEquals(
-      '"ISBLANK(BillingCity)"',
+      'ISBLANK(BillingCity)',
       failResult.expectedValue,
-      'Formula FAIL should expose the formula as the expected condition'
+      'Formula FAIL should expose the formula as the pass/fail condition'
+    );
+    System.assertEquals(
+      'Passes when',
+      failResult.expectedValueLabel,
+      'Formula FAIL condition carries the "Passes when" key'
     );
 
     Record_Health_Check_Rule__mdt nonBoolean = baseRule(
@@ -1461,7 +1481,7 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void formulaEvaluatorHonorsDeclaredReturnType() {
-    // SCAN-01: a declared scalar return type (ScalarFormulaReturnType__c) resolves
+    // a declared scalar return type (ScalarFormulaReturnType__c) resolves
     // the formula in a single FormulaEval call instead of probing up to eight types.
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckFormulaEvaluator evaluator = new RecordHealthCheckFormulaEvaluator();
@@ -1724,6 +1744,35 @@ private class RecordHealthCheckCoverageTest {
       ),
       'SKIPPED'
     );
+    RecordHealthCheckResult missingActual = new RecordHealthCheckResult();
+    missingActual.status = 'PASS';
+    missingActual.expectedValue = '0 missing';
+    RecordHealthCheckResult missingActualResult = dispatcher.finalizeApexResult(
+      finalizeRule,
+      accountRecord,
+      new RecordHealthCheckResult(),
+      missingActual
+    );
+    assertReason(missingActualResult, 'APEX_EVALUATOR_ERROR');
+    System.assert(
+      missingActualResult.detailMessage.contains('result.actualValue'),
+      missingActualResult.detailMessage
+    );
+
+    RecordHealthCheckResult missingExpected = new RecordHealthCheckResult();
+    missingExpected.status = 'FAIL';
+    missingExpected.actualValue = '1 missing';
+    RecordHealthCheckResult missingExpectedResult = dispatcher.finalizeApexResult(
+      finalizeRule,
+      accountRecord,
+      new RecordHealthCheckResult(),
+      missingExpected
+    );
+    assertReason(missingExpectedResult, 'APEX_EVALUATOR_ERROR');
+    System.assert(
+      missingExpectedResult.detailMessage.contains('result.expectedValue'),
+      missingExpectedResult.detailMessage
+    );
     assertReason(
       dispatcher.evaluate(
         apexRule(
@@ -1815,7 +1864,7 @@ private class RecordHealthCheckCoverageTest {
       1000
     );
     // LastActivityDate is a read-only system field (derived from activities) and cannot be
-    // assigned in Apex. A freshly created Opportunity already has LastActivityDate == null,
+    // assigned in Apex. A freshly created Opportunity already has LastActivityDate == null
     // which AccountOpenOpportunityHealthCheck.isUnhealthy treats as stale — so a null NextStep
     // plus an out-of-quarter CloseDate is sufficient to make this Opp unhealthy.
     unhealthyOpp.NextStep = null;
@@ -1986,7 +2035,7 @@ private class RecordHealthCheckCoverageTest {
         );
         System.assert(false, 'Expected generic definition exception.');
       } catch (AuraHandledException ex) {
-        // SCAN-02: an unexpected internal failure (here a null configService
+        // an unexpected internal failure (here a null configService
         // NPE) surfaces as LOAD_FAILED, not CONFIG_NOT_FOUND, which stays
         // reserved for the explicit not-found ConfigException path.
         System.assert(
@@ -2012,9 +2061,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void mergeTokensResolveForNonFormulaCheckMessages() {
-    // Regression (Task D): {!FieldName} merge tokens in MessageWhenCannotRun__c
-    // and MessageWhenFailed__c must resolve for non-Formula check types too. The
-    // packaged Query check Account_QC_ERB_UnableToEvaluate carries
+    // {!FieldName} merge tokens in MessageWhenCannotRun__c and MessageWhenFailed__c
+    // must resolve for non-Formula check types too. The packaged Query check
+    // Account_QC_ERB_UnableToEvaluate carries
     // "{!Name} has no open cases to evaluate. …" — the literal token must never
     // reach the UI. Isolated in its own test so it has fresh governor limits.
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
@@ -2389,9 +2438,75 @@ private class RecordHealthCheckCoverageTest {
       '"1"',
       RecordHealthCheckComparatorEngine.formatValue(1)
     );
+    // Booleans read Yes/No, whether they arrive as a typed Boolean (checkbox
+    // field, boolean formula) or as a metadata operand string.
     System.assertEquals(
-      '"true"',
+      '"Yes"',
       RecordHealthCheckComparatorEngine.formatValue(true)
+    );
+    System.assertEquals(
+      '"No"',
+      RecordHealthCheckComparatorEngine.formatValue(false)
+    );
+    System.assertEquals(
+      '"Yes"',
+      RecordHealthCheckComparatorEngine.formatValue('true')
+    );
+    System.assertEquals(
+      '"No"',
+      RecordHealthCheckComparatorEngine.formatValue('False')
+    );
+    // Bare numbers gain thousands separators; a Decimal's all-zero fraction is
+    // dropped, a real fraction survives, and numeric operand strings are grouped
+    // the same way so the two sides of a comparison stay consistent.
+    System.assertEquals(
+      '"70,000"',
+      RecordHealthCheckComparatorEngine.formatValue(70000.0)
+    );
+    System.assertEquals(
+      '"500,000"',
+      RecordHealthCheckComparatorEngine.formatValue('500000')
+    );
+    System.assertEquals(
+      '"70,000.5"',
+      RecordHealthCheckComparatorEngine.formatValue(70000.5)
+    );
+    System.assertEquals(
+      '"-1,234,567"',
+      RecordHealthCheckComparatorEngine.formatValue(-1234567)
+    );
+    // Multi-select picklist text (semicolon-delimited) reads comma-separated.
+    System.assertEquals(
+      '"Hot, Warm, Cold"',
+      RecordHealthCheckComparatorEngine.formatValue('Hot;Warm;Cold')
+    );
+    // Dates/datetimes render in the user's locale — assert the raw ISO shape is
+    // gone (no dashes) rather than a locale-specific literal, so the test is not
+    // brittle across orgs. Both the typed value and the ISO operand string
+    // humanize identically.
+    String typedDate = RecordHealthCheckComparatorEngine.formatValue(
+      Date.newInstance(2026, 7, 4)
+    );
+    System.assert(
+      typedDate.contains('2026') && !typedDate.contains('-'),
+      'Typed Date should be locale-formatted, got ' + typedDate
+    );
+    System.assertEquals(
+      typedDate,
+      RecordHealthCheckComparatorEngine.formatValue('2026-07-04'),
+      'ISO date operand string should humanize like the typed Date'
+    );
+    String typedDatetime = RecordHealthCheckComparatorEngine.formatValue(
+      Datetime.newInstance(2026, 7, 4, 17, 30, 0)
+    );
+    System.assert(
+      typedDatetime.contains('2026') && !typedDatetime.contains('T'),
+      'Typed Datetime should be locale-formatted, got ' + typedDatetime
+    );
+    // Non-numeric, non-temporal text (letters, codes) is left exactly as-is.
+    System.assertEquals(
+      '"1-800-CALL"',
+      RecordHealthCheckComparatorEngine.formatValue('1-800-CALL')
     );
     System.assertEquals(
       '(none)',
@@ -2707,7 +2822,8 @@ private class RecordHealthCheckCoverageTest {
       PassedChecksDisplay__c = 'Show',
       SkippedChecksDisplay__c = 'Hide',
       RunChecksWhen__c = 'Manual',
-      RowAppearance__c = 'AllAtOnce'
+      RowAppearance__c = 'AllAtOnce',
+      ComparisonDisplay__c = 'OnDemand'
     );
     configService.validateCheckSetForDefinition(
       validSet,
@@ -2724,7 +2840,7 @@ private class RecordHealthCheckCoverageTest {
     Record_Health_Check_Set__mdt blankObjectSet = validSet.clone();
     blankObjectSet.ObjectApiName__c = null;
     invalidSets.add(blankObjectSet);
-    // L-RC-01: a blank Base Object is now INVALID_CONFIG, not CONFIG_NOT_FOUND.
+    // a blank Base Object is now INVALID_CONFIG, not CONFIG_NOT_FOUND.
     invalidReasons.add(RecordHealthCheckConfigService.RC_INVALID_CONFIG);
     Record_Health_Check_Set__mdt mismatchSet = validSet.clone();
     mismatchSet.ObjectApiName__c = 'Contact';
@@ -2866,6 +2982,8 @@ private class RecordHealthCheckCoverageTest {
     );
     RecordHealthCheckResult blankFailure = new RecordHealthCheckResult();
     blankFailure.status = 'FAIL';
+    blankFailure.actualValue = '1 issue';
+    blankFailure.expectedValue = '0 issues';
     apex.MessageWhenFailed__c = null;
     System.assertEquals(
       'Check failed.',
@@ -3062,7 +3180,8 @@ private class RecordHealthCheckCoverageTest {
     Set<String> blankFieldSet = new Set<String>();
     engine.addReadableField(
       blankFieldSet,
-      Account.SObjectType.getDescribe().fields.getMap(),
+      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+        .fields.getMap(),
       null
     );
     System.assertEquals(0, blankFieldSet.size());
@@ -3565,12 +3684,14 @@ private class RecordHealthCheckCoverageTest {
     engine.addReadableField(plannedFields, Account.SObjectType, 'Bogus.Name');
     engine.addReadableField(
       plannedFields,
-      Account.SObjectType.getDescribe().fields.getMap(),
+      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+        .fields.getMap(),
       'Parent.Name'
     );
     engine.addReadableField(
       plannedFields,
-      Account.SObjectType.getDescribe().fields.getMap(),
+      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+        .fields.getMap(),
       'Name'
     );
     System.assert(plannedFields.contains('Parent.Name'));
@@ -3793,20 +3914,29 @@ private class RecordHealthCheckCoverageTest {
       'AND(NOT(ISBLANK(BillingCity)), CONTAINS(Website, "example.com"), NOT(ISBLANK(Parent.BillingCity)))'
     );
     Set<String> tokenSet = new Set<String>(tokens);
-    System.assert(tokenSet.contains('BillingCity'), tokens + ' should keep BillingCity');
-    System.assert(tokenSet.contains('Website'), tokens + ' should keep Website');
+    System.assert(
+      tokenSet.contains('BillingCity'),
+      tokens + ' should keep BillingCity'
+    );
+    System.assert(
+      tokenSet.contains('Website'),
+      tokens + ' should keep Website'
+    );
     System.assert(
       tokenSet.contains('Parent.BillingCity'),
       tokens + ' should keep the relationship path whole'
     );
     System.assert(!tokenSet.contains('AND'), 'Function words must be excluded');
-    System.assert(!tokenSet.contains('CONTAINS'), 'Function words must be excluded');
+    System.assert(
+      !tokenSet.contains('CONTAINS'),
+      'Function words must be excluded'
+    );
     System.assert(
       !tokenSet.contains('example'),
       'Masked string-literal contents must not be scanned as fields'
     );
 
-    // describeFieldPath: single field, relationship path, case-insensitivity,
+    // describeFieldPath: single field, relationship path, case-insensitivity
     // and null for a non-existent path.
     System.assertNotEquals(
       null,
@@ -3834,8 +3964,8 @@ private class RecordHealthCheckCoverageTest {
     );
 
     // collectRecordFields: a formula over plain + relationship operands still
-    // plans every operand (regression — the recursive walk must not drop fields
-    // that are not calculated), regardless of operand case.
+    // plans every operand (the recursive walk must not drop fields that are not
+    // calculated), regardless of operand case.
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       CheckMethod__c = 'Formula',
       PassFailFormula__c = 'AND(NOT(ISBLANK(billingcity)), NOT(ISBLANK(Parent.BillingCity)))'
@@ -3899,7 +4029,9 @@ private class RecordHealthCheckCoverageTest {
   // where possible without requiring a packaged test formula field.
   private static Schema.DescribeFieldResult findCalculatedAccountField() {
     for (
-      Schema.SObjectField f : Account.SObjectType.getDescribe()
+      Schema.SObjectField f : Account.SObjectType.getDescribe(
+          SObjectDescribeOptions.DEFERRED
+        )
         .fields.getMap()
         .values()
     ) {
@@ -3940,7 +4072,7 @@ private class RecordHealthCheckCoverageTest {
     System.assert(
       result.expectedValue != null && result.expectedValue.contains('105'),
       'Expected should be the resolved right-side scalar: ' +
-        result.expectedValue
+      result.expectedValue
     );
 
     // Blank Found/Expected → original behavior: no Found, Expected echoes the
@@ -3957,9 +4089,14 @@ private class RecordHealthCheckCoverageTest {
       'No Found formula → no Found value'
     );
     System.assertEquals(
-      '"NumberOfEmployees > 0"',
+      'NumberOfEmployees > 0',
       plainResult.expectedValue,
-      'Expected echoes the quoted Pass/Fail formula when no Expected formula'
+      'Expected echoes the unquoted Pass/Fail formula when no Expected formula'
+    );
+    System.assertEquals(
+      'Passes when',
+      plainResult.expectedValueLabel,
+      'Echoed pass/fail condition carries the "Passes when" key, not "Expected"'
     );
 
     // An unresolvable Found/Expected formula degrades to the default — it must
@@ -3977,7 +4114,7 @@ private class RecordHealthCheckCoverageTest {
       'Unresolvable Found formula leaves Found empty'
     );
     System.assertEquals(
-      '"NumberOfEmployees > 0"',
+      'NumberOfEmployees > 0',
       badResult.expectedValue,
       'Falls back to the formula echo when Expected is blank'
     );

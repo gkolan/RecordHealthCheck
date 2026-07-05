@@ -27,8 +27,8 @@ contributing, you agree that your contributions are licensed under the
    - What you expected vs. what happened.
    - The **Check Set** and **Rule** Developer Names involved (not screenshots of labels only).
    - The object and a sketch of the field/query values that triggered it.
-   - Whether **Debug Mode** was on, and the `[RHC]` summary from the browser console
-     (see [Debug Mode guide](docs/guides/debug-mode.md)). **Redact record data and Org IDs.**
+   - Whether **Show Troubleshooting Details** was on, and the `[RHC]` summary from the browser console
+     (see [Troubleshooting Details](docs/guides/debug-mode.md)). **Redact record data and Org IDs.**
    - Org type (Production / Sandbox / Scratch) and API version.
 4. Submit. A maintainer will triage and may ask for a minimal reproduction.
 
@@ -52,7 +52,7 @@ record data into an issue.
    ```bash
    npm run prettier:verify
    npm run lint
-   npm test                    # 61 Jest tests
+   npm test                    # 90 Jest tests
    npm run test:unit:coverage  # enforces LWC coverage thresholds
    ```
 5. **Commit and push** to your fork:
@@ -98,5 +98,4 @@ Docs must match the code at the same commit. Follow these authoring standards:
 - **No em-dashes**: replace each em-dash by hand with a period, comma, or parentheses, never a blanket swap to a colon.
 
 The design specification is canonical
-in [`docs/reference/record-health-check-design-spec.md`](docs/reference/record-health-check-design-spec.md);
-the per-topic files under [`docs/spec/`](docs/spec/index.md) are **generated** from it.
+in [`docs/reference/record-health-check-design-spec.md`](docs/reference/record-health-check-design-spec.md).

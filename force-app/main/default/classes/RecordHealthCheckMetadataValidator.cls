@@ -31,7 +31,6 @@ public with sharing class RecordHealthCheckMetadataValidator {
   // Valid-value sets and caps are owned by RecordHealthCheckConstants so this
   // deploy-time validator and RecordHealthCheckConfigService (runtime) can never
   // drift. Local aliases keep the call sites below readable.
-  //
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps the baseline + Check Set + dependency-graph checks (inline) plus a
   // collect-all adapter (toIssue). The comparator/source/null-empty value sets live with
@@ -39,6 +38,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   private static final Set<String> VALID_DISPLAY_MODES = RecordHealthCheckConstants.VALID_DISPLAY_MODES;
   private static final Set<String> VALID_TRIGGER_MODES = RecordHealthCheckConstants.VALID_TRIGGER_MODES;
   private static final Set<String> VALID_REVEAL_MODES = RecordHealthCheckConstants.VALID_REVEAL_MODES;
+  private static final Set<String> VALID_COMPARISON_DISPLAYS = RecordHealthCheckConstants.VALID_COMPARISON_DISPLAYS;
   private static final Set<String> VALID_APPLICABILITY_MODES = RecordHealthCheckConstants.VALID_APPLICABILITY_MODES;
   private static final Set<String> VALID_CHECK_TYPES = RecordHealthCheckConstants.VALID_CHECK_TYPES;
   private static final Set<String> VALID_SEVERITIES = RecordHealthCheckConstants.VALID_SEVERITIES;
@@ -51,6 +51,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
    * Returns a list of ValidationIssues — empty list means everything is valid.
    */
   public List<ValidationIssue> validate() {
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Validator intentionally reads framework Custom Metadata setup records.
     List<Record_Health_Check_Set__mdt> checkSets = [
       SELECT
         DeveloperName,
@@ -59,6 +60,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         IsActive__c,
         RunChecksWhen__c,
         RowAppearance__c,
+        ComparisonDisplay__c,
         PassedChecksDisplay__c,
         SkippedChecksDisplay__c,
         PanelHeading__c
@@ -66,6 +68,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       WHERE IsActive__c = TRUE
     ];
 
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Validator intentionally reads framework Custom Metadata setup records.
     List<Record_Health_Check_Rule__mdt> allRules = [
       SELECT
         DeveloperName,
@@ -125,8 +128,8 @@ public with sharing class RecordHealthCheckMetadataValidator {
   ) {
     List<ValidationIssue> issues = new List<ValidationIssue>();
 
-    // SCAN-49: removed an unused `checkSetDeveloperNames` Set that was populated
-    // here but never read. Dependency validation scopes by Check Set Id below.
+    // Validate each Check Set on its own; dependency validation scopes by
+    // Check Set Id below.
     for (Record_Health_Check_Set__mdt cs : checkSets) {
       issues.addAll(validateCheckSet(cs));
     }
@@ -303,6 +306,23 @@ public with sharing class RecordHealthCheckMetadataValidator {
       );
     }
 
+    if (
+      String.isNotBlank(cs.ComparisonDisplay__c) &&
+      !VALID_COMPARISON_DISPLAYS.contains(cs.ComparisonDisplay__c)
+    ) {
+      issues.add(
+        new ValidationIssue(
+          'ERROR',
+          cs.DeveloperName,
+          'ComparisonDisplay__c',
+          'ComparisonDisplay "' +
+            cs.ComparisonDisplay__c +
+            '" is not recognized. Valid values: OnDemand, FailuresOnly, AllRows.',
+          'INVALID_CONFIG'
+        )
+      );
+    }
+
     return issues;
   }
 
@@ -351,7 +371,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         err(
           rule,
           'MessageWhenFailed__c',
-          'Message When Failed is required.',
+          'Message When Check Fails is required.',
           'MISSING_REQUIRED_FIELD'
         )
       );
@@ -361,11 +381,11 @@ public with sharing class RecordHealthCheckMetadataValidator {
         err(
           rule,
           'CheckMethod__c',
-          'Check Method is required.',
+          'Check Type is required.',
           'MISSING_REQUIRED_FIELD'
         )
       );
-      return issues; // can't validate further without CheckMethod
+      return issues; // can't validate further without Check Type
     }
 
     if (!VALID_CHECK_TYPES.contains(rule.CheckMethod__c)) {
@@ -373,7 +393,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         err(
           rule,
           'CheckMethod__c',
-          'Check Method "' + rule.CheckMethod__c + '" is not recognized.',
+          'Check Type "' + rule.CheckMethod__c + '" is not recognized.',
           'INVALID_CHECK_TYPE'
         )
       );
@@ -411,8 +431,8 @@ public with sharing class RecordHealthCheckMetadataValidator {
       issues.addAll(validateDualSoqlRule(rule));
     }
 
-    // MaxRowsOverride (SCAN-20) + NullBehavior / EmptyResultBehavior — validated for ALL check
-    // types at top level, exactly as before. Shared producers emit the findings; toIssue maps
+    // MaxRows, null behavior, and empty-result behavior are validated for all
+    // check types at top level. Shared producers emit the findings; toIssue maps
     // each to this class's reason code / field.
     addIssues(
       issues,
@@ -440,7 +460,6 @@ public with sharing class RecordHealthCheckMetadataValidator {
   }
 
   // ─── Per-type validation — collect-all adapter over RecordHealthCheckRuleValidator ───
-  //
   // The per-type decision tree lives in RecordHealthCheckRuleValidator; these wrappers collect
   // every finding and map each via toIssue. Issue order within a rule follows the shared
   // (ConfigService) ordering.
@@ -488,7 +507,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   }
 
   /**
-   * Maps a shared Finding to this deploy-time path's ERROR ValidationIssue (field name, message,
+   * Maps a shared Finding to this deploy-time path's ERROR ValidationIssue (field name, message
    * reason code). This switch is the ONLY place MetadataValidator's output vocabulary lives — the
    * decision tree that produced the finding is shared. Field names / messages / reason codes here
    * are byte-for-byte the originals so packaged metadata still validates clean and the
@@ -605,7 +624,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'Operator__c',
-          'Operator "' + val + '" requires Check Method Compare two queries.',
+          'Operator "' + val + '" requires Check Type Compare two queries.',
           'INVALID_COMPARATOR'
         );
       }
@@ -629,7 +648,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'WhenMultipleRows__c',
-          'Multiple Records Handling is required for Query checks.',
+          'How To Interpret Query Results is required for Query checks.',
           'MISSING_REQUIRED_FIELD'
         );
       }
@@ -637,7 +656,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'WhenMultipleRows__c',
-          'Multiple Records Handling "' + val + '" is not recognized.',
+          'How To Interpret Query Results "' + val + '" is not recognized.',
           'INVALID_CONFIG'
         );
       }
@@ -645,7 +664,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'WhenMultipleRows__c',
-          'Compare as two lists requires Check Method Compare two queries, not Single query.',
+          'Compare query results as lists requires Check Type Compare two queries, not Check records with a query.',
           'INVALID_COMPARATOR'
         );
       }
@@ -653,7 +672,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'CompareAgainst__c',
-          'Comparison Value Source is required for Query checks except IsBlank/IsNotBlank.',
+          'Expected Value Comes From is required for Query checks except IsBlank/IsNotBlank.',
           'MISSING_REQUIRED_FIELD'
         );
       }
@@ -661,7 +680,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'CompareAgainst__c',
-          'Comparison Value Source "' + val + '" is not recognized.',
+          'Expected Value Comes From "' + val + '" is not recognized.',
           'INVALID_CONFIG'
         );
       }
@@ -669,7 +688,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'FixedValue__c',
-          'Comparison Value is required when Comparison Value Source is Static Value.',
+          'Expected Value is required when Expected Value Comes From is A fixed value.',
           'MISSING_REQUIRED_FIELD'
         );
       }
@@ -677,7 +696,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'RecordFormulaValue__c',
-          'Comparison Formula is required when Comparison Value Source is Formula Result.',
+          'Expected Formula (on this record) is required when Expected Value Comes From is A formula on this record.',
           'INVALID_FORMULA'
         );
       }
@@ -685,7 +704,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'CompareToQuery__c',
-          'Comparison Query is required when Comparison Value Source is Query Result.',
+          'Second Query is required when Expected Value Comes From is A second query result.',
           'INVALID_SOQL_TEMPLATE'
         );
       }
@@ -750,7 +769,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'WhenMultipleRows__c',
-          'Multiple Records Handling is required for CompareTwoQueries checks.',
+          'How To Interpret Query Results is required for Compare two queries checks.',
           'MISSING_REQUIRED_FIELD'
         );
       }
@@ -758,7 +777,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         return err(
           rule,
           'WhenMultipleRows__c',
-          'CompareTwoQueries requires Multiple Records Handling of OneResult or CompareAsLists.',
+          'Compare two queries requires How To Interpret Query Results to be Expect one row or aggregate result, or Compare query results as lists.',
           'INVALID_COMPARATOR'
         );
       }

@@ -24,6 +24,11 @@ private class RecordHealthCheckConfigServiceTest {
 
     System.assertEquals('Account Data Quality', response.displayTitle);
     System.assertEquals('Automatic', response.triggerMode);
+    System.assertEquals(
+      'OnDemand',
+      response.comparisonDisplay,
+      'The Check Set ships with the OnDemand comparison default.'
+    );
     System.assertNotEquals(null, response.checks);
     System.assert(response.checks.size() > 0, 'Expected at least one check.');
     System.assert(
@@ -34,6 +39,42 @@ private class RecordHealthCheckConfigServiceTest {
       response.totalAvailableCheckCount > response.checks.size(),
       response.checksOmittedByLimit
     );
+  }
+
+  @isTest
+  static void validateRejectsUnrecognizedComparisonDisplay() {
+    // A fully-valid Set except for an unrecognized ComparisonDisplay reaches the
+    // strict validation branch. Blank is treated as the OnDemand default for
+    // upgraded metadata, but non-blank unknown values still fail.
+    Record_Health_Check_Set__mdt checkSet = new Record_Health_Check_Set__mdt(
+      IsActive__c = true,
+      ObjectApiName__c = 'Account',
+      PassedChecksDisplay__c = 'Show',
+      SkippedChecksDisplay__c = 'Hide',
+      RunChecksWhen__c = 'Automatic',
+      RowAppearance__c = 'AllAtOnce',
+      ComparisonDisplay__c = 'Bogus'
+    );
+    // Account key prefix — no DML needed to get an Account-typed Id.
+    Id accountId = '001000000000001AAA';
+
+    try {
+      new RecordHealthCheckConfigService()
+        .validateCheckSetForDefinition(checkSet, 'Test_Set', accountId);
+      System.assert(
+        false,
+        'Expected a ConfigException for a bad ComparisonDisplay.'
+      );
+    } catch (RecordHealthCheckConfigService.ConfigException ex) {
+      System.assertEquals(
+        RecordHealthCheckConfigService.RC_INVALID_CONFIG,
+        ex.reasonCode
+      );
+      System.assert(
+        ex.getMessage().contains('ComparisonDisplay'),
+        'Message should name the offending field: ' + ex.getMessage()
+      );
+    }
   }
 
   @isTest

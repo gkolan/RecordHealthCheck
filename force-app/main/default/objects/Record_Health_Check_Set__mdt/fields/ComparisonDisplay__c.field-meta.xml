@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ComparisonDisplay__c</fullName>
+    <label>Found/Expected Display</label>
+    <description
+  >Controls when users see Found and Expected values for each check. On demand lets users expand checks to see values, while failed checks still show values inline. Failed checks only keeps passing checks compact. Show on every check shows values inline wherever values are available.</description>
+    <inlineHelpText
+  >On demand = users can expand checks to see values, and failed checks show values inline. Failed checks only = values show only on failed checks. Show on every check = values show inline wherever available.</inlineHelpText>
+    <required>true</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>OnDemand</fullName>
+                <default>true</default>
+                <label>On demand</label>
+            </value>
+            <value>
+                <fullName>FailuresOnly</fullName>
+                <default>false</default>
+                <label>Failed checks only</label>
+            </value>
+            <value>
+                <fullName>AllRows</fullName>
+                <default>false</default>
+                <label>Show on every check</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

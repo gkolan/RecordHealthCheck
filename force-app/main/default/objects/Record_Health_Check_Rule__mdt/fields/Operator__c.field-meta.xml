@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Operator__c</fullName>
-    <label>Operator</label>
+    <label>Comparison Operator</label>
     <description
-  >How the value from the Data Query is compared to what you choose under Compare Against. Not used for Record formula checks. "Is empty" and "Is not empty" need nothing to compare against. The five list operators split into two paths: (1) "List includes any of" and "List excludes all of" work on a Single query check - the value to test comes from Value To Test (List Checks) and the list to test against comes from the Comparison Query; (2) "Lists share any value", "List includes all of", and "Lists match exactly" work only with Compare two queries set to Compare as two lists.</description>
+  >How the value from the Primary Query (SOQL) is compared to what you choose under Expected Value Comes From. Not used when Check Type is Check fields on this record. "Is empty" and "Is not empty" need nothing to compare against. The five list operators split into two paths: (1) "List includes any of" and "List excludes all of" work when Check Type is Check records with a query - the value to test comes from Value To Test (list checks only) and the list to test against comes from the Second Query; (2) "Lists share any value", "List includes all of", and "Lists match exactly" work only with Compare two queries set to Compare query results as lists.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -87,6 +87,6 @@
         </valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >Pick how to compare. "Is empty"/"Is not empty" need no value. "List includes any of"/"List excludes all of" work on a Single query (value from Value To Test, list from the Comparison Query). "Lists share any value"/"List includes all of"/"Lists match exactly" need Compare two queries set to Compare as two lists.</inlineHelpText>
+  >Pick how to compare. "Is empty"/"Is not empty" need no value. "List includes any of"/"List excludes all of" work with Check records with a query (value from Value To Test, list from the Second Query). "Lists share any value"/"List includes all of"/"Lists match exactly" need Compare two queries set to Compare query results as lists.</inlineHelpText>
     <required>false</required>
 </CustomField>

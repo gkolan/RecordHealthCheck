@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>CountOperator__c</fullName>
-    <label>Applicability Count Comparison</label>
+    <label>Count Must Be</label>
     <description
-  >Applicability gate only - not part of the pass/fail logic. How the count from Run When Count Query Matches is compared to Applicability Count Threshold. The check runs only when this comparison is true. Required when "Run This Check When" is "Only when a count query matches".</description>
+  >Applicability gate only - not part of the pass/fail logic. How the count from Applies When Count Query Matches is compared to Count Value. The check runs only when this comparison is true. Required when "Applies To" is "Only records where a count query matches".</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -12,12 +12,12 @@
             <value>
                 <fullName>Equals</fullName>
                 <default>false</default>
-                <label>Equals</label>
+                <label>Equal to</label>
             </value>
             <value>
                 <fullName>NotEquals</fullName>
                 <default>false</default>
-                <label>Does not equal</label>
+                <label>Not equal to</label>
             </value>
             <value>
                 <fullName>GreaterThan</fullName>
@@ -27,7 +27,7 @@
             <value>
                 <fullName>GreaterThanOrEqual</fullName>
                 <default>false</default>
-                <label>Greater than or equal</label>
+                <label>At least</label>
             </value>
             <value>
                 <fullName>LessThan</fullName>
@@ -37,11 +37,11 @@
             <value>
                 <fullName>LessThanOrEqual</fullName>
                 <default>false</default>
-                <label>Less than or equal</label>
+                <label>At most</label>
             </value>
         </valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >Part of the applicability gate, not the main check. Example: "Greater than" with an Applicability Count Threshold of 0 runs the check only when at least one row matches.</inlineHelpText>
+  >Part of the applicability gate, not the main check. Example: "Greater than" with an Count Value of 0 runs the check only when at least one row matches.</inlineHelpText>
     <required>false</required>
 </CustomField>

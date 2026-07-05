@@ -17,6 +17,8 @@ public class RecordHealthCheckDefinitionResponse {
   @AuraEnabled
   public String skippedDisplayMode; // Show, Hide
   @AuraEnabled
+  public String comparisonDisplay; // OnDemand, FailuresOnly, AllRows — how Found/Expected reveal per row
+  @AuraEnabled
   public Boolean stopOnFirstError;
   @AuraEnabled
   public Integer totalAvailableCheckCount; // active checks before framework cap truncation

@@ -1,5 +1,5 @@
-/*
- * Copyright 2026 Record Health Check contributors
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,35 +14,21 @@ import {
 const MAX_CONCURRENT_EVALUATIONS = 5;
 
 /**
- * Owns the run lifecycle for the Record Health Check component: dependency
- * gating, concurrency-capped evaluation, progressive-reveal draining, and
- * stop-on-first-error. Extracted from the LWC class so the component is left
- * with @api properties, template getters, definition loading, and diagnostics.
- *
- * Orchestration state (result buffer, reveal pointer, run/concurrency tokens)
- * lives here. Display config is read from the host component, and resolved rows
- * plus the reactive run counters are written back through `host` so LWC
- * reactivity still fires on `host.checks`, `host.completedCheckCount`, and
- * `host.runComplete`. The host owns those tracked properties; this class only
- * assigns to them on the host instance.
+ * Run lifecycle: dependency gating, concurrency-capped evaluation, progressive reveal.
  */
 export class HealthCheckRunner {
-  _resultBuffer = {}; // developerName → result
+  _resultBuffer = {};
   _stopped = false;
   _runInProgress = false;
-  _runToken = 0; // incremented on each run; stale in-flight results from prior runs are discarded
-  _runId = null; // correlation id sent to Apex so all logs for one load/run share a key
-  // True count of Apex calls currently in flight, GLOBAL across run tokens. A
-  // request fired by an abandoned prior run still occupies a slot until it
-  // settles, so this counter is never zeroed on invalidate (LWC-01).
+  _runToken = 0;
+  _runId = null;
+  /** In-flight Apex calls across run tokens; not zeroed on invalidate. */
   _activeEvaluations = 0;
   _evaluationQueue = [];
 
   constructor(host) {
     this.host = host;
   }
-
-  // ─── State the component template/getters need to observe ─────────────────
 
   get isRunning() {
     return this._runInProgress;
@@ -51,8 +37,6 @@ export class HealthCheckRunner {
   get runId() {
     return this._runId;
   }
-
-  // ─── Lifecycle hooks called by the component ──────────────────────────────
 
   /** Starts a fresh correlation id, stores it for the upcoming run, and returns it. */
   beginRunId() {
@@ -72,8 +56,6 @@ export class HealthCheckRunner {
     this._resultBuffer = {};
     this._resetEvaluationPool();
   }
-
-  // ─── Run orchestration (Section 6.7) ──────────────────────────────────────
 
   run(reuseRunId = false) {
     if (this._runInProgress) return;
@@ -123,7 +105,6 @@ export class HealthCheckRunner {
     }
 
     if (this.host.stopOnFirstError) {
-      // Fire-and-forget, but LWC-10 catch prevents stuck _runInProgress on rejection.
       this._runChecksSequentially(checkMap, cycleNames, token).catch(() => {
         if (token === this._runToken) {
           this._runInProgress = false;
@@ -171,9 +152,6 @@ export class HealthCheckRunner {
   }
 
   async _runChecksSequentially(checkMap, cycleNames, token) {
-    // AUDIT (LWC-10, 2026-06-23):
-    // BEFORE: unhandled rejection could leave _runInProgress true and block reruns.
-    // AFTER: finally clears the flag when this run token is still current.
     try {
       const taskMap = {};
       const runCheck = this._makeRunCheck(taskMap, checkMap, cycleNames, token);
@@ -201,7 +179,7 @@ export class HealthCheckRunner {
   async _runOneCheck(check, taskMap, checkMap, runCheck, token) {
     if (this._stopped || token !== this._runToken) return;
 
-    // Dependency gate (client-side, Section 6.7)
+    // Client-side dependency gate before calling Apex.
     if (check.dependsOnCheckDeveloperName) {
       const dependencyCheck = checkMap[check.dependsOnCheckDeveloperName];
       if (!dependencyCheck) {
@@ -243,8 +221,6 @@ export class HealthCheckRunner {
     if (this._activeEvaluations >= MAX_CONCURRENT_EVALUATIONS) {
       const acquired = await this._acquireEvaluationSlot(token);
       if (!acquired) return;
-      // The run was invalidated while we waited for a slot: hand it straight
-      // back so the abandoned wait does not permanently shrink the pool (LWC-01).
       if (token !== this._runToken) {
         this._releaseEvaluationSlot();
         return;
@@ -282,12 +258,6 @@ export class HealthCheckRunner {
   _drain(token) {
     if (token !== this._runToken) return;
 
-    // Reveal-as-resolved (LWC-02): mark every check whose result has arrived as
-    // RESOLVED, in array order, regardless of whether an earlier-declared check
-    // is still running. A ready (and possibly visible) result must not wait
-    // behind a slow, possibly-hidden check ahead of it. The component shows a
-    // single in-progress spinner (the first not-yet-resolved check), so the
-    // one-at-a-time reveal feel is preserved while results surface as they land.
     this.host.checks = this.host.checks.map((c) => {
       const buffered = this._resultBuffer[c.developerName];
       if (buffered !== undefined && c.uiState !== "RESOLVED") {
@@ -303,9 +273,7 @@ export class HealthCheckRunner {
       (c) => c.uiState === "RESOLVED"
     ).length;
 
-    // StopOnFirstError (Section 6.7): once any resolved check is an ERROR,
-    // synthesize SKIPPED for every check that has not produced a result yet,
-    // then re-drain to reveal those skips.
+    // Stop on first ERROR: synthesize SKIPPED for checks not yet evaluated.
     if (this.host.stopOnFirstError && !this._stopped) {
       const errored = this.host.checks.some(
         (c) =>
@@ -346,8 +314,6 @@ export class HealthCheckRunner {
     }
   }
 
-  // ─── Concurrency pool ─────────────────────────────────────────────────────
-
   _acquireEvaluationSlot(token) {
     return new Promise((resolve) => {
       if (token !== this._runToken) {
@@ -359,10 +325,7 @@ export class HealthCheckRunner {
   }
 
   _releaseEvaluationSlot() {
-    // Decrement unconditionally: a slot frees whenever ANY in-flight request
-    // settles, including one fired by an abandoned prior run. The counter is
-    // global across runs (LWC-01), so a stale completion must give its slot back
-    // or the pool shrinks permanently. Then wake the next still-valid waiter.
+    // Slot frees when any in-flight request settles, including from a prior run.
     this._activeEvaluations = Math.max(0, this._activeEvaluations - 1);
     while (
       this._evaluationQueue.length > 0 &&
@@ -380,10 +343,7 @@ export class HealthCheckRunner {
   }
 
   _resetEvaluationPool() {
-    // Do NOT zero _activeEvaluations: requests fired by a prior run may still be
-    // open and will decrement it themselves as they settle (LWC-01). Zeroing here
-    // would let a new run launch a full MAX_CONCURRENT_EVALUATIONS batch on top of
-    // the abandoned calls, briefly doubling real concurrency on a record swap.
+    // Do not zero _activeEvaluations; abandoned runs decrement on settle.
     for (const pending of this._evaluationQueue) {
       pending.resolve(false);
     }
