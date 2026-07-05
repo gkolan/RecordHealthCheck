@@ -2,13 +2,15 @@
 
 Start here if you want to get one card working before opening the deeper configuration docs.
 
-By the end, you will have an Account record page with a health check card that shows at least one result: pass, fail, skipped, or error. No Apex coding is required.
+By the end, you will have an Account record page with a health check card that shows at least one result: pass, fail, skipped, or unable to check. No Apex coding is required.
 
 ## What you are installing
 
 Record Health Check adds a read-only card to a Salesforce record page. The card looks at the open record and shows whether it meets checks you define.
 
-For this first pass, use the starter Check Set named `Account_Data_Quality`. It contains four Account checks: Billing City, Industry, Phone, and Website.
+For this first pass, use `Example_Account_360_Health_Check`, the Check Set shown in the README screenshot. It bundles nine Account checks (owner is active, has a contact, contacts have email, recent activity is logged, open pipeline covers revenue, no high-priority open cases, an active contract, and more), so you see the full range of results. Several of these checks look beyond the Account itself, at its contacts, opportunities, cases, contracts, and activities, and one has a "Fix it" link to the `High_Priority_Open_Cases` report, filtered to this account. What each row reports depends on the account's data, so a well-populated account shows the most.
+
+Want something smaller first? `Account_Data_Quality` is a lighter starter with four single-field checks: Billing City, Industry, Phone, and Website. Swap the Developer Name below if you prefer it.
 
 ## 1. Deploy the starter metadata
 
@@ -23,11 +25,13 @@ CLI commands:
 
 ```bash
 sf project deploy start --manifest manifest/package-core.xml
-sf project deploy start --manifest manifest/package-Account_Data_Quality.xml
+sf project deploy start --manifest manifest/package-Example_Account_360_Health_Check.xml
 sf org assign permset --name Record_Health_Check_User
 ```
 
-The first command installs the component and metadata types. The second command installs the starter Account checks.
+The first command installs the component and metadata types. The second installs the Account 360 Check Set, its rules, and the report one of its checks links to.
+
+The two paths differ in scope: the Deploy button installs the full project, including every sample Check Set, while the CLI commands above install only the framework and the `Example_Account_360_Health_Check` set. Either way, you wire up just one Check Set in the next step.
 
 ## 2. Add the card to an Account page
 
@@ -37,7 +41,7 @@ The first command installs the component and metadata types. The second command 
 4. In the component properties, set **Check Set Developer Name** to:
 
    ```text
-   Account_Data_Quality
+   Example_Account_360_Health_Check
    ```
 
 5. Save and activate the page.
@@ -53,9 +57,9 @@ If the card runs automatically, results appear after the page loads. If it waits
 The card shows rows for the starter checks:
 
 - **Pass:** this record meets the Rule.
-- **Fail:** something needs attention.
+- **Fail:** something needs attention. A failing check carries a severity of Error, Warning, or Info.
 - **Skipped:** the Rule does not apply to this record right now.
-- **Error:** the framework did not finish the check. Review setup, permissions, or troubleshooting details.
+- **Unable to Check:** the framework could not finish the check. Review setup, permissions, or troubleshooting details.
 
 ## 4. Make a result change
 
@@ -63,10 +67,9 @@ To prove the card is reading live data, edit the Account and refresh the page.
 
 Try one of these:
 
-- Clear **Billing City**: the Billing City check fails.
-- Add **Billing City**: the Billing City check passes.
-- Clear **Phone**: the Phone check fails.
-- Clear **Website**: the Website check fails.
+- Clear both **Phone** and **Website**: the "Account has a phone or website" check stops passing.
+- Add a **Phone** or **Website** back: that check passes again.
+- Add a **Contact** to an Account that had none: the "Account has a contact" check turns to a pass.
 
 This is the first success moment: the card responds to record data without a validation rule, Flow, or Apex trigger.
 
@@ -74,8 +77,8 @@ This is the first success moment: the card responds to record data without a val
 
 You only need two words to keep going:
 
-- **Check Set:** the group of checks shown by one card. `Account_Data_Quality` is your first Check Set.
-- **Rule:** one row inside the card. Example: "Billing City is required."
+- **Check Set:** the group of checks shown by one card. `Example_Account_360_Health_Check` is your first Check Set.
+- **Rule:** one row inside the card. Example: "Account has a phone or website."
 
 Everything else in the docs builds on those two ideas.
 
