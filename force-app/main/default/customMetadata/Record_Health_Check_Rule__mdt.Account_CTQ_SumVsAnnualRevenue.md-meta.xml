@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >CompareTwoQueries: an aggregate (SUM) compared against a scalar from a second query. DeveloperName retains a legacy prefix; user-facing labels omit it.</value>
+    >Check Type = CompareTwoQueries. The first query totals open pipeline with SUM(Amount). The Second Query reads one number, the account&apos;s Annual Revenue. The check passes when the pipeline total is at least that number.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

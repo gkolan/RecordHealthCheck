@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >COUNT(DISTINCT field) returns unique value count. Alias distinctCities is required — set Primary Query Field to distinctCities.</value>
+    >COUNT(DISTINCT field) returns how many different values exist. The query names the result distinctCities, so set Primary Query Field/Alias to distinctCities.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

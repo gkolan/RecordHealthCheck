@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >EmptyResultBehavior=Pass: no contacts means this check vacuously passes (the "all X must have Y" rule is satisfied when X is empty). NullBehavior=MissingMeansNoMatch: a null Title explicitly does not satisfy IsNotBlank — it counts as a non-match, so the AllRowsPass fails. Together these two settings define the correct "vacuous-true with strict null" semantic.</value>
+    >If Query Finds No Records = Pass: an account with no contacts passes, because an &quot;every contact must...&quot; rule is satisfied when there are no contacts to check. If Query Field Value Is Empty = MissingMeansNoMatch: a blank Title does not satisfy IsNotBlank, so it fails. Together these give the behavior admins usually want — pass when there is nothing to check, but never let a blank value slip through.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

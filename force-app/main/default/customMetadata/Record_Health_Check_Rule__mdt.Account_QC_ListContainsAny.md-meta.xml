@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >ListContainsAny: scalar primary value from Value To Test (BillingCity) must appear in the comparison list from ComparisonQuery. Pairs with ListDoesNotContainAny in this Check Set.</value>
+    >Comparison Operator = ListContainsAny: the single value in Value To Test (Billing City) must appear somewhere in the list returned by the Second Query. Pairs with Industry Is Not Shared With Other Accounts in this Check Set.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

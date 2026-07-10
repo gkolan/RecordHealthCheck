@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >AllRowsPass with FixedValue comparison. Every open opportunity must have Amount greater than zero. EmptyResultBehavior=Skip means the check is skipped when there are no open opportunities, avoiding a vacuous-truth false positive. NullBehavior skips rows where Amount is null instead of treating them as failing.</value>
+    >Every open opportunity must have an Amount above zero. How To Interpret Query Results = AllRowsPass, and Expected Value Comes From = FixedValue. If Query Finds No Records = Skip, so an account with no open opportunities is skipped instead of passing for no real reason. If Query Field Value Is Empty skips opportunities whose Amount is blank rather than failing them.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

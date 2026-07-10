@@ -65,6 +65,9 @@ build-record-health-check-mobile.png
 # Engineering audit reports (living backlog is in tasks/)
 docs/audits/
 
+# Point-in-time review write-ups; they cite local-only docs/spec/ and bugs/ notes
+docs/review/
+
 # Maintainer execution plans and deferred-feature archives (local only)
 docs/enhancements/
 force-app/deferred/

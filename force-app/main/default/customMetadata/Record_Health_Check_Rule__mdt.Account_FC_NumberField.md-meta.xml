@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Number field comparison using &gt; operator in formula. Demonstrates that ISBLANK() on a number field returns true for null OR zero, so NOT(ISBLANK(...)) and &gt; 0 have different semantics — this checks strictly greater than zero.</value>
+    >Compares a number field with &gt; inside a formula. ISBLANK() on a number field is true both when the field is blank and when it is zero, so NOT(ISBLANK(...)) and &gt; 0 do not mean the same thing. This rule requires a value above zero.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

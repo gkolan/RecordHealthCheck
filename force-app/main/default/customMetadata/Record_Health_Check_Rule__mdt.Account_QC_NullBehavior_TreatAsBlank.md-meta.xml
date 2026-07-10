@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >NullBehavior=TreatMissingAsBlank: a null MailingState is treated as an empty string. Combined with RecordFormula comparison resolving to BillingState: if BillingState is also blank, a contact with null MailingState will match (null == blank == blank). Use this when your data model treats null and empty-string as equivalent. Contrast with MissingMeansNoMatch (Account_QC_ERB_Pass_NullNoMatch), where null explicitly fails the comparison. EmptyResultBehavior=Pass: accounts with no contacts vacuously satisfy this check.</value>
+    >If Query Field Value Is Empty = TreatMissingAsBlank: a contact with no Mailing State is treated as having an empty one. With Expected Value Comes From = RecordFormula resolving to the account&apos;s Billing State, a contact with no Mailing State still matches when Billing State is also empty. Use this when your org treats missing and empty as the same thing; use MissingMeansNoMatch when a missing value should fail instead. If Query Finds No Records = Pass, so an account with no contacts passes.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

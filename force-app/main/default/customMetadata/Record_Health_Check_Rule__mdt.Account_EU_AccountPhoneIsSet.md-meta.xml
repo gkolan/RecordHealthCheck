@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Everyday pattern on the parent record itself (not child rows): Formula NOT(ISBLANK(Phone)). Contrast with Account_EU_AllContactsHavePhone which validates every Contact row. Technical twin: Account_DQ_Phone in Account_Data_Quality.</value>
+    >Checks a field on the account itself rather than its related records: Check Type = Formula with NOT(ISBLANK(Phone)). Compare with All Contacts Have a Phone Number, which checks every contact record instead.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

@@ -1,6 +1,6 @@
 # Record Health Check Design Specification
 
-**Version:** 2026-06-22 (aligned with `force-app/` at this commit)
+**Version:** 1.2.0 (2026-07-09) — aligned with `force-app/` at this commit
 
 Record Health Check is a metadata-driven framework for evaluating Salesforce records from a Lightning record page. Check Sets and Rules live in Custom Metadata Types (CMTs). Apex validates and evaluates those Rules. A Lightning Web Component (LWC) orchestrates the run and displays results.
 
@@ -10,9 +10,6 @@ For Setup walkthroughs and field tables, see [Getting Started](../installation/g
 
 > [!NOTE]
 > **June 2026 UI refresh:** Formal LWC contracts are in [15](#15-lwc-behavior) below.
-
-> [!NOTE]
-> **Modular reading:** The same content is split by topic in [`spec/`](../spec/index.md) for focused review (metadata models, LWC contracts, limitations, and so on). This file remains the canonical entry point: section numbers and anchors here are stable for cross-links.
 
 ## Related guides
 
@@ -98,7 +95,7 @@ A Check Set defines one group of Rules for one component instance on one object.
 | Limit | Value | Behavior |
 | ----- | ----- | -------- |
 | Maximum active Rules per Check Set in one run | 25 | First 25 by `RunOrder__c` ascending, then `DeveloperName` ascending. `checksOmittedByLimit` is true when more active Rules exist. The LWC badge shows **First 25 of N** using `totalAvailableCheckCount`. |
-| Definition reload | Per component load or `recordId` change | `getCheckDefinitions` is **not** cacheable. Metadata edits appear on the next component load. After `connectedCallback`, a change to `recordId` also reloads definitions. A full page refresh reloads record field data as well. |
+| Definition reload | Per component load or `recordId` change | `getCheckDefinitions` and `getCheckSetAvailabilityForRecord` are **not** cacheable. Metadata edits and Check Set activation appear on the next component load. After `connectedCallback`, a change to `recordId` also reloads definitions. A full page refresh reloads record field data as well. |
 | Concurrent evaluations | Up to **5 in flight** when `StopOnSystemError__c` is false | The LWC queues all eligible checks (up to 25) but caps concurrent `evaluateCheck` Apex calls at `MAX_CONCURRENT_EVALUATIONS` (5); additional checks wait in a client-side queue. Display order remains priority-ordered via a drain buffer. When `StopOnSystemError__c` is true, checks run **sequentially** (one Apex call at a time). |
 | Run isolation | Per run | LWC increments `_runToken` on each run so stale in-flight results from a prior run are discarded. |
 
@@ -756,9 +753,9 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | Multi-select picklist tokens | Unquoted `{!Field}` on a resolved multi-select expands to `('A', 'B')`; quoted `'{!Field}'` keeps `'A;B;C'`. Relationship paths behave the same when the related record is loaded. | Use direct field tokens when possible; ensure relationship fields are collected by the engine. |
 | 25-check cap | Dependents skip with `DEPENDENCY_NOT_IN_RUN` if prerequisite is omitted. UI shows **First 25 of N shown** (N = `totalAvailableCheckCount`). Deploy-time validator emits `CHECK_LIMIT_EXCEEDED` WARNING when a Check Set has more than 25 active Rules and warns when a dependency target is outside the first-25 window. | Keep Check Sets ≤ 25 active Rules or raise priority of prerequisites. |
 | Stop on first error | Only `ERROR` stops the run; `FAIL` and `UNABLE_TO_EVALUATE` do not. Enables sequential execution. | Document intent; use dependencies if sequencing matters. |
-| Validator gaps | Metadata Validator does not reject blank `PanelHeading__c` at **runtime** (only at deploy-time). Apex class validation uses `Type.forName` at deploy/validate time. | Run `validateAsJson()` in CI plus manual review; test on representative records. |
+| Validator gaps | Metadata Validator rejects blank `PanelHeading__c` at deploy/validate time (aligned with the CMT `required` flag). Runtime `getDefinitionResponse` still falls back if a blank value is present. Apex class validation uses `Type.forName` at deploy/validate time. | Run `validateAsJson()` in CI plus manual review; test on representative records. |
 | Static comparison values | `FixedValue__c` is untyped text. | Use simple literals; normalize in SOQL or Apex for locale-specific formats. |
-| Blank `PanelHeading__c` at runtime | Required in CMT field metadata and caught by the validator, but **not** rejected by `getDefinitionResponse` if blank. The LWC falls back to Check Set `MasterLabel`, then `DeveloperName`, so the card title is never empty. | Prefer a real Panel Heading; the fallback is a safety net, not a substitute for good labeling. |
+| Blank `PanelHeading__c` at runtime | Required in CMT field metadata and caught by the validator. If blank metadata still reaches `getDefinitionResponse`, the LWC falls back to Check Set `MasterLabel`, then `DeveloperName`, so the card title is never empty. | Prefer a real Panel Heading; the fallback is a safety net, not a substitute for good labeling. |
 | Record save | No automatic re-run after inline edit. | User clicks **Rerun** or refreshes the page. |
 | Component placement | Record-page only (`lightning__RecordPage`). | Use `RecordHealthCheck.run` or Flow for non-record-page automation. |
 | `checksOmittedByLimit` logging | When Rules are truncated, Apex emits a WARN with `CHECK_LIMIT_EXCEEDED` and the LWC shows **First 25 of N shown**. | Review Check Set active Rule count during configuration. |

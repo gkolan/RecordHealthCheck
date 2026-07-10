@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Everyday pattern: every child row must pass. Query + AllRowsPass + IsNotBlank on Contact.Phone. EmptyResultBehavior=Pass skips the rule when there are no contacts (vacuous pass). NullBehavior=MissingMeansNoMatch treats blank phone as a failure. Not ListContainsAll — that comparator is for list-vs-list CompareTwoQueries only.</value>
+    >Every contact must have a phone number. Check Type = Query with How To Interpret Query Results = AllRowsPass and Comparison Operator = IsNotBlank. If Query Finds No Records = Pass, so an account with no contacts passes. If Query Field Value Is Empty = MissingMeansNoMatch, so a blank phone fails. This is not ListContainsAll — the list operators apply only to Check Type = CompareTwoQueries.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

@@ -15,7 +15,7 @@ Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troublesh
 | ----------- | -------- | ---- | -------- | ----------- |
 | Developer Name | `DeveloperName` | Text | Yes | API key selected by the Lightning component's **Check Set** property. Stable link between the page and metadata; survives label changes. |
 | Label | Master Label | Text | Yes | Name shown in Setup record lists. Standard metadata identity; not shown to end users in the component. |
-| Panel Title | `PanelHeading__c` | Text | Yes | Card header title (for example, `Account Health Check`). Required on the Custom Metadata Type; enforced by the validator. Runtime definition load does not reject a blank value. |
+| Panel Title | `PanelHeading__c` | Text | Yes | Card header title (for example, `Account Health Check`). Required in Custom Metadata and by the deploy-time validator. If a blank value somehow reaches runtime, the card falls back to the Check Set label, then developer name, so the title is never empty. |
 | Panel Subtitle | `PanelSubheading__c` | Text | No | One-line subtitle beneath the title row (full card width). Brief context without opening each Rule. |
 
 ### Scope
@@ -45,7 +45,7 @@ Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troublesh
 ### Framework limits (not fields)
 
 - **25 active Rules maximum** per run (lowest **Run Order** first, then `DeveloperName`). When Rules are omitted, the header badge shows **First 25 of N shown**, using Apex `totalAvailableCheckCount` for N.
-- **Metadata reload:** `getCheckDefinitions` is not cacheable. Reload the page to pick up metadata edits. After the component connects, a change to `recordId` also reloads definitions (for example, navigating to a different record on the same page).
+- **Metadata reload:** `getCheckDefinitions` and `getCheckSetAvailabilityForRecord` are not cacheable. Reload the page (or reconnect the component) to pick up metadata edits and Check Set activation. After the component connects, a change to `recordId` also reloads definitions (for example, navigating to a different record on the same page).
 - **Concurrency:** up to **5** in-flight `evaluateCheck` calls when Stop After System Error is unchecked (remaining checks queue client-side; up to 25 Rules may be scheduled per run). When Stop After System Error is checked, checks run sequentially (one Apex call at a time).
 - **Dependencies outside the cap:** if a prerequisite Rule is among the omitted Rules, dependents are skipped with reason `DEPENDENCY_NOT_IN_RUN` (LWC only; this reason code is not emitted by Apex).
 

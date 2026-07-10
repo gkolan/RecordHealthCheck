@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Everyday pipeline hygiene: every open opportunity CloseDate must be today or later. AllRowsPass + GreaterThanOrEqual + RecordFormula TODAY(). EmptyResultBehavior=Skip when no open opps. Contrast with Account_Adv_AllOppsHaveAmount (numeric field on every row).</value>
+    >Every open opportunity must close today or later. How To Interpret Query Results = AllRowsPass, Comparison Operator = GreaterThanOrEqual, and Expected Value Comes From = RecordFormula returning TODAY(). If Query Finds No Records = Skip when the account has no open opportunities. Compare with All Open Opportunities Have a Positive Amount, which checks a number field on every record.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

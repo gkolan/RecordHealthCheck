@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >EmptyResultBehavior=Fail: zero rows returned means the check fails. Used when an empty result is itself the problem — no Closed Won opportunities means the account has never converted. AnyRowPasses with GreaterThanOrEqual 0 passes for any row that exists; Fail fires when no rows exist at all.</value>
+    >If Query Finds No Records = Fail: no matching records means the check fails. Use it when an empty result is itself the problem — here, no Closed Won opportunities means the account has never converted. How To Interpret Query Results = AnyRowPasses passes for any record that exists, so Fail fires only when none do.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

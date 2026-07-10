@@ -1010,7 +1010,10 @@ describe("c-record-health-check — dependency gating", () => {
 
     expect(evaluateCheck).not.toHaveBeenCalled();
     expect(element.shadowRoot.textContent).toContain(
-      "This check has a circular dependency and cannot be evaluated."
+      'Circular dependency with "Check_B".'
+    );
+    expect(element.shadowRoot.textContent).toContain(
+      'Circular dependency with "Check_A".'
     );
   });
 });

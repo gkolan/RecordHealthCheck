@@ -20,6 +20,9 @@ Right after install, **Step 4** assigns the Permission Set named **Record Health
 
 You do **not** need: the Salesforce CLI, Git, VS Code, or any download.
 
+> [!IMPORTANT]
+> **Upgrading from v1.0 / v1.1?** v1.2.0 removes the old Lightning component properties `configName` and `comparisonDisclosure`. Before or right after deploying the upgrade, open every record page that already has Record Health Check, re-select the **Check Set** in App Builder, and save. There is no automatic migration. Also assign `Record_Health_Check_Admin` (or grant `Record_Health_Check_View_Details`) if anyone previously relied on the removed `Record_Health_Check_Debug` permission.
+
 ## Step 1: Click the Deploy button
 
 On the project's main page (the [README](../../README.md)), find the button that says

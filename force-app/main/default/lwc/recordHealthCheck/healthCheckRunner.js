@@ -86,22 +86,23 @@ export class HealthCheckRunner {
 
     // Pre-seed circular dependencies as errors so their Promises resolve immediately
     // rather than hanging indefinitely awaiting each other.
+    // Message wording matches RecordHealthCheckEngine (names the blocking prereq).
     const cycleNames = detectDependencyCycles(this.host.checks);
+    const checkMap = {};
+    for (const check of this.host.checks) {
+      checkMap[check.developerName] = check;
+    }
     for (const name of cycleNames) {
-      const check = this.host.checks.find((c) => c.developerName === name);
+      const check = checkMap[name];
       if (check) {
+        const prereqName = check.dependsOnCheckDeveloperName || name;
         this._resultBuffer[name] = synthesizeResult(
           check,
           "UNABLE_TO_EVALUATE",
           "CIRCULAR_DEPENDENCY",
-          "This check has a circular dependency and cannot be evaluated."
+          `Circular dependency with "${prereqName}".`
         );
       }
-    }
-
-    const checkMap = {};
-    for (const check of this.host.checks) {
-      checkMap[check.developerName] = check;
     }
 
     if (this.host.stopOnFirstError) {
@@ -189,7 +190,7 @@ export class HealthCheckRunner {
           check,
           "SKIPPED",
           "DEPENDENCY_NOT_IN_RUN",
-          `Skipped because required check "${check.dependsOnCheckDeveloperName}" was not included in this run.`
+          `Skipped because "${check.dependsOnCheckDeveloperName}" was not included in this run.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
@@ -210,7 +211,7 @@ export class HealthCheckRunner {
           check,
           "SKIPPED",
           "DEPENDENCY_NOT_PASSED",
-          `Skipped because required check "${prereqLabel}" did not pass.`
+          `Skipped because "${prereqLabel}" did not pass.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
