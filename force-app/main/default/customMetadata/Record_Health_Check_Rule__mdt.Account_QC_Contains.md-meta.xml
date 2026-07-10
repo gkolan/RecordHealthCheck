@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Contains comparator: field value must contain the given substring. NullBehavior=MissingMeansNoMatch ensures a null Website does not vacuously "contain" the substring. Formula applicability skips when Website is blank.</value>
+    >Comparison Operator = Contains: the field must contain the given text. If Query Field Value Is Empty = MissingMeansNoMatch, so a blank Website does not count as containing the text. Applies To = Formula skips the check when Website is blank.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

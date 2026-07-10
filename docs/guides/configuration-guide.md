@@ -220,7 +220,7 @@ Use Apex when metadata cannot express the rule safely. **Implementing a class:**
 | Apex Class Name | `ApexClass__c` | Class implementing `RecordHealthCheckRule` |
 | Apex Settings (JSON) | `ApexSettingsJson__c` | Optional tuning map passed as `context.parameters` |
 
-For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-checkmethod__c-apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
+For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-checkmethod__c--apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
 
 ## 10. Applicability and Dependencies
 

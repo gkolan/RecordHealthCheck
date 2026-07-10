@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >ListDoesNotContainAny comparator sample (Info severity — not a production data-quality bar). The scalar Industry must not appear in the comparison list of other accounts&apos; industries. Fails often in populated orgs; use for pattern reference only.</value>
+    >An example of Comparison Operator = ListDoesNotContainAny, set to Info severity because it is not a real data-quality bar. The account&apos;s Industry must not appear in the list of other accounts&apos; industries. It fails often in a populated org — treat it as a pattern reference only.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

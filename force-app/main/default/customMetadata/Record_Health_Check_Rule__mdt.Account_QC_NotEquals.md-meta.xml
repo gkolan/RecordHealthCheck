@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >NotEquals comparator: field must not equal the given static value. Formula applicability skips when Rating is blank — comparing a blank field to "Cold" via NotEquals would vacuously pass, which is misleading.</value>
+    >Comparison Operator = NotEquals: the field must not equal the given value. Applies To = Formula skips the check when Rating is blank, because a blank Rating would pass a NotEquals &quot;Cold&quot; test for the wrong reason.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

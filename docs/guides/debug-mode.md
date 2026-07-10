@@ -5,7 +5,7 @@ Show Troubleshooting Details shows extra technical detail on the health check ca
 Show Troubleshooting Details does **not** save history and does **not** write any records: it only adds on-screen and console detail for the current run.
 
 > [!WARNING]
-> Turning on **Show Troubleshooting Details** on the Check Set alone does **nothing** visible. Both the Check Set flag **and** the `Record_Health_Check_View_Details` permission are required.
+> Turning on **Show Troubleshooting Details** on the Check Set alone does **nothing** visible. Both the Check Set flag **and** the `Record_Health_Check_View_Details` permission are required for troubleshooting output.
 
 ## Both steps are required
 
@@ -14,7 +14,7 @@ Show Troubleshooting Details does **not** save history and does **not** write an
 | **1. Check Set** | Check **Show Troubleshooting Details** | **Custom Metadata Types** → **Record Health Check Set** → open your Check Set → **Show Troubleshooting Details** (`DebugMode__c`) |
 | **2. User** | Assign the Permission Set named `Record_Health_Check_Admin` | **Permission Sets** → open `Record_Health_Check_Admin` → **Manage Assignments** → add the troubleshooting user |
 
-Step 2 grants the **`Record_Health_Check_View_Details`** custom permission. That permission unlocks advanced details; the Check Set's **Show Troubleshooting Details** flag decides when troubleshooting output appears.
+Step 2 grants the **`Record_Health_Check_View_Details`** custom permission. That permission unlocks advanced details; the Check Set's **Show Troubleshooting Details** flag decides when troubleshooting output appears on the card and in the console.
 
 ### Permission Sets: which one unlocks troubleshooting detail?
 
@@ -29,7 +29,7 @@ If you checked Show Troubleshooting Details on the Check Set but still see a nor
 
 | Custom permission | What it unlocks |
 | ----------------- | --------------- |
-| `Record_Health_Check_View_Details` | Advanced details. With **Show Troubleshooting Details** checked on the Check Set, unlocks gray troubleshooting lines, **Troubleshooting detail** blocks, console footnote, the `[RHC]` console summary, and the comparison provenance notes (`actualValueDetail` / `expectedValueDetail`) inside the nested `[RHC] Source detail` group. Both conditions are required: with **Show Troubleshooting Details** off, this permission on its own surfaces nothing. |
+| `Record_Health_Check_View_Details` | **Always** (even with Show Troubleshooting Details off): Formula **Passes when** labels on entitled rows. **With Show Troubleshooting Details on:** gray troubleshooting lines, **Troubleshooting detail** blocks, console footnote, the `[RHC]` console summary, and comparison provenance notes (`actualValueDetail` / `expectedValueDetail`) inside the nested `[RHC] Source detail` group. |
 | `Record_Health_Check_Configure` | Reserved for future admin tooling (Rule Tester). Shipped in the Admin set; no runtime feature gates on it yet. |
 
 After changing the Check Set or permission set assignment, **refresh the record page**.
@@ -53,7 +53,7 @@ Users **without** `Record_Health_Check_View_Details` never see the gray lines, T
 1. Open a record page that has the health check card.
 2. Press **F12** (Windows/Linux) or open **Developer Tools** (Mac) and select the **Console** tab.
 3. Run the health checks on the card.
-4. When the run finishes, find a group titled **`[RHC] Health Check run …: config Your_Check_Set_Name …`** (the **config** segment is the selected **Check Set** Developer Name: use it to tell multiple health check cards apart on the same page).
+4. When the run finishes, find a group titled **`[RHC] Health Check run <runId> | <CheckSetDeveloperName> | record <recordId>`** (the middle segment is the selected **Check Set** Developer Name: use it to tell multiple health check cards apart on the same page).
 
 Inside that group you will see:
 

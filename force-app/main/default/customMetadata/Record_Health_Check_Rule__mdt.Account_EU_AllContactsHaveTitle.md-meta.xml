@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Everyday duplicate of the Account_QC_ERB_Pass_NullNoMatch pattern with user-facing labeling. Technical twin lives in Account_Query_Coverage for enum coverage testing.</value>
+    >Every contact must have a job title. Same shape as All Contacts Have a Phone Number: How To Interpret Query Results = AllRowsPass, If Query Finds No Records = Pass, and If Query Field Value Is Empty = MissingMeansNoMatch, so a blank title fails.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

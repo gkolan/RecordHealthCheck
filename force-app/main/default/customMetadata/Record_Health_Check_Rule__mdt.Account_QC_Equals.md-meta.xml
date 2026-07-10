@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Equals comparator on Query type: single-row query on the account under test compared to a static picklist value. Completes the scalar comparator matrix in this Check Set.</value>
+    >Comparison Operator = Equals on a Query check: a single-record query on this account, compared with a fixed picklist value. Completes the set of value operators demonstrated in this Check Set.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

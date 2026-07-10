@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >GreaterThanOrEqual comparator: COUNT() must be at least 2. Contrast with GreaterThan 1 — semantically identical here, but GreaterThanOrEqual makes the minimum threshold explicit and is the natural fit when the threshold itself should be included.</value>
+    >Comparison Operator = GreaterThanOrEqual: the count must be at least 2. GreaterThan 1 would behave identically here, but GreaterThanOrEqual states the minimum directly and is the natural choice when the threshold itself should count.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

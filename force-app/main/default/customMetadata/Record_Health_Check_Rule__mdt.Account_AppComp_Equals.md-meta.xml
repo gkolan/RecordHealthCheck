@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >ApplicabilityComparator=Equals: SOQL gate passes only when contact COUNT() equals the threshold. Formula runs only when the gate passes.</value>
+    >Applies To = SOQL runs the count query in Applies When Count Query Matches, then tests it with Count Must Be = Equals. The formula runs only when the contact count equals Count Value; otherwise the check is skipped.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

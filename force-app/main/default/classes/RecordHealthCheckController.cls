@@ -13,8 +13,11 @@ public with sharing class RecordHealthCheckController {
    * Reports whether the record's object has active and/or inactive Check Sets.
    * Used when the LWC has no Check Set selected, so the setup banner can say
    * choose one, activate one, or create one.
+   * Not cacheable: after an admin activates or creates a Check Set, the next
+   * component load must see the fresh availability without waiting on the
+   * Lightning Data Service cache.
    */
-  @AuraEnabled(cacheable=true)
+  @AuraEnabled
   public static RecordHealthCheckSetAvailability getCheckSetAvailabilityForRecord(
     Id recordId
   ) {

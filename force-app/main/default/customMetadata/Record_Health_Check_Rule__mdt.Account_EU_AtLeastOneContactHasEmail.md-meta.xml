@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Everyday pattern: only one row needs to pass. Query + AnyRowPasses + IsNotBlank. EmptyResultBehavior=Skip when no contacts exist. Contrast with Account_EU_AllContactsHaveEmail where every row must pass. Alternative: COUNT() with Email != null in WHERE (see Account_Adv_ContactHasEmail).</value>
+    >Only one contact needs to pass. Check Type = Query with How To Interpret Query Results = AnyRowPasses and Comparison Operator = IsNotBlank. If Query Finds No Records = Skip when the account has no contacts. Compare with All Contacts Have an Email Address, where every contact must pass. You could also count contacts that have an email directly in the query&apos;s WHERE clause.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

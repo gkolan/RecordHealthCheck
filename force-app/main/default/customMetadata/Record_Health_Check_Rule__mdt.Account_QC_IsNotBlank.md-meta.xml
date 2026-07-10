@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Query returns a single field value using OneResult and IsNotBlank. Demonstrates the IsNotBlank comparator with no ComparisonValueSource or ComparisonValue needed, using SELECT field FROM object WHERE Id = {!Id}.</value>
+    >A single-record query with How To Interpret Query Results = OneResult and Comparison Operator = IsNotBlank, which needs no expected value. The query reads one field from this account: SELECT field FROM object WHERE Id = {!Id}.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

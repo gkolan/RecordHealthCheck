@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >IsBlank comparator: PASS when the field IS blank. Useful when a field must remain empty — e.g. a field owned by an automated system that humans must not touch. No ComparisonValueSource or ComparisonValue needed (same as IsNotBlank).</value>
+    >Comparison Operator = IsBlank passes when the field is empty. Useful when a field must stay empty — for example one maintained by an automated process that people should not edit. Like IsNotBlank, it needs no expected value.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

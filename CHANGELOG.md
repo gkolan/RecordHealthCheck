@@ -40,8 +40,11 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 
 ### Docs & tests
 
-- LWC Jest suite: **106** tests.
+- LWC Jest suite: **106** tests; Apex local suite: **162** tests (**96%** org-wide coverage on scratch).
 - Updated security notes, package manifest, docs, examples, help text, troubleshooting, and the design spec for the Check Set picker, setup messages, console-only source notes, the single details permission, Schema describe caching, and the upgrade steps for old LWC properties.
+- Troubleshooting guide clarifies that `Record_Health_Check_View_Details` alone still unlocks Formula **Passes when**; full card/console troubleshooting still needs **Show Troubleshooting Details**.
+- Client-side circular-dependency and skip messages now match Apex wording.
+- Setup availability (`getCheckSetAvailabilityForRecord`) is no longer Aura-cacheable, so activating a Check Set refreshes the blank-setup banner on the next load.
 
 ## [1.1.0]: 2026-07-04
 
@@ -58,7 +61,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Improved provenance notes: row counts pluralize consistently (`1 row` / `3 rows`) and source notes now attach directly to the matching Found/Expected value.
 - Simplified `Record_Health_Check_Rule__mdt` / `Set__mdt` labels, descriptions, and layouts for friendlier first-time admin setup (no engine changes).
 - Reworked the Check Set display defaults for a friendlier first run: renamed `RowAppearance__c` from **Result Display Style** to **How checks appear** (clearer description and inline help that explain the on-load behavior), and changed its default to `OneAtATime` so checks reveal one at a time as the run advances. Passed and skipped checks now default to `Show` (`PassedChecksDisplay__c` / `SkippedChecksDisplay__c`) so viewers see what passed and what was skipped; `Hide` remains the power-user opt-in for a summarize-only, failures-focused view. Example Check Sets updated to match, except `Account_Data_Quality`, kept as the intentional failures-only demo.
-- Updated docs, examples, and plugin guidance for comparison display, provenance, and the current 98-test LWC suite.
+- Updated docs, examples, and plugin guidance for comparison display, provenance, and the then-current 98-test LWC suite.
 
 ## [1.0.0]: 2026-06-23
 

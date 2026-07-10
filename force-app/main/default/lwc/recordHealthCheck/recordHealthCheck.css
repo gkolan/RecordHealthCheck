@@ -972,7 +972,7 @@
   }
 }
 
-/* ── Debug detail panel (DebugMode__c = true) ──────────────────────────────── */
+/* ── Troubleshooting detail panel (DebugMode__c = true) ───────────────────── */
 .rhc-debug-detail {
   margin-top: 0.375rem;
 }

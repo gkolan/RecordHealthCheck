@@ -100,11 +100,11 @@ by concern: do **not** split into separate LWCs):
 
 | File | Lines | Responsibility |
 |------|------:|----------------|
-| `recordHealthCheck.js` | 770 | Component shell: @api props, lifecycle, definition load, tooltip dwell, template getters, diagnostics. Delegates the run to the runner. |
-| `healthCheckRunner.js` | 356 | Run lifecycle: dependency gating, 5-way concurrency cap, run/reveal tokens, progressive-reveal draining, stop-on-first-error. Sets `runComplete` and `hasCompletedRunOnce` on completion; clears `runComplete` (not `hasCompletedRunOnce`) when a new run starts. |
-| `healthCheckModel.js` | 141 | Pure domain logic: result shaping, response normalization, dependency-cycle detection, error parsing. No component state. |
-| `healthCheckPresentation.js` | 405 | Pure view formatting: maps results into template-ready flags, CSS classes, summary rows, tooltip anchors, **Found** / **Expected** chip visibility, and comparison caret behavior. |
-| `recordHealthCheck.html` / `.css` | 210 / 815 | Markup and styling (CSS status icons, tooltips, comparison chips, action-button spinner, summary-pill nubbin host). |
+| `recordHealthCheck.js` | 942 | Component shell: @api props, lifecycle, definition load, tooltip dwell, template getters, diagnostics. Delegates the run to the runner. |
+| `healthCheckRunner.js` | 362 | Run lifecycle: dependency gating, 5-way concurrency cap, run/reveal tokens, progressive-reveal draining, stop-on-first-error. Sets `runComplete` and `hasCompletedRunOnce` on completion; clears `runComplete` (not `hasCompletedRunOnce`) when a new run starts. |
+| `healthCheckModel.js` | 112 | Pure domain logic: result shaping, response normalization, dependency-cycle detection, error parsing. No component state. |
+| `healthCheckPresentation.js` | 336 | Pure view formatting: maps results into template-ready flags, CSS classes, summary rows, tooltip anchors, **Found** / **Expected** chip visibility, and comparison caret behavior. |
+| `recordHealthCheck.html` / `.css` | 319 / 1032 | Markup and styling (CSS status icons, tooltips, comparison chips, action-button spinner, summary-pill nubbin host). |
 
 ## 5. Data model (metadata & objects)
 

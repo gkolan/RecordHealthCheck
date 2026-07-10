@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >ListContainsAny: primary value comes from Value To Test as the account BillingState scalar, not from DataQuery__c. The comparison side is the list of distinct contact mailing states. SOQL applicability gate skips when no contacts have a mailing state.</value>
+    >The account&apos;s Billing State must appear among its contacts&apos; mailing states. The value being tested comes from Value To Test, not from the Data Query. The list it is matched against is the distinct mailing states of the account&apos;s contacts. Applies To = SOQL, so the check is skipped when no contact has a mailing state.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

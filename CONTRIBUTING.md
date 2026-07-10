@@ -52,7 +52,7 @@ record data into an issue.
    ```bash
    npm run prettier:verify
    npm run lint
-   npm test                    # 90 Jest tests
+   npm test                    # 106 Jest tests
    npm run test:unit:coverage  # enforces LWC coverage thresholds
    ```
 5. **Commit and push** to your fork:
