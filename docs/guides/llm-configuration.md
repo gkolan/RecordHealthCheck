@@ -1,6 +1,6 @@
 # Record Health Check: LLM Configuration Guide
 
-**Version:** 2026-06-23
+**Version:** 1.2.0 (2026-07-09)
 
 This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Getting Started: Step 4](../installation/getting-started.md#step-4-create-your-first-rule). For every field explained, see the [Configuration Guide](configuration-guide.md). For formal contracts, see the [Design Specification](../reference/record-health-check-design-spec.md).
 
@@ -139,9 +139,9 @@ Minimum fields when creating a new Check Set:
 | `SkippedChecksDisplay__c` | Skipped Checks | Yes | `Show` or `Hide` |
 | `ComparisonDisplay__c` | Found/Expected Display | Yes | `OnDemand` (default), `FailuresOnly`, or `AllRows` |
 | `IsActive__c` | Active | No | `true` |
-| `DebugMode__c` | Show Troubleshooting Details | No | `false` in production. When `true`, user also needs `Record_Health_Check_Debug` (from `Record_Health_Check_Admin`). See [Show Troubleshooting Details guide](debug-mode.md). |
+| `DebugMode__c` | Show Troubleshooting Details | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Details` (from `Record_Health_Check_Admin`). See [Show Troubleshooting Details guide](debug-mode.md). |
 
-**Component wiring:** Lightning record page component property **Check Set Developer Name** (`configName`) must equal Check Set `DeveloperName` exactly.
+**Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `configName`.
 
 ### 4.3 Rule table
 

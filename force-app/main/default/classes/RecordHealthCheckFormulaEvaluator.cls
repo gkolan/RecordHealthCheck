@@ -192,7 +192,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     // "ISBLANK(City)") framed the formula as an expected value and misread.
     if (result.expectedValue == null) {
       result.expectedValue = rule.PassFailFormula__c;
-      result.expectedValueLabel = 'Passes when';
+      result.expectedValueLabel = RecordHealthCheckResult.PASSES_WHEN_LABEL;
       result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
         'Pass/Fail condition',
         rule.PassFailFormula__c,

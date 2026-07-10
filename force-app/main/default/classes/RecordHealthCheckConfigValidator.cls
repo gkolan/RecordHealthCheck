@@ -7,7 +7,7 @@
 public with sharing class RecordHealthCheckConfigValidator {
   public static Boolean isValidObjectApiName(String objectApiName) {
     return String.isNotBlank(objectApiName) &&
-      Schema.getGlobalDescribe().containsKey(objectApiName);
+      RecordHealthCheckDescribeCache.containsObject(objectApiName);
   }
 
   public static Boolean isValidApexPlugin(String className) {

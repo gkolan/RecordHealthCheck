@@ -235,6 +235,7 @@ public with sharing class RecordHealthCheckEngine {
     return result;
   }
 
+  @TestVisible
   private RecordHealthCheckResult copyResult(RecordHealthCheckResult source) {
     RecordHealthCheckResult copy = new RecordHealthCheckResult();
     copy.checkDeveloperName = source.checkDeveloperName;
@@ -244,12 +245,16 @@ public with sharing class RecordHealthCheckEngine {
     copy.message = source.message;
     copy.actualValue = source.actualValue;
     copy.expectedValue = source.expectedValue;
+    copy.expectedValueLabel = source.expectedValueLabel;
     copy.actualValueDetail = source.actualValueDetail;
     copy.expectedValueDetail = source.expectedValueDetail;
     copy.actualProvenance = source.actualProvenance;
     copy.expectedProvenance = source.expectedProvenance;
     copy.detailMessage = source.detailMessage;
     copy.adminDetailMessage = source.adminDetailMessage;
+    copy.actionLabel = source.actionLabel;
+    copy.actionUrl = source.actionUrl;
+    copy.fixInstructions = source.fixInstructions;
     copy.reasonCode = source.reasonCode;
     copy.priority = source.priority;
     copy.durationMs = source.durationMs;
@@ -266,20 +271,31 @@ public with sharing class RecordHealthCheckEngine {
   ) {
     Boolean debugMode = false;
 
-    // 1. Load rule — scoped to the named Check Set and must be active.
-    // Returns null when rule is missing, inactive, or belongs to a different set
-    // preventing evaluation of unauthorized rules via direct Apex invocation.
+    // 1. Load rule — scoped to the named Check Set. Include inactive so we can
+    // tell RULE_INACTIVE apart from RULE_NOT_FOUND (missing / wrong Check Set).
     Record_Health_Check_Rule__mdt rule = configService.loadRule(
       checkDeveloperName,
-      configName
+      configName,
+      false
     );
     if (rule == null) {
-      logger.warn(checkDeveloperName, 'CONFIG_NOT_FOUND', null);
+      logger.warn(checkDeveloperName, 'RULE_NOT_FOUND', null);
       RecordHealthCheckResult r = new RecordHealthCheckResult();
       r.checkDeveloperName = checkDeveloperName;
       r.status = 'UNABLE_TO_EVALUATE';
-      r.reasonCode = 'CONFIG_NOT_FOUND';
-      r.message = 'Check configuration not found. Contact your administrator.';
+      r.reasonCode = 'RULE_NOT_FOUND';
+      r.message = 'This rule was not found.';
+      return r;
+    }
+    if (rule.IsActive__c != true) {
+      logger.warn(checkDeveloperName, 'RULE_INACTIVE', null);
+      RecordHealthCheckResult r = new RecordHealthCheckResult();
+      r.checkDeveloperName = checkDeveloperName;
+      r.label = rule.CheckName__c;
+      r.priority = rule.RunOrder__c;
+      r.status = 'UNABLE_TO_EVALUATE';
+      r.reasonCode = 'RULE_INACTIVE';
+      r.message = 'This rule is inactive.';
       return r;
     }
 
@@ -325,7 +341,7 @@ public with sharing class RecordHealthCheckEngine {
         r.priority = rule.RunOrder__c;
         r.status = 'UNABLE_TO_EVALUATE';
         r.reasonCode = 'CIRCULAR_DEPENDENCY';
-        r.message = 'This check has a circular dependency and cannot be evaluated.';
+        r.message = 'Circular dependency with "' + prereqName + '".';
         return applyCheckSetFlags(r, debugMode);
       }
       Set<String> nextVisited = new Set<String>(visitedChain);
@@ -345,7 +361,7 @@ public with sharing class RecordHealthCheckEngine {
           circular.priority = rule.RunOrder__c;
           circular.status = 'UNABLE_TO_EVALUATE';
           circular.reasonCode = 'CIRCULAR_DEPENDENCY';
-          circular.message = 'This check has a circular dependency and cannot be evaluated.';
+          circular.message = 'Circular dependency with "' + prereqName + '".';
           return applyCheckSetFlags(circular, debugMode);
         }
         logger.debug(
@@ -362,7 +378,7 @@ public with sharing class RecordHealthCheckEngine {
         r.priority = rule.RunOrder__c;
         r.status = 'SKIPPED';
         r.reasonCode = 'DEPENDENCY_NOT_PASSED';
-        r.message = 'This check was skipped because a required check did not pass.';
+        r.message = 'Skipped because "' + prereqName + '" did not pass.';
         return applyCheckSetFlags(r, debugMode);
       }
     }
@@ -506,8 +522,31 @@ public with sharing class RecordHealthCheckEngine {
     RecordHealthCheckResult result,
     Boolean debugMode
   ) {
+    applyPassesWhenEntitlement(result);
     applyDetailProvenance(result);
     return applyDebugMode(result, debugMode);
+  }
+
+  // A Formula check with no display formulas echoes its raw pass/fail condition
+  // as a "Passes when" line on the Expected side. That is a technical explanation
+  // (formula text, field API names), not business evidence, so it is Advanced-tier
+  // only: without Record_Health_Check_View_Details the line is cleared and the
+  // business user sees the failure message (plus any display-formula Found/Expected
+  // chips, which stay ungated). Only the raw-condition echo is gated — an Expected
+  // value produced by ExpectedValueFormula__c carries no expectedValueLabel and is
+  // left untouched.
+  @TestVisible
+  private RecordHealthCheckResult applyPassesWhenEntitlement(
+    RecordHealthCheckResult result
+  ) {
+    if (
+      result.expectedValueLabel == RecordHealthCheckResult.PASSES_WHEN_LABEL &&
+      !RecordHealthCheckAccess.canViewDetails()
+    ) {
+      result.expectedValue = null;
+      result.expectedValueLabel = null;
+    }
+    return result;
   }
 
   // Renders the structured provenance the evaluators captured into the two
@@ -599,20 +638,25 @@ public with sharing class RecordHealthCheckEngine {
       result.checkDeveloperName = checkDeveloperName;
       result.status = 'UNABLE_TO_EVALUATE';
       result.reasonCode = 'CONFIG_INACTIVE';
-      result.message = 'The health check configuration is inactive.';
+      result.message = 'Check Set "' + configName + '" is inactive.';
       outcome.result = result;
       return outcome;
     }
 
     String baseObj = (String) checkSetRef.get('ObjectApiName__c');
-    String recordObj = recordId.getSObjectType().getDescribe().getName();
+    String recordObj = RecordHealthCheckDescribeCache.objectApiName(recordId);
     if (String.isNotBlank(baseObj) && !recordObj.equalsIgnoreCase(baseObj)) {
       // Logged by the caller (doEvaluate) so all logging lives in one layer.
       RecordHealthCheckResult result = new RecordHealthCheckResult();
       result.checkDeveloperName = checkDeveloperName;
       result.status = 'UNABLE_TO_EVALUATE';
       result.reasonCode = 'OBJECT_MISMATCH';
-      result.message = 'Record type does not match the health check configuration.';
+      result.message =
+        'Check Set is for "' +
+        baseObj +
+        '", but this record is "' +
+        recordObj +
+        '".';
       outcome.result = result;
     }
     return outcome;
@@ -801,7 +845,7 @@ public with sharing class RecordHealthCheckEngine {
     // WITH USER_MODE enforces FLS and CRUD for the running user.
     // Exceptions (inaccessible fields, object access denied) propagate to
     // doEvaluate, which maps them to RECORD_NOT_ACCESSIBLE.
-    String objectName = recordId.getSObjectType().getDescribe().getName();
+    String objectName = RecordHealthCheckDescribeCache.objectApiName(recordId);
     Set<String> fields = collectRecordFields(rule, recordId.getSObjectType());
     List<String> fieldList = new List<String>(fields);
     fieldList.sort();
@@ -1049,7 +1093,10 @@ public with sharing class RecordHealthCheckEngine {
       return;
     }
     Schema.SObjectField field = getFieldCaseInsensitive(fieldMap, fieldName);
-    if (field != null && field.getDescribe().isAccessible()) {
+    if (
+      field != null &&
+      RecordHealthCheckDescribeCache.describeField(field).isAccessible()
+    ) {
       fields.add(fieldName);
     }
   }
@@ -1075,8 +1122,9 @@ public with sharing class RecordHealthCheckEngine {
     Schema.SObjectType currentType = objectType;
     List<String> relationshipParts = new List<String>();
     for (Integer i = 0; i < parts.size(); i++) {
-      Map<String, Schema.SObjectField> currentFields = currentType.getDescribe()
-        .fields.getMap();
+      Map<String, Schema.SObjectField> currentFields = RecordHealthCheckDescribeCache.fieldMap(
+        currentType
+      );
       if (i == parts.size() - 1) {
         Schema.SObjectField terminal = getFieldCaseInsensitive(
           currentFields,
@@ -1086,7 +1134,7 @@ public with sharing class RecordHealthCheckEngine {
           return null;
         }
         FieldPathDescribe out = new FieldPathDescribe();
-        out.describe = terminal.getDescribe();
+        out.describe = RecordHealthCheckDescribeCache.describeField(terminal);
         out.ownerType = currentType;
         out.relationshipPrefix = relationshipParts.isEmpty()
           ? ''
@@ -1100,11 +1148,14 @@ public with sharing class RecordHealthCheckEngine {
       );
       if (
         relationshipField == null ||
-        !relationshipField.getDescribe().isAccessible()
+        !RecordHealthCheckDescribeCache.describeField(relationshipField)
+          .isAccessible()
       ) {
         return null;
       }
-      List<Schema.SObjectType> referenceTypes = relationshipField.getDescribe()
+      List<Schema.SObjectType> referenceTypes = RecordHealthCheckDescribeCache.describeField(
+          relationshipField
+        )
         .getReferenceTo();
       if (referenceTypes.isEmpty()) {
         return null;
@@ -1147,7 +1198,9 @@ public with sharing class RecordHealthCheckEngine {
     String relName
   ) {
     for (Schema.SObjectField candidate : fieldMap.values()) {
-      Schema.DescribeFieldResult description = candidate.getDescribe();
+      Schema.DescribeFieldResult description = RecordHealthCheckDescribeCache.describeField(
+        candidate
+      );
       if (
         description.getRelationshipName() != null &&
         description.getRelationshipName().equalsIgnoreCase(relName)

@@ -189,7 +189,7 @@ export class HealthCheckRunner {
           check,
           "SKIPPED",
           "DEPENDENCY_NOT_IN_RUN",
-          "This check was skipped because its required check was not included in this run."
+          `Skipped because required check "${check.dependsOnCheckDeveloperName}" was not included in this run.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
@@ -203,11 +203,14 @@ export class HealthCheckRunner {
       const prereqResult =
         this._resultBuffer[check.dependsOnCheckDeveloperName];
       if (!prereqResult || prereqResult.status !== "PASS") {
+        const prereqLabel =
+          (dependencyCheck && dependencyCheck.label) ||
+          check.dependsOnCheckDeveloperName;
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
           "DEPENDENCY_NOT_PASSED",
-          "This check was skipped because a required check did not pass."
+          `Skipped because required check "${prereqLabel}" did not pass.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
@@ -232,7 +235,7 @@ export class HealthCheckRunner {
     let result;
     try {
       result = await evaluateCheck({
-        configName: this.host.configName,
+        configName: this.host.checkSetName,
         checkDeveloperName: check.developerName,
         recordId: this.host.recordId,
         runId: this._runId

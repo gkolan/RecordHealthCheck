@@ -373,13 +373,13 @@ public with sharing class RecordHealthCheckComparatorEngine {
     if (value instanceof Boolean) {
       return '"' + (((Boolean) value) ? 'Yes' : 'No') + '"';
     }
+    if (value instanceof Date) {
+      return '"' + ((Date) value).format() + '"';
+    }
     if (value instanceof Datetime) {
       // .format() honors the user's locale and time zone; String.valueOf would
       // emit a raw GMT "2026-07-04 17:30:00".
       return '"' + ((Datetime) value).format() + '"';
-    }
-    if (value instanceof Date) {
-      return '"' + ((Date) value).format() + '"';
     }
 
     String s = String.valueOf(value);

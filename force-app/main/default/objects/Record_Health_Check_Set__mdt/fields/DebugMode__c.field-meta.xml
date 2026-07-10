@@ -3,7 +3,7 @@
     <fullName>DebugMode__c</fullName>
     <defaultValue>false</defaultValue>
     <description
-  >When ON, shows extra troubleshooting detail on the health check card and in the browser console — but only for users with the Record Health Check Debug custom permission (assign the Record Health Check Admin permission set). Everyone else sees the normal panel. Turn OFF when troubleshooting is finished.</description>
+  >When ON, shows extra troubleshooting detail on the health check card and in the browser console — but only for users with the Record Health Check View Details custom permission (assign the Record Health Check Admin permission set). Everyone else sees the normal panel. Turn OFF when troubleshooting is finished.</description>
     <externalId>false</externalId>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <label>Show Troubleshooting Details</label>

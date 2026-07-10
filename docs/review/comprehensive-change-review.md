@@ -1,4 +1,7 @@
-# Comprehensive Change Review — 2026-07-04
+# Comprehensive Change Review — 2026-07-04 (historical)
+
+> [!WARNING]
+> **Historical document — pre-v1.2.0.** This review describes the v1.1.0 branch where provenance appeared inline on the card. **v1.2.0 moved provenance to browser-console diagnostics only.** For the current release contract, see [CHANGELOG](../../CHANGELOG.md), [design spec](../reference/record-health-check-design-spec.md), and [debug mode](../guides/debug-mode.md).
 
 Independent review of the full working tree (~244 changed files: Apex engine, LWC, Custom Metadata, specs, guides, and example library reorg). **No fixes were applied**; this document records findings only.
 

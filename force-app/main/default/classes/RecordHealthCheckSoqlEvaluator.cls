@@ -714,16 +714,20 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     List<String> parts = fieldPath.split('\\.');
     Schema.SObjectType currentType = record.getSObjectType();
     for (Integer i = 0; i < parts.size(); i++) {
-      Map<String, Schema.SObjectField> fieldMap = currentType.getDescribe()
-        .fields.getMap();
+      Map<String, Schema.SObjectField> fieldMap = RecordHealthCheckDescribeCache.fieldMap(
+        currentType
+      );
       if (i == parts.size() - 1) {
         Schema.SObjectField field = fieldMap.get(parts[i]);
         return field != null &&
-          field.getDescribe().getType() == Schema.DisplayType.MULTIPICKLIST;
+          RecordHealthCheckDescribeCache.describeField(field).getType() ==
+          Schema.DisplayType.MULTIPICKLIST;
       }
       Schema.SObjectField relationshipField;
       for (Schema.SObjectField candidate : fieldMap.values()) {
-        Schema.DescribeFieldResult description = candidate.getDescribe();
+        Schema.DescribeFieldResult description = RecordHealthCheckDescribeCache.describeField(
+          candidate
+        );
         if (
           description.getRelationshipName() != null &&
           description.getRelationshipName().equalsIgnoreCase(parts[i])
@@ -734,8 +738,9 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       }
       if (relationshipField == null)
         return false;
-      List<Schema.SObjectType> referenceTypes = relationshipField
-        .getDescribe()
+      List<Schema.SObjectType> referenceTypes = RecordHealthCheckDescribeCache.describeField(
+          relationshipField
+        )
         .getReferenceTo();
       if (referenceTypes.isEmpty())
         return false;

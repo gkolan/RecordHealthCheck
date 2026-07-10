@@ -11,12 +11,7 @@
         <span class="rhc-error-banner__title">{errorBannerTitle}</span>
         <span class="rhc-error-banner__msg">{componentError}</span>
         <template if:true={isSetupError}>
-          <span class="rhc-error-banner__hint">
-            To find valid values, go to Setup &rarr; Custom Metadata Types
-            &rarr;
-            <strong>Record Health Check Set</strong> &rarr; Manage Records, and
-            copy the Developer Name of the set you want to use.
-          </span>
+          <span class="rhc-error-banner__hint"> {setupErrorHint} </span>
         </template>
       </div>
     </div>
@@ -66,8 +61,8 @@
                 <template if:true={showLimitNotice}>
                   <lightning-badge
                     class="rhc-check-pill rhc-check-pill--warn"
-                    label="First 25 shown"
-                    title="This Check Set has more than 25 active rules. Only the first 25 by Priority, then DeveloperName, are included in this run."
+                    label={limitNoticeLabel}
+                    title={limitNoticeTitle}
                   ></lightning-badge>
                 </template>
               </template>
@@ -77,13 +72,15 @@
           <template if:true={displayDescription}>
             <p class="rhc-header__desc">{displayDescription}</p>
           </template>
+          <template if:true={showInactiveRulesNotice}>
+            <p class="rhc-inactive-rules" role="status">
+              {inactiveRulesNotice}
+            </p>
+          </template>
         </div>
 
         <template if:true={showPreRunHint}>
-          <p class="rhc-pre-run-hint" role="status">
-            Click <strong>Run</strong> to evaluate this record against
-            {checkCountPhrase}.
-          </p>
+          <p class="rhc-pre-run-hint" role="status">{preRunHintText}</p>
         </template>
 
         <ul class="rhc-list" role="list">
@@ -183,15 +180,11 @@
                           data-clamptoggle
                           hidden
                           aria-expanded="false"
+                          aria-label="Show more"
                           onclick={handleToggleValue}
                         >
-                          Show more
+                          ...
                         </button>
-                        <template if:true={check.showActualDetail}>
-                          <span class="rhc-cmp__source"
-                            >{check.actualValueDetail}</span
-                          >
-                        </template>
                       </span>
                     </template>
                     <template if:true={check.showExpected}>
@@ -212,15 +205,11 @@
                           data-clamptoggle
                           hidden
                           aria-expanded="false"
+                          aria-label="Show more"
                           onclick={handleToggleValue}
                         >
-                          Show more
+                          ...
                         </button>
-                        <template if:true={check.showExpectedDetail}>
-                          <span class="rhc-cmp__source"
-                            >{check.expectedValueDetail}</span
-                          >
-                        </template>
                       </span>
                     </template>
                   </span>
@@ -243,15 +232,11 @@
                           data-clamptoggle
                           hidden
                           aria-expanded="false"
+                          aria-label="Show more"
                           onclick={handleToggleValue}
                         >
-                          Show more
+                          ...
                         </button>
-                        <template if:true={check.showActualDetail}>
-                          <span class="rhc-cmp__source"
-                            >{check.actualValueDetail}</span
-                          >
-                        </template>
                       </span>
                     </template>
                     <template if:true={check.showExpandedExpected}>
@@ -272,15 +257,11 @@
                           data-clamptoggle
                           hidden
                           aria-expanded="false"
+                          aria-label="Show more"
                           onclick={handleToggleValue}
                         >
-                          Show more
+                          ...
                         </button>
-                        <template if:true={check.showExpectedDetail}>
-                          <span class="rhc-cmp__source"
-                            >{check.expectedValueDetail}</span
-                          >
-                        </template>
                       </span>
                     </template>
                   </div>
@@ -300,6 +281,10 @@
             </li>
           </template>
         </ul>
+
+        <template if:true={showHiddenResultsNotice}>
+          <p class="rhc-hidden-results" role="status">{hiddenResultsNotice}</p>
+        </template>
 
         <template if:true={showSummaryStats}>
           <div class="rhc-stats-bar">

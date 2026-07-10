@@ -80,7 +80,7 @@ sf project deploy start --manifest manifest/package-core.xml                    
 sf project deploy start --manifest manifest/package-Account_Examples_Compare_Two_Queries.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Compare_Two_Queries`. See the [example catalog](../../index.md#sample-check-set-packages) for every Check Set and what it contains.
+Set the component's **Check Set** to `Account_Examples_Compare_Two_Queries`. See the [example catalog](../../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

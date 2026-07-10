@@ -34,8 +34,8 @@ Source: [`RecordHealthCheckRule.cls`](../../force-app/main/default/classes/Recor
 | `status` | **Yes** | `PASS` or `FAIL` for normal checks |
 | `actualValue` | **Required for `PASS` / `FAIL`** | **Found** comparison value. Blank determinate Apex results are rejected with `APEX_EVALUATOR_ERROR`. |
 | `expectedValue` | **Required for `PASS` / `FAIL`** | **Expected** comparison value. Blank determinate Apex results are rejected with `APEX_EVALUATOR_ERROR`. |
-| `actualProvenance` | Optional | Internal detail for the Found side; rendered only as `actualValueDetail` when the viewer has `Record_Health_Check_View_Details` |
-| `expectedProvenance` | Optional | Internal detail for the Expected side; rendered only as `expectedValueDetail` when the viewer has `Record_Health_Check_View_Details` |
+| `actualProvenance` | Optional | Internal detail for the Found side; surfaced as `actualValueDetail` in the nested `[RHC] Source detail` **browser console** group, never on the card. See [Troubleshooting Details](../guides/debug-mode.md#what-you-see-in-the-browser-console) for the conditions that reveal it. |
+| `expectedProvenance` | Optional | Internal detail for the Expected side; surfaced as `expectedValueDetail` in the same console group, under the same conditions. |
 | `message` | Optional | Used on `FAIL` when non-blank; else metadata message |
 
 Dispatcher sets `label`, `severity`, `durationMs`, etc. Details: [Apex plugin reference 6](plugin-reference.md#6-returning-recordhealthcheckresult).

@@ -6,30 +6,75 @@
 @isTest
 private class RecordHealthCheckSecurityAndOpsTest {
   @isTest
-  static void debugDetailRequiresCustomPermission() {
+  static void debugDetailRequiresViewDetailsPermission() {
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.detailMessage = 'sensitive query detail';
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
-    RecordHealthCheckAccess.debugPermissionOverride = false;
+    // Troubleshooting detail now shares the single Advanced-tier grant with
+    // provenance; canViewDebugDetails() delegates to canViewDetails().
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
     System.assertEquals(false, RecordHealthCheckAccess.canViewDebugDetails());
     System.assertEquals(
       null,
       engine.applyDebugMode(result, true).adminDetailMessage
     );
 
-    RecordHealthCheckAccess.debugPermissionOverride = true;
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
     System.assertEquals(true, RecordHealthCheckAccess.canViewDebugDetails());
     System.assertEquals(
       'sensitive query detail',
       engine.applyDebugMode(result, true).adminDetailMessage
     );
-    RecordHealthCheckAccess.debugPermissionOverride = null;
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
     System.assertNotEquals(
       null,
       RecordHealthCheckAccess.canViewDebugDetails(),
       'The platform permission check must always return a Boolean.'
     );
+  }
+
+  @isTest
+  static void passesWhenLineRequiresViewDetailsPermission() {
+    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
+
+    // Not entitled → the raw pass/fail condition is cleared so business users see
+    // the failure message only, not the formula text.
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
+    RecordHealthCheckResult gated = engine.applyPassesWhenEntitlement(
+      newPassesWhenResult()
+    );
+    System.assertEquals(null, gated.expectedValue);
+    System.assertEquals(null, gated.expectedValueLabel);
+
+    // Entitled → the Passes when line survives untouched.
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
+    RecordHealthCheckResult shown = engine.applyPassesWhenEntitlement(
+      newPassesWhenResult()
+    );
+    System.assertEquals('NOT(ISBLANK(BillingCity))', shown.expectedValue);
+    System.assertEquals(
+      RecordHealthCheckResult.PASSES_WHEN_LABEL,
+      shown.expectedValueLabel
+    );
+
+    // A business Expected (display formula: no expectedValueLabel) is never gated.
+    RecordHealthCheckResult businessExpected = new RecordHealthCheckResult();
+    businessExpected.expectedValue = '"50,000"';
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
+    RecordHealthCheckResult keep = engine.applyPassesWhenEntitlement(
+      businessExpected
+    );
+    System.assertEquals('"50,000"', keep.expectedValue);
+
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
+  }
+
+  private static RecordHealthCheckResult newPassesWhenResult() {
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.expectedValue = 'NOT(ISBLANK(BillingCity))';
+    result.expectedValueLabel = RecordHealthCheckResult.PASSES_WHEN_LABEL;
+    return result;
   }
 
   @isTest

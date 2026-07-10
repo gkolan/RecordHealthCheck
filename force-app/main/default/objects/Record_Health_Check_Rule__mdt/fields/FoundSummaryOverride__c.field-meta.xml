@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>FoundSummaryOverride__c</fullName>
-    <label>Advanced: Found Summary Text</label>
+    <label>Advanced: Found Summary (Text)</label>
     <description
-  >Optional. Overrides the auto-generated "N of M records did not pass" Found line on a multi-row (Every record must pass) query check. Supports the count tokens {!failCount} and {!totalCount} plus {!FieldName} record tokens. Example: {!failCount} of {!totalCount} contacts missing email.</description>
+  >Optional. Plain text (not a formula) that overrides the auto-generated "N of M records did not pass" Found line on a multi-row (Every record must pass) query check. Supports the count tokens {!failCount} and {!totalCount} plus {!FieldName} record tokens. Example: {!failCount} of {!totalCount} contacts missing email.</description>
     <type>Text</type>
     <length>255</length>
     <inlineHelpText
-  >Optional friendly wording for the Found line on a multi-row check. Use {!failCount} and {!totalCount}, for example: {!failCount} of {!totalCount} contacts missing email.</inlineHelpText>
+  >Plain text (not a formula) for the Found line on an Every-record-must-pass check. Tokens: {!failCount}, {!totalCount}, {!FieldName}. Example: {!failCount} of {!totalCount} contacts missing email.</inlineHelpText>
     <required>false</required>
 </CustomField>

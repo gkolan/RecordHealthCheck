@@ -340,7 +340,7 @@ See [Design spec 9 comparison display](../reference/record-health-check-design-s
 
 ### Provenance detail (optional)
 
-When the check can explain where a value came from, populate `actualProvenance` / `expectedProvenance` with `RecordHealthCheckProvenance.Detail`. The engine converts those internal details to `actualValueDetail` / `expectedValueDetail` only for users with `Record_Health_Check_View_Details`; it is independent of Show Troubleshooting Details.
+When the check can explain where a value came from, populate `actualProvenance` / `expectedProvenance` with `RecordHealthCheckProvenance.Detail`. The engine converts those internal details to `actualValueDetail` / `expectedValueDetail` only for users with `Record_Health_Check_View_Details`. They never render on the Lightning card; they surface in the F12 `[RHC] Source detail` console group, which the LWC emits only when **Show Troubleshooting Details** is on for the Check Set. So the permission decides *whether the strings exist*, and the flag decides *whether anyone sees them* — you need both. See [Troubleshooting Details](../guides/debug-mode.md#what-you-see-in-the-browser-console).
 
 ```apex
 result.actualProvenance = new RecordHealthCheckProvenance.Detail(

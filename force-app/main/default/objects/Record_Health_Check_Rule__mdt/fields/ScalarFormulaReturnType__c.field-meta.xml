@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ScalarFormulaReturnType__c</fullName>
-    <label>Advanced: Formula Value Type</label>
+    <label>Advanced: Formula Result Type</label>
     <description
-  >Optional. Tells Record Health Check what kind of value a formula returns when the formula is used as a comparison value or list-check value. Leave Auto unless you know the formula returns a specific type.</description>
+  >Optional. Tells Record Health Check what type a formula returns. Applies to the Found/Expected display formulas and to formula-based comparison and list-check values. Leave Auto unless you know the formula's return type; declaring it saves formula calls, but Auto always resolves correctly.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -42,6 +42,6 @@
         </valueSetDefinition>
     </valueSet>
     <inlineHelpText
-  >Leave Auto unless you know the formula returns a specific type. Only applies to formula-based comparison values and list-check values.</inlineHelpText>
+  >The type a formula returns. Applies to Found/Expected display formulas and to formula comparison and list values. Leave Auto unless you know the type; Auto always works but uses more formula calls.</inlineHelpText>
     <required>false</required>
 </CustomField>
