@@ -9,8 +9,13 @@ const OUTCOME_STYLES = {
   error: { label: "Failed", modifier: "error", message: true },
   warning: { label: "Warning", modifier: "warning", message: true },
   info: { label: "Info", modifier: "info", message: true },
-  skipped: { label: "Skipped", modifier: "skipped", message: false },
-  unable: { label: "Unable to Check", modifier: "unable", message: true }
+  skipped: { label: "Skipped", modifier: "skipped", message: true },
+  unable: { label: "Unable to Check", modifier: "unable", message: true },
+  systemError: {
+    label: "System Error",
+    modifier: "system-error",
+    message: true
+  }
 };
 
 // Summary pills reuse the same status-icon CSS modifiers as rows.
@@ -24,7 +29,12 @@ const SUMMARY_ROWS = [
   },
   { key: "info", suffix: "info", label: (n) => `${n} Info` },
   { key: "skip", suffix: "skipped", label: (n) => `${n} Skipped` },
-  { key: "unable", suffix: "unable", label: (n) => `${n} Unable` }
+  { key: "unable", suffix: "unable", label: (n) => `${n} Unable` },
+  {
+    key: "systemError",
+    suffix: "system-error",
+    label: (n) => `${n} ${n === 1 ? "System Error" : "System Errors"}`
+  }
 ];
 
 /** Split admin-authored messages on newlines for stacked display in the template. */
@@ -74,8 +84,9 @@ function classifyOutcome(status, severity) {
     case "SKIPPED":
       return "skipped";
     case "UNABLE_TO_EVALUATE":
-    case "ERROR":
       return "unable";
+    case "ERROR":
+      return "systemError";
     default:
       return null;
   }
@@ -145,15 +156,6 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
   const expectedKeyLabel =
     (isResolved && result.expectedValueLabel) || "Expected";
 
-  // Provenance is permission-gated on the server; null *Detail means not entitled.
-  const actualValueDetail =
-    isResolved && result.actualValueDetail != null
-      ? result.actualValueDetail
-      : null;
-  const expectedValueDetail =
-    isResolved && result.expectedValueDetail != null
-      ? result.expectedValueDetail
-      : null;
   const showInlineComparison =
     isResolved && hasValues && (!isPass || mode === "AllRows");
 
@@ -170,16 +172,11 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
   const showExpected = showInlineComparison && expectedValue != null;
 
   // Expanded region: values only when they were not already inline. Provenance
-  // source notes attach to whichever value row is currently visible instead of
-  // rendering as a second labeled section.
+  // stays out of the card view and is logged through run diagnostics instead.
   const showExpandedActual =
     detailExpanded && valuesBehindCaret && actualValue != null;
   const showExpandedExpected =
     detailExpanded && valuesBehindCaret && expectedValue != null;
-  const showActualDetail =
-    actualValueDetail != null && (showActual || showExpandedActual);
-  const showExpectedDetail =
-    expectedValueDetail != null && (showExpected || showExpandedExpected);
 
   // Guided remediation: a read-only deep link and/or fix instructions the server
   // populates only on FAIL (actionUrl is blank on any other status). Instructions
@@ -223,9 +220,7 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     comparisonAudible && actualValue != null ? `Found ${actualValue}` : null,
     comparisonAudible && expectedValue != null
       ? `${expectedKeyLabel} ${expectedValue}`
-      : null,
-    showActualDetail ? `Source ${actualValueDetail}` : null,
-    showExpectedDetail ? `Source ${expectedValueDetail}` : null
+      : null
   ]
     .filter(Boolean)
     .join(". ");
@@ -266,8 +261,6 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     actualValue,
     expectedValue,
     expectedKeyLabel,
-    actualValueDetail,
-    expectedValueDetail,
     showInlineComparison,
     showActual,
     showExpected,
@@ -285,8 +278,6 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     detailExpanded,
     showExpandedActual,
     showExpandedExpected,
-    showActualDetail,
-    showExpectedDetail,
     adminDetailMessage,
     showAdminDetail,
     debugMeta,
@@ -303,7 +294,8 @@ export function buildSummaryStats(checks, tooltipKeys = new Set()) {
     warn: [],
     info: [],
     skip: [],
-    unable: []
+    unable: [],
+    systemError: []
   };
   for (const c of checks) {
     if (!c.result) continue;
@@ -314,6 +306,7 @@ export function buildSummaryStats(checks, tooltipKeys = new Set()) {
     else if (outcome === "warning") key = "warn";
     else if (outcome === "info") key = "info";
     else if (outcome === "skipped") key = "skip";
+    else if (outcome === "systemError") key = "systemError";
     else key = "unable";
     buckets[key].push(c.label);
   }

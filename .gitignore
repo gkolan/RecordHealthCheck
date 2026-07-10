@@ -50,6 +50,8 @@ $RECYCLE.BIN/
 tasks/
 slides_build/
 *.pptx
+docs/slides/
+docs/examples/non-profit-cloud/
 project-homepage.html
 project-homepage copy.html
 PUBLISHING.md

@@ -20,9 +20,27 @@ private class RecordHealthCheckEngineTest {
     Test.stopTest();
 
     System.assertEquals('UNABLE_TO_EVALUATE', result.status);
-    System.assertEquals('CONFIG_NOT_FOUND', result.reasonCode);
+    System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
     System.assertEquals('Does_Not_Exist', result.checkDeveloperName);
     System.assertNotEquals(null, result.durationMs);
+  }
+
+  @isTest
+  static void evaluateReturnsUnableWhenRuleIsInactive() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+
+    Test.startTest();
+    RecordHealthCheckResult result = new RecordHealthCheckEngine()
+      .evaluate(
+        'Account_Examples_Apex',
+        'Approval_No_Inactive_Approvers',
+        accountRecord.Id
+      );
+    Test.stopTest();
+
+    System.assertEquals('UNABLE_TO_EVALUATE', result.status);
+    System.assertEquals('RULE_INACTIVE', result.reasonCode);
+    System.assertEquals('This rule is inactive.', result.message);
   }
 
   @isTest
@@ -221,7 +239,7 @@ private class RecordHealthCheckEngineTest {
       );
 
     System.assertEquals('UNABLE_TO_EVALUATE', result.status);
-    System.assertEquals('CONFIG_NOT_FOUND', result.reasonCode);
+    System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
   }
 
   @isTest
@@ -553,6 +571,65 @@ private class RecordHealthCheckEngineTest {
     );
     System.assertEquals('Open account', result.actionLabel);
     System.assertEquals('Review the record.', result.fixInstructions);
+  }
+
+  @isTest
+  static void copyResultPreservesRemediationAndPassesWhenFields() {
+    RecordHealthCheckResult source = new RecordHealthCheckResult();
+    source.checkDeveloperName = 'Cached_Check';
+    source.status = 'FAIL';
+    source.expectedValue = 'NOT(ISBLANK(BillingCity))';
+    source.expectedValueLabel = RecordHealthCheckResult.PASSES_WHEN_LABEL;
+    source.actionLabel = 'Open account';
+    source.actionUrl = '/lightning/r/Account/001xx/view';
+    source.fixInstructions = 'Review the record.';
+
+    RecordHealthCheckResult copy = new RecordHealthCheckEngine()
+      .copyResult(source);
+
+    System.assertEquals(source.expectedValueLabel, copy.expectedValueLabel);
+    System.assertEquals(source.actionLabel, copy.actionLabel);
+    System.assertEquals(source.actionUrl, copy.actionUrl);
+    System.assertEquals(source.fixInstructions, copy.fixInstructions);
+  }
+
+  @isTest
+  static void dependencyCacheHitPreservesRemediationFields() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    String configName = 'Account_Data_Quality';
+    String checkName = 'Account_DQ_BillingCity';
+    String cacheKey = configName + '|' + accountRecord.Id + '|' + checkName;
+
+    RecordHealthCheckResult cached = new RecordHealthCheckResult();
+    cached.checkDeveloperName = checkName;
+    cached.status = 'FAIL';
+    cached.expectedValueLabel = RecordHealthCheckResult.PASSES_WHEN_LABEL;
+    cached.actionLabel = 'Fix';
+    cached.actionUrl = '/lightning/o/Account/home';
+    cached.fixInstructions = 'Do it';
+
+    RecordHealthCheckEngine.transactionResultCache.put(cacheKey, cached);
+    RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
+      'cache-hit-test',
+      configName,
+      accountRecord.Id
+    );
+
+    RecordHealthCheckResult hit = new RecordHealthCheckEngine()
+      .doEvaluate(
+        configName,
+        checkName,
+        accountRecord.Id,
+        new Set<String>(),
+        logger
+      );
+
+    System.assertEquals(cached.expectedValueLabel, hit.expectedValueLabel);
+    System.assertEquals(cached.actionLabel, hit.actionLabel);
+    System.assertEquals(cached.actionUrl, hit.actionUrl);
+    System.assertEquals(cached.fixInstructions, hit.fixInstructions);
+
+    RecordHealthCheckEngine.transactionResultCache.clear();
   }
 
   @isTest

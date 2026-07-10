@@ -40,7 +40,9 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
 
     // Graceful degradation: the approval object is absent (Advanced Approvals
     // not installed, or a custom object name was mistyped).
-    if (!Schema.getGlobalDescribe().containsKey(settings.approvalObject)) {
+    if (
+      !RecordHealthCheckDescribeCache.containsObject(settings.approvalObject)
+    ) {
       result.status = 'UNABLE_TO_EVALUATE';
       result.reasonCode = 'OBJECT_NOT_FOUND';
       result.detailMessage =

@@ -127,7 +127,7 @@ result.message = buildMessage(inactiveNames, settings.maxNames);   // "blocked b
 - **Graceful managed-package dependency**: `Schema.getGlobalDescribe().containsKey(...)` plus dynamic SOQL means the class deploys and runs in any org; without the package it returns `UNABLE_TO_EVALUATE`, never a false PASS.
 - **Plugin-authored message**: the class sets `result.message` to list the offending approvers; the dispatcher keeps it because it is non-blank.
 - **Found / Expected from Apex**: `actualValue` and `expectedValue` populate the comparison chips the same way as a Query check, on pass and fail.
-- **Provenance from Apex**: `actualProvenance` and `expectedProvenance` explain the inactive count and allowed count when the viewer has `Record_Health_Check_View_Details`.
+- **Provenance from Apex**: `actualProvenance` and `expectedProvenance` explain the inactive count and allowed count in the F12 `[RHC] Source detail` console group — see [Troubleshooting Details](../../guides/debug-mode.md#what-you-see-in-the-browser-console).
 - **Configuration over code**: object, lookup, status, and the name cap are all JSON parameters.
 
 > [!NOTE]
@@ -142,7 +142,7 @@ sf project deploy start --manifest manifest/package-core.xml                   #
 sf project deploy start --manifest manifest/package-Account_Examples_Apex.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. Then edit `Approval_No_Inactive_Approvers`, confirm the Apex Settings field names against the target org, and check **Active**. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
+Set the component's **Check Set** to `Account_Examples_Apex`. Then edit `Approval_No_Inactive_Approvers`, confirm the Apex Settings field names against the target org, and check **Active**. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

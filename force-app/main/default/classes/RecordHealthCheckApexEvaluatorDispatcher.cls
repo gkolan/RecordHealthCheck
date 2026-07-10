@@ -120,10 +120,25 @@ public with sharing class RecordHealthCheckApexEvaluatorDispatcher {
       }
     }
 
+    // A null recordId means there is no record context, so an Apex evaluator has
+    // nothing to run against. Guard explicitly: the engine guarantees a non-null
+    // recordId in the normal flow, but deriving objectApiName is now null-safe, so
+    // without this a plugin would run against a passed-in record with a null
+    // context recordId instead of failing cleanly.
+    if (recordId == null) {
+      result.status = 'ERROR';
+      result.reasonCode = 'APEX_EVALUATOR_ERROR';
+      result.message = safeCannotEvaluateMessage(rule);
+      result.detailMessage = 'No record context was provided to the Apex evaluator.';
+      return result;
+    }
+
     // 3. Build context and invoke
     RecordHealthCheckContext context = new RecordHealthCheckContext();
     context.recordId = recordId;
-    context.objectApiName = recordId.getSObjectType().getDescribe().getName();
+    context.objectApiName = RecordHealthCheckDescribeCache.objectApiName(
+      recordId
+    );
     context.record = record;
     context.parameters = parameters;
     context.checkDeveloperName = rule.DeveloperName;

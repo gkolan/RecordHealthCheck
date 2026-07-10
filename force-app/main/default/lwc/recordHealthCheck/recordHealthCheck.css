@@ -235,6 +235,23 @@
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
   color: var(--slds-g-color-neutral-base-40, #706e6b);
 }
+.rhc-stat--system-error {
+  background: var(--slds-g-color-error-base-90, #fddde3);
+  color: var(--slds-g-color-error-base-40, #ba0517);
+}
+
+/* Shown when Passed/Skipped Hide leaves the list empty after a completed run. */
+.rhc-hidden-results,
+.rhc-inactive-rules {
+  margin: 0;
+  padding: 0.75rem 1rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--slds-g-color-neutral-base-30, #514f4d);
+}
+.rhc-inactive-rules {
+  padding-top: 0.375rem;
+}
 
 /* ── Summary stats bar ─────────────────────────────────────────────────────── */
 .rhc-stats-bar {
@@ -300,13 +317,14 @@
   z-index: 101;
 }
 
-/* Drive the nubbin from the anchor's own :hover/:focus-visible (it is a later
+/* Drive the nubbin from the anchor's own dwell/focus-visible state (it is a later
    sibling), mirroring the rule row's ::before, so the arrow and the bubble fade in
-   together with the same dwell delay instead of on a separate pill-hover timer. */
-.rhc-tooltip-anchor--footer:hover ~ .rhc-stat__nubbin-host .rhc-stat__nubbin {
+   together instead of on a separate pill-hover timer. */
+.rhc-tooltip-anchor--footer.rhc-tooltip-anchor--dwell
+  ~ .rhc-stat__nubbin-host
+  .rhc-stat__nubbin {
   opacity: 1;
   transform: translateY(0) rotate(45deg);
-  transition-delay: var(--rhc-tooltip-show-delay);
 }
 
 .rhc-tooltip-anchor--footer:focus-visible
@@ -367,6 +385,9 @@
 .rhc-row__accent--unable,
 .rhc-row__accent--skipped {
   background: var(--slds-g-color-neutral-base-70, #c9c7c5);
+}
+.rhc-row__accent--system-error {
+  background: var(--slds-g-color-error-base-40, #ba0517);
 }
 
 .rhc-row:focus {
@@ -455,8 +476,7 @@
   content: "i";
 }
 
-.rhc-status-icon--skipped,
-.rhc-status-icon--unable {
+.rhc-status-icon--skipped {
   background: var(--slds-g-color-neutral-base-60, #b0adab);
   color: var(--slds-g-color-neutral-base-100, #ffffff);
 }
@@ -465,8 +485,22 @@
   content: "-";
 }
 
+.rhc-status-icon--unable {
+  background: var(--slds-g-color-neutral-base-50, #939393);
+  color: var(--slds-g-color-neutral-base-100, #ffffff);
+}
+
 .rhc-status-icon--unable::after {
   content: "?";
+}
+
+.rhc-status-icon--system-error {
+  background: var(--slds-g-color-error-base-40, #ba0517);
+  color: var(--slds-g-color-neutral-base-100, #ffffff);
+}
+
+.rhc-status-icon--system-error::after {
+  content: "!";
 }
 
 /* ── Row content ───────────────────────────────────────────────────────────── */
@@ -517,7 +551,8 @@
   height: 0.5rem;
 }
 
-.rhc-row__message--error {
+.rhc-row__message--error,
+.rhc-row__message--system-error {
   color: var(--slds-g-color-error-base-30, #8f0311);
 }
 .rhc-row__message--warning {
@@ -527,6 +562,7 @@
 .rhc-row__message--info {
   color: var(--slds-g-color-neutral-base-30, #3e3e3c);
 }
+.rhc-row__message--skipped,
 .rhc-row__message--unable {
   color: var(--slds-g-color-neutral-base-40, #706e6b);
 }
@@ -640,7 +676,7 @@
 
 /* Long values (a multi-clause formula, a wide list) clamp to two lines so one
    verbose rule cannot dominate the card. The full text stays selectable/readable
-   behind the "Show more" toggle, which JS reveals only when the content actually
+   behind the "..." toggle, which JS reveals only when the content actually
    overflows this box. */
 .rhc-cmp__val--clampable {
   display: -webkit-box;
@@ -658,10 +694,12 @@
   overflow: visible;
 }
 
-/* Quiet inline "Show more" / "Show less" control sitting under a clamped value.
+/* Quiet inline "..." / "less" control sitting under a clamped value.
    Reads as a text link, not a button, to stay subordinate to the value itself. */
 .rhc-cmp__toggle {
-  align-self: flex-start;
+  /* Right-aligned to the end of the value block it expands (not the card edge)
+     so the affordance reads as "more of this value". */
+  align-self: flex-end;
   margin-top: 0.05rem;
   padding: 0;
   border: none;
@@ -680,14 +718,6 @@
 .rhc-cmp__toggle:hover,
 .rhc-cmp__toggle:focus-visible {
   text-decoration: underline;
-}
-
-.rhc-cmp__source {
-  margin-left: 0;
-  font-size: 0.75rem;
-  line-height: 1.35;
-  color: var(--slds-g-color-neutral-base-50, #706e6b);
-  word-break: break-word;
 }
 
 /* ── Comparison disclosure caret ───────────────────────────────────────────── */
@@ -745,17 +775,12 @@
 }
 
 /* ── Hover/focus tooltips ──────────────────────────────────────────────────── */
-/* Dwell-before-show delays live on :host (the component root), NOT on
-   .rhc-tooltip-anchor. The summary-pill arrow (.rhc-stat__nubbin) is a *sibling*
-   of its anchor, not a descendant, so a var declared on the anchor never reaches
-   it — the var() would resolve to invalid and transition-delay would compute to
-   the initial 0s, making the arrow fade in immediately while the bubble still
-   waits the dwell delay (arrow appears first, then the bubble). Declaring the
-   delays at the root lets every subtree — anchor pseudo-elements AND the sibling
-   nubbin — inherit the same values so the arrow and bubble fade in together. */
+/* Pointer hover dwell is enforced in JS (TOOLTIP_HOVER_DWELL_MS) so a quick scan
+   across rows does not flash popovers. Keyboard focus keeps a shorter CSS dwell
+   via --rhc-tooltip-focus-show-delay. The summary-pill arrow (.rhc-stat__nubbin)
+   is a sibling of its anchor, not a descendant, so focus delay vars live on
+   :host where every subtree can inherit them. */
 :host {
-  /* Dwell before show (mouse): avoids flashing while scanning rows. */
-  --rhc-tooltip-show-delay: 0.5s;
   /* Keyboard focus: shorter delay so screen-reader users are not kept waiting. */
   --rhc-tooltip-focus-show-delay: 0.15s;
 }
@@ -807,14 +832,12 @@
   transform: var(--rhc-tooltip-transform);
 }
 
-/* Trigger on hover, or on :focus-visible (keyboard focus) only — never on plain
-   :focus. Show waits for a dwell delay; hide is immediate when the pointer or
-   focus leaves. */
-.rhc-tooltip-anchor:hover::before,
-.rhc-tooltip-anchor:hover::after {
+/* Trigger after the JS hover dwell, or on :focus-visible (keyboard focus) only —
+   never on plain :focus. Hide is immediate when the pointer or focus leaves. */
+.rhc-tooltip-anchor--dwell::before,
+.rhc-tooltip-anchor--dwell::after {
   opacity: 1;
   transform: var(--rhc-tooltip-hover-transform);
-  transition-delay: var(--rhc-tooltip-show-delay);
 }
 
 .rhc-tooltip-anchor:focus-visible::before,
@@ -880,13 +903,11 @@
   z-index: 101;
 }
 
-/* Match the bubble's dwell delay so the arrow and bubble fade in together —
-   without the transition-delay the arrow (which inherits the base 0s) would
-   appear immediately while the ::after bubble still waits the dwell delay. */
-.rhc-tooltip-anchor--row:hover::before {
+/* Match the bubble fade once the JS hover dwell fires so the arrow and bubble
+   appear together — without a shared trigger the arrow would lead the bubble. */
+.rhc-tooltip-anchor--row.rhc-tooltip-anchor--dwell::before {
   opacity: 1;
   transform: translateY(0) rotate(45deg);
-  transition-delay: var(--rhc-tooltip-show-delay);
 }
 
 .rhc-tooltip-anchor--row:focus-visible::before {

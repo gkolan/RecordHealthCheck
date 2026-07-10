@@ -6,24 +6,14 @@
 /** Central authorization checks for privileged Record Health Check features. */
 public with sharing class RecordHealthCheckAccess {
   @TestVisible
-  private static Boolean debugPermissionOverride;
-  @TestVisible
   private static Boolean viewDetailsPermissionOverride;
 
-  /** Raw evaluator/query/plugin details are restricted even when metadata enables debug mode. */
-  public static Boolean canViewDebugDetails() {
-    if (Test.isRunningTest() && debugPermissionOverride != null) {
-      return debugPermissionOverride;
-    }
-    return FeatureManagement.checkPermission('Record_Health_Check_Debug');
-  }
-
   /**
-   * Comparison provenance (source/raw/coercion notes) is a lighter tier than
-   * full debug detail — it lets entitled business users audit what a check
-   * compared without exposing raw exceptions. Gates the *Detail strings only;
-   * the Found/Expected values themselves are governed by display policy, not
-   * this permission.
+   * Single Advanced-tier permission. Power-user explanation (Passes when,
+   * provenance) and troubleshooting internals (raw exceptions, timings) are one
+   * audience, so they share one grant: Record_Health_Check_View_Details.
+   * The Check Set's DebugMode__c flag still decides *when* the troubleshooting
+   * subset is shown — it is a per-set switch, not a second permission.
    */
   public static Boolean canViewDetails() {
     if (Test.isRunningTest() && viewDetailsPermissionOverride != null) {
@@ -32,5 +22,13 @@ public with sharing class RecordHealthCheckAccess {
     return FeatureManagement.checkPermission(
       'Record_Health_Check_View_Details'
     );
+  }
+
+  /**
+   * Raw troubleshooting detail. Same grant as canViewDetails(); callers pair it
+   * with the Check Set's DebugMode__c so internals never surface in production.
+   */
+  public static Boolean canViewDebugDetails() {
+    return canViewDetails();
   }
 }

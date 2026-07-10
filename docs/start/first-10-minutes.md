@@ -38,7 +38,7 @@ The two paths differ in scope: the Deploy button installs the full project, incl
 1. Go to **Setup -> Lightning App Builder**.
 2. Edit an **Account** record page.
 3. Drag the **recordHealthCheck** component onto the page.
-4. In the component properties, set **Check Set Developer Name** to:
+4. In the component properties, choose **Check Set**:
 
    ```text
    Example_Account_360_Health_Check
@@ -46,7 +46,7 @@ The two paths differ in scope: the Deploy button installs the full project, incl
 
 5. Save and activate the page.
 
-The name must match exactly. If the card shows no checks, this is the first thing to re-check.
+If the card shows no checks, confirm the selected Check Set is active and targets the page's object.
 
 ## 3. Open an Account
 

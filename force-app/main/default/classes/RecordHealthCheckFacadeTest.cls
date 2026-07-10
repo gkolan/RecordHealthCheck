@@ -75,6 +75,6 @@ private class RecordHealthCheckFacadeTest {
       result.status,
       'Unknown config should be a clean UNABLE_TO_EVALUATE, not an exception.'
     );
-    System.assertEquals('CONFIG_NOT_FOUND', result.reasonCode);
+    System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
   }
 }

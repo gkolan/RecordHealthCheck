@@ -25,6 +25,8 @@ public class RecordHealthCheckDefinitionResponse {
   @AuraEnabled
   public Boolean checksOmittedByLimit; // true when active checks were omitted
   @AuraEnabled
+  public Integer inactiveRuleCount; // inactive Rules on the Check Set (not run)
+  @AuraEnabled
   public Boolean debugMode; // mirrors DebugMode__c — tells LWC to show adminDetailMessage
   @AuraEnabled
   public List<RecordHealthCheckDefinition> checks;

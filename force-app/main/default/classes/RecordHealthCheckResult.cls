@@ -4,6 +4,13 @@
  */
 
 public class RecordHealthCheckResult {
+  // The expectedValueLabel a Formula check uses when it echoes its raw pass/fail
+  // condition instead of a business comparison value. This "Passes when" line is
+  // a technical explanation, so the engine gates it (and the raw expectedValue it
+  // labels) behind Record_Health_Check_View_Details — business users see the
+  // failure message and any display-formula Found/Expected chips only.
+  public static final String PASSES_WHEN_LABEL = 'Passes when';
+
   @AuraEnabled
   public String checkDeveloperName;
   @AuraEnabled

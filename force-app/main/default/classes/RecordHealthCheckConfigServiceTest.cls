@@ -71,7 +71,7 @@ private class RecordHealthCheckConfigServiceTest {
         ex.reasonCode
       );
       System.assert(
-        ex.getMessage().contains('ComparisonDisplay'),
+        ex.getMessage().contains('Comparison Display'),
         'Message should name the offending field: ' + ex.getMessage()
       );
     }

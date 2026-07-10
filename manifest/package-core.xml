@@ -17,10 +17,12 @@
         <members>Record_Health_Check_Set__mdt.PassedChecksDisplay__c</members>
         <members>Record_Health_Check_Set__mdt.SkippedChecksDisplay__c</members>
         <members>Record_Health_Check_Set__mdt.DebugMode__c</members>
+        <members>Record_Health_Check_Set__mdt.ComparisonDisplay__c</members>
         <members
     >Record_Health_Check_Rule__mdt.Record_Health_Check_Set__c</members>
         <members>Record_Health_Check_Rule__mdt.CheckName__c</members>
         <members>Record_Health_Check_Rule__mdt.Tooltip__c</members>
+        <members>Record_Health_Check_Rule__mdt.Category__c</members>
         <members>Record_Health_Check_Rule__mdt.IsActive__c</members>
         <members>Record_Health_Check_Rule__mdt.RunOrder__c</members>
         <members>Record_Health_Check_Rule__mdt.Severity__c</members>
@@ -49,6 +51,16 @@
         <members>Record_Health_Check_Rule__mdt.MaxRows__c</members>
         <members>Record_Health_Check_Rule__mdt.MessageWhenFailed__c</members>
         <members>Record_Health_Check_Rule__mdt.MessageWhenCannotRun__c</members>
+        <members>Record_Health_Check_Rule__mdt.PrimaryActionLabel__c</members>
+        <members>Record_Health_Check_Rule__mdt.PrimaryActionUrl__c</members>
+        <members>Record_Health_Check_Rule__mdt.FixInstructions__c</members>
+        <members>Record_Health_Check_Rule__mdt.FoundValueFormula__c</members>
+        <members>Record_Health_Check_Rule__mdt.ExpectedValueFormula__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.ScalarFormulaReturnType__c</members>
+        <members>Record_Health_Check_Rule__mdt.FoundSummaryOverride__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.ExpectedSummaryOverride__c</members>
         <name>CustomField</name>
     </types>
     <types>
@@ -56,6 +68,10 @@
         <members>AccountHasRecentActivityCheckTest</members>
         <members>AccountOpenOpportunityHealthCheck</members>
         <members>AccountOpenOpportunityHealthCheckTest</members>
+        <members>AccountStrategicReadinessCheck</members>
+        <members>AccountStrategicReadinessCheckTest</members>
+        <members>ApprovalInactiveApproverCheck</members>
+        <members>ApprovalInactiveApproverCheckTest</members>
         <members>RecordHealthCheck</members>
         <members>RecordHealthCheckAccess</members>
         <members>RecordHealthCheckApexEvaluatorDispatcher</members>
@@ -67,26 +83,33 @@
         <members>RecordHealthCheckController</members>
         <members>RecordHealthCheckDefinition</members>
         <members>RecordHealthCheckDefinitionResponse</members>
+        <members>RecordHealthCheckDescribeCache</members>
         <members>RecordHealthCheckDualSoqlEvaluator</members>
         <members>RecordHealthCheckEngine</members>
         <members>RecordHealthCheckEvaluatorException</members>
         <members>RecordHealthCheckFormulaEvaluator</members>
         <members>RecordHealthCheckLogger</members>
         <members>RecordHealthCheckMetadataValidator</members>
+        <members>RecordHealthCheckProvenance</members>
         <members>RecordHealthCheckResult</members>
         <members>RecordHealthCheckRule</members>
         <members>RecordHealthCheckRuleValidator</members>
+        <members>RecordHealthCheckSetAvailability</members>
+        <members>RecordHealthCheckSetPicklist</members>
         <members>RecordHealthCheckSoqlEvaluator</members>
         <members>RecordHealthCheckSoqlTemplate</members>
         <members>RecordHealthCheckValueResolver</members>
         <members>RecordHealthCheckConfigServiceTest</members>
         <members>RecordHealthCheckControllerTest</members>
         <members>RecordHealthCheckCoverageTest</members>
+        <members>RecordHealthCheckDescribeCacheTest</members>
         <members>RecordHealthCheckEngineTest</members>
         <members>RecordHealthCheckFacadeTest</members>
         <members>RecordHealthCheckLoggerTest</members>
         <members>RecordHealthCheckMetadataValidatorTest</members>
+        <members>RecordHealthCheckProvenanceTest</members>
         <members>RecordHealthCheckSecurityAndOpsTest</members>
+        <members>RecordHealthCheckSetPicklistTest</members>
         <members>RecordHealthCheckSoqlTemplateTest</members>
         <members>RecordHealthCheckTestDataFactory</members>
         <members>RecordHealthCheckValueResolverTest</members>
@@ -97,7 +120,8 @@
         <name>LightningComponentBundle</name>
     </types>
     <types>
-        <members>Record_Health_Check_Debug</members>
+        <members>Record_Health_Check_Configure</members>
+        <members>Record_Health_Check_View_Details</members>
         <name>CustomPermission</name>
     </types>
     <types>
