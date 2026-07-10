@@ -1989,7 +1989,7 @@ private class RecordHealthCheckCoverageTest {
 
     assertReason(
       engine.evaluate('Missing_Config', 'Missing_Check', accountRecord.Id),
-      'CONFIG_NOT_FOUND'
+      'RULE_NOT_FOUND'
     );
     assertReason(
       engine.evaluate(
@@ -1997,7 +1997,7 @@ private class RecordHealthCheckCoverageTest {
         'Missing_Check',
         accountRecord.Id
       ),
-      'CONFIG_NOT_FOUND'
+      'RULE_NOT_FOUND'
     );
     assertReason(
       engine.evaluate(
@@ -2005,7 +2005,7 @@ private class RecordHealthCheckCoverageTest {
         'Account_QC_IsNotBlank',
         UserInfo.getUserId()
       ),
-      'CONFIG_NOT_FOUND'
+      'RULE_NOT_FOUND'
     );
     assertReason(
       engine.evaluate('Account_Data_Quality', 'Account_DQ_BillingCity', null),
@@ -3165,7 +3165,7 @@ private class RecordHealthCheckCoverageTest {
 
     RecordHealthCheckResult debugResult = new RecordHealthCheckResult();
     debugResult.detailMessage = 'admin detail';
-    RecordHealthCheckAccess.debugPermissionOverride = true;
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
     System.assertEquals(
       'admin detail',
       engine.applyDebugMode(debugResult, true).adminDetailMessage
@@ -3176,7 +3176,7 @@ private class RecordHealthCheckCoverageTest {
       null,
       engine.applyDebugMode(noDebugResult, false).adminDetailMessage
     );
-    RecordHealthCheckAccess.debugPermissionOverride = null;
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
     Set<String> blankFieldSet = new Set<String>();
     engine.addReadableField(
       blankFieldSet,

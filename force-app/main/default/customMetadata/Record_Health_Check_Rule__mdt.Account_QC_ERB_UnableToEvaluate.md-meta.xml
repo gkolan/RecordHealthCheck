@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >EmptyResultBehavior=UnableToEvaluate: when no open Cases exist the check cannot be scored and returns UNABLE_TO_EVALUATE instead of Pass, Fail, or Skip. Use when an empty child set means insufficient data, not success or failure.</value>
+    >If Query Finds No Records = UnableToEvaluate: with no open cases the check cannot be scored, so it reports Unable to Check rather than Pass, Fail, or Skip. Use it when an empty result means there is not enough data, not success or failure.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

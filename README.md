@@ -41,6 +41,11 @@ Because it runs at read time rather than save time, it can evaluate across relat
 
 Install into a **sandbox** first. Pick whichever path fits you — all three deploy the same `force-app` source.
 
+> [!IMPORTANT]
+> **Upgrading to v1.2.0 from an earlier release:** v1.2.0 removes the old Lightning component properties `configName` and `comparisonDisclosure`. Before deploying the upgrade to an org that already has Record Health Check on record pages, open those pages in Lightning App Builder, remove or reconfigure the old component placement, and save it with the current **Check Set** picker. After deployment, verify the selected Check Set still matches the page object.
+
+v1.2.0 also moves comparison provenance to **browser-console diagnostics only** (F12, for admins with `Record_Health_Check_View_Details`), replaces the removed `Record_Health_Check_Debug` permission with `Record_Health_Check_View_Details`, and selects the Check Set from a metadata-backed **dropdown** in App Builder instead of free text.
+
 **Option 1 — Deploy button (no command line).** Click **[Deploy to Salesforce](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main)**, log in to your sandbox, and click Deploy.
 
 **Option 2 — Salesforce CLI.**
@@ -56,7 +61,7 @@ sf org assign permset --name Record_Health_Check_User
 
 ### After installing
 
-Assign the **`Record_Health_Check_User`** permission set, add the **recordHealthCheck** component to a Lightning record page, and set its **Check Set Developer Name**. Use `Example_Account_360_Health_Check` for the card shown above, or `Account_Data_Quality` for a lighter set of four Account-field checks. The name must match exactly — a mismatch is the most common setup mistake.
+Assign the **`Record_Health_Check_User`** permission set, add the **recordHealthCheck** component to a Lightning record page, and choose a **Check Set** in App Builder. Use `Example_Account_360_Health_Check` for the card shown above, or `Account_Data_Quality` for a lighter set of four Account-field checks.
 
 Full walkthrough: [First 10 Minutes](docs/start/first-10-minutes.md)
 

@@ -59,7 +59,7 @@ The reason this is Apex and not metadata is **same-Opportunity AND**: one open O
 
 ## How it works
 
-The class reads the stale window from the metadata record, loads open Opportunities, evaluates the three conditions per row, and fails when any row matches all three. It sets Found/Expected values on both pass and fail so an entitled viewer can expand a green row and audit the count too. It also captures provenance for both sides, which the engine renders only for users with `Record_Health_Check_View_Details`.
+The class reads the stale window from the metadata record, loads open Opportunities, evaluates the three conditions per row, and fails when any row matches all three. It sets Found/Expected values on both pass and fail so an entitled viewer can expand a green row and audit the count too. It also captures provenance for both sides, which surfaces in the F12 `[RHC] Source detail` console group and never on the card — see [Troubleshooting Details](../../guides/debug-mode.md#what-you-see-in-the-browser-console).
 
 ```apex
 public with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
@@ -157,7 +157,7 @@ sf project deploy start --manifest manifest/package-core.xml                   #
 sf project deploy start --manifest manifest/package-Account_Examples_Apex.xml  # this example's Check Set
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
+Set the component's **Check Set** to `Account_Examples_Apex`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Contract compliance: customer accounts must have an Activated, signed, non-expired Contract. EmptyResultBehavior=Fail when none qualify.</value>
+    >Customer accounts must have an activated, signed, unexpired contract. If Query Finds No Records is set to Fail, so an account with no qualifying contract fails rather than passing quietly.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

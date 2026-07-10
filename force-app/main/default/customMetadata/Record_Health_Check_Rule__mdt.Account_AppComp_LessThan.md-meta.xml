@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >ApplicabilityComparator=LessThan: SOQL gate passes when contact COUNT() is strictly below the threshold.</value>
+    >Applies To = SOQL runs the count query in Applies When Count Query Matches, then tests it with Count Must Be = LessThan. The formula runs only when the account has fewer than Count Value contacts.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

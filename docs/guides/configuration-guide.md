@@ -31,7 +31,7 @@ For copy-paste examples of every pattern, see [Examples](../examples/index.md). 
 
 | Piece | What it means |
 | ----- | ------------- |
-| Component instance | The Lightning record page component. It points to one Check Set through the **Check Set Developer Name** (`configName`) property in App Builder. |
+| Component instance | The Lightning record page component. It points to one Check Set through the **Check Set** picker in App Builder (`checkSetName` in the LWC, sent to Apex as `configName`). |
 | Check Set | A group of Rules for one base object (for example, Account). Stored in `Record_Health_Check_Set__mdt`. |
 | Rule | One individual check inside a Check Set. Stored in `Record_Health_Check_Rule__mdt`. |
 | Evaluator | The engine path for a Rule: Formula, Query, CompareTwoQueries, or Apex. |
@@ -40,14 +40,14 @@ For copy-paste examples of every pattern, see [Examples](../examples/index.md). 
 Wiring example:
 
 ```text
-Lightning component configName: Account_Data_Quality
+Lightning component Check Set: Account_Data_Quality
 Check Set DeveloperName: Account_Data_Quality
 Rule DeveloperName: Account_DQ_BillingCity
 ```
 
 **Where to place the component:** Lightning **record pages** only. The component needs a record context (`recordId`). It is not exposed on App or Home pages.
 
-**App Builder properties:** Set **Check Set Developer Name** to the Check Set `DeveloperName`. Optional **Comparison Disclosure** controls the initial state of comparison expanders for this page placement: **Inherit** follows the Check Set default, **Collapsed** starts eligible comparison checks closed, and **Expanded** pre-opens eligible comparison checks. It cannot reveal Found/Expected values hidden by the Check Set **Found/Expected Display** setting.
+**App Builder property:** Select a **Check Set** from the dropdown. It lists the active Check Sets whose object matches this record page, by `DeveloperName`. When the object has exactly one active Check Set, it is selected for you. This is the only property; comparison expanders start collapsed and follow the Check Set's **Found/Expected Display** setting.
 
 ## 2. What It Can Check
 
@@ -121,7 +121,7 @@ MessageWhenFailed__c: {!Name} needs either a Phone or Website.
 
 ### Showing Found vs Expected (optional)
 
-By default a Formula check shows only a **Passes when** line — the pass/fail formula text, unquoted — and no **Found** value. For balance and comparison checks you can declare two optional scalar formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
+By default a Formula check shows only a **Passes when** line — the pass/fail formula text, unquoted — and no **Found** value. That **Passes when** line is **Advanced-tier**: users without `Record_Health_Check_View_Details` see the failure message only (plus any display-formula Found/Expected chips). For balance and comparison checks you can declare two optional scalar formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
 
 | Field | Purpose |
 | ----- | ------- |
@@ -220,7 +220,7 @@ Use Apex when metadata cannot express the rule safely. **Implementing a class:**
 | Apex Class Name | `ApexClass__c` | Class implementing `RecordHealthCheckRule` |
 | Apex Settings (JSON) | `ApexSettingsJson__c` | Optional tuning map passed as `context.parameters` |
 
-For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-checkmethod__c-apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
+For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-checkmethod__c--apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
 
 ## 10. Applicability and Dependencies
 
@@ -286,12 +286,18 @@ Contact Finance to reconcile.
 
 | Symptom | Likely cause | What to check |
 | ------- | ------------ | ------------- |
-| Configuration not found | `configName` ≠ Check Set DeveloperName, or blank `ObjectApiName__c` on the Check Set | App Builder property, Check Set DeveloperName, and Record Object API Name. |
-| Object mismatch | Wrong `ObjectApiName__c` | Check Set object vs record page object. |
+| Health Check Needs Setup / not ready yet | LWC has no Check Set selected | In App Builder, choose a Check Set and save the page. |
+| Ask admin to activate a Check Set | Check Sets exist for the object but all are inactive | Activate a Check Set, then choose it in App Builder. |
+| Ask admin to set up a Check Set | No Check Set matches the page object | Create and activate a Check Set whose Record Object API Name matches the page object. |
+| Check Set was not found | Selected Check Set was renamed or deleted | Re-open App Builder and choose an active Check Set. |
+| Check Set is inactive | Selected Check Set has `IsActive__c = false` | Activate it, or choose another active Check Set. |
+| Invalid configuration | Blank/invalid Record Object API Name, or a bad display setting | Record Object API Name plus Passed/Skipped Checks Display, Run Checks When, How Checks Appear, Comparison Display. |
+| Object mismatch | Check Set `ObjectApiName__c` does not match the page object | Check Set object vs record page object. |
+| No active checks | Check Set has no active Rules (inactive Rules may still exist) | Activate an existing Rule, or add a new active Rule. |
 | No checks run | Inactive Check Set or Rules | `IsActive__c` on Set and Rules. |
-| Rule skipped | Applicability false or dependency not passed | Applicability fields and `RequiresCheck__c`. |
-| Unable to evaluate | SOQL, formula, permissions, or limits | Rule fields, FLS, Show Troubleshooting Details, reason code. |
-| Rule error | Apex or framework exception | Apex class, Salesforce logs, and Show Troubleshooting Details. |
+| Rule skipped | Applicability false or required check did not pass | Applicability fields and `RequiresCheck__c`. |
+| Unable to Check | SOQL, formula, permissions, or limits | Rule fields, FLS, Show Troubleshooting Details, reason code. |
+| System Error | Apex or framework exception | Apex class, Salesforce logs, and Show Troubleshooting Details. |
 | Stale results after metadata edit | Component not reloaded | Refresh the record page. |
 | Stale results after inline edit | No auto-rerun on record save | Click **Rerun** or refresh the page. |
 | Prerequisite skipped | 25-check cap | Lower the prerequisite's Run Order (lower runs first) so it runs within the first 25, or reduce active Rules. |
@@ -314,7 +320,7 @@ for (RecordHealthCheckMetadataValidator.ValidationIssue i :
 Before activating a Check Set:
 
 - [ ] Permission Set `Record_Health_Check_User` assigned to users who run the card (assign `Record_Health_Check_Admin` when Show Troubleshooting Details is needed).
-- [ ] Check Set DeveloperName matches component **Check Set Developer Name** in App Builder.
+- [ ] Component **Check Set** selection points to the intended active Check Set.
 - [ ] `ObjectApiName__c` matches the record page object.
 - [ ] Component is on a **record page** (not App/Home).
 - [ ] Every active Rule has Check Name, Run Order (lower runs first), Check Type, Failure Severity, and Message When Check Fails.
@@ -325,7 +331,7 @@ Before activating a Check Set:
 - [ ] `WhenZeroRows__c` is set for Any/All/CompareAsLists Rules.
 - [ ] Apex Rules reference deployed `RecordHealthCheckRule` implementations.
 - [ ] Dependencies reference active Rules with lower Run Order (lower runs first) in the same Check Set.
-- [ ] **Show Troubleshooting Details** is off for production unless actively troubleshooting (requires `Record_Health_Check_Debug`: see [Troubleshooting Details](debug-mode.md)).
+- [ ] **Show Troubleshooting Details** is off for production unless actively troubleshooting (requires `Record_Health_Check_View_Details` via `Record_Health_Check_Admin`: see [Troubleshooting Details](debug-mode.md)).
 - [ ] Tested on records that pass, fail, skip, and unable-to-evaluate.
 
 ## 15. Runtime and Integration

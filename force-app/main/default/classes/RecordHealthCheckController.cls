@@ -10,6 +10,26 @@ public with sharing class RecordHealthCheckController {
   private static RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
   /**
+   * Reports whether the record's object has active and/or inactive Check Sets.
+   * Used when the LWC has no Check Set selected, so the setup banner can say
+   * choose one, activate one, or create one.
+   * Not cacheable: after an admin activates or creates a Check Set, the next
+   * component load must see the fresh availability without waiting on the
+   * Lightning Data Service cache.
+   */
+  @AuraEnabled
+  public static RecordHealthCheckSetAvailability getCheckSetAvailabilityForRecord(
+    Id recordId
+  ) {
+    if (recordId == null) {
+      return new RecordHealthCheckSetAvailability();
+    }
+    return configService.getCheckSetAvailabilityForObject(
+      RecordHealthCheckDescribeCache.objectApiName(recordId)
+    );
+  }
+
+  /**
    * Returns Check Set display settings and ordered check definitions.
    * Not cacheable: metadata edits to Check Sets/Rules appear on the next
    * component load without requiring a page refresh.
@@ -30,7 +50,7 @@ public with sharing class RecordHealthCheckController {
     if (String.isBlank(configName)) {
       throw buildAuraException(
         'CONFIG_NOT_FOUND',
-        'Check Set Developer Name is required.'
+        'No Check Set is selected for this Record Health Check component.'
       );
     }
     try {

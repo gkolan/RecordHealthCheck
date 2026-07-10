@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >ComparisonValueSource=AnotherQuery: the comparison value is not a static or formula-resolved value — it comes from a second SOQL query. Both sides are COUNT() aggregates. Distinct from CompareTwoQueries: this uses the SoqlEvaluator with a secondary scalar, not the DualSoqlEvaluator. The framework executes the comparison query, extracts its single aggregate result, and uses that as the right-hand side of the comparator.</value>
+    >Expected Value Comes From = AnotherQuery: the expected value is neither fixed nor a formula — it comes from a second query. Both queries return a COUNT(). This is different from Check Type = CompareTwoQueries: here the second query supplies a single number to compare against, rather than a second list of records.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

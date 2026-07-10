@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >COUNT() with no field argument returns total row count. Primary Query Field is left blank because bare COUNT() has no alias.</value>
+    >COUNT() with no field returns the number of matching records. Leave Primary Query Field/Alias blank: a bare COUNT() has no alias to name.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

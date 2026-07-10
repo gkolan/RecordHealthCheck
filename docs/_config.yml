@@ -24,3 +24,5 @@ exclude:
   - interactive/
   - audits/
   - enhancements/
+  - review/
+  - spec/

@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >CompareTwoQueries EmptyResultBehavior=UnableToEvaluate: when either query returns no rows the list comparison cannot run and returns UNABLE_TO_EVALUATE. Demonstrates the fourth empty-result option on the dual evaluator.</value>
+    >Check Type = CompareTwoQueries with If Query Finds No Records = UnableToEvaluate. When either query returns no records the two lists cannot be compared, so the check reports Unable to Check instead of passing or failing. This is the fourth option for an empty result, alongside Pass, Fail, and Skip.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

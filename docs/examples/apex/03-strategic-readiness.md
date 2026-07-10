@@ -57,7 +57,7 @@ The reason this is Apex and not metadata is **weighted scoring**: four unrelated
 
 ## How it works
 
-The class resolves both JSON parameters, loads billing fields on the Account, awards equal points for each criterion met, and compares the total to the minimum. It sets Found/Expected values on both pass and fail so an entitled viewer can expand a green row and audit the score too. It also captures provenance for both sides, which the engine renders only for users with `Record_Health_Check_View_Details`.
+The class resolves both JSON parameters, loads billing fields on the Account, awards equal points for each criterion met, and compares the total to the minimum. It sets Found/Expected values on both pass and fail so an entitled viewer can expand a green row and audit the score too. It also captures provenance for both sides, which surfaces in the F12 `[RHC] Source detail` console group and never on the card — see [Troubleshooting Details](../../guides/debug-mode.md#what-you-see-in-the-browser-console).
 
 ```apex
 public with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
@@ -181,7 +181,7 @@ sf project deploy start --manifest manifest/package-core.xml                   #
 sf project deploy start --manifest manifest/package-Account_Examples_Apex.xml  # this example's Check Set + class
 ```
 
-Set the component's **Check Set Developer Name** to `Account_Examples_Apex`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
+Set the component's **Check Set** to `Account_Examples_Apex`. See the [example catalog](../index.md#sample-check-set-packages) for every Check Set and what it contains.
 
 ## Try it
 

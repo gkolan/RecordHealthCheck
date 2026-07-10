@@ -102,6 +102,15 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
           >Install in your sandbox</a
         >.
       </p>
+      <p class="install-note">
+        <strong>Upgrading to v1.2.0?</strong> Re-open each record page that
+        already has the component, pick the Check Set again in App Builder, and
+        save. The old <code>configName</code> /
+        <code>comparisonDisclosure</code> properties are gone. Details:
+        <a href="https://github.com/gkolan/recordHealthCheck/blob/main/README.md"
+          >README upgrade note</a
+        >.
+      </p>
     </div>
 
     <p class="install-or">Prefer the Salesforce CLI?</p>
@@ -129,9 +138,9 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
       <div class="step">
         <div class="si">2</div>
         <div class="sc">
-          Set its <b>Check Set Developer Name</b> to a Check Set's Developer
-          Name, for example <code>Account_Data_Quality</code>. It must match
-          exactly — a mismatch is the single most common misconfiguration.
+          Choose a <b>Check Set</b>, for example
+          <code>Account_Data_Quality</code>. The picker lists active Check Sets
+          for the record page's object.
         </div>
       </div>
       <div class="step">
@@ -322,18 +331,20 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
           <span>Apex plugin reference</span>
           <small>Call the engine and write custom checks.</small>
         </a>
-        <a href="{{ '/spec/' | relative_url }}">
+        <a
+          href="{{ '/reference/record-health-check-design-spec.html' | relative_url }}"
+        >
           <span>Design Specification</span>
-          <small>The formal contract, split by topic.</small>
+          <small>The formal contract: engine, metadata, and LWC.</small>
         </a>
       </div>
     </div>
 
     <p class="doc-fineprint">
       Need operational help? Use
-      <a href="{{ '/guides/debug-mode.html' | relative_url }}">Show Troubleshooting Details</a>
-      or the <a href="{{ '/guides/cli-commands.html' | relative_url }}">CLI commands</a>
-      page.
+      <a href="{{ '/guides/debug-mode.html' | relative_url }}"
+        >Show Troubleshooting Details</a
+      >.
     </p>
   </div>
 </section>

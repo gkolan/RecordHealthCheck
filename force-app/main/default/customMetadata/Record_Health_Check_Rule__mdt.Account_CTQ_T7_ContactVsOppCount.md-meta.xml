@@ -20,7 +20,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >Compares two independent COUNT() queries. The number of contacts must not exceed the number of open opportunities. Both sides return a single aggregate value.</value>
+    >Compares two COUNT() queries. The number of contacts must not exceed the number of open opportunities. Each query returns a single number.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

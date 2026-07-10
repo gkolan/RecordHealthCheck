@@ -60,6 +60,41 @@ private class RecordHealthCheckControllerTest {
     );
 
     System.assertEquals('UNABLE_TO_EVALUATE', result.status);
-    System.assertEquals('CONFIG_NOT_FOUND', result.reasonCode);
+    System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
+  }
+
+  @isTest
+  static void getCheckSetAvailabilityForRecordReflectsObjectScopedMetadata() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+
+    Test.startTest();
+    RecordHealthCheckSetAvailability accountAvailability = RecordHealthCheckController.getCheckSetAvailabilityForRecord(
+      accountRecord.Id
+    );
+    RecordHealthCheckSetAvailability userAvailability = RecordHealthCheckController.getCheckSetAvailabilityForRecord(
+      UserInfo.getUserId()
+    );
+    RecordHealthCheckSetAvailability nullAvailability = RecordHealthCheckController.getCheckSetAvailabilityForRecord(
+      null
+    );
+    Test.stopTest();
+
+    System.assertEquals(
+      true,
+      accountAvailability.hasActive,
+      'Packaged Account Check Sets should be visible for an Account record.'
+    );
+    System.assertEquals(
+      false,
+      userAvailability.hasActive,
+      'User has no packaged Check Sets; expected false.'
+    );
+    System.assertEquals(
+      false,
+      userAvailability.hasInactive,
+      'User should not report inactive Check Sets either.'
+    );
+    System.assertEquals(false, nullAvailability.hasActive);
+    System.assertEquals(false, nullAvailability.hasInactive);
   }
 }

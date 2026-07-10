@@ -36,6 +36,9 @@ After deployment, assign Permission Sets so users can run the component (see Ste
 
 ## Step 1: Deploy the package
 
+> [!IMPORTANT]
+> **Upgrading to v1.2.0 from an earlier release:** v1.2.0 removes the old Lightning component properties `configName` and `comparisonDisclosure`. Before deploying the upgrade to an org that already has Record Health Check on record pages, open those pages in **Lightning App Builder**, remove or reconfigure the old component placement, and save it with the current **Check Set** picker. This is a required admin step; v1.2.0 does not include legacy component-property support.
+
 ### Option A: Salesforce CLI
 
 From the repository root:
@@ -84,7 +87,7 @@ Users need Apex access to run the component. Assign the least-privilege Permissi
 | API name | Setup label | Assign when |
 | -------- | ----------- | ----------- |
 | `Record_Health_Check_User` | Record Health Check User | Run the card on record pages (no troubleshooting detail, no provenance) |
-| `Record_Health_Check_Admin` | Record Health Check Admin | Troubleshooting and audit: includes `Record_Health_Check_Debug`, `Record_Health_Check_View_Details`, and `Record_Health_Check_Configure` (configure is reserved for future tooling). Required for [Show Troubleshooting Details](../guides/debug-mode.md) and comparison provenance. |
+| `Record_Health_Check_Admin` | Record Health Check Admin | Troubleshooting and audit: includes `Record_Health_Check_View_Details` and `Record_Health_Check_Configure` (configure is reserved for future tooling). Required for [Show Troubleshooting Details](../guides/debug-mode.md) and comparison provenance. |
 
 In **Setup → Permission Sets**, open the Permission Set → **Manage Assignments** → **Add Assignments**.
 
@@ -99,13 +102,13 @@ The Permission Set named `Record_Health_Check_User` grants Apex class access to 
 1. Open **Setup → Lightning App Builder**.
 2. Edit an **Account** record page (or whichever object matches your Check Set).
 3. Drag **recordHealthCheck** onto the page.
-4. In the component properties on the right, set **Check Set Developer Name** (`configName`) to the exact Developer Name of a Check Set, for example:
+4. In the component properties on the right, choose **Check Set**. The picker lists active Check Sets for the record page's object by Developer Name. For example, choose:
 
    ```text
    Account_Data_Quality
    ```
 
-   This value is **case-sensitive** and must match the Check Set’s Developer Name in Setup: not the display title users see on the card.
+   If the list is empty, no active Check Set targets this object yet. Create or activate one under **Setup → Custom Metadata Types → Record Health Check Set**.
 
 5. **Save** and **Activate** the page. Assign the page to the right app and profiles if prompted.
 
@@ -158,7 +161,7 @@ For more patterns, see [Formula checks: example 1](../examples/formula/01-single
 
 Use the [Review Checklist](../guides/configuration-guide.md#14-review-checklist) in the Configuration Guide. At minimum:
 
-- Check Set **Developer Name** matches the component property **exactly**
+- The component's **Check Set** selection points to the Check Set you intend to run
 - **Record Object API Name** on the Check Set matches the record page object (for example, `Account`)
 - **Show Troubleshooting Details** is **unchecked** in production (troubleshooting only)
 

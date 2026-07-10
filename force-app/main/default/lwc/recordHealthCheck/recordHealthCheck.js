@@ -6,20 +6,50 @@
 import { LightningElement, api, track } from "lwc";
 import USER_ID from "@salesforce/user/Id";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
+import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
 import { parseAuraError } from "./healthCheckModel";
 import { annotateCheck, buildSummaryStats } from "./healthCheckPresentation";
 import { HealthCheckRunner } from "./healthCheckRunner";
 
+// Columns shown in the run-diagnostics table. Provenance stays in the nested
+// group below — those strings are long and read better one check at a time.
+const RHC_DIAG_TABLE_COLUMNS = [
+  "check",
+  "status",
+  "severity",
+  "reasonCode",
+  "actualValue",
+  "expectedValue",
+  "durationMs",
+  "evaluatorType"
+];
+
+// Pointer hover waits before the tooltip fades in so quick row scans do not flash
+// popovers. Keyboard focus keeps a shorter CSS dwell (see recordHealthCheck.css).
+const TOOLTIP_HOVER_DWELL_MS = 600;
+
+const SETUP_ERROR_CODES = new Set([
+  "SETUP_REQUIRED",
+  "NO_ACTIVE_CHECK_SETS",
+  "INACTIVE_CHECK_SETS_ONLY",
+  "CONFIG_NOT_FOUND",
+  "CONFIG_INACTIVE",
+  "OBJECT_MISMATCH",
+  "NO_RECORD_CONTEXT",
+  "NO_ACTIVE_CHECKS",
+  "INVALID_CONFIG"
+]);
+
 export default class RecordHealthCheck extends LightningElement {
-  _configName;
+  _checkSetName;
 
   @api
-  get configName() {
-    return this._configName;
+  get checkSetName() {
+    return this._checkSetName;
   }
-  set configName(value) {
-    const changed = value !== this._configName;
-    this._configName = value;
+  set checkSetName(value) {
+    const changed = value !== this._checkSetName;
+    this._checkSetName = value;
     if (this._connected && changed) {
       this._loadDefinitions();
     }
@@ -46,9 +76,6 @@ export default class RecordHealthCheck extends LightningElement {
     }
   }
 
-  /** App Builder default for comparison caret expand/collapse; cannot widen FailuresOnly. */
-  @api comparisonDisclosure;
-
   @track displayTitle;
   @track displayDescription;
   @track triggerMode;
@@ -59,6 +86,8 @@ export default class RecordHealthCheck extends LightningElement {
   @track stopOnFirstError;
   @track debugMode = false;
   @track totalCheckCount = 0;
+  @track totalAvailableCheckCount = 0;
+  @track inactiveRuleCount = 0;
   @track completedCheckCount = 0;
   @track runComplete = false;
   /** Stays true after the first completed run until definitions reload — drives
@@ -73,7 +102,7 @@ export default class RecordHealthCheck extends LightningElement {
   @track checks = [];
 
   // Per-row disclosure overrides, keyed by developerName. Absent → the row
-  // follows the placement default (comparisonDisclosure). Reassigned on toggle so
+  // starts collapsed (the default). Reassigned on toggle so
   // the visibleChecks getter re-annotates. Lives outside `checks` because the
   // runner rebuilds that array on every result; expand state must survive that.
   @track _expandedNames = {};
@@ -85,6 +114,8 @@ export default class RecordHealthCheck extends LightningElement {
   _loadToken = 0;
   _initialLoadTimer;
   _tooltipListenersBound = false;
+  _tooltipDwellTimers = new WeakMap();
+  _pendingTooltipAnchors = new Set();
   _summaryStatsSource = null;
   _summaryStatsTooltipSignature = "";
   _summaryStatsCache = [];
@@ -110,16 +141,29 @@ export default class RecordHealthCheck extends LightningElement {
     this._runner.invalidate();
     if (this._tooltipListenersBound) {
       this.template.removeEventListener("mouseover", this._positionTooltip);
+      this.template.removeEventListener(
+        "mouseover",
+        this._handleTooltipMouseOver
+      );
       this.template.removeEventListener("focusin", this._positionTooltip);
       this.template.removeEventListener("mouseout", this._clearTooltipFlip);
+      this.template.removeEventListener(
+        "mouseout",
+        this._handleTooltipMouseOut
+      );
       this.template.removeEventListener("focusout", this._clearTooltipFlip);
+      this.template.removeEventListener(
+        "focusout",
+        this._handleTooltipFocusOut
+      );
       this._tooltipListenersBound = false;
     }
+    this._clearAllTooltipDwells();
   }
 
   renderedCallback() {
     // Content grows as checks resolve, so re-measure clamped value chips on every
-    // render to reveal a "Show more" toggle only on those that overflow two lines.
+    // render to reveal a "..." toggle only on those that overflow two lines.
     this._measureClampedValues();
     if (this._tooltipListenersBound) {
       return;
@@ -131,9 +175,12 @@ export default class RecordHealthCheck extends LightningElement {
     // being clipped. Delegated on the template root — mouseover and focusin both
     // bubble, so one listener pair covers every rule row and summary pill.
     this.template.addEventListener("mouseover", this._positionTooltip);
+    this.template.addEventListener("mouseover", this._handleTooltipMouseOver);
     this.template.addEventListener("focusin", this._positionTooltip);
     this.template.addEventListener("mouseout", this._clearTooltipFlip);
+    this.template.addEventListener("mouseout", this._handleTooltipMouseOut);
     this.template.addEventListener("focusout", this._clearTooltipFlip);
+    this.template.addEventListener("focusout", this._handleTooltipFocusOut);
   }
 
   // Removes the flip-up modifier once the pointer/focus leaves the anchor entirely
@@ -176,9 +223,92 @@ export default class RecordHealthCheck extends LightningElement {
     anchor.classList.toggle("rhc-tooltip-anchor--flip-up", flipUp);
   };
 
+  _findTooltipAnchor(event) {
+    const target = event.target;
+    return target && target.closest
+      ? target.closest(".rhc-tooltip-anchor")
+      : null;
+  }
+
+  _isTooltipAnchorExit(event, anchor) {
+    const movingTo = event.relatedTarget;
+    return !(movingTo && anchor.contains(movingTo));
+  }
+
+  _tooltipHoverDwellMs() {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return 0;
+    }
+    return TOOLTIP_HOVER_DWELL_MS;
+  }
+
+  _clearTooltipDwell(anchor) {
+    const timer = this._tooltipDwellTimers.get(anchor);
+    if (timer != null) {
+      clearTimeout(timer);
+      this._tooltipDwellTimers.delete(anchor);
+    }
+    this._pendingTooltipAnchors.delete(anchor);
+    anchor.classList.remove("rhc-tooltip-anchor--dwell");
+  }
+
+  _clearAllTooltipDwells() {
+    for (const anchor of this._pendingTooltipAnchors) {
+      this._clearTooltipDwell(anchor);
+    }
+    this._pendingTooltipAnchors.clear();
+  }
+
+  _scheduleTooltipDwell(anchor, delayMs) {
+    this._clearTooltipDwell(anchor);
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    const timer = setTimeout(() => {
+      this._tooltipDwellTimers.delete(anchor);
+      this._pendingTooltipAnchors.delete(anchor);
+      anchor.classList.add("rhc-tooltip-anchor--dwell");
+    }, delayMs);
+    this._tooltipDwellTimers.set(anchor, timer);
+    this._pendingTooltipAnchors.add(anchor);
+  }
+
+  _handleTooltipMouseOver = (event) => {
+    const anchor = this._findTooltipAnchor(event);
+    if (!anchor) {
+      return;
+    }
+    const from = event.relatedTarget;
+    if (from && anchor.contains(from)) {
+      return;
+    }
+    if (this._tooltipDwellTimers.has(anchor)) {
+      return;
+    }
+    this._scheduleTooltipDwell(anchor, this._tooltipHoverDwellMs());
+  };
+
+  _handleTooltipMouseOut = (event) => {
+    const anchor = this._findTooltipAnchor(event);
+    if (!anchor || !this._isTooltipAnchorExit(event, anchor)) {
+      return;
+    }
+    this._clearTooltipDwell(anchor);
+  };
+
+  _handleTooltipFocusOut = (event) => {
+    const anchor = this._findTooltipAnchor(event);
+    if (!anchor || !this._isTooltipAnchorExit(event, anchor)) {
+      return;
+    }
+    this._clearTooltipDwell(anchor);
+  };
+
   async _loadDefinitions() {
     const loadToken = ++this._loadToken;
-    const requestedConfigName = this.configName;
+    const requestedCheckSetName = this.checkSetName;
     const requestedRecordId = this.recordId;
     if (this._initialLoadTimer) {
       clearTimeout(this._initialLoadTimer);
@@ -204,14 +334,8 @@ export default class RecordHealthCheck extends LightningElement {
     this.componentError = null;
     this.componentErrorCode = null;
 
-    if (!this.configName || !this.configName.trim()) {
-      this.isLoading = false;
-      this.componentError =
-        "No Config Name has been set for this component. " +
-        "Open App Builder, select the Record Health Check component, and set " +
-        "the Config Name property to the Developer Name of a " +
-        "Record_Health_Check_Set__mdt record.";
-      this.componentErrorCode = "SETUP_REQUIRED";
+    if (!this.checkSetName || !this.checkSetName.trim()) {
+      await this._applyBlankCheckSetSetupError(loadToken, requestedRecordId);
       return;
     }
 
@@ -219,7 +343,7 @@ export default class RecordHealthCheck extends LightningElement {
 
     try {
       const response = await getCheckDefinitions({
-        configName: requestedConfigName,
+        configName: requestedCheckSetName,
         recordId: requestedRecordId,
         runId
       });
@@ -263,6 +387,14 @@ export default class RecordHealthCheck extends LightningElement {
       this.stopOnFirstError = response.stopOnFirstError;
       this.debugMode = response.debugMode === true;
       this.totalCheckCount = response.checks.length;
+      this.totalAvailableCheckCount =
+        typeof response.totalAvailableCheckCount === "number"
+          ? response.totalAvailableCheckCount
+          : response.checks.length;
+      this.inactiveRuleCount =
+        typeof response.inactiveRuleCount === "number"
+          ? response.inactiveRuleCount
+          : 0;
       this.checksOmittedByLimit = response.checksOmittedByLimit || false;
 
       // Build per-check rows — all start PENDING
@@ -296,8 +428,52 @@ export default class RecordHealthCheck extends LightningElement {
     return !!this.componentError;
   }
 
+  /**
+   * Blank checkSetName is ambiguous until we ask Apex what Check Sets exist for
+   * this object. Active sets → SETUP_REQUIRED (pick one). Inactive only →
+   * INACTIVE_CHECK_SETS_ONLY. None at all → NO_ACTIVE_CHECK_SETS. Probe failures
+   * and missing recordId fall back to SETUP_REQUIRED so we never falsely claim
+   * the org has no Check Sets.
+   */
+  async _applyBlankCheckSetSetupError(loadToken, requestedRecordId) {
+    let availability = { hasActive: true, hasInactive: false };
+    if (requestedRecordId) {
+      try {
+        const response = await getCheckSetAvailabilityForRecord({
+          recordId: requestedRecordId
+        });
+        availability = {
+          hasActive: response?.hasActive === true,
+          hasInactive: response?.hasInactive === true
+        };
+      } catch {
+        // Probe failed (e.g. transient Apex error) — fall back to SETUP_REQUIRED
+        // rather than falsely claiming the org has no Check Sets for this object.
+        availability = { hasActive: true, hasInactive: false };
+      }
+    }
+    if (loadToken !== this._loadToken || !this._connected) {
+      return;
+    }
+    this.isLoading = false;
+    if (availability.hasActive) {
+      this.componentError =
+        "Record Health Check is not ready on this page yet.";
+      this.componentErrorCode = "SETUP_REQUIRED";
+      return;
+    }
+    if (availability.hasInactive) {
+      this.componentError =
+        "Record Health Check is not ready on this page yet.";
+      this.componentErrorCode = "INACTIVE_CHECK_SETS_ONLY";
+      return;
+    }
+    this.componentError = "Record Health Check is not ready on this page yet.";
+    this.componentErrorCode = "NO_ACTIVE_CHECK_SETS";
+  }
+
   get isSetupError() {
-    return this.componentErrorCode === "SETUP_REQUIRED";
+    return SETUP_ERROR_CODES.has(this.componentErrorCode);
   }
 
   get errorBannerIcon() {
@@ -310,8 +486,32 @@ export default class RecordHealthCheck extends LightningElement {
 
   get errorBannerTitle() {
     return this.isSetupError
-      ? "Component Not Configured"
+      ? "Health Check Needs Setup"
       : "Health Check Unavailable";
+  }
+
+  get setupErrorHint() {
+    switch (this.componentErrorCode) {
+      case "CONFIG_NOT_FOUND":
+      case "SETUP_REQUIRED":
+        return "Ask your Salesforce admin to choose a Check Set for this page.";
+      case "INACTIVE_CHECK_SETS_ONLY":
+        return "Ask your Salesforce admin to activate a Check Set for this object.";
+      case "NO_ACTIVE_CHECK_SETS":
+        return "Ask your Salesforce admin to set up a Check Set for this object.";
+      case "CONFIG_INACTIVE":
+        return "Ask your Salesforce admin to activate this Check Set.";
+      case "OBJECT_MISMATCH":
+        return "Ask your Salesforce admin to choose a Check Set for this object.";
+      case "NO_ACTIVE_CHECKS":
+        return "Ask your Salesforce admin to add an active Rule.";
+      case "NO_RECORD_CONTEXT":
+        return "Ask your Salesforce admin to place this on a record page.";
+      case "INVALID_CONFIG":
+        return "Ask your Salesforce admin to review this Check Set in Setup.";
+      default:
+        return "";
+    }
   }
 
   get showRunButton() {
@@ -376,17 +576,15 @@ export default class RecordHealthCheck extends LightningElement {
     );
   }
 
-  // Whether a row's comparison detail is currently expanded. A user toggle
-  // overrides the placement default; otherwise the App Builder "Expanded"
-  // preference pre-opens carets (rows with no caret ignore this — see
-  // annotateCheck, which is why Expanded cannot widen a FailuresOnly Set).
+  // Whether a row's comparison detail is currently expanded. Carets default to
+  // collapsed; a user toggle records an explicit state in _expandedNames.
   _isRowExpanded(developerName) {
     if (
       Object.prototype.hasOwnProperty.call(this._expandedNames, developerName)
     ) {
       return this._expandedNames[developerName];
     }
-    return this.comparisonDisclosure === "Expanded";
+    return false;
   }
 
   handleToggleDetail(event) {
@@ -403,8 +601,8 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   // Value chips clamp to two lines by default (see .rhc-cmp__val--clampable). A
-  // long formula or list therefore needs an in-place "Show more" affordance; we
-  // only want it on chips that actually overflow, which is only knowable after
+  // long formula or list therefore needs a quiet "..." affordance; we only
+  // want it on chips that actually overflow, which is only knowable after
   // layout. Scan the rendered chips and reveal the sibling toggle on the ones
   // whose full content is taller than the clamped box. Skip already-expanded
   // chips so a re-render (another check resolving) does not hide their toggle.
@@ -436,8 +634,9 @@ export default class RecordHealthCheck extends LightningElement {
       return;
     }
     const expanded = chip.classList.toggle("rhc-cmp__val--expanded");
-    toggle.textContent = expanded ? "Show less" : "Show more";
+    toggle.textContent = expanded ? "less" : "...";
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    toggle.setAttribute("aria-label", expanded ? "Show less" : "Show more");
   }
 
   get checkCountLabel() {
@@ -447,13 +646,21 @@ export default class RecordHealthCheck extends LightningElement {
 
   // Count phrase for the pre-run hint: pluralized, and when the set exceeds the
   // 25-rule cap it makes clear only the first 25 will run (matching the
-  // "First 25 shown" badge).
+  // limit badge).
   get checkCountPhrase() {
     if (this.checksOmittedByLimit) {
-      return "the first 25 checks";
+      return `the first 25 of ${this.totalAvailableCheckCount} checks`;
     }
     const n = this.totalCheckCount;
     return `${n} ${n === 1 ? "check" : "checks"}`;
+  }
+
+  get limitNoticeLabel() {
+    return `First 25 of ${this.totalAvailableCheckCount} shown`;
+  }
+
+  get limitNoticeTitle() {
+    return `Showing the first 25 of ${this.totalAvailableCheckCount} active rules.`;
   }
 
   get showActionButton() {
@@ -473,8 +680,52 @@ export default class RecordHealthCheck extends LightningElement {
     );
   }
 
+  get preRunHintText() {
+    return `Click Run to evaluate ${this.checkCountPhrase}.`;
+  }
+
+  get showInactiveRulesNotice() {
+    return (
+      !this.isLoading && !this.hasComponentError && this.inactiveRuleCount > 0
+    );
+  }
+
+  get inactiveRulesNotice() {
+    const n = this.inactiveRuleCount;
+    return `${n} inactive ${n === 1 ? "rule" : "rules"} omitted.`;
+  }
+
   get showSummaryStats() {
     return this.runComplete && this.summaryStats.length > 0;
+  }
+
+  /**
+   * When Passed/Skipped display is Hide and every resolved row is filtered out,
+   * the list looks empty even though the run succeeded. Surface a short status
+   * so the card does not appear broken beside the summary pills.
+   */
+  get showHiddenResultsNotice() {
+    return (
+      this.runComplete &&
+      !this.isLoading &&
+      this.checks.length > 0 &&
+      this.visibleChecks.length === 0
+    );
+  }
+
+  get hiddenResultsNotice() {
+    const hiddenPasses = this.checks.some((c) => this._isHiddenSuccess(c));
+    const hiddenSkips = this.checks.some((c) => this._isHiddenSkipped(c));
+    if (hiddenPasses && hiddenSkips) {
+      return "All checks passed or were skipped. Details are hidden.";
+    }
+    if (hiddenPasses) {
+      return "All checks passed. Details are hidden.";
+    }
+    if (hiddenSkips) {
+      return "All checks were skipped. Details are hidden.";
+    }
+    return "Details are hidden.";
   }
 
   get actionTitle() {
@@ -586,17 +837,20 @@ export default class RecordHealthCheck extends LightningElement {
       runId: this._runner.runId,
       userId: USER_ID,
       recordId: this.recordId,
-      configName: this.configName,
+      configName: this.checkSetName,
       generatedAt: new Date().toISOString(),
       checks: this.checks.map((c) => {
         const r = c.result || {};
         return {
           check: c.developerName,
+          label: c.label || c.developerName,
           status: r.status || c.uiState,
           severity: r.severity || null,
           reasonCode: r.reasonCode || null,
           actualValue: r.actualValue ?? null,
           expectedValue: r.expectedValue ?? null,
+          actualValueDetail: r.actualValueDetail ?? null,
+          expectedValueDetail: r.expectedValueDetail ?? null,
           durationMs: r.durationMs != null ? r.durationMs : null,
           evaluatorType: r.evaluatorType ?? null
         };
@@ -604,14 +858,85 @@ export default class RecordHealthCheck extends LightningElement {
     };
   }
 
+  _formatRunSummary(checks) {
+    const counts = {
+      PASS: 0,
+      FAIL: 0,
+      SKIPPED: 0,
+      ERROR: 0,
+      UNABLE_TO_EVALUATE: 0
+    };
+    let totalMs = 0;
+    for (const row of checks) {
+      const status = row.status;
+      if (Object.prototype.hasOwnProperty.call(counts, status)) {
+        counts[status]++;
+      }
+      if (row.durationMs != null) {
+        totalMs += row.durationMs;
+      }
+    }
+    const parts = [];
+    if (counts.PASS) {
+      parts.push(`${counts.PASS} Passed`);
+    }
+    if (counts.FAIL) {
+      parts.push(`${counts.FAIL} Failed`);
+    }
+    if (counts.SKIPPED) {
+      parts.push(`${counts.SKIPPED} Skipped`);
+    }
+    if (counts.UNABLE_TO_EVALUATE) {
+      parts.push(`${counts.UNABLE_TO_EVALUATE} Unable`);
+    }
+    if (counts.ERROR) {
+      parts.push(`${counts.ERROR} Error`);
+    }
+    const outcome =
+      parts.length > 0 ? parts.join(", ") : `${checks.length} checks`;
+    const timing = totalMs > 0 ? ` · ${totalMs}ms total` : "";
+    return `${outcome}${timing}`;
+  }
+
   _logRunDiagnostics() {
     const diag = this._buildRunDiagnostics();
     const configLabel = diag.configName || "(unset configName)";
     console.group(
-      `[RHC] Health Check run ${diag.runId} — config ${configLabel} — user ${diag.userId} — record ${diag.recordId}`
+      `[RHC] Health Check run ${diag.runId} | ${configLabel} | record ${diag.recordId}`
     );
-    console.log(diag);
-    console.table(diag.checks);
+    console.log(this._formatRunSummary(diag.checks));
+    console.log({
+      runId: diag.runId,
+      checkSet: diag.configName,
+      recordId: diag.recordId,
+      userId: diag.userId,
+      generatedAt: diag.generatedAt
+    });
+    console.table(diag.checks, RHC_DIAG_TABLE_COLUMNS);
+    this._logProvenanceDiagnostics(diag.checks);
+    console.groupEnd();
+  }
+
+  _logProvenanceDiagnostics(checks) {
+    const withDetail = checks.filter(
+      (c) => c.actualValueDetail != null || c.expectedValueDetail != null
+    );
+    if (withDetail.length === 0) {
+      return;
+    }
+    const noun = withDetail.length === 1 ? "check" : "checks";
+    console.group(`[RHC] Source detail (${withDetail.length} ${noun})`);
+    for (const c of withDetail) {
+      const heading = `${c.label} (${c.check}) · ${c.status}`;
+      console.group(heading);
+      if (c.actualValueDetail != null) {
+        console.log("Found", c.actualValueDetail);
+      }
+      if (c.expectedValueDetail != null) {
+        console.log("Expected", c.expectedValueDetail);
+      }
+      console.groupEnd();
+    }
     console.groupEnd();
   }
 }

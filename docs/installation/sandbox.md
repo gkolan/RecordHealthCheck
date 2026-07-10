@@ -20,6 +20,9 @@ Right after install, **Step 4** assigns the Permission Set named **Record Health
 
 You do **not** need: the Salesforce CLI, Git, VS Code, or any download.
 
+> [!IMPORTANT]
+> **Upgrading from v1.0 / v1.1?** v1.2.0 removes the old Lightning component properties `configName` and `comparisonDisclosure`. Before or right after deploying the upgrade, open every record page that already has Record Health Check, re-select the **Check Set** in App Builder, and save. There is no automatic migration. Also assign `Record_Health_Check_Admin` (or grant `Record_Health_Check_View_Details`) if anyone previously relied on the removed `Record_Health_Check_Debug` permission.
+
 ## Step 1: Click the Deploy button
 
 On the project's main page (the [README](../../README.md)), find the button that says
@@ -69,7 +72,7 @@ the card.
 4. Click **Manage Assignments** → **Add Assignment**.
 5. Check the box next to **your own name**, then click **Assign** → **Done**.
 
-> Two Permission Sets were installed. **`Record_Health_Check_User`** lets a user run the card. **`Record_Health_Check_Admin`** adds troubleshooting (`Record_Health_Check_Debug`), comparison provenance (`Record_Health_Check_View_Details`), and a reserved configure permission. See [Getting Started: Step 1b](getting-started.md#step-1b-assign-permission-sets).
+> Two Permission Sets were installed. **`Record_Health_Check_User`** lets a user run the card. **`Record_Health_Check_Admin`** adds advanced details (`Record_Health_Check_View_Details`) and a reserved configure permission. See [Getting Started: Step 1b](getting-started.md#step-1b-assign-permission-sets).
 
 ## Step 5: Add the card to a page and see it work
 
@@ -78,15 +81,14 @@ the card.
 2. Click the **gear icon** (top right) → **Edit Page**. This opens the Lightning App Builder.
 3. On the left, find **recordHealthCheck** in the component list and **drag it** onto the
    page (a sidebar or the main area both work).
-4. With the card selected, look at the right-hand panel. In the **Check Set Developer Name**
-   box, type exactly:
+4. With the card selected, look at the right-hand panel. In the **Check Set**
+   picker, choose:
 
    ```text
    Account_Data_Quality
    ```
 
-   This must match **exactly**: it is case-sensitive. It is the name of one of the sample
-   Check Sets that came with the install.
+   It is the Developer Name of one of the sample Check Sets that came with the install.
 5. Click **Save**. If it asks you to **Activate**, click **Activate** and accept the
    defaults.
 6. Click **Back** to return to the Account.
@@ -109,7 +111,7 @@ You now have a working installation.
 | What you see | Likely cause | What to do |
 | ------------ | --------------------- | ---------- |
 | The deploy page shows a **red error** | A component did not install, often because of a permissions or API-version issue | Take a screenshot and send it to the person who shared this project. Note: **Formula** checks need org API **v63.0 or later** (Spring '25). |
-| Install succeeded but **you don't see the card** on the page | The card was not added, or the Check Set name is wrong | Re-check **Step 5**. The **Check Set Developer Name** must be exactly `Account_Data_Quality`. |
+| Install succeeded but **you don't see the card** on the page | The card was not added, or the Check Set selection is wrong | Re-check **Step 5**. The **Check Set** should be `Account_Data_Quality`. |
 | You see the card but it says you **don't have access** | The Permission Set is not assigned | Go back to **Step 4** and confirm **Record Health Check User** is assigned to you. |
 | You logged in and it deployed to the **wrong org** | You logged in to production or a different sandbox by mistake | The package does not update business records. To remove the metadata, contact whoever manages that org. Next time, verify the login URL in **Step 2** before clicking **Deploy**. |
 

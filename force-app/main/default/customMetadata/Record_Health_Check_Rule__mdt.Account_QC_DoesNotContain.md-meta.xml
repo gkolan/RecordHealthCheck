@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >DoesNotContain comparator: field value must not contain the given substring. Paired with the Contains/https check above as the inverse: explicitly flags http:// (insecure prefix) rather than just checking for the absence of https. NullBehavior=MissingMeansNoMatch: null does not vacuously pass.</value>
+    >Comparison Operator = DoesNotContain: the field must not contain the given text. The mirror image of Website Uses HTTPS above — this one flags an insecure http:// prefix rather than checking for https. If Query Field Value Is Empty = MissingMeansNoMatch, so a blank value does not pass by default.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

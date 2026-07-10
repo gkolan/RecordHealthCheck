@@ -11,6 +11,7 @@ import {
   splitMessageLines
 } from "../healthCheckPresentation";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
+import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
 import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
 
 // The LWC jest transformer rewrites `import foo from '@salesforce/apex/...'`
@@ -18,6 +19,11 @@ import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluate
 // { default: jest.fn() } — not a bare jest.fn().
 jest.mock(
   "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions",
+  () => ({ default: jest.fn() }),
+  { virtual: true }
+);
+jest.mock(
+  "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
@@ -54,6 +60,10 @@ async function clickRun(element) {
 
 beforeEach(() => {
   jest.useFakeTimers();
+  getCheckSetAvailabilityForRecord.mockResolvedValue({
+    hasActive: true,
+    hasInactive: false
+  });
 });
 
 afterEach(() => {
@@ -131,7 +141,7 @@ const makeDefinitions = (overrides = {}) => ({
 
 function createComponent() {
   const el = createElement("c-record-health-check", { is: RecordHealthCheck });
-  el.configName = "Account_Data_Quality";
+  el.checkSetName = "Account_Data_Quality";
   el.recordId = "001000000000001AAA";
   return el;
 }
@@ -166,9 +176,7 @@ describe("c-record-health-check — load and error states", () => {
 
     const hint = element.shadowRoot.querySelector(".rhc-pre-run-hint");
     expect(hint).not.toBeNull();
-    expect(hint.textContent).toContain("Click");
-    // The hint names the (pluralized) total to evaluate.
-    expect(hint.textContent).toContain("to evaluate this record against");
+    expect(hint.textContent).toContain("Click Run to evaluate");
     expect(hint.textContent).toContain("2 checks");
     expect(element.shadowRoot.querySelectorAll(".rhc-list li")).toHaveLength(0);
   });
@@ -191,13 +199,14 @@ describe("c-record-health-check — load and error states", () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         revealMode: "OneAtATime",
-        checksOmittedByLimit: true
+        checksOmittedByLimit: true,
+        totalAvailableCheckCount: 40
       })
     );
     await appendAndLoad(element);
 
     const hint = element.shadowRoot.querySelector(".rhc-pre-run-hint");
-    expect(hint.textContent).toContain("the first 25 checks");
+    expect(hint.textContent).toContain("the first 25 of 40 checks");
   });
 
   it("shows the pre-run hint above the rows in AllAtOnce mode too", async () => {
@@ -249,13 +258,17 @@ describe("c-record-health-check — load and error states", () => {
 
   it("shows first-25 badge when checksOmittedByLimit is true", async () => {
     getCheckDefinitions.mockResolvedValue(
-      makeDefinitions({ checksOmittedByLimit: true })
+      makeDefinitions({
+        checksOmittedByLimit: true,
+        totalAvailableCheckCount: 40
+      })
     );
     await appendAndLoad(element);
 
     const badge = element.shadowRoot.querySelector(".rhc-check-pill--warn");
     expect(badge).not.toBeNull();
-    expect(badge.label).toBe("First 25 shown");
+    expect(badge.label).toBe("First 25 of 40 shown");
+    expect(badge.title).toContain("first 25 of 40");
   });
 
   it("shows a load error when a definition has a duplicate developerName", async () => {
@@ -346,11 +359,91 @@ describe("c-record-health-check — load and error states", () => {
   });
 
   it("labels the setup-error icon as 'Setup required', not 'Error'", async () => {
-    element.configName = null; // triggers the SETUP_REQUIRED banner
+    element.checkSetName = null; // triggers the SETUP_REQUIRED banner
     await appendAndLoad(element);
 
     const icon = element.shadowRoot.querySelector("lightning-icon");
     expect(icon).not.toBeNull();
+    expect(icon.iconName).toBe("utility:setup");
+    expect(icon.alternativeText).toBe("Setup required");
+  });
+
+  it("asks the admin to choose a Check Set when none is selected but sets exist", async () => {
+    element.checkSetName = "";
+    getCheckSetAvailabilityForRecord.mockResolvedValue({
+      hasActive: true,
+      hasInactive: false
+    });
+    await appendAndLoad(element);
+
+    const banner = element.shadowRoot.querySelector(".rhc-error-banner");
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain("Health Check Needs Setup");
+    expect(banner.textContent).toContain(
+      "Record Health Check is not ready on this page yet"
+    );
+    expect(banner.textContent).toContain("Ask your Salesforce admin");
+    expect(banner.textContent).toContain("choose a Check Set for this page");
+    expect(getCheckSetAvailabilityForRecord).toHaveBeenCalledWith({
+      recordId: element.recordId
+    });
+    expect(getCheckDefinitions).not.toHaveBeenCalled();
+  });
+
+  it("tells the admin to activate when only inactive Check Sets exist", async () => {
+    element.checkSetName = "";
+    getCheckSetAvailabilityForRecord.mockResolvedValue({
+      hasActive: false,
+      hasInactive: true
+    });
+    await appendAndLoad(element);
+
+    const banner = element.shadowRoot.querySelector(".rhc-error-banner");
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain(
+      "Record Health Check is not ready on this page yet"
+    );
+    expect(banner.textContent).toContain(
+      "activate a Check Set for this object"
+    );
+    expect(getCheckDefinitions).not.toHaveBeenCalled();
+  });
+
+  it("tells the admin to create a Check Set when none exist for the object", async () => {
+    element.checkSetName = "";
+    getCheckSetAvailabilityForRecord.mockResolvedValue({
+      hasActive: false,
+      hasInactive: false
+    });
+    await appendAndLoad(element);
+
+    const banner = element.shadowRoot.querySelector(".rhc-error-banner");
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain(
+      "Record Health Check is not ready on this page yet"
+    );
+    expect(banner.textContent).toContain("set up a Check Set for this object");
+    expect(getCheckDefinitions).not.toHaveBeenCalled();
+  });
+
+  it("treats server-side setup errors as admin configuration issues", async () => {
+    getCheckDefinitions.mockRejectedValue({
+      body: {
+        message: JSON.stringify({
+          reasonCode: "NO_ACTIVE_CHECKS",
+          message: 'Check Set "Account_Data_Quality" has no active checks.'
+        })
+      }
+    });
+
+    await appendAndLoad(element);
+
+    const banner = element.shadowRoot.querySelector(".rhc-error-banner");
+    const icon = element.shadowRoot.querySelector("lightning-icon");
+    expect(banner.textContent).toContain("Health Check Needs Setup");
+    expect(banner.textContent).toContain("no active checks");
+    expect(banner.textContent).toContain("Ask your Salesforce admin");
+    expect(banner.textContent).toContain("add an active Rule");
     expect(icon.iconName).toBe("utility:setup");
     expect(icon.alternativeText).toBe("Setup required");
   });
@@ -543,7 +636,7 @@ describe("c-record-health-check — run orchestration", () => {
     expect(rows).toHaveLength(0);
   });
 
-  it("shows summary stats, not rows or an empty-state message, when every row is hidden", async () => {
+  it("shows a hidden-results notice with summary stats when every row is hidden", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ triggerMode: "Automatic", successDisplayMode: "Hide" })
     );
@@ -554,8 +647,39 @@ describe("c-record-health-check — run orchestration", () => {
     await flushPromises();
 
     expect(element.shadowRoot.querySelectorAll(".rhc-row")).toHaveLength(0);
-    expect(element.shadowRoot.querySelector(".rhc-empty")).toBeNull();
+    const notice = element.shadowRoot.querySelector(".rhc-hidden-results");
+    expect(notice).not.toBeNull();
+    expect(notice.textContent).toContain("All checks passed");
+    expect(notice.textContent).toContain("Details are hidden");
+    expect(notice.textContent).not.toContain("Check Set");
     expect(element.shadowRoot.querySelector(".rhc-stats-bar")).not.toBeNull();
+  });
+
+  it("mentions inactive rules that are omitted from the run", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ inactiveRuleCount: 2 })
+    );
+    await appendAndLoad(element);
+
+    const notice = element.shadowRoot.querySelector(".rhc-inactive-rules");
+    expect(notice).not.toBeNull();
+    expect(notice.textContent).toContain("2 inactive rules omitted");
+  });
+
+  it("styles system ERROR rows differently from Unable to Check", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue(ERROR_RESULT("Check_A"));
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-row--system-error")
+    ).not.toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-row--unable")).toBeNull();
+    expect(element.shadowRoot.textContent).toContain("1 System Error");
+    expect(element.shadowRoot.textContent).not.toContain("1 Unable");
   });
 
   it("reveals a ready visible result without waiting behind a slower hidden check", async () => {
@@ -886,7 +1010,10 @@ describe("c-record-health-check — dependency gating", () => {
 
     expect(evaluateCheck).not.toHaveBeenCalled();
     expect(element.shadowRoot.textContent).toContain(
-      "This check has a circular dependency and cannot be evaluated."
+      'Circular dependency with "Check_B".'
+    );
+    expect(element.shadowRoot.textContent).toContain(
+      'Circular dependency with "Check_A".'
     );
   });
 });
@@ -1025,7 +1152,7 @@ describe("c-record-health-check — reactive recordId reload", () => {
     element = createElement("c-record-health-check", {
       is: RecordHealthCheck
     });
-    element.configName = "Account_Data_Quality";
+    element.checkSetName = "Account_Data_Quality";
     element.recordId = RECORD_A;
   });
 
@@ -1247,7 +1374,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       .mockResolvedValueOnce(makeDefinitions({ displayTitle: "Second set" }));
     await appendAndLoad(element);
 
-    element.configName = "Account_Advanced_Checks";
+    element.checkSetName = "Account_Advanced_Checks";
     await flushPromises();
     await flushPromises();
 
@@ -1295,7 +1422,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       expect(element.shadowRoot.textContent).toMatch(
         /invalid result|unsupported result status/
       );
-      expect(element.shadowRoot.textContent).toContain("Unable to Check");
+      expect(element.shadowRoot.textContent).toContain("System Error");
     }
   );
 
@@ -1370,6 +1497,64 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     ).toContain("Pass");
   });
 
+  it("waits before showing a row tooltip on pointer hover", async () => {
+    jest.useFakeTimers();
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        successDisplayMode: "Show",
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const row = element.shadowRoot.querySelector("li.rhc-tooltip-anchor");
+    expect(row).not.toBeNull();
+    expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
+
+    row.dispatchEvent(
+      new MouseEvent("mouseover", { bubbles: true, relatedTarget: null })
+    );
+    jest.advanceTimersByTime(599);
+    expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
+
+    jest.advanceTimersByTime(1);
+    expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(true);
+
+    row.dispatchEvent(
+      new MouseEvent("mouseout", { bubbles: true, relatedTarget: null })
+    );
+    expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
+
+    jest.useRealTimers();
+  });
+
+  it("clears a pending tooltip dwell when focus leaves the row", async () => {
+    jest.useFakeTimers();
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        successDisplayMode: "Show",
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const row = element.shadowRoot.querySelector("li.rhc-tooltip-anchor");
+    row.dispatchEvent(
+      new MouseEvent("mouseover", { bubbles: true, relatedTarget: null })
+    );
+    row.dispatchEvent(
+      new FocusEvent("focusout", { bubbles: true, relatedTarget: null })
+    );
+    jest.advanceTimersByTime(600);
+    expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
+
+    jest.useRealTimers();
+  });
+
   it("makes only rows with a tooltip a tab stop", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
@@ -1403,7 +1588,68 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     expect(rows[1].getAttribute("tabindex")).toBe("-1");
   });
 
-  it("logs a console summary when debug mode completes a run", async () => {
+  it("logs a console summary and provenance group when debug mode completes a run", async () => {
+    const group = jest.spyOn(console, "group").mockImplementation(() => {});
+    const log = jest.spyOn(console, "log").mockImplementation(() => {});
+    const table = jest.spyOn(console, "table").mockImplementation(() => {});
+    const groupEnd = jest
+      .spyOn(console, "groupEnd")
+      .mockImplementation(() => {});
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        debugMode: true,
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue({
+      ...PASS_RESULT("Check_A"),
+      actualValue: '"Technology"',
+      expectedValue: 'to equal "Technology"',
+      actualValueDetail: 'Industry → "Technology"',
+      expectedValueDetail: 'Fixed value → "Technology"'
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+    await flushPromises();
+    await flushPromises();
+
+    expect(group).toHaveBeenCalledWith(
+      expect.stringContaining("Account_Data_Quality")
+    );
+    expect(log).toHaveBeenCalledWith("1 Passed");
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: expect.any(String),
+        checkSet: "Account_Data_Quality",
+        recordId: expect.any(String),
+        userId: expect.any(String),
+        generatedAt: expect.any(String)
+      })
+    );
+    expect(table).toHaveBeenCalledWith(expect.any(Array), [
+      "check",
+      "status",
+      "severity",
+      "reasonCode",
+      "actualValue",
+      "expectedValue",
+      "durationMs",
+      "evaluatorType"
+    ]);
+    expect(group).toHaveBeenCalledWith("[RHC] Source detail (1 check)");
+    expect(group).toHaveBeenCalledWith(
+      expect.stringContaining("Check A (Check_A)")
+    );
+    expect(log).toHaveBeenCalledWith("Found", 'Industry → "Technology"');
+    expect(log).toHaveBeenCalledWith("Expected", 'Fixed value → "Technology"');
+    expect(groupEnd).toHaveBeenCalled();
+    group.mockRestore();
+    log.mockRestore();
+    table.mockRestore();
+    groupEnd.mockRestore();
+  });
+
+  it("does not log an empty provenance group when debug details are absent", async () => {
     const group = jest.spyOn(console, "group").mockImplementation(() => {});
     const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const table = jest.spyOn(console, "table").mockImplementation(() => {});
@@ -1422,12 +1668,9 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     await flushPromises();
     await flushPromises();
 
-    expect(group).toHaveBeenCalledWith(
-      expect.stringContaining("config Account_Data_Quality")
+    expect(group).not.toHaveBeenCalledWith(
+      expect.stringContaining("Source detail")
     );
-    expect(log).toHaveBeenCalled();
-    expect(table).toHaveBeenCalled();
-    expect(groupEnd).toHaveBeenCalled();
     group.mockRestore();
     log.mockRestore();
     table.mockRestore();
@@ -1615,7 +1858,7 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     await appendAndLoad(element);
     await clickRun(element);
 
-    // Every value chip renders clampable, with a paired Show more toggle. jsdom
+    // Every value chip renders clampable, with a paired "..." toggle. jsdom
     // has no layout so scrollHeight is 0 and the toggle stays hidden until the
     // renderedCallback measures a real overflow — but the toggle handler is
     // exercised directly here.
@@ -1625,19 +1868,22 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(chip).not.toBeNull();
     const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
     expect(toggle).not.toBeNull();
-    expect(toggle.textContent.trim()).toBe("Show more");
+    expect(toggle.textContent.trim()).toBe("...");
+    expect(toggle.getAttribute("aria-label")).toBe("Show more");
 
     toggle.click();
     await Promise.resolve();
     expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(true);
-    expect(toggle.textContent.trim()).toBe("Show less");
+    expect(toggle.textContent.trim()).toBe("less");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.getAttribute("aria-label")).toBe("Show less");
 
     toggle.click();
     await Promise.resolve();
     expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(false);
-    expect(toggle.textContent.trim()).toBe("Show more");
+    expect(toggle.textContent.trim()).toBe("...");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-label")).toBe("Show more");
   });
 
   it("does not render the comparison block on a passing row", async () => {
@@ -1700,7 +1946,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(a.showExpandedExpected).toBe(true);
   });
 
-  it("OnDemand: a failing row shows values inline with source notes attached", () => {
+  it("OnDemand: a failing row shows values inline without card provenance", () => {
     const collapsed = annotateCheck(
       resolved(failWithValuesAndProvenance),
       false,
@@ -1709,9 +1955,12 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     );
     expect(collapsed.showInlineComparison).toBe(true);
     expect(collapsed.showActual).toBe(true);
+    expect(collapsed.showExpected).toBe(true);
     expect(collapsed.showCaret).toBe(false);
-    expect(collapsed.showActualDetail).toBe(true);
-    expect(collapsed.showExpectedDetail).toBe(true);
+    expect(collapsed.actualValueDetail).toBeUndefined();
+    expect(collapsed.expectedValueDetail).toBeUndefined();
+    expect(collapsed.showActualDetail).toBeUndefined();
+    expect(collapsed.showExpectedDetail).toBeUndefined();
 
     const open = annotateCheck(
       resolved(failWithValuesAndProvenance),
@@ -1719,18 +1968,18 @@ describe("annotateCheck — comparison disclosure matrix", () => {
       "OnDemand",
       true
     );
-    expect(open.showActualDetail).toBe(true);
-    expect(open.showExpectedDetail).toBe(true);
+    expect(open.showActualDetail).toBeUndefined();
+    expect(open.showExpectedDetail).toBeUndefined();
     // Values were already inline, so there is no expanded region.
     expect(open.detailExpanded).toBe(false);
     expect(open.showExpandedActual).toBe(false);
   });
 
-  it("gates source notes: with no *Detail, expanding shows values but no notes", () => {
+  it("keeps card provenance out of the view model when expanding values", () => {
     const a = annotateCheck(resolved(passWithValues), false, "OnDemand", true);
     expect(a.showExpandedActual).toBe(true);
-    expect(a.showActualDetail).toBe(false);
-    expect(a.showExpectedDetail).toBe(false);
+    expect(a.showActualDetail).toBeUndefined();
+    expect(a.showExpectedDetail).toBeUndefined();
   });
 
   it("FailuresOnly: a passing row has no caret and shows nothing", () => {
@@ -1890,7 +2139,7 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
       ...overrides
     });
 
-  it("OnDemand: passing row shows a caret; clicking it reveals values and source notes", async () => {
+  it("OnDemand: passing row shows a caret; clicking it reveals values without source notes", async () => {
     getCheckDefinitions.mockResolvedValue(onePassCheck());
     evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
     await appendAndLoad(element);
@@ -1911,9 +2160,8 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
       n.textContent.trim()
     );
     expect(vals).toEqual(['"Technology"', 'to equal "Technology"']);
-    const sourceNotes = [...detail.querySelectorAll(".rhc-cmp__source")];
-    expect(sourceNotes).toHaveLength(2);
-    expect(detail.textContent).toContain('Industry → "Technology"');
+    expect(detail.querySelector(".rhc-cmp__source")).toBeNull();
+    expect(detail.textContent).not.toContain('Industry → "Technology"');
     expect(caret.getAttribute("aria-expanded")).toBe("true");
   });
 
@@ -1976,7 +2224,7 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
     expect(element.shadowRoot.querySelector(".rhc-row__detail")).toBeNull();
   });
 
-  it("gates source notes: no *Detail means the expanded row shows values but no notes", async () => {
+  it("keeps source notes off the card when expanded details are null", async () => {
     getCheckDefinitions.mockResolvedValue(onePassCheck());
     evaluateCheck.mockResolvedValue({
       ...PASS_WITH_VALUES,
@@ -2024,26 +2272,15 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
     expect(keys).toEqual(["Found", "Expected"]);
   });
 
-  it("comparisonDisclosure=Expanded pre-opens the caret on an OnDemand pass row", async () => {
-    element.comparisonDisclosure = "Expanded";
+  it("an OnDemand pass row starts with its comparison caret collapsed", async () => {
     getCheckDefinitions.mockResolvedValue(onePassCheck());
     evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
     await appendAndLoad(element);
     await clickRun(element);
 
-    expect(element.shadowRoot.querySelector(".rhc-row__detail")).not.toBeNull();
-  });
-
-  it("comparisonDisclosure=Expanded cannot widen a FailuresOnly pass row", async () => {
-    element.comparisonDisclosure = "Expanded";
-    getCheckDefinitions.mockResolvedValue(
-      onePassCheck({ comparisonDisplay: "FailuresOnly" })
-    );
-    evaluateCheck.mockResolvedValue(PASS_WITH_VALUES);
-    await appendAndLoad(element);
-    await clickRun(element);
-
-    expect(element.shadowRoot.querySelector(".rhc-caret")).toBeNull();
+    // The caret exists (there are values to reveal) but the detail stays closed
+    // until the user clicks it — there is no placement-level pre-open.
+    expect(element.shadowRoot.querySelector(".rhc-caret")).not.toBeNull();
     expect(element.shadowRoot.querySelector(".rhc-row__detail")).toBeNull();
   });
 });

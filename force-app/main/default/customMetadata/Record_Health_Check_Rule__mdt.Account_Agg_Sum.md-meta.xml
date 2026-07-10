@@ -18,7 +18,7 @@
         <field>Tooltip__c</field>
         <value
       xsi:type="xsd:string"
-    >SUM(field) totals numeric values across matching rows. Alias pipelineTotal is required. Pair with NullBehavior when zero rows can return null.</value>
+    >SUM(field) adds up a number field across every matching record. The query names the result pipelineTotal, so set Primary Query Field/Alias to pipelineTotal. When no records match, SUM returns nothing — use If Query Field Value Is Empty to decide how that is treated.</value>
     </values>
     <values>
         <field>CheckMethod__c</field>

@@ -47,13 +47,14 @@ One line each. Lines counts flag the four refactor hotspots (see 6).
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
 | `RecordHealthCheck` | 125 | One-line programmatic entry point to run a single check from anywhere. |
-| `RecordHealthCheckController` | 113 | Thin `@AuraEnabled` seam for the LWC: delegates only, holds no logic. |
+| `RecordHealthCheckController` | 145 | `@AuraEnabled` entry for the LWC: load Check Set definitions, evaluate one check, and report whether Check Sets exist for the record's object. |
 | `RecordHealthCheckEngine` | **975** | Orchestrates one check: applicability gate, field planning, evaluator routing, dependency cache, result normalization. |
 
 ### Config & validation
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
 | `RecordHealthCheckConfigService` | **893** | Loads Check Set + Rules, assembles the definition, validates rules at **runtime**. |
+| `RecordHealthCheckSetAvailability` | 20 | Apex response for whether an object has active and/or inactive Check Sets. |
 | `RecordHealthCheckMetadataValidator` | **1,138** | Validates the same rules at **deploy/CI time**, emits `ValidationIssue`s. ⚠️ duplicates ConfigService logic (see 6 D1). |
 | `RecordHealthCheckConfigValidator` | 40 | Pure, side-effect-free validation primitives shared by runtime and CI. |
 | `RecordHealthCheckConstants` | 193 | Single source of truth for valid-value sets and numeric caps. |
@@ -70,6 +71,7 @@ One line each. Lines counts flag the four refactor hotspots (see 6).
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
 | `RecordHealthCheckComparatorEngine` | 365 | Shared comparator + null/empty-behavior engine for both SOQL evaluators; formats `actualValue` / `expectedValue` for display. |
+| `RecordHealthCheckDescribeCache` | 80 | Caches Schema describe results for the Apex transaction so busy record pages do less repeated metadata work. |
 | `RecordHealthCheckSoqlTemplate` | 327 | Parenthesis-depth-aware SOQL normalizer + string-literal masking. |
 | `RecordHealthCheckValueResolver` | 239 | Value extraction, coercion, and comparison for SOQL results. |
 
@@ -77,8 +79,9 @@ One line each. Lines counts flag the four refactor hotspots (see 6).
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
 | `RecordHealthCheckLogger` | 190 | Single logging facade for the framework. |
-| `RecordHealthCheckAccess` | 34 | Gates troubleshooting detail (`Record_Health_Check_Debug`) and comparison provenance (`Record_Health_Check_View_Details`). |
+| `RecordHealthCheckAccess` | 34 | Gates Advanced-tier details through `Record_Health_Check_View_Details`: troubleshooting when `DebugMode__c` is on, and comparison provenance in console diagnostics. |
 | `RecordHealthCheckProvenance` | 73 | Renders structured provenance `Detail` into `actualValueDetail` / `expectedValueDetail` strings. |
+| `RecordHealthCheckSetPicklist` | 73 | Design-time App Builder picklist for the LWC `checkSetName` property, scoped to the page object. |
 
 ### DTOs & contracts (data carriers: no behavior)
 | Class | Responsibility |
@@ -97,11 +100,11 @@ by concern: do **not** split into separate LWCs):
 
 | File | Lines | Responsibility |
 |------|------:|----------------|
-| `recordHealthCheck.js` | 439 | Component shell: @api props, lifecycle, definition load, template getters, `hasCompletedRunOnce` / `runComplete`, diagnostics. Delegates the run to the runner. |
-| `healthCheckRunner.js` | 356 | Run lifecycle: dependency gating, 5-way concurrency cap, run/reveal tokens, progressive-reveal draining, stop-on-first-error. Sets `runComplete` and `hasCompletedRunOnce` on completion; clears `runComplete` (not `hasCompletedRunOnce`) when a new run starts. |
-| `healthCheckModel.js` | 141 | Pure domain logic: result shaping, response normalization, dependency-cycle detection, error parsing. No component state. |
-| `healthCheckPresentation.js` | 405 | Pure view formatting: maps results into template-ready flags, CSS classes, summary rows, tooltip anchors, **Found** / **Expected** chip visibility, comparison caret, and provenance disclosure. |
-| `recordHealthCheck.html` / `.css` | 210 / 815 | Markup and styling (CSS status icons, tooltips, comparison chips, action-button spinner, summary-pill nubbin host). |
+| `recordHealthCheck.js` | 942 | Component shell: @api props, lifecycle, definition load, tooltip dwell, template getters, diagnostics. Delegates the run to the runner. |
+| `healthCheckRunner.js` | 362 | Run lifecycle: dependency gating, 5-way concurrency cap, run/reveal tokens, progressive-reveal draining, stop-on-first-error. Sets `runComplete` and `hasCompletedRunOnce` on completion; clears `runComplete` (not `hasCompletedRunOnce`) when a new run starts. |
+| `healthCheckModel.js` | 112 | Pure domain logic: result shaping, response normalization, dependency-cycle detection, error parsing. No component state. |
+| `healthCheckPresentation.js` | 336 | Pure view formatting: maps results into template-ready flags, CSS classes, summary rows, tooltip anchors, **Found** / **Expected** chip visibility, and comparison caret behavior. |
+| `recordHealthCheck.html` / `.css` | 319 / 1032 | Markup and styling (CSS status icons, tooltips, comparison chips, action-button spinner, summary-pill nubbin host). |
 
 ## 5. Data model (metadata & objects)
 
@@ -109,7 +112,7 @@ by concern: do **not** split into separate LWCs):
 |----------|------|------|
 | `Record_Health_Check_Set__mdt` | Custom Metadata | A named group of checks bound to one object + display settings. |
 | `Record_Health_Check_Rule__mdt` | Custom Metadata | One check: type, query/formula, comparator, severity, applicability, dependencies. |
-| Permission Sets / Custom Permissions | | `Record_Health_Check_User`; `Record_Health_Check_Admin` (includes `Record_Health_Check_Debug`, `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`). |
+| Permission Sets / Custom Permissions | | `Record_Health_Check_User`; `Record_Health_Check_Admin` (includes `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`). |
 
 ## 6. "Where do I change X?" index
 
@@ -121,10 +124,10 @@ by concern: do **not** split into separate LWCs):
 | Add a **new Check Type** | New evaluator class + routing in `RecordHealthCheckEngine.routeEvaluator` + a `validate*Rule` in *both* validators (until D1 lands). |
 | Change **rule validation** rules | ⚠️ today edit **both** `ConfigService` and `MetadataValidator` (see D1). After D1: one `RecordHealthCheckRuleValidator`. |
 | Change **SOQL token binding / normalization** | `RecordHealthCheckSoqlTemplate` (+ `SoqlEvaluator.bindTokens`). |
-| Change **what fields get queried** for a record | field-planning methods in `RecordHealthCheckEngine` (`collectRecordFields`, `addFormulaFields`, `addMergeFields`). |
+| Change **what fields get queried** for a record | field-planning methods in `RecordHealthCheckEngine` (`collectRecordFields`, `addFormulaFields`, `addMergeFields`); describe lookups go through `RecordHealthCheckDescribeCache`. |
 | Write a custom **Apex check** | Implement `RecordHealthCheckRule`; see `AccountHasRecentActivityCheck`. |
 | Change **display / summary / styling** logic | `healthCheckPresentation.js` (not the HTML: templates can't branch). |
-| Change **comparison disclosure / provenance UI** | `healthCheckPresentation.js` + `recordHealthCheck.html` / `.css`. |
+| Change **comparison disclosure UI** | `healthCheckPresentation.js` + `recordHealthCheck.html` / `.css`. |
 | Change **provenance rendering / permission gate** | `RecordHealthCheckProvenance`, `RecordHealthCheckEngine.applyDetailProvenance`, `RecordHealthCheckAccess`. |
 | Change **run orchestration / concurrency** | `healthCheckRunner.js` (run queue, tokens, 5-cap). |
 | Change **framework logging** | `RecordHealthCheckLogger` (`[RHC]` debug-log facade). |

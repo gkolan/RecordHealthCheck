@@ -13,18 +13,11 @@
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
             <property
-        name="configName"
+        name="checkSetName"
         type="String"
-        label="Check Set Developer Name"
-        description="Developer name of the Record Health Check Set to run, e.g. Account_Data_Quality. Must match the Check Set's Developer Name exactly (found under Setup - Custom Metadata Types - Record Health Check Set). A mismatch is the most common cause of a blank card."
-      />
-            <property
-        name="comparisonDisclosure"
-        type="String"
-        label="Comparison Disclosure"
-        description="Initial state of the per-check comparison caret for this placement. Inherit = follow the Check Set (collapsed). Collapsed = start collapsed. Expanded = pre-open the detail on checks that have a caret. Cannot reveal detail the Check Set's Found/Expected Display does not allow."
-        datasource="Inherit,Collapsed,Expanded"
-        default="Inherit"
+        label="Check Set"
+        datasource="apex://RecordHealthCheckSetPicklist"
+        description="Choose the Check Set to run on this record page. The list shows active Check Sets whose Record Object API Name matches this page's object. If the list is empty, create and activate a Check Set for this object under Setup - Custom Metadata Types - Record Health Check Set."
       />
         </targetConfig>
     </targetConfigs>

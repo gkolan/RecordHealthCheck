@@ -47,7 +47,7 @@ The shipped Apex example is `AccountHasRecentActivityCheck`. If you want a simpl
 
 ## First troubleshooting checks
 
-- **Component shows no checks:** confirm the component's **Check Set Developer Name** exactly matches the Check Set Developer Name, such as `Account_Data_Quality`.
+- **Component shows no checks:** confirm the component's **Check Set** selection is active and targets the record page object, such as `Account_Data_Quality`.
 - **Check Set is not found:** confirm the Check Set metadata was deployed and is active.
 - **Rule is skipped:** review **Applies To**, dependencies, and whether the record meets the applicability condition.
 - **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!Id}` when it filters records for the open record.
