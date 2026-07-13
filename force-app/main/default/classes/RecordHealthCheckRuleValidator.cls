@@ -27,13 +27,13 @@
 public with sharing class RecordHealthCheckRuleValidator {
   // Valid-value sets are owned by RecordHealthCheckConstants so this validator and its two
   // callers can never drift. Local aliases keep the producers below readable.
-  private static final Set<String> VALID_COMPARATORS = RecordHealthCheckConstants.VALID_COMPARATORS;
-  private static final Set<String> DUAL_QUERY_COMPARATORS = RecordHealthCheckConstants.DUAL_QUERY_COMPARATORS;
+  private static final Set<String> VALID_OPERATORS = RecordHealthCheckConstants.VALID_OPERATORS;
+  private static final Set<String> DUAL_QUERY_OPERATORS = RecordHealthCheckConstants.DUAL_QUERY_OPERATORS;
   private static final Set<String> VALID_COMPARISON_VALUE_SOURCES = RecordHealthCheckConstants.VALID_COMPARISON_VALUE_SOURCES;
   private static final Set<String> VALID_MULTIPLE_RECORDS_HANDLING = RecordHealthCheckConstants.VALID_MULTIPLE_RECORDS_HANDLING;
   private static final Set<String> VALID_NULL_BEHAVIORS = RecordHealthCheckConstants.VALID_NULL_BEHAVIORS;
   private static final Set<String> VALID_EMPTY_BEHAVIORS = RecordHealthCheckConstants.VALID_EMPTY_BEHAVIORS;
-  private static final Set<String> VALID_APPLICABILITY_COMPARATORS = RecordHealthCheckConstants.VALID_APPLICABILITY_COMPARATORS;
+  private static final Set<String> VALID_APPLICABILITY_OPERATORS = RecordHealthCheckConstants.VALID_APPLICABILITY_OPERATORS;
   private static final Integer FRAMEWORK_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
 
   // ─── Finding model ────────────────────────────────────────────────────────
@@ -47,9 +47,9 @@ public with sharing class RecordHealthCheckRuleValidator {
     // Applicability gate
     APPLICABILITY_FORMULA_MISSING,
     APPLICABILITY_SOQL_MISSING,
-    APPLICABILITY_SOQL_NOT_SCALAR,
-    APPLICABILITY_COMPARATOR_MISSING,
-    APPLICABILITY_COMPARATOR_INVALID,
+    APPLICABILITY_SOQL_NOT_SINGLE_VALUE,
+    APPLICABILITY_OPERATOR_MISSING,
+    APPLICABILITY_OPERATOR_INVALID,
     APPLICABILITY_THRESHOLD_MISSING,
     // Formula
     FORMULA_MISSING,
@@ -59,9 +59,9 @@ public with sharing class RecordHealthCheckRuleValidator {
     LIST_COMPARE_FIELD_MISSING,
     PRIMARY_QUERY_MISSING,
     PRIMARY_QUERY_FIELD_MISSING,
-    DUAL_COMPARATOR_ON_SINGLE,
-    COMPARATOR_INVALID,
-    COMPARATOR_MISSING,
+    DUAL_OPERATOR_ON_SINGLE,
+    OPERATOR_INVALID,
+    OPERATOR_MISSING,
     MULTI_ROWS_MISSING,
     MULTI_ROWS_INVALID,
     COMPARE_AS_LISTS_ON_SINGLE,
@@ -76,12 +76,12 @@ public with sharing class RecordHealthCheckRuleValidator {
     DUAL_COMPARE_QUERY_MISSING,
     DUAL_PRIMARY_FIELD_MISSING,
     DUAL_COMPARE_FIELD_MISSING,
-    DUAL_COMPARATOR_MISSING,
-    DUAL_COMPARATOR_INVALID,
+    DUAL_OPERATOR_MISSING,
+    DUAL_OPERATOR_INVALID,
     DUAL_MULTI_ROWS_MISSING,
     DUAL_MULTI_ROWS_INVALID,
-    DUAL_LIST_MODE_NEEDS_LIST_COMPARATOR,
-    DUAL_ONE_RESULT_NO_LIST_COMPARATOR,
+    DUAL_LIST_MODE_NEEDS_LIST_OPERATOR,
+    DUAL_ONE_RESULT_NO_LIST_OPERATOR,
     // Apex
     APEX_CLASS_MISSING,
     APEX_CLASS_INVALID,
@@ -155,18 +155,18 @@ public with sharing class RecordHealthCheckRuleValidator {
           rule.ApplicabilityCountQuery__c
         )
       ) {
-        out.add(f(FindingCode.APPLICABILITY_SOQL_NOT_SCALAR));
+        out.add(f(FindingCode.APPLICABILITY_SOQL_NOT_SINGLE_VALUE));
       }
       if (String.isBlank(rule.ApplicabilityCountOperator__c)) {
-        out.add(f(FindingCode.APPLICABILITY_COMPARATOR_MISSING));
+        out.add(f(FindingCode.APPLICABILITY_OPERATOR_MISSING));
       } else if (
-        !VALID_APPLICABILITY_COMPARATORS.contains(
+        !VALID_APPLICABILITY_OPERATORS.contains(
           rule.ApplicabilityCountOperator__c
         )
       ) {
         out.add(
           f(
-            FindingCode.APPLICABILITY_COMPARATOR_INVALID,
+            FindingCode.APPLICABILITY_OPERATOR_INVALID,
             rule.ApplicabilityCountOperator__c
           )
         );
@@ -247,13 +247,13 @@ public with sharing class RecordHealthCheckRuleValidator {
 
     // Operator — at most one finding (mutually exclusive by value).
     if (String.isBlank(rule.ComparisonOperator__c)) {
-      out.add(f(FindingCode.COMPARATOR_MISSING));
-    } else if (DUAL_QUERY_COMPARATORS.contains(rule.ComparisonOperator__c)) {
+      out.add(f(FindingCode.OPERATOR_MISSING));
+    } else if (DUAL_QUERY_OPERATORS.contains(rule.ComparisonOperator__c)) {
       out.add(
-        f(FindingCode.DUAL_COMPARATOR_ON_SINGLE, rule.ComparisonOperator__c)
+        f(FindingCode.DUAL_OPERATOR_ON_SINGLE, rule.ComparisonOperator__c)
       );
-    } else if (!VALID_COMPARATORS.contains(rule.ComparisonOperator__c)) {
-      out.add(f(FindingCode.COMPARATOR_INVALID, rule.ComparisonOperator__c));
+    } else if (!VALID_OPERATORS.contains(rule.ComparisonOperator__c)) {
+      out.add(f(FindingCode.OPERATOR_INVALID, rule.ComparisonOperator__c));
     }
 
     // Query result interpretation — at most one finding.
@@ -343,11 +343,9 @@ public with sharing class RecordHealthCheckRuleValidator {
 
     // Operator — at most one finding.
     if (String.isBlank(rule.ComparisonOperator__c)) {
-      out.add(f(FindingCode.DUAL_COMPARATOR_MISSING));
-    } else if (!VALID_COMPARATORS.contains(rule.ComparisonOperator__c)) {
-      out.add(
-        f(FindingCode.DUAL_COMPARATOR_INVALID, rule.ComparisonOperator__c)
-      );
+      out.add(f(FindingCode.DUAL_OPERATOR_MISSING));
+    } else if (!VALID_OPERATORS.contains(rule.ComparisonOperator__c)) {
+      out.add(f(FindingCode.DUAL_OPERATOR_INVALID, rule.ComparisonOperator__c));
     }
 
     // Query result interpretation — only OneResult / CompareAsLists are valid.
@@ -362,20 +360,20 @@ public with sharing class RecordHealthCheckRuleValidator {
 
     // Tier 9 (CompareAsLists) needs a list operator; Tier 7 (OneResult) must not use one.
     // The isNotBlank(Operator) guards mirror MetadataValidator so a blank operator yields only
-    // DUAL_COMPARATOR_MISSING; they are no-ops for the first-fail caller.
+    // DUAL_OPERATOR_MISSING; they are no-ops for the first-fail caller.
     if (
       rule.QueryResultHandling__c == 'COMPARE_AS_LISTS' &&
       String.isNotBlank(rule.ComparisonOperator__c) &&
-      !DUAL_QUERY_COMPARATORS.contains(rule.ComparisonOperator__c)
+      !DUAL_QUERY_OPERATORS.contains(rule.ComparisonOperator__c)
     ) {
-      out.add(f(FindingCode.DUAL_LIST_MODE_NEEDS_LIST_COMPARATOR));
+      out.add(f(FindingCode.DUAL_LIST_MODE_NEEDS_LIST_OPERATOR));
     }
     if (
       rule.QueryResultHandling__c == 'ONE_RESULT' &&
       String.isNotBlank(rule.ComparisonOperator__c) &&
-      DUAL_QUERY_COMPARATORS.contains(rule.ComparisonOperator__c)
+      DUAL_QUERY_OPERATORS.contains(rule.ComparisonOperator__c)
     ) {
-      out.add(f(FindingCode.DUAL_ONE_RESULT_NO_LIST_COMPARATOR));
+      out.add(f(FindingCode.DUAL_ONE_RESULT_NO_LIST_OPERATOR));
     }
 
     return out;

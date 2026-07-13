@@ -14,16 +14,16 @@ private class RecordHealthCheckValueResolverTest {
   // ─── Extraction ────────────────────────────────────────────────────────────
 
   @isTest
-  static void scalarFromRowReadsSimpleField() {
+  static void singleValueFromRowReadsSimpleField() {
     Account a = new Account(Name = 'Acme');
     System.assertEquals(
       'Acme',
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Name')
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Name')
     );
   }
 
   @isTest
-  static void scalarFromRowTraversesRelationshipPath() {
+  static void singleValueFromRowTraversesRelationshipPath() {
     // Build a nested SObject in memory via JSON so getSObject('Parent') resolves.
     Account a = (Account) JSON.deserialize(
       '{"attributes":{"type":"Account"},"Name":"Child","Parent":{"attributes":{"type":"Account"},"Name":"ParentCo"}}',
@@ -31,24 +31,24 @@ private class RecordHealthCheckValueResolverTest {
     );
     System.assertEquals(
       'ParentCo',
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Parent.Name')
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Parent.Name')
     );
   }
 
   @isTest
-  static void scalarFromRowNullRelationshipYieldsNull() {
+  static void singleValueFromRowNullRelationshipYieldsNull() {
     Account a = new Account(Name = 'Child');
     System.assertEquals(
       null,
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Parent.Name')
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Parent.Name')
     );
   }
 
   @isTest
-  static void scalarFromRowMissingFieldThrowsInvalidTemplate() {
+  static void singleValueFromRowMissingFieldThrowsInvalidTemplate() {
     Account a = new Account(Name = 'Acme');
     try {
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Not_A_Field__c');
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Not_A_Field__c');
       System.assert(false, 'Expected ResolverException.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
@@ -251,8 +251,8 @@ private class RecordHealthCheckValueResolverTest {
       RecordHealthCheckValueResolver.orderedDateTime(operator, later, earlier);
     }
 
-    assertInvalidOrderedComparator('Decimal');
-    assertInvalidOrderedComparator('DATETIME');
+    assertInvalidOrderedOperator('Decimal');
+    assertInvalidOrderedOperator('DATETIME');
     System.assertEquals(
       earlierGmt,
       RecordHealthCheckValueResolver.coerceDateTime('2026-01-01T00:00:00Z')
@@ -261,7 +261,7 @@ private class RecordHealthCheckValueResolverTest {
       RecordHealthCheckValueResolver.applyOrdered('Nope', 1, 1);
       System.assert(false, 'Expected an invalid ordered operator.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
   }
 
@@ -274,7 +274,7 @@ private class RecordHealthCheckValueResolverTest {
     }
   }
 
-  private static void assertInvalidOrderedComparator(String valueType) {
+  private static void assertInvalidOrderedOperator(String valueType) {
     try {
       if (valueType == 'Decimal') {
         RecordHealthCheckValueResolver.orderedDecimal('Nope', 1, 1);
@@ -293,7 +293,7 @@ private class RecordHealthCheckValueResolverTest {
       }
       System.assert(false, 'Expected an invalid operator.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
   }
 

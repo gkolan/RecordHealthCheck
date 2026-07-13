@@ -234,6 +234,8 @@ public with sharing class RecordHealthCheckEngine {
   @TestVisible
   private RecordHealthCheckResult copyResult(RecordHealthCheckResult source) {
     RecordHealthCheckResult copy = new RecordHealthCheckResult();
+    copy.contractVersion = source.contractVersion;
+    copy.runId = source.runId;
     copy.checkDeveloperName = source.checkDeveloperName;
     copy.label = source.label;
     copy.status = source.status;
@@ -248,6 +250,7 @@ public with sharing class RecordHealthCheckEngine {
     copy.expectedValueSource = source.expectedValueSource;
     copy.detailMessage = source.detailMessage;
     copy.adminDetailMessage = source.adminDetailMessage;
+    copy.adminDetail = source.adminDetail;
     copy.actionLabel = source.actionLabel;
     copy.actionUrl = source.actionUrl;
     copy.fixInstructions = source.fixInstructions;
@@ -373,7 +376,7 @@ public with sharing class RecordHealthCheckEngine {
         r.label = rule.CheckTitle__c;
         r.priority = rule.EvaluationOrder__c;
         r.status = 'SKIPPED';
-        r.reasonCode = 'DEPENDENCY_NOT_PASSED';
+        r.reasonCode = RecordHealthCheckReasonCodes.PREREQUISITE_NOT_MET;
         r.message = 'Skipped because "' + prereqName + '" did not pass.';
         return applyCheckSetFlags(r, showDiagnostics);
       }
@@ -410,8 +413,10 @@ public with sharing class RecordHealthCheckEngine {
       r.label = rule.CheckTitle__c;
       r.priority = rule.EvaluationOrder__c;
       r.status = 'UNABLE_TO_EVALUATE';
-      r.reasonCode = 'RECORD_NOT_ACCESSIBLE';
-      r.message = 'The record could not be accessed. Contact your administrator.';
+      r.reasonCode = RecordHealthCheckReasonCodes.RECORD_NOT_ACCESSIBLE;
+      r.message = String.isNotBlank(rule.UnableToEvaluateMessage__c)
+        ? rule.UnableToEvaluateMessage__c
+        : 'This check could not be evaluated.';
       r.detailMessage = ex.getMessage();
       return applyCheckSetFlags(r, showDiagnostics);
     }
@@ -426,8 +431,10 @@ public with sharing class RecordHealthCheckEngine {
       r.label = rule.CheckTitle__c;
       r.priority = rule.EvaluationOrder__c;
       r.status = 'UNABLE_TO_EVALUATE';
-      r.reasonCode = 'RECORD_NOT_ACCESSIBLE';
-      r.message = 'The record could not be accessed. Contact your administrator.';
+      r.reasonCode = RecordHealthCheckReasonCodes.RECORD_NOT_ACCESSIBLE;
+      r.message = String.isNotBlank(rule.UnableToEvaluateMessage__c)
+        ? rule.UnableToEvaluateMessage__c
+        : 'This check could not be evaluated.';
       return applyCheckSetFlags(r, showDiagnostics);
     }
 
@@ -502,14 +509,27 @@ public with sharing class RecordHealthCheckEngine {
     RecordHealthCheckResult result,
     Boolean showDiagnostics
   ) {
+    String specificReasonCode = result.reasonCode;
+    Boolean containsRestrictedDetail = RecordHealthCheckReasonCodes.isDiagnosticsOnly(
+      specificReasonCode
+    );
     if (
       showDiagnostics &&
       RecordHealthCheckAccess.canViewDebugDetails() &&
-      String.isNotBlank(result.detailMessage)
+      (String.isNotBlank(result.detailMessage) || containsRestrictedDetail)
     ) {
       result.adminDetailMessage = result.detailMessage;
+      result.adminDetail = new RecordHealthCheckAdminDetail();
+      result.adminDetail.containsRestrictedDetail = containsRestrictedDetail;
+      result.adminDetail.reasonCode = specificReasonCode;
+      result.adminDetail.message = result.detailMessage;
+      result.adminDetail.fieldNames = new List<String>();
     } else {
       result.adminDetailMessage = null;
+      result.adminDetail = null;
+    }
+    if (containsRestrictedDetail) {
+      result.reasonCode = RecordHealthCheckReasonCodes.CANNOT_EVALUATE;
     }
     return result;
   }
@@ -810,7 +830,7 @@ public with sharing class RecordHealthCheckEngine {
       if (applies == null) {
         return buildUnableResult(
           rule,
-          'INVALID_COMPARATOR',
+          'INVALID_OPERATOR',
           'Applicability comparison operator "' +
             rule.ApplicabilityCountOperator__c +
             '" is not recognized.'
@@ -1249,7 +1269,9 @@ public with sharing class RecordHealthCheckEngine {
     r.priority = rule.EvaluationOrder__c;
     r.evaluatorType = rule.EvaluationType__c;
     r.status = 'SKIPPED';
-    r.reasonCode = 'APPLICABILITY_NOT_MET';
+    r.reasonCode = rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE'
+      ? RecordHealthCheckReasonCodes.NOT_APPLICABLE_BY_FORMULA
+      : RecordHealthCheckReasonCodes.NOT_APPLICABLE_BY_COUNT;
     if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
       r.message = 'This check does not apply because its formula applicability condition evaluated to false.';
     } else if (rule.ApplicabilityMode__c == 'WHEN_COUNT_QUERY_MATCHES') {

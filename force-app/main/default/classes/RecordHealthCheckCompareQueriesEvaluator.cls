@@ -104,7 +104,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
       passed = evaluateListVsList(rule, primaryRows, comparisonRows);
     } else {
       throw new RecordHealthCheckEvaluatorException(
-        'INVALID_COMPARATOR',
+        'INVALID_OPERATOR',
         'Compare two queries does not support How To Interpret Query Results "' +
           mode +
           '".' +
@@ -187,11 +187,11 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
       );
     } else {
       // CompareAsLists — show both result sets
-      List<Object> primaryList = RecordHealthCheckValueResolver.scalarList(
+      List<Object> primaryList = RecordHealthCheckValueResolver.singleValueList(
         primaryRows,
         rule.SourceQueryField__c
       );
-      List<Object> comparisonList = RecordHealthCheckValueResolver.scalarList(
+      List<Object> comparisonList = RecordHealthCheckValueResolver.singleValueList(
         comparisonRows,
         rule.ComparisonQueryField__c
       );
@@ -285,7 +285,10 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
       );
     }
     try {
-      return RecordHealthCheckValueResolver.scalarFromRow(rows[0], fieldName);
+      return RecordHealthCheckValueResolver.singleValueFromRow(
+        rows[0],
+        fieldName
+      );
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       throw new RecordHealthCheckEvaluatorException(
         ex.reasonCode,
@@ -370,7 +373,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     }
 
     throw new RecordHealthCheckEvaluatorException(
-      'INVALID_COMPARATOR',
+      'INVALID_OPERATOR',
       'Comparison operator "' +
         operator +
         '" is not valid for Compare as lists on Compare two queries.' +
@@ -389,7 +392,10 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     Integer missingIndex = 0;
     try {
       for (
-        Object val : RecordHealthCheckValueResolver.scalarList(rows, fieldName)
+        Object val : RecordHealthCheckValueResolver.singleValueList(
+          rows,
+          fieldName
+        )
       ) {
         if (val != null) {
           values.add(String.valueOf(val));

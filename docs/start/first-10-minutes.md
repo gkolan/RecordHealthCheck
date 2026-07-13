@@ -10,7 +10,7 @@ Record Health Check adds a read-only card to a Salesforce record page. The card 
 
 For this first pass, use `Example_Account_360_Health_Check`, the Check Set shown in the README screenshot. It bundles nine Account checks (owner is active, has a contact, contacts have email, recent activity is logged, open pipeline covers revenue, no high-priority open cases, an active contract, and more), so you see the full range of results. Several of these checks look beyond the Account itself, at its contacts, opportunities, cases, contracts, and activities, and one has a "Fix it" link to the `High_Priority_Open_Cases` report, filtered to this account. What each row reports depends on the account's data, so a well-populated account shows the most.
 
-Want something smaller first? `Account_Data_Quality` is a lighter starter with four single-field checks: Billing City, Industry, Phone, and Website. Swap the Developer Name below if you prefer it.
+Want something smaller first? After core is installed, deploy the optional `account-data-quality` pack from [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples) and select Check Set `Account_Data_Quality`. Install paths (Setup, Git/CLI, Local DX): [Examples install guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md).
 
 ## 1. Deploy the starter metadata
 
@@ -85,6 +85,7 @@ Everything else in the docs builds on those two ideas.
 ## Next
 
 - Create one Rule: [Getting Started](../installation/getting-started.md#step-4-create-your-first-rule)
-- See copyable patterns: [Examples catalog](../examples/index.md#core-examples)
+- Install optional packs: [Examples install guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md) (Setup · Git/CLI · Local DX)
+- Browse packs by outcome: [Examples catalog](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/catalog/by-outcome.md)
 - Troubleshoot setup: [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting)
-- Understand the admin model: [Admin Quick Start](../installation/admin-quick-start.md)
+- Understand the card model: [Admin Quick Start](../installation/admin-quick-start.md)

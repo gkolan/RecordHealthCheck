@@ -35,6 +35,50 @@ private class RecordHealthCheckSecurityAndOpsTest {
   }
 
   @isTest
+  static void restrictedReasonIsNeutralOutsideAuthorizedDiagnostics() {
+    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.status = 'UNABLE_TO_EVALUATE';
+    result.reasonCode = RecordHealthCheckReasonCodes.FIELD_NOT_ACCESSIBLE;
+    result.detailMessage = 'Secret_Field__c is not accessible';
+
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
+    RecordHealthCheckResult normal = engine.applyShowDiagnostics(result, true);
+    System.assertEquals(
+      RecordHealthCheckReasonCodes.CANNOT_EVALUATE,
+      normal.reasonCode,
+      'A normal response must use the neutral reason.'
+    );
+    System.assertEquals(
+      null,
+      normal.adminDetail,
+      'A normal response must not disclose restriction presence.'
+    );
+
+    result.reasonCode = RecordHealthCheckReasonCodes.FIELD_NOT_ACCESSIBLE;
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
+    RecordHealthCheckResult diagnostic = engine.applyShowDiagnostics(
+      result,
+      true
+    );
+    System.assertEquals(
+      RecordHealthCheckReasonCodes.CANNOT_EVALUATE,
+      diagnostic.reasonCode,
+      'The public reason remains neutral under diagnostics.'
+    );
+    System.assertEquals(true, diagnostic.adminDetail.containsRestrictedDetail);
+    System.assertEquals(
+      RecordHealthCheckReasonCodes.FIELD_NOT_ACCESSIBLE,
+      diagnostic.adminDetail.reasonCode
+    );
+    System.assertEquals(
+      'Secret_Field__c is not accessible',
+      diagnostic.adminDetail.message
+    );
+    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
+  }
+
+  @isTest
   static void passesWhenLineRequiresViewDetailsPermission() {
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 

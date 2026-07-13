@@ -800,7 +800,13 @@ export default class RecordHealthCheck extends LightningElement {
     );
   }
 
+  // Diagnostics is an authorized troubleshooting overlay: when active it auto-
+  // expands every check, overriding count-only display, so an admin can see the
+  // rows a count-only summary hides. showDiagnostics is already gated server-side
+  // (Set flag AND the diagnostics permission), so normal users are unaffected.
+  // See V2-RELEASE-PLAN §2.11.
   _isHiddenSkipped(check) {
+    if (this.showDiagnostics) return false;
     return this._isSkipped(check) && this.skippedDisplayMode === "Hide";
   }
 
@@ -814,6 +820,7 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   _isHiddenSuccess(check) {
+    if (this.showDiagnostics) return false; // auto-expand under diagnostics (§2.11)
     return this._isSuccess(check) && this.successDisplayMode === "Hide";
   }
 

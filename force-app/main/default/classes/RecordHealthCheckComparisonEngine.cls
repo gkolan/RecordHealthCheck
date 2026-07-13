@@ -46,7 +46,7 @@ public with sharing class RecordHealthCheckComparisonEngine {
       operator != 'LESS_THAN_OR_EQUAL'
     ) {
       throw new RecordHealthCheckEvaluatorException(
-        'INVALID_COMPARATOR',
+        'INVALID_OPERATOR',
         'Comparison operator "' + operator + '" is not recognized.'
       );
     }
@@ -105,7 +105,7 @@ public with sharing class RecordHealthCheckComparisonEngine {
     // indeterminate value. Fail loudly so it surfaces as UNABLE rather than
     // being misrouted into the empty/zero-rows behavior.
     throw new RecordHealthCheckEvaluatorException(
-      'INVALID_COMPARATOR',
+      'INVALID_OPERATOR',
       'Unary operator "' + operator + '" is not recognized.'
     );
   }
@@ -180,13 +180,13 @@ public with sharing class RecordHealthCheckComparisonEngine {
       // CompareAsLists requires two separate queries — use CheckType CompareTwoQueries.
       // ConfigService.validateQueryRule blocks this at config time; guard at runtime too.
       throw new RecordHealthCheckEvaluatorException(
-        'INVALID_COMPARATOR',
+        'INVALID_OPERATOR',
         'Compare query results as lists is only supported when Check Type is Compare two queries.'
       );
     }
 
     throw new RecordHealthCheckEvaluatorException(
-      'INVALID_COMPARATOR',
+      'INVALID_OPERATOR',
       'How To Interpret Query Results "' + mode + '" is not recognized.'
     );
   }
@@ -295,7 +295,7 @@ public with sharing class RecordHealthCheckComparisonEngine {
     }
 
     throw new RecordHealthCheckEvaluatorException(
-      'INVALID_COMPARATOR',
+      'INVALID_OPERATOR',
       'Comparison operator "' + operator + '" is not valid for list operations.'
     );
   }

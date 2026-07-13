@@ -515,7 +515,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   @TestVisible
   private Object readQueryFieldValue(SObject row, String fieldName) {
     try {
-      return RecordHealthCheckValueResolver.scalarFromRow(row, fieldName);
+      return RecordHealthCheckValueResolver.singleValueFromRow(row, fieldName);
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       throw new RecordHealthCheckEvaluatorException(
         ex.reasonCode,
@@ -527,7 +527,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   @TestVisible
   private List<Object> resolveFieldList(List<SObject> rows, String fieldName) {
     try {
-      return RecordHealthCheckValueResolver.scalarList(rows, fieldName);
+      return RecordHealthCheckValueResolver.singleValueList(rows, fieldName);
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       throw new RecordHealthCheckEvaluatorException(
         ex.reasonCode,

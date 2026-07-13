@@ -31,7 +31,7 @@ public with sharing class RecordHealthCheckValueResolver {
    * (e.g. "Account.Name") — a null intermediate relationship yields null rather
    * than throwing. A missing field surfaces as INVALID_SOQL_TEMPLATE.
    */
-  public static Object scalarFromRow(SObject row, String fieldName) {
+  public static Object singleValueFromRow(SObject row, String fieldName) {
     if (row instanceof AggregateResult) {
       AggregateResult ar = (AggregateResult) row;
       return String.isBlank(fieldName) ? ar.get('expr0') : ar.get(fieldName);
@@ -53,10 +53,13 @@ public with sharing class RecordHealthCheckValueResolver {
   }
 
   /** Resolves a list of raw values, one per row. */
-  public static List<Object> scalarList(List<SObject> rows, String fieldName) {
+  public static List<Object> singleValueList(
+    List<SObject> rows,
+    String fieldName
+  ) {
     List<Object> values = new List<Object>();
     for (SObject row : rows) {
-      values.add(scalarFromRow(row, fieldName));
+      values.add(singleValueFromRow(row, fieldName));
     }
     return values;
   }
@@ -75,7 +78,7 @@ public with sharing class RecordHealthCheckValueResolver {
     }
     List<String> values = new List<String>();
     for (SObject row : rows) {
-      Object val = scalarFromRow(row, fieldName);
+      Object val = singleValueFromRow(row, fieldName);
       values.add(val != null ? String.valueOf(val) : '');
     }
     return values;
@@ -212,7 +215,7 @@ public with sharing class RecordHealthCheckValueResolver {
     if (operator == 'LESS_THAN_OR_EQUAL')
       return p <= c;
     throw new ResolverException(
-      'INVALID_COMPARATOR',
+      'INVALID_OPERATOR',
       'Comparison operator "' + operator + '" is not an ordered operator.'
     );
   }
@@ -232,7 +235,7 @@ public with sharing class RecordHealthCheckValueResolver {
     if (operator == 'LESS_THAN_OR_EQUAL')
       return p <= c;
     throw new ResolverException(
-      'INVALID_COMPARATOR',
+      'INVALID_OPERATOR',
       'Comparison operator "' + operator + '" is not an ordered operator.'
     );
   }

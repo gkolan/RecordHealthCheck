@@ -4,6 +4,12 @@
  */
 
 public class RecordHealthCheckResult {
+  public static final String CONTRACT_VERSION = '0.1';
+
+  @AuraEnabled
+  public String contractVersion = CONTRACT_VERSION;
+  @AuraEnabled
+  public String runId;
   // The expectedValueLabel a Formula check uses when it echoes its raw pass/fail
   // condition instead of a business comparison value. This "Passes when" line is
   // a technical explanation, so the engine gates it (and the raw expectedValue it
@@ -39,6 +45,8 @@ public class RecordHealthCheckResult {
   public String detailMessage; // intentionally not @AuraEnabled — raw exception text, internal only
   @AuraEnabled
   public String adminDetailMessage; // populated from detailMessage when ShowDiagnostics__c is on
+  @AuraEnabled
+  public RecordHealthCheckAdminDetail adminDetail; // null unless authorized diagnostics is active
   @AuraEnabled
   public String actionLabel; // label for the read-only remediation link — from ActionLabel__c, shown only on FAIL
   @AuraEnabled

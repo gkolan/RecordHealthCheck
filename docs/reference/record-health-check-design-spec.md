@@ -389,7 +389,7 @@ behavior IDs **B14**, **B18**; and the §17 custom-permission list.
 | `NO_ACTIVE_CHECKS` | Check Set has no active Rules. |
 | `INVALID_CONFIG` | Check Set or Rule configuration is invalid. |
 | `INVALID_CHECK_TYPE` | Check Type is not recognized. |
-| `INVALID_COMPARATOR` | Operator is missing, invalid, or invalid for the Rule shape. |
+| `INVALID_OPERATOR` | Operator is missing, invalid, or invalid for the Rule shape. |
 | `INVALID_FORMULA` | Formula is missing, malformed, or returns the wrong type. |
 | `INVALID_SOQL_TEMPLATE` | SOQL is missing, malformed, or unsafe. |
 | `MISSING_BIND_VALUE` | SOQL token could not be resolved from the current record. |

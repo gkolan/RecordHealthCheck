@@ -285,4 +285,16 @@
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>8. Lifecycle Events</label>
+        <layoutColumns>
+            <layoutItems><behavior>Edit</behavior><field
+        >PublishResultEvent__c</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns />
+        <style>TwoColumnsLeftToRight</style>
+    </layoutSections>
 </Layout>

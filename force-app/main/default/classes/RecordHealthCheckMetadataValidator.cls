@@ -551,7 +551,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'INVALID_SOQL_TEMPLATE'
         );
       }
-      when APPLICABILITY_SOQL_NOT_SCALAR {
+      when APPLICABILITY_SOQL_NOT_SINGLE_VALUE {
         return err(
           rule,
           'ApplicabilityCountQuery__c',
@@ -559,22 +559,22 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'INVALID_SOQL_TEMPLATE'
         );
       }
-      when APPLICABILITY_COMPARATOR_MISSING {
+      when APPLICABILITY_OPERATOR_MISSING {
         return err(
           rule,
           'ApplicabilityCountOperator__c',
           'Applicability comparison operator is required when Applicability Mode is SOQL.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
-      when APPLICABILITY_COMPARATOR_INVALID {
+      when APPLICABILITY_OPERATOR_INVALID {
         return err(
           rule,
           'ApplicabilityCountOperator__c',
           'Applicability comparison operator "' +
             val +
             '" is not recognized. Valid values: Equals, NotEquals, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
       when APPLICABILITY_THRESHOLD_MISSING {
@@ -635,30 +635,30 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'MISSING_REQUIRED_FIELD'
         );
       }
-      when DUAL_COMPARATOR_ON_SINGLE {
+      when DUAL_OPERATOR_ON_SINGLE {
         return err(
           rule,
           'ComparisonOperator__c',
           'Operator "' +
             val +
             '" requires Evaluation Type Compare two queries.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
-      when COMPARATOR_INVALID {
+      when OPERATOR_INVALID {
         return err(
           rule,
           'ComparisonOperator__c',
           'Comparison operator "' + val + '" is not recognized.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
-      when COMPARATOR_MISSING {
+      when OPERATOR_MISSING {
         return err(
           rule,
           'ComparisonOperator__c',
           'Comparison operator is required for Query checks.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
       when MULTI_ROWS_MISSING {
@@ -682,7 +682,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
           rule,
           'QueryResultHandling__c',
           'Compare query results as lists requires Evaluation Type Compare two queries, not Check records with a query.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
       when COMPARE_AGAINST_MISSING {
@@ -766,20 +766,20 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'MISSING_REQUIRED_FIELD'
         );
       }
-      when DUAL_COMPARATOR_MISSING {
+      when DUAL_OPERATOR_MISSING {
         return err(
           rule,
           'ComparisonOperator__c',
           'Comparison operator is required for Compare two queries checks.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
-      when DUAL_COMPARATOR_INVALID {
+      when DUAL_OPERATOR_INVALID {
         return err(
           rule,
           'ComparisonOperator__c',
           'Comparison operator "' + val + '" is not recognized.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
       when DUAL_MULTI_ROWS_MISSING {
@@ -795,23 +795,23 @@ public with sharing class RecordHealthCheckMetadataValidator {
           rule,
           'QueryResultHandling__c',
           'Compare two queries requires How To Interpret Query Results to be Expect one row or aggregate result, or Compare query results as lists.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
-      when DUAL_LIST_MODE_NEEDS_LIST_COMPARATOR {
+      when DUAL_LIST_MODE_NEEDS_LIST_OPERATOR {
         return err(
           rule,
           'ComparisonOperator__c',
           'Compare query results as lists mode requires a list operator: Lists overlap, List contains all, or Exact list match.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
-      when DUAL_ONE_RESULT_NO_LIST_COMPARATOR {
+      when DUAL_ONE_RESULT_NO_LIST_OPERATOR {
         return err(
           rule,
           'ComparisonOperator__c',
           'List operators (Lists overlap, List contains all, Exact list match) require Compare query results as lists mode.',
-          'INVALID_COMPARATOR'
+          'INVALID_OPERATOR'
         );
       }
       // ── Apex ──

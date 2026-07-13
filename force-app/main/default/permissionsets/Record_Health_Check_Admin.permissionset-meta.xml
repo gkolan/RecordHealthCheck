@@ -28,4 +28,26 @@
         <apexClass>RecordHealthCheckSetPicklist</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckFlowAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Record_Health_Check_Set_Run__e</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Record_Health_Check_Rule_Result__e</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
 </PermissionSet>

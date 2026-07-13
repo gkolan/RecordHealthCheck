@@ -4,6 +4,8 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-13
+
 ### Breaking changes
 
 - Internal wire property `debugMode` renamed to `showDiagnostics` (matches `ShowDiagnostics__c`).
@@ -11,6 +13,17 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - `RecordHealthCheckDualSoqlEvaluator` renamed to `RecordHealthCheckCompareQueriesEvaluator`.
 - Plugin API `RecordHealthCheckProvenance` / `actualProvenance` / `expectedProvenance` renamed to `RecordHealthCheckValueSource` / `actualValueSource` / `expectedValueSource`.
 - `RecordHealthCheckComparatorEngine` renamed to `RecordHealthCheckComparisonEngine` (comparison helper methods renamed accordingly).
+- Rule and Check Set field API names changed as listed in `releases/v2/field-migration-before-after.md`; V2 does not dual-read v1.x names.
+- Public constant names ending in `COMPARATORS` now end in `OPERATORS`; value-resolver methods named `scalarFromRow` / `scalarList` are now `singleValueFromRow` / `singleValueList`.
+- Reason code `INVALID_COMPARATOR` is now `INVALID_OPERATOR`.
+- Category vocabulary changed, Severity `Error` became `Critical`, and long-text fields that became Text are limited to 255 characters.
+- `MaxQueryRows__c` defaults to 200, `EmptyValueHandling__c` to `AS_NO_MATCH`, and `EvaluationOrder__c` to 100.
+
+### Added
+
+- Versioned, bounded synchronous Rule/Check Set façade and Flow action.
+- Opt-in, Publish After Commit Set Run and Rule Result lifecycle events.
+- Stable reason-code catalog, diagnostics-only restricted detail, and explicit skip causes.
 
 ## [1.2.0]: 2026-07-09
 
