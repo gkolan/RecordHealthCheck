@@ -9,7 +9,7 @@
 title: Record Health Check
 description: Metadata-driven, advisory record health checks for Salesforce
 url: https://gkolan.github.io
-baseurl: /recordHealthCheck
+baseurl: /RecordHealthCheck
 
 # Apply the doc-page layout to every page; index.html overrides this to "home".
 defaults:

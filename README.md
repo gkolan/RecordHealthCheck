@@ -1,9 +1,9 @@
 # Record Health Check
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![CI](https://github.com/gkolan/recordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/recordHealthCheck/actions/workflows/ci.yml)
+[![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
 [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-66.0-00A1E0.svg)](sfdx-project.json)
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main)
+[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)
 
 Record Health Check is a metadata-driven framework for running data-quality checks against a Salesforce record, right on its **record page**. It is **advisory** and read-only, so it never blocks a save and never writes a field. You define **Check Sets** and **Rules** in Custom Metadata; the framework evaluates the open record, and the card shows each result as **Pass**, **Fail**, **Skipped**, or **Unable to Check** — with a failing check flagged by severity as **Error**, **Warning**, or **Info**.
 
@@ -28,7 +28,7 @@ Because it runs at read time rather than save time, it can evaluate across relat
       <p>Checks are grouped into a <b>check set</b> per object. This example is an Account, but the same card drops onto any object's record page.</p>
       <!-- Video walkthrough: replace the line below with
            <p><sub>▶ <a href="https://youtu.be/YOUR_VIDEO_ID">Watch the two-minute walkthrough</a></sub></p> -->
-      <p><sub>▶ <a href="https://github.com/gkolan/recordHealthCheck/blob/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See it in motion (animated GIF)</a></sub></p>
+      <p><sub>▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See it in motion (animated GIF)</a></sub></p>
     </td>
     <td width="42%" valign="top">
       <img src="docs/assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
@@ -44,15 +44,15 @@ Install into a **sandbox** first. Pick whichever path fits you — all three dep
 > [!IMPORTANT]
 > **Upgrading to v1.2.0 from an earlier release:** v1.2.0 removes the old Lightning component properties `configName` and `comparisonDisclosure`. Before deploying the upgrade to an org that already has Record Health Check on record pages, open those pages in Lightning App Builder, remove or reconfigure the old component placement, and save it with the current **Check Set** picker. After deployment, verify the selected Check Set still matches the page object.
 
-v1.2.0 also moves comparison provenance to **browser-console diagnostics only** (F12, for admins with `Record_Health_Check_View_Details`), replaces the removed `Record_Health_Check_Debug` permission with `Record_Health_Check_View_Details`, and selects the Check Set from a metadata-backed **dropdown** in App Builder instead of free text.
+v1.2.0 also moves comparison diagnostic details to **browser-console diagnostics only** (F12, for admins with `Record_Health_Check_View_Details`), replaces the removed `Record_Health_Check_Debug` permission with `Record_Health_Check_View_Details`, and selects the Check Set from a metadata-backed **dropdown** in App Builder instead of free text.
 
-**Option 1 — Deploy button (no command line).** Click **[Deploy to Salesforce](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main)**, log in to your sandbox, and click Deploy.
+**Option 1 — Deploy button (no command line).** Click **[Deploy to Salesforce](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)**, log in to your sandbox, and click Deploy.
 
 **Option 2 — Salesforce CLI.**
 
 ```bash
-git clone https://github.com/gkolan/recordHealthCheck.git
-cd recordHealthCheck
+git clone https://github.com/gkolan/RecordHealthCheck.git
+cd RecordHealthCheck
 sf project deploy start --source-dir force-app
 sf org assign permset --name Record_Health_Check_User
 ```
