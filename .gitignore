@@ -110,3 +110,6 @@ bugs/
 **/__pycache__/
 **/.venv/
 **/venv/
+
+# Local recycle bin — superseded material kept on disk but never tracked
+recycle-bin/
