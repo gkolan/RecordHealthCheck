@@ -1,0 +1,25 @@
+name: Validate packs
+
+on:
+  pull_request:
+    paths:
+      - "packs/**"
+      - "docs/facet-vocabulary.yml"
+      - "docs/manifest-schema.json"
+      - "scripts/**"
+      - "catalog/**"
+  push:
+    branches: [main, master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run validate
+      - run: npm run check-catalog
