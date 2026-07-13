@@ -50,7 +50,7 @@ The shipped Apex example is `AccountHasRecentActivityCheck`. If you want a simpl
 - **Component shows no checks:** confirm the component's **Check Set** selection is active and targets the record page object, such as `Account_Data_Quality`.
 - **Check Set is not found:** confirm the Check Set metadata was deployed and is active.
 - **Rule is skipped:** review **Applies To**, dependencies, and whether the record meets the applicability condition.
-- **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!Id}` when it filters records for the open record.
+- **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!record.Id}` when it filters records for the open record.
 - **SOQL query returns more than one row:** use an aggregate such as `COUNT()` or choose a multi-row setting such as "At least one record must pass."
 - **Formula errors:** confirm the formula returns true/false for pass/fail and uses valid field API names.
 - **User does not see troubleshooting details:** confirm the Check Set enables troubleshooting details and the user has the Permission Set named `Record_Health_Check_Admin`.

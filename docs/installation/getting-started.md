@@ -19,14 +19,14 @@ You configure two record types in **Setup → Custom Metadata Types**:
 | Plain name | Setup name | API type | One sentence |
 | ---------- | ---------- | -------- | ------------ |
 | **Check Set** | Record Health Check Set | `Record_Health_Check_Set__mdt` | The panel: which object it runs on, when it runs, and how results display |
-| **Rule** | Record Health Check Rule | `Record_Health_Check_Rule__mdt` | One check inside that panel (for example, “Billing City must not be blank”) |
+| **Rule** | Record Health Check Rule | `Record_Health_Check_Rule__mdt` | One check inside that card (for example, “Billing City must not be blank”) |
 
 The card does **not** block saves or change field values. It only **shows** health information.
 
 ## Prerequisites
 
 - A Salesforce org where you can customize Lightning pages and edit Custom Metadata
-- For **Check fields on this record** checks (`CheckMethod__c` = `Formula`): org API **v63.0 or later** (Spring ’25). If you are unsure, use **Check records with a query** checks instead: they work on older API versions.
+- For **Check fields on this record** checks (`EvaluationType__c` = `Formula`): org API **v63.0 or later** (Spring ’25). If you are unsure, use **Check records with a query** checks instead: they work on older API versions.
 - A way to deploy the package (see Step 1). **Option A** (CLI) deploys from the repository; **Option B** (metadata deploy through your org's normal process) works if you do not use the CLI.
 
 > [!IMPORTANT]
@@ -86,8 +86,8 @@ Users need Apex access to run the component. Assign the least-privilege Permissi
 
 | API name | Setup label | Assign when |
 | -------- | ----------- | ----------- |
-| `Record_Health_Check_User` | Record Health Check User | Run the card on record pages (no troubleshooting detail, no provenance) |
-| `Record_Health_Check_Admin` | Record Health Check Admin | Troubleshooting and audit: includes `Record_Health_Check_View_Details` and `Record_Health_Check_Configure` (configure is reserved for future tooling). Required for [Show Troubleshooting Details](../guides/debug-mode.md) and comparison provenance. |
+| `Record_Health_Check_User` | Record Health Check User | Run the card on record pages (no troubleshooting detail, no diagnostic details) |
+| `Record_Health_Check_Admin` | Record Health Check Admin | Troubleshooting and audit: includes `Record_Health_Check_View_Details` and `Record_Health_Check_Configure` (configure is reserved for future tooling). Required for [Show Troubleshooting Details](../guides/show-diagnostics.md) and comparison diagnostic details. |
 
 In **Setup → Permission Sets**, open the Permission Set → **Manage Assignments** → **Add Assignments**.
 
@@ -95,7 +95,7 @@ The Permission Set named `Record_Health_Check_User` grants Apex class access to 
 
 **Verify assignment:** After assigning the Permission Set named `Record_Health_Check_User`, open an Account on a page with the component and confirm checks run with pass/fail rows only: no **Troubleshooting detail** block and no `[RHC]` console block. Assign the Permission Set named `Record_Health_Check_Admin` only when you need Show Troubleshooting Details.
 
-**Show Troubleshooting Details:** If you enable **Show Troubleshooting Details** on a Check Set, you must also assign the Permission Set named `Record_Health_Check_Admin` to see the extra lines on the card and console output. See [Show Troubleshooting Details guide](../guides/debug-mode.md).
+**Show Troubleshooting Details:** If you enable **Show Troubleshooting Details** on a Check Set, you must also assign the Permission Set named `Record_Health_Check_Admin` to see the extra lines on the card and console output. See [Show Troubleshooting Details guide](../guides/show-diagnostics.md).
 
 ## Step 2: Add the component to a record page
 
@@ -117,7 +117,7 @@ The component only works on **record pages** because it needs the current record
 ## Step 3: Verify with a sample Check Set
 
 1. Open any Account on the page you edited.
-2. If the Check Set **Start Checks** (`RunChecksWhen__c`) is **Run automatically when the page opens**, checks run after the page loads. If it is **Wait for the user to click Run**, click **Run** on the card.
+2. If the Check Set **Start Checks** (`CardRunMode__c`) is **Run automatically when the page opens**, checks run after the page loads. If it is **Wait for the user to click Run**, click **Run** on the card.
 3. If the component is configured correctly, you will see a health check card with checks and pass/fail results. When a Rule **fails**, look beneath the failure message for **Found** / **Expected** labelled chips (Query and Compare Two Queries checks) that show what the record produced versus what the rule required. Use **Found/Expected Display** on the Check Set to control whether passing checks also show values (see [Check Set fields](../metadata/check-set.md#foundexpected-display-comparisondisplay__c)). If you do not see the card at all, see [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
 
 **To view the sample configuration in Setup**
@@ -138,15 +138,15 @@ The simplest Rule is a **Check fields on this record** check: Billing City must 
    | ----------- | -------- | ----- |
    | Developer Name | `DeveloperName` | `My_Billing_City_Required` |
    | Label | Master Label | `Billing City Required` |
-   | Check Name | `CheckName__c` | `Billing City Required` |
+   | Check Name | `CheckTitle__c` | `Billing City Required` |
    | Check Set | `Record_Health_Check_Set__c` | Your Check Set |
-   | Run Order (lower runs first) | `RunOrder__c` | `100` (lower numbers run first) |
+   | Run Order (lower runs first) | `EvaluationOrder__c` | `100` (lower numbers run first) |
    | Active | `IsActive__c` | Checked |
-   | Check Type | `CheckMethod__c` | `Check fields on this record` |
-   | Pass Condition (Formula) | `PassFailFormula__c` | `NOT(ISBLANK(BillingCity))` |
-   | Applies To | `RunThisCheckWhen__c` | `All records` |
-   | Severity | `Severity__c` | `Error` |
-   | Message When Check Fails | `MessageWhenFailed__c` | `Billing City is required.` |
+   | Check Type | `EvaluationType__c` | `Check fields on this record` |
+   | Pass Condition (Formula) | `PassConditionFormula__c` | `NOT(ISBLANK(BillingCity))` |
+   | Applies To | `ApplicabilityMode__c` | `All records` |
+   | Severity | `FailureSeverity__c` | `Error` |
+   | Message When Check Fails | `FailureMessage__c` | `Billing City is required.` |
 
 3. **Save**, refresh the Account record page, and confirm the new Rule appears.
 

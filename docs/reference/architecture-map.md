@@ -29,10 +29,10 @@ Record page
                                       └─ route to ONE evaluator:
                                            ├─ FormulaEvaluator
                                            ├─ SoqlEvaluator
-                                           ├─ DualSoqlEvaluator
-                                           └─ ApexEvaluatorDispatcher ─► RecordHealthCheckRule plugin
+                                           ├─ RecordHealthCheckCompareQueriesEvaluator
+                                           └─ ApexEvaluator ─► RecordHealthCheckRule plugin
                                       (all SOQL paths share:
-                                           SoqlTemplate · ValueResolver · ComparatorEngine)
+                                           SoqlTemplate · ValueResolver · RecordHealthCheckComparisonEngine)
                                       ▼
                                  RecordHealthCheckResult  ──► back to LWC
 ```
@@ -63,14 +63,14 @@ One line each. Lines counts flag the four refactor hotspots (see 6).
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
 | `RecordHealthCheckFormulaEvaluator` | 317 | Evaluates Formula checks via `FormulaEval`; transaction-wide budget. |
-| `RecordHealthCheckSoqlEvaluator` | 503 | Single-query checks: token binding, query exec, scalar/aggregate comparison. |
-| `RecordHealthCheckDualSoqlEvaluator` | 391 | Compares two queries (scalar & list comparators). |
-| `RecordHealthCheckApexEvaluatorDispatcher` | 226 | Instantiates & runs a `RecordHealthCheckRule` plugin; validates its returned status. |
+| `RecordHealthCheckSoqlEvaluator` | 503 | Single-query checks: token binding, query exec, single-value/aggregate comparison. |
+| `RecordHealthCheckCompareQueriesEvaluator` | 391 | Compares two queries (single-value & list operators). |
+| `RecordHealthCheckApexEvaluator` | 226 | Instantiates & runs a `RecordHealthCheckRule` plugin; validates its returned status. |
 
 ### Shared evaluator utilities (the DRY core: change comparison logic here)
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
-| `RecordHealthCheckComparatorEngine` | 365 | Shared comparator + null/empty-behavior engine for both SOQL evaluators; formats `actualValue` / `expectedValue` for display. |
+| `RecordHealthCheckComparisonEngine` | 365 | Shared comparison operator + null/empty-behavior engine for both SOQL evaluators; formats `actualValue` / `expectedValue` for display. |
 | `RecordHealthCheckDescribeCache` | 80 | Caches Schema describe results for the Apex transaction so busy record pages do less repeated metadata work. |
 | `RecordHealthCheckSoqlTemplate` | 327 | Parenthesis-depth-aware SOQL normalizer + string-literal masking. |
 | `RecordHealthCheckValueResolver` | 239 | Value extraction, coercion, and comparison for SOQL results. |
@@ -79,8 +79,8 @@ One line each. Lines counts flag the four refactor hotspots (see 6).
 | Class | Lines | Responsibility |
 |-------|------:|----------------|
 | `RecordHealthCheckLogger` | 190 | Single logging facade for the framework. |
-| `RecordHealthCheckAccess` | 34 | Gates Advanced-tier details through `Record_Health_Check_View_Details`: troubleshooting when `DebugMode__c` is on, and comparison provenance in console diagnostics. |
-| `RecordHealthCheckProvenance` | 73 | Renders structured provenance `Detail` into `actualValueDetail` / `expectedValueDetail` strings. |
+| `RecordHealthCheckAccess` | 34 | Gates Advanced-tier details through `Record_Health_Check_View_Details`: troubleshooting when `ShowDiagnostics__c` is on, and comparison diagnostic details in console diagnostics. |
+| `RecordHealthCheckValueSource` | 73 | Renders structured diagnostic details `Detail` into `actualValueDetail` / `expectedValueDetail` strings. |
 | `RecordHealthCheckSetPicklist` | 73 | Design-time App Builder picklist for the LWC `checkSetName` property, scoped to the page object. |
 
 ### DTOs & contracts (data carriers: no behavior)
@@ -111,15 +111,15 @@ by concern: do **not** split into separate LWCs):
 | API name | Type | Role |
 |----------|------|------|
 | `Record_Health_Check_Set__mdt` | Custom Metadata | A named group of checks bound to one object + display settings. |
-| `Record_Health_Check_Rule__mdt` | Custom Metadata | One check: type, query/formula, comparator, severity, applicability, dependencies. |
+| `Record_Health_Check_Rule__mdt` | Custom Metadata | One check: type, query/formula, comparison operator, severity, applicability, dependencies. |
 | Permission Sets / Custom Permissions | | `Record_Health_Check_User`; `Record_Health_Check_Admin` (includes `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`). |
 
 ## 6. "Where do I change X?" index
 
 | I want to… | Go to |
 |------------|-------|
-| Add/adjust a **comparator** (`equals`, `>`, list overlap…) | `RecordHealthCheckComparatorEngine`: **only here**; both SOQL evaluators delegate to it. |
-| Change **null / empty behavior** semantics | `RecordHealthCheckComparatorEngine` + `RecordHealthCheckConstants`. |
+| Add/adjust a **comparison operator** (`equals`, `>`, list overlap…) | `RecordHealthCheckComparisonEngine`: **only here**; both SOQL evaluators delegate to it. |
+| Change **null / empty behavior** semantics | `RecordHealthCheckComparisonEngine` + `RecordHealthCheckConstants`. |
 | Add a new **valid enum value** (mode, severity, Check Type) | `RecordHealthCheckConstants`: both validators read from it. |
 | Add a **new Check Type** | New evaluator class + routing in `RecordHealthCheckEngine.routeEvaluator` + a `validate*Rule` in *both* validators (until D1 lands). |
 | Change **rule validation** rules | ⚠️ today edit **both** `ConfigService` and `MetadataValidator` (see D1). After D1: one `RecordHealthCheckRuleValidator`. |
@@ -128,17 +128,17 @@ by concern: do **not** split into separate LWCs):
 | Write a custom **Apex check** | Implement `RecordHealthCheckRule`; see `AccountHasRecentActivityCheck`. |
 | Change **display / summary / styling** logic | `healthCheckPresentation.js` (not the HTML: templates can't branch). |
 | Change **comparison disclosure UI** | `healthCheckPresentation.js` + `recordHealthCheck.html` / `.css`. |
-| Change **provenance rendering / permission gate** | `RecordHealthCheckProvenance`, `RecordHealthCheckEngine.applyDetailProvenance`, `RecordHealthCheckAccess`. |
+| Change **diagnostic details rendering / permission gate** | `RecordHealthCheckValueSource`, `RecordHealthCheckEngine.applyValueSourceDetail`, `RecordHealthCheckAccess`. |
 | Change **run orchestration / concurrency** | `healthCheckRunner.js` (run queue, tokens, 5-cap). |
 | Change **framework logging** | `RecordHealthCheckLogger` (`[RHC]` debug-log facade). |
 
 ### Known structural debt (do not add to it)
 - **D1: duplicated validation:** `ConfigService` and `MetadataValidator` both implement
   `validateApplicability / validateFormulaRule / validateQueryRule / validateApexRule /
-  validateDualSoqlRule`. The standing plan is to extract one
+  validateCompareQueriesRule`. The standing plan is to extract one
   `RecordHealthCheckRuleValidator`. **Never add a third copy.**
-- **D2/D3: comparator duplication:** ✅ closed (2026-06-20): both evaluators use
-  `RecordHealthCheckComparatorEngine`; do not reintroduce private comparator methods.
+- **D2/D3: comparison operator duplication:** ✅ closed (2026-06-20): both evaluators use
+  `RecordHealthCheckComparisonEngine`; do not reintroduce private comparison operator methods.
 - **Refactor hotspots (size):** `MetadataValidator` (1,138), `Engine` (975),
   `ConfigService` (893), and the test `RecordHealthCheckCoverageTest` (3,340). See the
   backlog for the split plan.

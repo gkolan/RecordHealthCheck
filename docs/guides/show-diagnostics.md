@@ -11,14 +11,14 @@ Show Troubleshooting Details does **not** save history and does **not** write an
 
 | Step | What to do | Where in Setup |
 | ---- | ---------- | -------------- |
-| **1. Check Set** | Check **Show Troubleshooting Details** | **Custom Metadata Types** → **Record Health Check Set** → open your Check Set → **Show Troubleshooting Details** (`DebugMode__c`) |
+| **1. Check Set** | Check **Show Troubleshooting Details** | **Custom Metadata Types** → **Record Health Check Set** → open your Check Set → **Show Troubleshooting Details** (`ShowDiagnostics__c`) |
 | **2. User** | Assign the Permission Set named `Record_Health_Check_Admin` | **Permission Sets** → open `Record_Health_Check_Admin` → **Manage Assignments** → add the troubleshooting user |
 
 Step 2 grants the **`Record_Health_Check_View_Details`** custom permission. That permission unlocks advanced details; the Check Set's **Show Troubleshooting Details** flag decides when troubleshooting output appears on the card and in the console.
 
 ### Permission Sets: which one unlocks troubleshooting detail?
 
-| API name | Setup label | Troubleshooting detail? | Comparison provenance (`*Detail`)? |
+| API name | Setup label | Troubleshooting detail? | comparison diagnostic details (`*Detail`)? |
 | -------- | ----------- | ------------------------------------ | -------------------------------- |
 | `Record_Health_Check_User` | Record Health Check User | **No**: can run the card, but sees only normal pass/fail messages | **No** |
 | `Record_Health_Check_Admin` | Record Health Check Admin | **Yes**: includes `Record_Health_Check_View_Details` | **Yes**: includes `Record_Health_Check_View_Details` |
@@ -29,7 +29,7 @@ If you checked Show Troubleshooting Details on the Check Set but still see a nor
 
 | Custom permission | What it unlocks |
 | ----------------- | --------------- |
-| `Record_Health_Check_View_Details` | **Always** (even with Show Troubleshooting Details off): Formula **Passes when** labels on entitled rows. **With Show Troubleshooting Details on:** gray troubleshooting lines, **Troubleshooting detail** blocks, console footnote, the `[RHC]` console summary, and comparison provenance notes (`actualValueDetail` / `expectedValueDetail`) inside the nested `[RHC] Source detail` group. |
+| `Record_Health_Check_View_Details` | **Always** (even with Show Troubleshooting Details off): Formula **Passes when** labels on entitled rows. **With Show Troubleshooting Details on:** gray troubleshooting lines, **Troubleshooting detail** blocks, console footnote, the `[RHC]` console summary, and comparison diagnostic details notes (`actualValueDetail` / `expectedValueDetail`) inside the nested `[RHC] Source detail` group. |
 | `Record_Health_Check_Configure` | Reserved for future admin tooling (Rule Tester). Shipped in the Admin set; no runtime feature gates on it yet. |
 
 After changing the Check Set or permission set assignment, **refresh the record page**.
@@ -43,7 +43,7 @@ After you **run** the checks (automatic or manual), and only when both steps abo
 | **Gray line under each result** | Compact summary, for example `FAIL · FORMULA_FALSE · 38ms · Formula`: status, reason code, time taken, Check Type (API value) |
 | **Troubleshooting detail** | On checks that errored or did not run, a **Troubleshooting detail** block showing the technical message inline (SOQL problems, missing field access, and similar) |
 | **Found / Expected** | On failing checks, labelled chips when the engine captured values. Found / Expected visibility is controlled by **Found/Expected Display** on the Check Set. |
-| **Comparison provenance** | When the viewer has `Record_Health_Check_View_Details`, source details are included in the F12 browser console diagnostics, not on the card. |
+| **comparison diagnostic details** | When the viewer has `Record_Health_Check_View_Details`, source details are included in the F12 browser console diagnostics, not on the card. |
 | **Console hint** | Small footnote at the bottom of the card: **Check console (F12) for diagnostics.** |
 
 Users **without** `Record_Health_Check_View_Details` never see the gray lines, Troubleshooting detail blocks, or the console hint: even when Show Troubleshooting Details is checked on the Check Set. This is intentional so technical detail is not exposed to everyday users.
@@ -60,7 +60,7 @@ Inside that group you will see:
 - **Outcome summary**: one line such as `3 Passed, 2 Failed · 847ms total`.
 - **Run metadata**: run id, check set, record id, user id, and timestamp (for matching Apex logs).
 - **Results table**: every check with status, severity, reason code, found/expected values, duration, and evaluator type.
-- **Source detail group**: when any check has provenance strings, a nested `[RHC] Source detail` group lists Found and Expected source notes per check (label, developer name, and status in the heading). No empty group is logged.
+- **Source detail group**: when any check has diagnostic detail strings, a nested `[RHC] Source detail` group lists Found and Expected source notes per check (label, developer name, and status in the heading). No empty group is logged.
 
 Use the **run id** to match Apex log entries when Apex logging is enabled for your user.
 
