@@ -42,6 +42,8 @@ Because it runs at read time rather than save time, it can evaluate across relat
 Install into a **sandbox** first. Pick whichever path fits you — all three deploy the same `force-app` source.
 
 > [!IMPORTANT]
+> **Upgrading to V2:** V2 is a breaking metadata-contract release with no dual-read support for v1.x field names. Back up custom metadata and follow the [V2 upgrade and rollback guide](docs/installation/upgrading-to-v2.md) before deploying.
+
 > **Upgrading to v1.2.0 from an earlier release:** v1.2.0 removes the old Lightning component properties `configName` and `comparisonDisclosure`. Before deploying the upgrade to an org that already has Record Health Check on record pages, open those pages in Lightning App Builder, remove or reconfigure the old component placement, and save it with the current **Check Set** picker. After deployment, verify the selected Check Set still matches the page object.
 
 v1.2.0 also moves comparison diagnostic details to **browser-console diagnostics only** (F12, for admins with `Record_Health_Check_View_Details`), replaces the removed `Record_Health_Check_Debug` permission with `Record_Health_Check_View_Details`, and selects the Check Set from a metadata-backed **dropdown** in App Builder instead of free text.
@@ -80,19 +82,18 @@ Open only the page you need.
 
 - Learn the concepts: [Admin Quick Start](docs/installation/admin-quick-start.md)
 - Create your first Rule: [Getting Started](docs/installation/getting-started.md#step-4-create-your-first-rule)
-- Copy an example: [Examples catalog](docs/examples/index.md)
+- Install an example pack: [Examples install guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)
 - Add a "Fix it" link: [Action Links and Fix Instructions](docs/guides/action-links.md)
 - Full field reference: [Configuration Guide](docs/guides/configuration-guide.md) or [Apex plugin reference](docs/apex/plugin-reference.md)
 
 ## Example Library
 
-Start with one example. Use the full library when you need another pattern:
+Reusable scenario packs live in [**RecordHealthCheck-Examples**](https://github.com/gkolan/RecordHealthCheck-Examples). Core ships one hero Check Set (`Example_Account_360_Health_Check`); optional packs install independently afterward.
 
-- [Formula examples](docs/examples/index.md#formula)
-- [SOQL single-query examples](docs/examples/index.md#soql-single-query)
-- [SOQL compare-two-queries examples](docs/examples/index.md#soql-compare-two-queries)
-- [Apex examples](docs/examples/index.md#apex)
-- [Sample Check Set packages](docs/examples/index.md#sample-check-set-packages)
+- [Install packs (Setup · Git/CLI · Local DX)](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)
+- [Pack catalog by outcome](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/catalog/by-outcome.md)
+- [Pattern library](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/index.md)
+- [Authoring guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/authoring-guide.md)
 
 ## Local Checks
 

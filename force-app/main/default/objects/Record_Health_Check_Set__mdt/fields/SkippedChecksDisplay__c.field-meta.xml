@@ -3,9 +3,9 @@
     <fullName>SkippedChecksDisplay__c</fullName>
     <label>Skipped Checks</label>
     <description
-  >Controls how checks that are Skipped (they did not apply to this record) appear. "Show each check" lists every skipped check. "Show count only" removes skipped checks from the list; their count still appears in the summary bar at the bottom of the card. Defaults to "Show each check".</description>
+  >Controls how checks that were not run appear. This includes checks that do not apply to the record and checks whose prerequisite did not pass. "Show each check" lists every skipped check. "Show count only" removes skipped checks from the list; their count still appears in the summary bar at the bottom of the card. Defaults to "Show each check".</description>
     <inlineHelpText
-  >How skipped checks appear. "Show each check" (default) = list them all. "Show count only" = hide from the list; the count still shows in the summary bar.</inlineHelpText>
+  >How checks that were not run appear. "Show each check" (default) lists them. "Show count only" hides the rows while keeping the summary count.</inlineHelpText>
     <required>false</required>
     <type>Picklist</type>
     <valueSet>

@@ -812,6 +812,20 @@ describe("c-record-health-check — success display modes", () => {
     expect(pill.getAttribute("data-tooltip")).toContain("Check A");
     expect(pill.getAttribute("data-tooltip")).toContain("Check B");
   });
+
+  it("shows hidden passed rows when showDiagnostics authorizes the overlay", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ successDisplayMode: "Hide", showDiagnostics: true })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    await appendAndLoad(element);
+
+    await clickRun(element);
+
+    // Diagnostics overrides count-only: every passed row is expanded (§2.11).
+    const rows = element.shadowRoot.querySelectorAll(".rhc-row--pass");
+    expect(rows).toHaveLength(2);
+  });
 });
 
 describe("c-record-health-check — skipped display modes", () => {
@@ -868,6 +882,20 @@ describe("c-record-health-check — skipped display modes", () => {
     expect(pill.getAttribute("tabindex")).toBe("0");
     expect(pill.getAttribute("data-tooltip")).toContain("Check A");
     expect(pill.getAttribute("data-tooltip")).toContain("Check B");
+  });
+
+  it("shows hidden skipped rows when showDiagnostics authorizes the overlay", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ skippedDisplayMode: "Hide", showDiagnostics: true })
+    );
+    evaluateCheck.mockResolvedValue(SKIPPED_RESULT("Check_A"));
+    await appendAndLoad(element);
+
+    await clickRun(element);
+
+    // Diagnostics overrides count-only: every skipped row is expanded (§2.11).
+    const rows = element.shadowRoot.querySelectorAll(".rhc-row--skipped");
+    expect(rows).toHaveLength(2);
   });
 });
 

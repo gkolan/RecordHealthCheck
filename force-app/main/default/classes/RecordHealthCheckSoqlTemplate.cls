@@ -40,7 +40,7 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   private static final Pattern PATTERN_COUNT_EMPTY = Pattern.compile(
     '(?i)\\bSELECT\\s+COUNT\\(\\s*\\)'
   );
-  private static final Pattern PATTERN_SCALAR_COUNT = Pattern.compile(
+  private static final Pattern PATTERN_SINGLE_VALUE_COUNT = Pattern.compile(
     '(?i)\\bSELECT\\s+COUNT\\s*\\(\\s*(?:Id)?\\s*\\)' +
     '(?:\\s+[A-Za-z_][A-Za-z0-9_]*)?\\s+FROM\\b'
   );
@@ -236,7 +236,7 @@ public with sharing class RecordHealthCheckSoqlTemplate {
     if (firstDepth0Match(masked, PATTERN_GROUP_BY) >= 0) {
       return false;
     }
-    return firstDepth0Match(masked, PATTERN_SCALAR_COUNT) >= 0;
+    return firstDepth0Match(masked, PATTERN_SINGLE_VALUE_COUNT) >= 0;
   }
 
   // ─── Internal building blocks ───────────────────────────────────────────────

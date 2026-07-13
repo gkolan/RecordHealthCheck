@@ -119,31 +119,31 @@ private class RecordHealthCheckCoverageTest {
       'INVALID_SOQL_TEMPLATE'
     );
 
-    Record_Health_Check_Rule__mdt queryDualComparator = queryRule(
-      'Query_Dual_Comparator'
+    Record_Health_Check_Rule__mdt queryDualOperator = queryRule(
+      'Query_Dual_Operator'
     );
-    queryDualComparator.ComparisonOperator__c = 'LISTS_MATCH_EXACTLY';
+    queryDualOperator.ComparisonOperator__c = 'LISTS_MATCH_EXACTLY';
     assertUnable(
-      service.validateRuleForEvaluation(queryDualComparator),
-      'INVALID_COMPARATOR'
+      service.validateRuleForEvaluation(queryDualOperator),
+      'INVALID_OPERATOR'
     );
 
-    Record_Health_Check_Rule__mdt queryInvalidComparator = queryRule(
-      'Query_Invalid_Comparator'
+    Record_Health_Check_Rule__mdt queryInvalidOperator = queryRule(
+      'Query_Invalid_Operator'
     );
-    queryInvalidComparator.ComparisonOperator__c = 'Around';
+    queryInvalidOperator.ComparisonOperator__c = 'Around';
     assertUnable(
-      service.validateRuleForEvaluation(queryInvalidComparator),
-      'INVALID_COMPARATOR'
+      service.validateRuleForEvaluation(queryInvalidOperator),
+      'INVALID_OPERATOR'
     );
 
-    Record_Health_Check_Rule__mdt queryMissingComparator = queryRule(
-      'Query_Missing_Comparator'
+    Record_Health_Check_Rule__mdt queryMissingOperator = queryRule(
+      'Query_Missing_Operator'
     );
-    queryMissingComparator.ComparisonOperator__c = null;
+    queryMissingOperator.ComparisonOperator__c = null;
     assertUnable(
-      service.validateRuleForEvaluation(queryMissingComparator),
-      'INVALID_COMPARATOR'
+      service.validateRuleForEvaluation(queryMissingOperator),
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt queryMissingMode = queryRule(
@@ -161,7 +161,7 @@ private class RecordHealthCheckCoverageTest {
     queryBadListMode.QueryResultHandling__c = 'COMPARE_AS_LISTS';
     assertUnable(
       service.validateRuleForEvaluation(queryBadListMode),
-      'INVALID_COMPARATOR'
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt queryMissingSource = queryRule(
@@ -223,21 +223,21 @@ private class RecordHealthCheckCoverageTest {
       'INVALID_CONFIG'
     );
 
-    Record_Health_Check_Rule__mdt listComparator = queryRule(
-      'Query_List_Comparator'
+    Record_Health_Check_Rule__mdt listOperator = queryRule(
+      'Query_List_Operator'
     );
-    listComparator.ComparisonOperator__c = 'LIST_CONTAINS_ANY';
-    listComparator.QueryResultHandling__c = 'COMPARE_AS_LISTS';
-    listComparator.SourceQuery__c = null;
-    listComparator.FindInListFormula__c = null;
+    listOperator.ComparisonOperator__c = 'LIST_CONTAINS_ANY';
+    listOperator.QueryResultHandling__c = 'COMPARE_AS_LISTS';
+    listOperator.SourceQuery__c = null;
+    listOperator.FindInListFormula__c = null;
     assertUnable(
-      service.validateRuleForEvaluation(listComparator),
+      service.validateRuleForEvaluation(listOperator),
       'INVALID_FORMULA'
     );
-    listComparator.FindInListFormula__c = 'BillingCity';
-    listComparator.ComparisonQuery__c = null;
+    listOperator.FindInListFormula__c = 'BillingCity';
+    listOperator.ComparisonQuery__c = null;
     assertUnable(
-      service.validateRuleForEvaluation(listComparator),
+      service.validateRuleForEvaluation(listOperator),
       'INVALID_SOQL_TEMPLATE'
     );
 
@@ -266,22 +266,22 @@ private class RecordHealthCheckCoverageTest {
       'INVALID_SOQL_TEMPLATE'
     );
 
-    Record_Health_Check_Rule__mdt dualMissingComparator = validDualRule(
-      'Dual_Missing_Comparator'
+    Record_Health_Check_Rule__mdt dualMissingOperator = validDualRule(
+      'Dual_Missing_Operator'
     );
-    dualMissingComparator.ComparisonOperator__c = null;
+    dualMissingOperator.ComparisonOperator__c = null;
     assertUnable(
-      service.validateRuleForEvaluation(dualMissingComparator),
-      'INVALID_COMPARATOR'
+      service.validateRuleForEvaluation(dualMissingOperator),
+      'INVALID_OPERATOR'
     );
 
-    Record_Health_Check_Rule__mdt dualInvalidComparator = validDualRule(
-      'Dual_Invalid_Comparator'
+    Record_Health_Check_Rule__mdt dualInvalidOperator = validDualRule(
+      'Dual_Invalid_Operator'
     );
-    dualInvalidComparator.ComparisonOperator__c = 'Near';
+    dualInvalidOperator.ComparisonOperator__c = 'Near';
     assertUnable(
-      service.validateRuleForEvaluation(dualInvalidComparator),
-      'INVALID_COMPARATOR'
+      service.validateRuleForEvaluation(dualInvalidOperator),
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt dualMissingMode = validDualRule(
@@ -297,27 +297,27 @@ private class RecordHealthCheckCoverageTest {
     dualBadMode.QueryResultHandling__c = 'ANY_ROW_PASSES';
     assertUnable(
       service.validateRuleForEvaluation(dualBadMode),
-      'INVALID_COMPARATOR'
+      'INVALID_OPERATOR'
     );
 
-    Record_Health_Check_Rule__mdt dualBadListComparator = validDualRule(
-      'Dual_Bad_List_Comparator'
+    Record_Health_Check_Rule__mdt dualBadListOperator = validDualRule(
+      'Dual_Bad_List_Operator'
     );
-    dualBadListComparator.QueryResultHandling__c = 'COMPARE_AS_LISTS';
-    dualBadListComparator.ComparisonOperator__c = 'EQUALS';
+    dualBadListOperator.QueryResultHandling__c = 'COMPARE_AS_LISTS';
+    dualBadListOperator.ComparisonOperator__c = 'EQUALS';
     assertUnable(
-      service.validateRuleForEvaluation(dualBadListComparator),
-      'INVALID_COMPARATOR'
+      service.validateRuleForEvaluation(dualBadListOperator),
+      'INVALID_OPERATOR'
     );
 
-    Record_Health_Check_Rule__mdt dualBadScalarComparator = validDualRule(
-      'Dual_Bad_Scalar_Comparator'
+    Record_Health_Check_Rule__mdt dualBadSingleValueOperator = validDualRule(
+      'Dual_Bad_SingleValue_Operator'
     );
-    dualBadScalarComparator.QueryResultHandling__c = 'ONE_RESULT';
-    dualBadScalarComparator.ComparisonOperator__c = 'LISTS_MATCH_EXACTLY';
+    dualBadSingleValueOperator.QueryResultHandling__c = 'ONE_RESULT';
+    dualBadSingleValueOperator.ComparisonOperator__c = 'LISTS_MATCH_EXACTLY';
     assertUnable(
-      service.validateRuleForEvaluation(dualBadScalarComparator),
-      'INVALID_COMPARATOR'
+      service.validateRuleForEvaluation(dualBadSingleValueOperator),
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt dualBadMax = validDualRule('Dual_Bad_Max');
@@ -407,17 +407,17 @@ private class RecordHealthCheckCoverageTest {
     invalidQuery.EmptyValueHandling__c = 'InvalidNullBehavior';
     invalidQuery.NoRowsResult__c = 'InvalidEmptyBehavior';
 
-    Record_Health_Check_Rule__mdt queryMissingComparator = queryRule(
-      'Validator_Query_Missing_Comparator'
+    Record_Health_Check_Rule__mdt queryMissingOperator = queryRule(
+      'Validator_Query_Missing_Operator'
     );
-    queryMissingComparator.Record_Health_Check_Set__c = setAId;
-    queryMissingComparator.ComparisonOperator__c = null;
+    queryMissingOperator.Record_Health_Check_Set__c = setAId;
+    queryMissingOperator.ComparisonOperator__c = null;
 
-    Record_Health_Check_Rule__mdt queryUnknownComparator = queryRule(
-      'Validator_Query_Unknown_Comparator'
+    Record_Health_Check_Rule__mdt queryUnknownOperator = queryRule(
+      'Validator_Query_Unknown_Operator'
     );
-    queryUnknownComparator.Record_Health_Check_Set__c = setAId;
-    queryUnknownComparator.ComparisonOperator__c = 'Around';
+    queryUnknownOperator.Record_Health_Check_Set__c = setAId;
+    queryUnknownOperator.ComparisonOperator__c = 'Around';
 
     Record_Health_Check_Rule__mdt queryMissingMode = queryRule(
       'Validator_Query_Missing_Mode'
@@ -469,17 +469,17 @@ private class RecordHealthCheckCoverageTest {
     invalidDual.ComparisonOperator__c = 'LISTS_CONTAIN_ALL';
     invalidDual.QueryResultHandling__c = 'ONE_RESULT';
 
-    Record_Health_Check_Rule__mdt dualMissingComparator = validDualRule(
-      'Validator_Dual_Missing_Comparator'
+    Record_Health_Check_Rule__mdt dualMissingOperator = validDualRule(
+      'Validator_Dual_Missing_Operator'
     );
-    dualMissingComparator.Record_Health_Check_Set__c = setAId;
-    dualMissingComparator.ComparisonOperator__c = null;
+    dualMissingOperator.Record_Health_Check_Set__c = setAId;
+    dualMissingOperator.ComparisonOperator__c = null;
 
-    Record_Health_Check_Rule__mdt dualUnknownComparator = validDualRule(
-      'Validator_Dual_Unknown_Comparator'
+    Record_Health_Check_Rule__mdt dualUnknownOperator = validDualRule(
+      'Validator_Dual_Unknown_Operator'
     );
-    dualUnknownComparator.Record_Health_Check_Set__c = setAId;
-    dualUnknownComparator.ComparisonOperator__c = 'Around';
+    dualUnknownOperator.Record_Health_Check_Set__c = setAId;
+    dualUnknownOperator.ComparisonOperator__c = 'Around';
 
     Record_Health_Check_Rule__mdt dualMissingMode = validDualRule(
       'Validator_Dual_Missing_Mode'
@@ -554,8 +554,8 @@ private class RecordHealthCheckCoverageTest {
         invalidApplicability,
         missingFormula,
         invalidQuery,
-        queryMissingComparator,
-        queryUnknownComparator,
+        queryMissingOperator,
+        queryUnknownOperator,
         queryMissingMode,
         queryMissingStatic,
         queryMissingFormula,
@@ -563,8 +563,8 @@ private class RecordHealthCheckCoverageTest {
         invalidListQuery,
         invalidApex,
         invalidDual,
-        dualMissingComparator,
-        dualUnknownComparator,
+        dualMissingOperator,
+        dualUnknownOperator,
         dualMissingMode,
         dualUnknownMode,
         dualBadListMode,
@@ -585,12 +585,12 @@ private class RecordHealthCheckCoverageTest {
     System.assert(reasonCodes.contains('MISSING_REQUIRED_FIELD'));
     System.assert(reasonCodes.contains('INVALID_CHECK_TYPE'));
     System.assert(reasonCodes.contains('INVALID_CONFIG'));
-    System.assert(reasonCodes.contains('INVALID_COMPARATOR'));
+    System.assert(reasonCodes.contains('INVALID_OPERATOR'));
     System.assert(reasonCodes.contains('INVALID_DEPENDENCY'));
   }
 
   @IsTest
-  static void soqlEvaluatorCoversComparatorAndQueryBranches() {
+  static void soqlEvaluatorCoversOperatorAndQueryBranches() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
 
@@ -936,7 +936,7 @@ private class RecordHealthCheckCoverageTest {
     badMode.QueryResultHandling__c = 'SomethingElse';
     assertReason(
       evaluator.evaluate(badMode, accountRecord.Id, accountRecord),
-      'INVALID_COMPARATOR'
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt compareAsLists = queryRule(
@@ -945,7 +945,7 @@ private class RecordHealthCheckCoverageTest {
     compareAsLists.QueryResultHandling__c = 'COMPARE_AS_LISTS';
     assertReason(
       evaluator.evaluate(compareAsLists, accountRecord.Id, accountRecord),
-      'INVALID_COMPARATOR'
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt invalidField = queryRule('Q_Invalid_Field');
@@ -995,7 +995,7 @@ private class RecordHealthCheckCoverageTest {
   }
 
   @IsTest
-  static void dualSoqlEvaluatorCoversScalarListAndErrorBranches() {
+  static void dualSoqlEvaluatorCoversSingleValueListAndErrorBranches() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckCompareQueriesEvaluator evaluator = new RecordHealthCheckCompareQueriesEvaluator();
 
@@ -1338,19 +1338,15 @@ private class RecordHealthCheckCoverageTest {
     invalidMode.QueryResultHandling__c = 'Bogus';
     assertReason(
       evaluator.evaluate(invalidMode, accountRecord.Id, accountRecord),
-      'INVALID_COMPARATOR'
+      'INVALID_OPERATOR'
     );
 
-    Record_Health_Check_Rule__mdt invalidListComparator = listOverlap.clone();
-    invalidListComparator.DeveloperName = 'D_Invalid_List_Comparator_Runtime';
-    invalidListComparator.ComparisonOperator__c = 'EQUALS';
+    Record_Health_Check_Rule__mdt invalidListOperator = listOverlap.clone();
+    invalidListOperator.DeveloperName = 'D_Invalid_List_Operator_Runtime';
+    invalidListOperator.ComparisonOperator__c = 'EQUALS';
     assertReason(
-      evaluator.evaluate(
-        invalidListComparator,
-        accountRecord.Id,
-        accountRecord
-      ),
-      'INVALID_COMPARATOR'
+      evaluator.evaluate(invalidListOperator, accountRecord.Id, accountRecord),
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt incompatible = validDualRule(
@@ -1620,16 +1616,16 @@ private class RecordHealthCheckCoverageTest {
       'INVALID_SOQL_TEMPLATE'
     );
 
-    Record_Health_Check_Rule__mdt soqlBadComparator = soqlPass.clone();
-    soqlBadComparator.DeveloperName = 'E_SOQL_Bad_Comparator';
-    soqlBadComparator.ApplicabilityCountOperator__c = 'Around';
+    Record_Health_Check_Rule__mdt soqlBadOperator = soqlPass.clone();
+    soqlBadOperator.DeveloperName = 'E_SOQL_Bad_Operator';
+    soqlBadOperator.ApplicabilityCountOperator__c = 'Around';
     assertReason(
       engine.checkApplicability(
-        soqlBadComparator,
+        soqlBadOperator,
         accountRecord.Id,
         accountRecord
       ),
-      'INVALID_COMPARATOR'
+      'INVALID_OPERATOR'
     );
 
     Record_Health_Check_Rule__mdt invalidMode = soqlPass.clone();
@@ -2211,7 +2207,7 @@ private class RecordHealthCheckCoverageTest {
       RecordHealthCheckComparisonEngine.applyUnaryComparison('Bogus', 'x');
       System.assert(false, 'Expected an invalid unary operator exception.');
     } catch (RecordHealthCheckEvaluatorException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
     System.assertEquals(
       true,
@@ -2330,7 +2326,7 @@ private class RecordHealthCheckCoverageTest {
       );
       System.assert(false, 'Expected invalid mode.');
     } catch (RecordHealthCheckEvaluatorException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
 
     query.EmptyValueHandling__c = 'AS_NO_MATCH';
@@ -2361,7 +2357,7 @@ private class RecordHealthCheckCoverageTest {
       );
       System.assert(false, 'Expected invalid list operator.');
     } catch (RecordHealthCheckEvaluatorException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
     System.assertEquals(
       false,
@@ -2640,7 +2636,7 @@ private class RecordHealthCheckCoverageTest {
       compareQueries.evaluateListVsList(dualList, accountRows, accountRows);
       System.assert(false, 'Expected invalid compare-queries list operator.');
     } catch (RecordHealthCheckEvaluatorException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
     try {
       compareQueries.toStringList(accountRows, null, 'primary', 'AS_BLANK');
@@ -2716,7 +2712,7 @@ private class RecordHealthCheckCoverageTest {
       );
       System.assert(false, 'Expected invalid single-value operator.');
     } catch (RecordHealthCheckEvaluatorException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
     try {
       RecordHealthCheckComparisonEngine.applySingleValueComparison(
@@ -3145,7 +3141,10 @@ private class RecordHealthCheckCoverageTest {
       accountWithoutContacts.Id
     );
     assertStatus(dependencySkipped, 'SKIPPED');
-    assertReason(dependencySkipped, 'DEPENDENCY_NOT_PASSED');
+    assertReason(
+      dependencySkipped,
+      RecordHealthCheckReasonCodes.PREREQUISITE_NOT_MET
+    );
 
     Account deletedAccount = RecordHealthCheckTestDataFactory.createDeletedAccount(
       'Deleted Coverage Account'
@@ -3156,7 +3155,7 @@ private class RecordHealthCheckCoverageTest {
         'Account_DQ_BillingCity',
         deletedAccount.Id
       ),
-      'RECORD_NOT_ACCESSIBLE'
+      RecordHealthCheckReasonCodes.CANNOT_EVALUATE
     );
     assertReason(
       engine.evaluate(
@@ -3431,9 +3430,9 @@ private class RecordHealthCheckCoverageTest {
       'INVALID_SOQL_TEMPLATE'
     );
     rule.ApplicabilityCountQuery__c = 'SELECT COUNT(Id) FROM Contact';
-    assertUnable(service.validateRuleForEvaluation(rule), 'INVALID_COMPARATOR');
+    assertUnable(service.validateRuleForEvaluation(rule), 'INVALID_OPERATOR');
     rule.ApplicabilityCountOperator__c = 'Around';
-    assertUnable(service.validateRuleForEvaluation(rule), 'INVALID_COMPARATOR');
+    assertUnable(service.validateRuleForEvaluation(rule), 'INVALID_OPERATOR');
     rule.ApplicabilityCountOperator__c = 'GREATER_THAN';
     assertUnable(
       service.validateRuleForEvaluation(rule),
@@ -3663,7 +3662,7 @@ private class RecordHealthCheckCoverageTest {
     RecordHealthCheckEngine.transactionResultCache.clear();
 
     Record_Health_Check_Rule__mdt applicability = baseRule(
-      'Engine_App_Non_Scalar',
+      'Engine_App_Non_SingleValue',
       'FORMULA'
     );
     applicability.ApplicabilityMode__c = 'WHEN_COUNT_QUERY_MATCHES';
@@ -3681,7 +3680,7 @@ private class RecordHealthCheckCoverageTest {
     applicability.ApplicabilityCountOperator__c = 'Nope';
     assertReason(
       engine.checkSoqlApplicability(applicability, accountRecord),
-      'INVALID_COMPARATOR'
+      'INVALID_OPERATOR'
     );
     applicability.ApplicabilityCountQuery__c = 'SELECT COUNT(Id) FROM Missing__c';
     assertReason(
@@ -3783,7 +3782,7 @@ private class RecordHealthCheckCoverageTest {
       );
       System.assert(false, 'Expected an invalid operator.');
     } catch (RecordHealthCheckEvaluatorException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
     query.EmptyValueHandling__c = 'AS_BLANK';
     RecordHealthCheckComparisonEngine.applyListComparison(
@@ -4071,7 +4070,7 @@ private class RecordHealthCheckCoverageTest {
   }
 
   @IsTest
-  static void formulaCheckPopulatesFoundAndExpectedFromScalarFormulas() {
+  static void formulaCheckPopulatesFoundAndExpectedFromSingleValueFormulas() {
     Account a = new Account(Name = 'Balance Co', NumberOfEmployees = 100);
     insert a;
     Account record = [

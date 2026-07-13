@@ -265,7 +265,10 @@ private class RecordHealthCheckEngineTest {
       accountRecord
     );
     System.assertEquals('SKIPPED', skipped.status);
-    System.assertEquals('APPLICABILITY_NOT_MET', skipped.reasonCode);
+    System.assertEquals(
+      RecordHealthCheckReasonCodes.NOT_APPLICABLE_BY_FORMULA,
+      skipped.reasonCode
+    );
 
     rule.ApplicabilityFormula__c = 'NOT_A_REAL_FIELD__c > 0';
     RecordHealthCheckResult invalidFormula = engine.checkApplicability(
@@ -314,7 +317,7 @@ private class RecordHealthCheckEngineTest {
     rule.ApplicabilityCountThreshold__c = 0;
     rule.ApplicabilityCountOperator__c = 'Nope';
     System.assertEquals(
-      'INVALID_COMPARATOR',
+      'INVALID_OPERATOR',
       engine.checkSoqlApplicability(rule, accountRecord).reasonCode
     );
   }
@@ -536,8 +539,13 @@ private class RecordHealthCheckEngineTest {
       'control-character-obfuscated scheme must be rejected'
     );
     System.assertEquals(
+      '/'.rightPad(2000, 'x'),
+      engine.sanitizeActionUrl('/'.rightPad(2000, 'x')),
+      'exactly 2000 chars must be accepted'
+    );
+    System.assertEquals(
       null,
-      engine.sanitizeActionUrl('/'.rightPad(2002, 'x')),
+      engine.sanitizeActionUrl('/'.rightPad(2001, 'x')),
       'over 2000 chars must be rejected'
     );
     System.assertEquals(

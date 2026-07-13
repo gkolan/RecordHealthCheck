@@ -1,0 +1,188 @@
+/** Best-effort, opt-in lifecycle publication for deliberately initiated runs. */
+public with sharing class RecordHealthCheckLifecyclePublisher {
+  public static final String CONTRACT_VERSION = '1.0';
+  public static final String CORE_VERSION = '2.0.0';
+  public static final String SOURCE_FACADE = 'FACADE';
+  public static final String SOURCE_FLOW = 'FLOW';
+  public static final String SOURCE_USER_INITIATED = 'USER_INITIATED';
+  public static final String SOURCE_SCHEDULED = 'SCHEDULED';
+  public static final String SOURCE_BATCH = 'BATCH';
+  public static final String SOURCE_RUN_ON_LOAD = 'RUN_ON_LOAD';
+  public static final String SOURCE_SUBSCRIBER = 'SUBSCRIBER';
+  public static final Integer PUBLISH_CHUNK_SIZE = 100;
+
+  @TestVisible
+  private static Boolean subscriberContextOverride = false;
+  @TestVisible
+  private static Boolean publishRunSettingOverride;
+  @TestVisible
+  private static Set<String> publishRuleNamesOverride;
+  @TestVisible
+  private static Integer inspectedPublishFailures = 0;
+
+  public static void publishCompletedSet(
+    RecordHealthCheckSetResult response,
+    String source
+  ) {
+    if (!canPublish(source) || response == null)
+      return;
+    Boolean publishEnabled = publishRunSettingOverride;
+    if (publishEnabled == null) {
+      // code-analyzer-suppress-next-line ApexCRUDViolation: This reads the core-owned Custom Metadata publication switch; no business record data is queried.
+      List<Record_Health_Check_Set__mdt> settings = [
+        SELECT PublishRunEvent__c
+        FROM Record_Health_Check_Set__mdt
+        WHERE DeveloperName = :response.checkSetDeveloperName
+        LIMIT 1
+      ];
+      publishEnabled =
+        !settings.isEmpty() && settings[0].PublishRunEvent__c == true;
+    }
+    if (publishEnabled != true)
+      return;
+
+    Record_Health_Check_Set_Run__e eventRecord = new Record_Health_Check_Set_Run__e(
+      ContractVersion__c = CONTRACT_VERSION,
+      EventId__c = newEventId(response.runId, 'SET'),
+      RunId__c = response.runId,
+      Phase__c = 'COMPLETED',
+      CheckSetDeveloperName__c = response.checkSetDeveloperName,
+      OccurredAt__c = System.now(),
+      Source__c = source,
+      CoreVersion__c = CORE_VERSION,
+      EligibleRuleCount__c = response.results.size(),
+      EvaluatedRuleCount__c = response.results.size(),
+      PassedCount__c = response.passedCount,
+      FailedCount__c = response.failedCount,
+      SkippedCount__c = response.skippedCount,
+      UnableCount__c = response.unableCount,
+      SystemErrorCount__c = response.systemErrorCount
+    );
+    publishSetEvents(new List<Record_Health_Check_Set_Run__e>{ eventRecord });
+  }
+
+  public static void publishRuleResults(
+    String checkSetDeveloperName,
+    String runId,
+    List<RecordHealthCheckResult> results,
+    String source
+  ) {
+    if (!canPublish(source) || results == null || results.isEmpty())
+      return;
+    Set<String> names = new Set<String>();
+    for (RecordHealthCheckResult result : results) {
+      names.add(result.checkDeveloperName);
+    }
+    Set<String> enabled = publishRuleNamesOverride;
+    if (enabled == null) {
+      enabled = new Set<String>();
+      // code-analyzer-suppress-next-line ApexCRUDViolation: This reads core-owned Custom Metadata publication switches; no business record data is queried.
+      for (Record_Health_Check_Rule__mdt rule : [
+        SELECT DeveloperName
+        FROM Record_Health_Check_Rule__mdt
+        WHERE
+          Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
+          AND DeveloperName IN :names
+          AND PublishResultEvent__c = TRUE
+      ]) {
+        enabled.add(rule.DeveloperName);
+      }
+    }
+
+    List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>();
+    for (RecordHealthCheckResult result : results) {
+      if (!enabled.contains(result.checkDeveloperName))
+        continue;
+      events.add(
+        new Record_Health_Check_Rule_Result__e(
+          ContractVersion__c = CONTRACT_VERSION,
+          EventId__c = newEventId(
+            String.isBlank(result.runId) ? runId : result.runId,
+            result.checkDeveloperName
+          ),
+          RunId__c = String.isBlank(result.runId) ? runId : result.runId,
+          CheckSetDeveloperName__c = checkSetDeveloperName,
+          RuleDeveloperName__c = result.checkDeveloperName,
+          Status__c = result.status,
+          ReasonCode__c = result.reasonCode,
+          Severity__c = result.severity,
+          OccurredAt__c = System.now(),
+          Source__c = source,
+          CoreVersion__c = CORE_VERSION,
+          ContainsRestrictedDetail__c = result.adminDetail != null &&
+            result.adminDetail.containsRestrictedDetail == true
+        )
+      );
+    }
+    publishRuleEvents(events);
+  }
+
+  @TestVisible
+  private static Boolean canPublish(String source) {
+    return source != SOURCE_RUN_ON_LOAD &&
+      source != SOURCE_SUBSCRIBER &&
+      subscriberContextOverride != true;
+  }
+
+  private static String newEventId(String runId, String suffix) {
+    return String.valueOf(runId).left(50) +
+      '-' +
+      String.valueOf(suffix).left(20) +
+      '-' +
+      String.valueOf(Math.abs(Crypto.getRandomInteger()));
+  }
+
+  private static void publishSetEvents(
+    List<Record_Health_Check_Set_Run__e> events
+  ) {
+    for (
+      Integer start = 0; start < events.size(); start += PUBLISH_CHUNK_SIZE
+    ) {
+      Integer finish = Math.min(start + PUBLISH_CHUNK_SIZE, events.size());
+      List<Record_Health_Check_Set_Run__e> chunk = new List<Record_Health_Check_Set_Run__e>();
+      for (Integer index = start; index < finish; index++) {
+        chunk.add(events[index]);
+      }
+      inspect(EventBus.publish(chunk), 'SET_RUN_PUBLISH_FAILED');
+    }
+  }
+
+  @TestVisible
+  private static void publishRuleEvents(
+    List<Record_Health_Check_Rule_Result__e> events
+  ) {
+    for (
+      Integer start = 0; start < events.size(); start += PUBLISH_CHUNK_SIZE
+    ) {
+      Integer finish = Math.min(start + PUBLISH_CHUNK_SIZE, events.size());
+      List<Record_Health_Check_Rule_Result__e> chunk = new List<Record_Health_Check_Rule_Result__e>();
+      for (Integer index = start; index < finish; index++) {
+        chunk.add(events[index]);
+      }
+      inspect(EventBus.publish(chunk), 'RULE_RESULT_PUBLISH_FAILED');
+    }
+  }
+
+  private static void inspect(
+    List<Database.SaveResult> saveResults,
+    String logCode
+  ) {
+    for (Database.SaveResult saveResult : saveResults) {
+      if (saveResult.isSuccess())
+        continue;
+      inspectedPublishFailures++;
+      RecordHealthCheckLogger.log(
+        RecordHealthCheckLogger.Level.WARN,
+        null,
+        null,
+        null,
+        null,
+        logCode,
+        new Map<String, Object>{
+          'errorCount' => saveResult.getErrors().size()
+        },
+        null
+      );
+    }
+  }
+}

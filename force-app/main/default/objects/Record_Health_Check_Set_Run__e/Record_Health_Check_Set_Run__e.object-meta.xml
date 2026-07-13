@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >Versioned completion facts for deliberately initiated Record Health Check Set runs.</description>
+    <eventType>HighVolume</eventType>
+    <label>Record Health Check Set Run</label>
+    <pluralLabel>Record Health Check Set Runs</pluralLabel>
+    <publishBehavior>PublishAfterCommit</publishBehavior>
+</CustomObject>

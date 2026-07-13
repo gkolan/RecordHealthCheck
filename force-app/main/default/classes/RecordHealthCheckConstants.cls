@@ -81,7 +81,7 @@ public with sharing class RecordHealthCheckConstants {
     }
   }
 
-  private static final Set<String> VALID_COMPARATORS_INTERNAL = new Set<String>{
+  private static final Set<String> VALID_OPERATORS_INTERNAL = new Set<String>{
     'EQUALS',
     'NOT_EQUALS',
     'GREATER_THAN',
@@ -98,21 +98,21 @@ public with sharing class RecordHealthCheckConstants {
     'LISTS_CONTAIN_ALL',
     'LISTS_MATCH_EXACTLY'
   };
-  public static Set<String> VALID_COMPARATORS {
+  public static Set<String> VALID_OPERATORS {
     get {
-      return new Set<String>(VALID_COMPARATORS_INTERNAL);
+      return new Set<String>(VALID_OPERATORS_INTERNAL);
     }
   }
 
-  /** Comparators valid only on CheckType CompareTwoQueries (list-vs-list). */
-  private static final Set<String> DUAL_QUERY_COMPARATORS_INTERNAL = new Set<String>{
+  /** Operators valid only on CheckType CompareTwoQueries (list-vs-list). */
+  private static final Set<String> DUAL_QUERY_OPERATORS_INTERNAL = new Set<String>{
     'LISTS_OVERLAP',
     'LISTS_CONTAIN_ALL',
     'LISTS_MATCH_EXACTLY'
   };
-  public static Set<String> DUAL_QUERY_COMPARATORS {
+  public static Set<String> DUAL_QUERY_OPERATORS {
     get {
-      return new Set<String>(DUAL_QUERY_COMPARATORS_INTERNAL);
+      return new Set<String>(DUAL_QUERY_OPERATORS_INTERNAL);
     }
   }
 
@@ -178,13 +178,13 @@ public with sharing class RecordHealthCheckConstants {
   }
 
   /**
-   * Comparators legal on ApplicabilityCountOperator__c (SOQL applicability mode).
+   * Operators legal on ApplicabilityCountOperator__c (SOQL applicability mode).
    * The applicability gate counts rows and compares the count to an integer
-   * threshold, so only the ordered/equality comparators apply — not the text or
-   * list operators in VALID_COMPARATORS. Mirrors
+   * threshold, so only the ordered/equality operators apply — not the text or
+   * list operators in VALID_OPERATORS. Mirrors
    * RecordHealthCheckEngine.applyApplicabilityComparison.
    */
-  private static final Set<String> VALID_APPLICABILITY_COMPARATORS_INTERNAL = new Set<String>{
+  private static final Set<String> VALID_APPLICABILITY_OPERATORS_INTERNAL = new Set<String>{
     'EQUALS',
     'NOT_EQUALS',
     'GREATER_THAN',
@@ -192,9 +192,9 @@ public with sharing class RecordHealthCheckConstants {
     'LESS_THAN',
     'LESS_THAN_OR_EQUAL'
   };
-  public static Set<String> VALID_APPLICABILITY_COMPARATORS {
+  public static Set<String> VALID_APPLICABILITY_OPERATORS {
     get {
-      return new Set<String>(VALID_APPLICABILITY_COMPARATORS_INTERNAL);
+      return new Set<String>(VALID_APPLICABILITY_OPERATORS_INTERNAL);
     }
   }
 
