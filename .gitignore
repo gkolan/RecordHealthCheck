@@ -113,3 +113,7 @@ bugs/
 
 # Local recycle bin — superseded material kept on disk but never tracked
 recycle-bin/
+
+# Examples library lives in its own repository (RecordHealthCheck-Examples).
+# A local checkout may sit here for convenience but must never be tracked in core (§3.1 boundary).
+/RecordHealthCheck-Examples/
