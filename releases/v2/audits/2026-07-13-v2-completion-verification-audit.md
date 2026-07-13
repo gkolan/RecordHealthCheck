@@ -56,14 +56,45 @@ per-section verification files listed in [`../plans/README.md`](../plans/README.
    approval, commit the final release diff, obtain PR review/approval, and only then create the V2
    tag (same plan). The upgrade guide and source version bump are already complete.
 
+## Release-readiness closeout (post-audit, 2026-07-13)
+
+A pre-commit inspection found the decisive blocker the completion audit above had missed: the
+entire Section 4 feature set (façade, lifecycle publisher, reason codes, set-result DTO, publish
+fields) plus the release workspace existed **only in the working tree** — `HEAD` (`2950ac2`) did
+not contain them — and an untracked `RecordHealthCheck-Examples/` checkout sat inside core, not
+git-ignored, one `git add -A` away from a §3.1 boundary violation. A tag cut then would have
+shipped V1-plus-field-migration with none of Section 4.
+
+Executable closeout completed:
+
+| Step                                         | Result                                                                                                                                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core/examples boundary                       | `/RecordHealthCheck-Examples/` added to `.gitignore`; `git check-ignore` confirms it can no longer be committed. Commit `aff016f`                                                                       |
+| Commit V2 product + docs + integration-tests | Commit `5d4d65d` (91 files incl. 6 new Section 4 classes); pre-commit prettier/eslint/Jest hook passed                                                                                                  |
+| Commit V2 release workspace                  | Commit `41f3b17` (50 files: plans, audits, tools)                                                                                                                                                       |
+| Working tree                                 | Clean (only the ignored examples checkout remains)                                                                                                                                                      |
+| Committed artifact == org                    | `sf project deploy start` reports **Nothing to deploy** against `rhc-v2-audit` — committed source is byte-identical to the org that passed tests (source-to-org readback holds for the committed state) |
+| Post-commit verification                     | **183/183 Apex @ 94% org-wide**, **108/108 Jest** on the committed artifact                                                                                                                             |
+
+## Outstanding work — human/approval only
+
+The two remaining gates are now genuinely blocked on a person, not on executable work:
+
+1. **§9 Gate C** — a human runs `Example_Account_360_Health_Check` on the activated Account page in
+   `rhc-v2-audit` and records pass/fail/skipped/unable rendering plus authorized, unauthorized,
+   diagnostics-enabled, and diagnostics-disabled paths. Automated FLS/`USER_MODE` coverage passes;
+   only the browser sign-off remains.
+2. **§9 Gate E** — restore-test the retained v1.x artifact in a disposable org and obtain rollback
+   approval; obtain PR review/approval for commits `aff016f`/`5d4d65d`/`41f3b17`; then create the
+   `2.0.0` tag. These are executable on request, but each carries a required human approval and
+   the restore test needs the retained v1.x export, so they are intentionally left for the release
+   owner.
+
 ## Verdict
 
-The completed claims are **accurate**: every "✅ Completed" section verified against shipped
-metadata, and the breaking field migration carries no v1 residue. One best-practice defect (mixed
-Apex API versions) was found and **fixed in this audit**. The expired-scratch-org blocker was
-cleared: a fresh org (`rhc-v2-audit`) was created, source-deployed clean, and passed **183/183
-Apex tests at 94% coverage** — which closes the automated half of §2.11 and Gate C. Two gaps now
-remain: §9 Gate C (manual browser execution/evidence and sign-off) and §9 Gate E (a mix of technical
-closeout work and release-owner approvals). It is inaccurate to describe both as "human-only": the
-rollback restore test, final commit/PR creation, and tag creation are executable release tasks, while
-their approval/sign-off is human. **V2 must not be tagged production-ready until both gates close.**
+The completed claims are **accurate**, and the release's executable blockers are now **cleared**:
+the V2 feature set is committed on `v2-release` (`41f3b17`), the core/examples boundary is
+protected, and the committed artifact deploys clean and passes 183/183 Apex + 108/108 Jest with no
+source-to-org drift. What remains is **not code** — it is the Gate C browser sign-off and the
+Gate E restore test + approvals + tag. **V2 is release-_candidate_ ready; it must not be tagged
+production-ready until those two human gates close.**
