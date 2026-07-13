@@ -12,15 +12,15 @@ contributing, you agree that your contributions are licensed under the
 
 | I want to…                  | Do this                                                                                                                       |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Report a bug**            | Open a [Bug report](https://github.com/gkolan/recordHealthCheck/issues/new?template=bug_report.yml) issue                     |
-| **Request a feature**       | Open a [Feature request](https://github.com/gkolan/recordHealthCheck/issues/new?template=feature_request.yml) issue           |
-| **Ask a question**          | Start a [GitHub Discussion](https://github.com/gkolan/recordHealthCheck/discussions) (or open an issue if Discussions is off) |
+| **Report a bug**            | Open a [Bug report](https://github.com/gkolan/RecordHealthCheck/issues/new?template=bug_report.yml) issue                     |
+| **Request a feature**       | Open a [Feature request](https://github.com/gkolan/RecordHealthCheck/issues/new?template=feature_request.yml) issue           |
+| **Ask a question**          | Start a [GitHub Discussion](https://github.com/gkolan/RecordHealthCheck/discussions) (or open an issue if Discussions is off) |
 | **Report a security issue** | **Do not** open a public issue: follow the [Security policy](SECURITY.md)                                                     |
 | **Fix code or docs**        | Open a pull request (see below)                                                                                               |
 
 ## Reporting a bug: step by step
 
-1. **Search first.** Check [existing issues](https://github.com/gkolan/recordHealthCheck/issues)
+1. **Search first.** Check [existing issues](https://github.com/gkolan/RecordHealthCheck/issues)
    so you do not file a duplicate.
 2. Go to **Issues → New issue → Bug report**.
 3. Fill in every field. The most useful reports include:
@@ -40,7 +40,7 @@ record data into an issue.
 1. **Fork** the repo and **clone** your fork:
    ```bash
    git clone https://github.com/<your-username>/recordHealthCheck.git
-   cd recordHealthCheck
+   cd RecordHealthCheck
    npm ci
    ```
 2. **Create a focused branch** (one change per branch):
@@ -84,7 +84,7 @@ feedback by pushing more commits to the same branch.
   make a test pass.
 - **New evaluator features** must update runtime validation, deploy-time
   validation, reason-code documentation, and both positive and misconfiguration
-  tests. Do not add another parser or comparator copy: extend the shared modules.
+  tests. Do not add another parser or comparison operator copy: extend the shared modules.
 
 See [`docs/reference/architecture-map.md`](docs/reference/architecture-map.md) to find where things live.
 

@@ -18,7 +18,7 @@ Choose one install path. Use a sandbox for the first install.
 
 | Deploy button | Salesforce CLI |
 | ------------- | -------------- |
-| Click [Deploy to Salesforce](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main), log in to a sandbox, and click **Deploy**. | From the repository root, run the commands below. |
+| Click [Deploy to Salesforce](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main), log in to a sandbox, and click **Deploy**. | From the repository root, run the commands below. |
 | After deployment, assign the Permission Set named `Record_Health_Check_User` in **Setup → Permission Sets**. | The third command assigns the Permission Set named `Record_Health_Check_User`. |
 
 CLI commands:
