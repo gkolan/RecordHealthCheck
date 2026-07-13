@@ -4,9 +4,9 @@ Action links give users a read-only next step when a Rule fails.
 
 They are configured on the Rule with:
 
-- **Action Button Label** (`PrimaryActionLabel__c`)
-- **Action Button URL** (`PrimaryActionUrl__c`)
-- **Fix Instructions** (`FixInstructions__c`)
+- **Action Button Label** (`ActionLabel__c`)
+- **Action Button URL** (`ActionUrl__c`)
+- **Fix Instructions** (`FixMessage__c`)
 
 These fields render only on **FAIL** rows. They do not render on Pass, Skipped, Unable to evaluate, or Error rows.
 
@@ -48,11 +48,11 @@ Unsafe URLs are dropped. Fix Instructions can still render.
 Action URLs and Fix Instructions support merge tokens from the current record:
 
 ```text
-{!Id}
-{!Name}
-{!OwnerId}
-{!Owner.ManagerId}
-{!ParentId}
+{!record.Id}
+{!record.Name}
+{!record.OwnerId}
+{!record.Owner.ManagerId}
+{!record.ParentId}
 ```
 
 The engine resolves token values before showing the link. Values substituted into URLs are URL-encoded.
@@ -60,15 +60,15 @@ The engine resolves token values before showing the link. Values substituted int
 ## Common Link Patterns
 
 - Open the current Account:
-  `/lightning/r/Account/{!Id}/view`
+  `/lightning/r/Account/{!record.Id}/view`
 - Open the current Account in edit mode:
-  `/lightning/r/Account/{!Id}/edit`
+  `/lightning/r/Account/{!record.Id}/edit`
 - Open the Account's Contacts related list:
-  `/lightning/r/Account/{!Id}/related/Contacts/view`
+  `/lightning/r/Account/{!record.Id}/related/Contacts/view`
 - Open a report filtered by the current record Id:
-  `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!Id}`
+  `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}`
 - Open a report filtered by Account name:
-  `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!Name}`
+  `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Name}`
 - Open a Contact list view:
   `/lightning/o/Contact/list?filterName=Recent`
 - Open an internal Salesforce playbook page:
@@ -85,7 +85,7 @@ Lightning report links can include filter values such as `fv0`, `fv1`, and `fv2`
 Example:
 
 ```text
-/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!Id}
+/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}
 ```
 
 Use this when the report's first filter expects the current record Id.
@@ -108,7 +108,7 @@ Action Button Label:
 `View contacts to fix`
 
 Action Button URL:
-`/lightning/r/Account/{!Id}/related/Contacts/view`
+`/lightning/r/Account/{!record.Id}/related/Contacts/view`
 
 Fix Instructions:
 `Open the account's contacts and add the missing email addresses.`
@@ -123,7 +123,7 @@ Action Button Label:
 `View high-priority cases`
 
 Action Button URL:
-`/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!Id}`
+`/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}`
 
 Fix Instructions:
 `Review the open high-priority cases before your next renewal or executive conversation.`

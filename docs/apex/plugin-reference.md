@@ -12,8 +12,8 @@ The engine calls the plugin in this order:
 ```text
 Record page (recordId)
   → Engine loads partial base record
-  → RecordHealthCheckApexEvaluatorDispatcher
-      → parses ApexSettingsJson__c → context.parameters
+  → RecordHealthCheckApexEvaluator
+      → parses ApexParametersJson__c → context.parameters
       → builds RecordHealthCheckContext
       → pluginClass.evaluate(context)
       → finalizes status, severity, message
@@ -41,7 +41,7 @@ Integer contactCount = [
 ];
 ```
 
-`context.recordId` is the same Id the LWC passes from the page. It is **never null** when the dispatcher calls the plugin (null `recordId` is rejected earlier with `RECORD_NOT_ACCESSIBLE`).
+`context.recordId` is the same Id the LWC passes from the page. It is **never null** when the evaluator calls the plugin (null `recordId` is rejected earlier with `RECORD_NOT_ACCESSIBLE`).
 
 `context.record.Id` is also available, but **`context.recordId`** is preferred for queries: it is explicit and works even when `context.record` is minimal.
 
@@ -53,11 +53,11 @@ The engine loads only fields it knows the Rule needs:
 
 | Source on the Rule | Fields added to `context.record` |
 | ------------------ | -------------------------------- |
-| `{!Field}` merge tokens in **Message When Check Fails** / **Message When Check Cannot Run** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
+| `{!record.Field}` merge tokens in **Message When Check Fails** / **Message When Check Cannot Run** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
 | **Run When Formula** (applicability) | Fields referenced in that formula |
 | SOQL templates on Query rules | Merge tokens in those queries |
 
-For a typical **Apex** Rule with applicability **Always** and message `{!Name} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
+For a typical **Apex** Rule with applicability **Always** and message `{!record.Name} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
 
 `BillingCity`, custom fields, or `Parent.BillingCity` are **not** guaranteed on `context.record` unless they appear in merge tokens or applicability formulas on that Rule.
 
@@ -130,7 +130,7 @@ if (parent != null) {
 }
 ```
 
-This only works when the engine **pre-loaded** `Parent.BillingCity` on `context.record` (uncommon for Apex Rules unless `{!Parent.BillingCity}` appears in a message token).
+This only works when the engine **pre-loaded** `Parent.BillingCity` on `context.record` (uncommon for Apex Rules unless `{!record.Parent.BillingCity}` appears in a message token).
 
 ### Custom lookup to another record
 
@@ -159,7 +159,7 @@ List<Opportunity> openOpps = [
 ];
 ```
 
-## 4. Apex Settings JSON (`ApexSettingsJson__c`)
+## 4. Apex Settings JSON (`ApexParametersJson__c`)
 
 ### Setup
 
@@ -167,9 +167,9 @@ On the Rule record in Custom Metadata:
 
 | Setup label | API name | Example |
 | ----------- | -------- | ------- |
-| Apex Settings (JSON) | `ApexSettingsJson__c` | `{"daysBack": 90, "minScore": 80}` |
+| Apex Settings (JSON) | `ApexParametersJson__c` | `{"daysBack": 90, "minScore": 80}` |
 
-The dispatcher parses this **before** calling the plugin and passes it as `context.parameters` (`Map<String, Object>`). When the field is blank, `context.parameters` is an **empty map** (not null).
+The evaluator parses this **before** calling the plugin and passes it as `context.parameters` (`Map<String, Object>`). When the field is blank, `context.parameters` is an **empty map** (not null).
 
 ### Rules
 
@@ -218,7 +218,7 @@ private Integer resolveDaysBack(Map<String, Object> parameters) {
 
 ### Example JSON documents
 
-| Intent | `ApexSettingsJson__c` | `parameters.get(...)` |
+| Intent | `ApexParametersJson__c` | `parameters.get(...)` |
 | ------ | ----------------------- | ------------------------ |
 | Look-back window | `{"daysBack": 90}` | `daysBack` → 90 |
 | Stale threshold | `{"staleDays": 30}` | `staleDays` → 30 |
@@ -264,7 +264,7 @@ private static Decimal resolveDecimal(
 
 ```apex
 /**
- * One-line description. Tunable via ApexSettingsJson__c: {"daysBack": 90}
+ * One-line description. Tunable via ApexParametersJson__c: {"daysBack": 90}
  */
 public with sharing class MyAccountCheck implements RecordHealthCheckRule {
   // ── Defaults (Apex): JSON overrides per Rule ─────────────────────────
@@ -293,7 +293,7 @@ public with sharing class MyAccountCheck implements RecordHealthCheckRule {
 | Practice | Why |
 | -------- | --- |
 | `public with sharing class` | Matches framework; respects user sharing |
-| `implements RecordHealthCheckRule` | Required: dispatcher checks `instanceof` |
+| `implements RecordHealthCheckRule` | Required: evaluator checks `instanceof` |
 | Defaults as `private static final` | JSON overrides without redeploying for every tweak |
 | Private `resolve*` methods | One place for bounds checking and bad JSON values |
 | No DML / callouts unless intentional | Health checks are read-time advisory |
@@ -311,25 +311,25 @@ result.status = (taskCount + eventCount > 0) ? 'PASS' : 'FAIL';
 return result;
 ```
 
-On **`FAIL`**, the dispatcher sets:
+On **`FAIL`**, the evaluator sets:
 
-- **`severity`** from Rule `Severity__c` (not set by the plugin)
-- **`message`** from `result.message` when non-blank; otherwise **Message When Check Fails** with `{!Field}` merge tokens resolved
+- **`severity`** from Rule `FailureSeverity__c` (not set by the plugin)
+- **`message`** from `result.message` when non-blank; otherwise **Message When Check Fails** with `{!record.Field}` merge tokens resolved
 
 ### Found / Expected (required for PASS / FAIL)
 
-Apex checks must set both comparison chips for every determinate result (`PASS` or `FAIL`). If either `actualValue` or `expectedValue` is blank, the dispatcher rejects the result with `ERROR` / `APEX_EVALUATOR_ERROR`. Failed checks show comparison values inline; passing-check visibility follows the Check Set **Found/Expected Display** setting.
+Apex checks must set both comparison chips for every determinate result (`PASS` or `FAIL`). If either `actualValue` or `expectedValue` is blank, the evaluator rejects the result with `ERROR` / `APEX_EVALUATOR_ERROR`. Failed checks show comparison values inline; passing-check visibility follows the Check Set **Found/Expected Display** setting.
 
 ```apex
 result.status = 'FAIL';
 result.actualValue = '2 unhealthy';
 result.expectedValue = '0 unhealthy';
-result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+result.actualValueSource = new RecordHealthCheckValueSource.Detail(
   'Unhealthy open opportunities',
   '2',
   '3 open opportunities scanned'
 );
-result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
   'Allowed unhealthy count',
   '0',
   null
@@ -338,17 +338,17 @@ result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
 
 See [Design spec 9 comparison display](../reference/record-health-check-design-spec.md#comparison-display-contract).
 
-### Provenance detail (optional)
+### diagnostic detail (optional)
 
-When the check can explain where a value came from, populate `actualProvenance` / `expectedProvenance` with `RecordHealthCheckProvenance.Detail`. The engine converts those internal details to `actualValueDetail` / `expectedValueDetail` only for users with `Record_Health_Check_View_Details`. They never render on the Lightning card; they surface in the F12 `[RHC] Source detail` console group, which the LWC emits only when **Show Troubleshooting Details** is on for the Check Set. So the permission decides *whether the strings exist*, and the flag decides *whether anyone sees them* — you need both. See [Troubleshooting Details](../guides/debug-mode.md#what-you-see-in-the-browser-console).
+When the check can explain where a value came from, populate `actualValueSource` / `expectedValueSource` with `RecordHealthCheckValueSource.Detail`. The engine converts those internal details to `actualValueDetail` / `expectedValueDetail` only for users with `Record_Health_Check_View_Details`. They never render on the Lightning card; they surface in the F12 `[RHC] Source detail` console group, which the LWC emits only when **Show Troubleshooting Details** is on for the Check Set. So the permission decides *whether the strings exist*, and the flag decides *whether anyone sees them* — you need both. See [Troubleshooting Details](../guides/show-diagnostics.md#what-you-see-in-the-browser-console).
 
 ```apex
-result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+result.actualValueSource = new RecordHealthCheckValueSource.Detail(
   'Open Opportunities',
   '2 unhealthy',
   'filtered by Amount and Close Date'
 );
-result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
   'Allowed unhealthy count',
   '0',
   null
@@ -376,21 +376,21 @@ When `message` is blank, metadata **Message When Check Fails** wins.
 | `UNABLE_TO_EVALUATE` | Rare: config/data detected inside the plugin |
 | `ERROR` | Avoid: uncaught exceptions map here automatically |
 
-Any other string → dispatcher converts to `ERROR` / `APEX_EVALUATOR_ERROR`.
+Any other string → evaluator converts to `ERROR` / `APEX_EVALUATOR_ERROR`.
 
 ### Fields the plugin does not set
 
 | Field | Who sets it |
 | ----- | ----------- |
-| `label`, `checkDeveloperName`, `priority` | Dispatcher from Rule metadata |
-| `severity` | Dispatcher from Rule on `FAIL` |
+| `label`, `checkDeveloperName`, `priority` | Evaluator from Rule metadata |
+| `severity` | Evaluator from Rule on `FAIL` |
 | `evaluatorType` | Always `Apex` |
-| `durationMs` | Dispatcher |
+| `durationMs` | Evaluator |
 | `reasonCode` | Framework (plugins rarely need this) |
 
 ## 7. Complete minimal example
 
-**Rule metadata:** `ApexClass__c = AccountHasRecentActivityCheck`, `ApexSettingsJson__c = {"daysBack": 90}`
+**Rule metadata:** `ApexClass__c = AccountHasRecentActivityCheck`, `ApexParametersJson__c = {"daysBack": 90}`
 
 ```apex
 public with sharing class AccountHasRecentActivityCheck implements RecordHealthCheckRule {
