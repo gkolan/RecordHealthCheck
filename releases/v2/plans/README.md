@@ -63,7 +63,7 @@ a one-line blast-radius note so a scheduler can sequence safely.
 | ----- | -------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------- | ------------------------------------ |
 | 1     | [2.10 Skip and Not-Applicable semantics](section-2-metadata-contract/2.10-skip-and-not-applicable-semantics.md)      | 2.10, 6                   | ✅ Completed           | —                                    |
 | 2     | [2.9 Reason-code catalog](section-2-metadata-contract/2.9-reason-code-catalog.md)                                    | 2.9, 4.2                  | ✅ Completed           | 2.10                                 |
-| 3     | [2.11 FLS presentation completion](section-2-metadata-contract/2.11-fls-presentation-completion.md)                  | 2.11, 6                   | 🟡 Partial             | 2.9                                  |
+| 3     | [2.11 FLS presentation completion](section-2-metadata-contract/2.11-fls-presentation-completion.md)                  | 2.11, 6                   | ✅ Completed           | 2.9                                  |
 | 4     | [4.18 Public check-response façade](section-4-extension-architecture/4.18-public-check-response-facade.md)           | 4.18                      | ✅ Completed           | 2.9, 2.11                            |
 | 5     | [4.2 Lifecycle events + publish fields](section-4-extension-architecture/4.2-lifecycle-events-and-publish-fields.md) | 4.2, 4.10, 4.12, 2.1, 2.2 | ✅ Completed           | 2.9, 2.10, 6 sign-off                |
 | 6     | [4.19 Emission & actuation safety](section-4-extension-architecture/4.19-emission-and-actuation-safety.md)           | 4.19                      | ✅ Completed           | 4.2                                  |
@@ -72,9 +72,10 @@ a one-line blast-radius note so a scheduler can sequence safely.
 | 9     | [9 Release-readiness gates](section-9-release-readiness/9-release-readiness-gates.md)                                | 9                         | 🟡 Partial             | all above where they land in-release |
 
 **Critical path** for the FLS/façade contract (`§6`) was **2.10 → 2.9 → 2.11 → 4.18**. Sections
-2.8–2.10, 4.2, 4.18, and 4.19 are verified complete for the V1 shipping scope; §2.11 remains
-🟡 Partial pending scratch-org Apex/FLS verification (implementation and local tests already
-pass). §4.3–4.17 stay intentionally deferred/design-only. Section 9 is the closeout.
+2.8–2.11, 4.2, 4.18, and 4.19 are verified complete for the V1 shipping scope; §2.11's
+scratch-org Apex/FLS `USER_MODE` verification passed as part of the 183/183 run on `rhc-v2-audit`
+(2026-07-13, commit `bda2469`). §4.3–4.17 stay intentionally deferred/design-only. Section 9 is
+the closeout.
 
 ### Verification rollup (2026-07-13)
 
@@ -84,7 +85,7 @@ pass). §4.3–4.17 stay intentionally deferred/design-only. Section 9 is the cl
 | §2.8                               | **Verified complete** — 53-field registry, 2,000-character URL limit                                                                                     |
 | §2.9                               | **Verified complete**                                                                                                                                    |
 | §2.10                              | **Verified complete** (Option A)                                                                                                                         |
-| §2.11                              | **🟡 Partial** — implementation + local tests verified; org FLS/`USER_MODE` check outstanding                                                            |
+| §2.11                              | **Verified complete** — implementation + local tests verified; org FLS/`USER_MODE` check passed in `rhc-v2-audit` (183/183, commit `bda2469`)            |
 
 ## Open release decisions referenced by these plans
 
