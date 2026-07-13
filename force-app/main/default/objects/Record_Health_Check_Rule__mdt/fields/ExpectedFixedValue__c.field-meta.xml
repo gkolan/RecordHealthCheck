@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ExpectedFixedValue__c</fullName>
+    <label>Expected Value (Fixed)</label>
+    <description
+  >The fixed value to compare against - a plain value, not a formula. Used only when "Expected Value Comes From" is "Fixed value". Enter it literally, with no formula syntax or quotes: text as Approved, a number as 0 / 5 / 100000, a date as 2025-01-31.</description>
+    <type>Text</type>
+    <length>255</length>
+        <inlineHelpText
+  >A plain fixed value (not a formula) - enter literally with no quotes, e.g. Approved, 5, or 2025-01-31. Only used when "Expected Value Comes From" = "Fixed value".</inlineHelpText>
+    <required>false</required>
+    <unique>false</unique>
+    <externalId>false</externalId>
+</CustomField>

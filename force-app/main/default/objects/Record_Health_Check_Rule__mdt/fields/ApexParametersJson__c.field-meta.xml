@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApexParametersJson__c</fullName>
+    <label>Apex Parameters (JSON)</label>
+    <description
+  >Optional JSON parameters passed to the class named in "Apex Class". Must be valid JSON; invalid JSON makes the check report that it cannot run (reason INVALID_APEX_PARAMETERS). These are per-check parameters, not org-wide settings. Leave blank if the class needs none.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>5</visibleLines>
+        <inlineHelpText
+  >Optional. Valid JSON passed to your Apex class, e.g. {"threshold": 5}. Leave blank if the class needs no parameters.</inlineHelpText>
+    <required>false</required>
+</CustomField>

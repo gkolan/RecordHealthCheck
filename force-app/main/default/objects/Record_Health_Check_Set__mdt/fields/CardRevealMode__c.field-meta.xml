@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CardRevealMode__c</fullName>
+    <label>Reveal Mode</label>
+    <description
+  >Cosmetic only - same checks, same order, same outcomes either way, and it does not change when checks run (that is "When Checks Run"). "All at once" lists every eligible check on load (pending), then fills in each result in place. "One by one" shows no rows until the run starts, then adds each check as it is reached. Defaults to "One by one".</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>ALL_AT_ONCE</fullName><default
+        >false</default></value><value><fullName>ONE_BY_ONE</fullName><default
+        >true</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >Cosmetic only. "All at once" = every check listed on load, then results fill in. "One by one" (default) = checks appear as the run reaches them. Doesn't change when checks run.</inlineHelpText>
+    <required>false</required>
+</CustomField>

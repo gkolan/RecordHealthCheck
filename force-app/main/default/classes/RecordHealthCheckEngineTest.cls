@@ -73,19 +73,19 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_Related_Sum_Matches_Formula',
       MasterLabel = 'Test Related Sum Matches Formula',
-      CheckName__c = 'Related Sum Matches Formula',
-      CheckMethod__c = 'Query',
-      Severity__c = 'Warning',
-      DataQuery__c = 'SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!Id}',
-      FieldToRead__c = 'totalAmount',
-      WhenMultipleRows__c = 'OneResult',
-      Operator__c = 'Equals',
-      CompareAgainst__c = 'RecordFormula',
-      RecordFormulaValue__c = 'AnnualRevenue * 0.1',
-      WhenZeroRows__c = 'Fail',
-      WhenValueIsEmpty__c = 'MissingMeansNoMatch',
-      MessageWhenFailed__c = 'Related opportunity amount does not match expected revenue.',
-      RunOrder__c = 10
+      CheckTitle__c = 'Related Sum Matches Formula',
+      EvaluationType__c = 'QUERY',
+      FailureSeverity__c = 'WARNING',
+      SourceQuery__c = 'SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id}',
+      SourceQueryField__c = 'totalAmount',
+      QueryResultHandling__c = 'ONE_RESULT',
+      ComparisonOperator__c = 'EQUALS',
+      ExpectedValueSource__c = 'RECORD_FORMULA',
+      ExpectedRecordFormula__c = 'AnnualRevenue * 0.1',
+      NoRowsResult__c = 'FAIL',
+      EmptyValueHandling__c = 'AS_NO_MATCH',
+      FailureMessage__c = 'Related opportunity amount does not match expected revenue.',
+      EvaluationOrder__c = 10
     );
 
     Test.startTest();
@@ -98,7 +98,9 @@ private class RecordHealthCheckEngineTest {
       result.status,
       'Unexpected result detail: ' + result.detailMessage
     );
-    System.assertEquals('Query', result.evaluatorType);
+    // Direct evaluator calls expose the v2 evaluator contract. The engine maps
+    // this value to the legacy LWC wire string only at its response boundary.
+    System.assertEquals('QUERY', result.evaluatorType);
   }
 
   @isTest
@@ -111,17 +113,17 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_All_Contacts_With_Email',
       MasterLabel = 'Test All Contacts With Email',
-      CheckName__c = 'All Contacts With Email',
-      CheckMethod__c = 'Query',
-      Severity__c = 'Warning',
-      DataQuery__c = 'SELECT Email FROM Contact WHERE AccountId = {!Id}',
-      FieldToRead__c = 'Email',
-      WhenMultipleRows__c = 'AllRowsPass',
-      Operator__c = 'IsNotBlank',
-      WhenZeroRows__c = 'Fail',
-      WhenValueIsEmpty__c = 'SkipRecordsWithMissingValue',
-      MessageWhenFailed__c = 'A contact is missing email.',
-      RunOrder__c = 11
+      CheckTitle__c = 'All Contacts With Email',
+      EvaluationType__c = 'QUERY',
+      FailureSeverity__c = 'WARNING',
+      SourceQuery__c = 'SELECT Email FROM Contact WHERE AccountId = {!record.Id}',
+      SourceQueryField__c = 'Email',
+      QueryResultHandling__c = 'ALL_ROWS_PASS',
+      ComparisonOperator__c = 'IS_NOT_BLANK',
+      NoRowsResult__c = 'FAIL',
+      EmptyValueHandling__c = 'SKIP_RECORD',
+      FailureMessage__c = 'A contact is missing email.',
+      EvaluationOrder__c = 11
     );
 
     Test.startTest();
@@ -147,23 +149,23 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_Exact_List_Duplicates',
       MasterLabel = 'Test Exact List Duplicates',
-      CheckName__c = 'Exact List Duplicates',
-      CheckMethod__c = 'CompareTwoQueries',
-      Severity__c = 'Warning',
-      DataQuery__c = 'SELECT MailingCity FROM Contact WHERE AccountId = {!Id}',
-      FieldToRead__c = 'MailingCity',
-      CompareToQuery__c = 'SELECT BillingCity FROM Account WHERE Id = {!Id}',
-      CompareToField__c = 'BillingCity',
-      WhenMultipleRows__c = 'CompareAsLists',
-      Operator__c = 'ExactListMatch',
-      WhenZeroRows__c = 'Fail',
-      WhenValueIsEmpty__c = 'MissingMeansNoMatch',
-      MessageWhenFailed__c = 'Contact city list does not exactly match.',
-      RunOrder__c = 12
+      CheckTitle__c = 'Exact List Duplicates',
+      EvaluationType__c = 'COMPARE_TWO_QUERIES',
+      FailureSeverity__c = 'WARNING',
+      SourceQuery__c = 'SELECT MailingCity FROM Contact WHERE AccountId = {!record.Id}',
+      SourceQueryField__c = 'MailingCity',
+      ComparisonQuery__c = 'SELECT BillingCity FROM Account WHERE Id = {!record.Id}',
+      ComparisonQueryField__c = 'BillingCity',
+      QueryResultHandling__c = 'COMPARE_AS_LISTS',
+      ComparisonOperator__c = 'LISTS_MATCH_EXACTLY',
+      NoRowsResult__c = 'FAIL',
+      EmptyValueHandling__c = 'AS_NO_MATCH',
+      FailureMessage__c = 'Contact city list does not exactly match.',
+      EvaluationOrder__c = 12
     );
 
     Test.startTest();
-    RecordHealthCheckResult result = new RecordHealthCheckDualSoqlEvaluator()
+    RecordHealthCheckResult result = new RecordHealthCheckCompareQueriesEvaluator()
       .evaluate(rule, accountRecord.Id, accountRecord);
     Test.stopTest();
 
@@ -181,23 +183,23 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_DateTime_Order',
       MasterLabel = 'Test DateTime Order',
-      CheckName__c = 'DateTime Order',
-      CheckMethod__c = 'CompareTwoQueries',
-      Severity__c = 'Warning',
-      DataQuery__c = 'SELECT CreatedDate FROM Account WHERE Id = {!Id}',
-      FieldToRead__c = 'CreatedDate',
-      CompareToQuery__c = 'SELECT LastModifiedDate FROM Account WHERE Id = {!Id}',
-      CompareToField__c = 'LastModifiedDate',
-      WhenMultipleRows__c = 'OneResult',
-      Operator__c = 'LessThanOrEqual',
-      WhenZeroRows__c = 'Fail',
-      WhenValueIsEmpty__c = 'MissingMeansNoMatch',
-      MessageWhenFailed__c = 'CreatedDate should not be after LastModifiedDate.',
-      RunOrder__c = 13
+      CheckTitle__c = 'DateTime Order',
+      EvaluationType__c = 'COMPARE_TWO_QUERIES',
+      FailureSeverity__c = 'WARNING',
+      SourceQuery__c = 'SELECT CreatedDate FROM Account WHERE Id = {!record.Id}',
+      SourceQueryField__c = 'CreatedDate',
+      ComparisonQuery__c = 'SELECT LastModifiedDate FROM Account WHERE Id = {!record.Id}',
+      ComparisonQueryField__c = 'LastModifiedDate',
+      QueryResultHandling__c = 'ONE_RESULT',
+      ComparisonOperator__c = 'LESS_THAN_OR_EQUAL',
+      NoRowsResult__c = 'FAIL',
+      EmptyValueHandling__c = 'AS_NO_MATCH',
+      FailureMessage__c = 'CreatedDate should not be after LastModifiedDate.',
+      EvaluationOrder__c = 13
     );
 
     Test.startTest();
-    RecordHealthCheckResult result = new RecordHealthCheckDualSoqlEvaluator()
+    RecordHealthCheckResult result = new RecordHealthCheckCompareQueriesEvaluator()
       .evaluate(rule, accountRecord.Id, accountRecord);
     Test.stopTest();
 
@@ -248,15 +250,15 @@ private class RecordHealthCheckEngineTest {
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
     Record_Health_Check_Rule__mdt rule = applicabilityRule();
 
-    rule.RunThisCheckWhen__c = null;
+    rule.ApplicabilityMode__c = null;
     System.assertEquals(
       null,
       engine.checkApplicability(rule, accountRecord.Id, accountRecord),
       'Blank applicability mode should proceed like Always.'
     );
 
-    rule.RunThisCheckWhen__c = 'Formula';
-    rule.RunWhenFormula__c = 'FALSE';
+    rule.ApplicabilityMode__c = 'WHEN_FORMULA_TRUE';
+    rule.ApplicabilityFormula__c = 'FALSE';
     RecordHealthCheckResult skipped = engine.checkApplicability(
       rule,
       accountRecord.Id,
@@ -265,7 +267,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals('SKIPPED', skipped.status);
     System.assertEquals('APPLICABILITY_NOT_MET', skipped.reasonCode);
 
-    rule.RunWhenFormula__c = 'NOT_A_REAL_FIELD__c > 0';
+    rule.ApplicabilityFormula__c = 'NOT_A_REAL_FIELD__c > 0';
     RecordHealthCheckResult invalidFormula = engine.checkApplicability(
       rule,
       accountRecord.Id,
@@ -273,7 +275,7 @@ private class RecordHealthCheckEngineTest {
     );
     System.assertEquals('UNABLE_TO_EVALUATE', invalidFormula.status);
 
-    rule.RunThisCheckWhen__c = 'Unsupported';
+    rule.ApplicabilityMode__c = 'Unsupported';
     RecordHealthCheckResult invalidMode = engine.checkApplicability(
       rule,
       accountRecord.Id,
@@ -288,29 +290,29 @@ private class RecordHealthCheckEngineTest {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
     Record_Health_Check_Rule__mdt rule = applicabilityRule();
-    rule.RunThisCheckWhen__c = 'SOQL';
+    rule.ApplicabilityMode__c = 'WHEN_COUNT_QUERY_MATCHES';
 
-    rule.RunWhenCountQuery__c = null;
+    rule.ApplicabilityCountQuery__c = null;
     System.assertEquals(
       'INVALID_SOQL_TEMPLATE',
       engine.checkSoqlApplicability(rule, accountRecord).reasonCode
     );
 
-    rule.RunWhenCountQuery__c = 'SELECT Id FROM Account';
+    rule.ApplicabilityCountQuery__c = 'SELECT Id FROM Account';
     System.assertEquals(
       'INVALID_SOQL_TEMPLATE',
       engine.checkSoqlApplicability(rule, accountRecord).reasonCode
     );
 
-    rule.RunWhenCountQuery__c = 'SELECT COUNT(Id) FROM Contact';
-    rule.CountThreshold__c = null;
+    rule.ApplicabilityCountQuery__c = 'SELECT COUNT(Id) FROM Contact';
+    rule.ApplicabilityCountThreshold__c = null;
     System.assertEquals(
       'INVALID_CONFIG',
       engine.checkSoqlApplicability(rule, accountRecord).reasonCode
     );
 
-    rule.CountThreshold__c = 0;
-    rule.CountOperator__c = 'Nope';
+    rule.ApplicabilityCountThreshold__c = 0;
+    rule.ApplicabilityCountOperator__c = 'Nope';
     System.assertEquals(
       'INVALID_COMPARATOR',
       engine.checkSoqlApplicability(rule, accountRecord).reasonCode
@@ -352,7 +354,7 @@ private class RecordHealthCheckEngineTest {
   static void bindTokensMixedQuotedAndUnquotedSubstitutesBoth() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
-    String template = 'SELECT Id FROM Account WHERE Name = \'{!Name}\' OR Name = {!Name}';
+    String template = 'SELECT Id FROM Account WHERE Name = \'{!record.Name}\' OR Name = {!record.Name}';
     String bound = evaluator.bindTokens(template, accountRecord);
     String escaped = String.escapeSingleQuotes(accountRecord.Name);
     System.assert(
@@ -360,7 +362,7 @@ private class RecordHealthCheckEngineTest {
       'Quoted token should remain a quoted literal.'
     );
     System.assert(
-      !bound.contains('{!Name}'),
+      !bound.contains('{!record.Name}'),
       'Both quoted and unquoted token forms must be consumed.'
     );
   }
@@ -368,17 +370,17 @@ private class RecordHealthCheckEngineTest {
   @isTest
   static void bindTokensDoesNotReExpandTokenTextFromFieldValues() {
     Account accountRecord = new Account(
-      Name = '{!Website}',
+      Name = '{!record.Website}',
       Website = 'https://example.com'
     );
     RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
     String bound = evaluator.bindTokens(
-      'SELECT Id FROM Account WHERE Name = {!Name} AND Website = {!Website}',
+      'SELECT Id FROM Account WHERE Name = {!record.Name} AND Website = {!record.Website}',
       accountRecord
     );
 
     System.assert(
-      bound.contains('Name = \'{!Website}\''),
+      bound.contains('Name = \'{!record.Website}\''),
       'The literal token-looking text from Name must stay inside the Name value.'
     );
     System.assert(
@@ -411,7 +413,7 @@ private class RecordHealthCheckEngineTest {
     Datetime dt = Datetime.newInstance(2024, 6, 15, 0, 0, 0);
     System.assertEquals(
       true,
-      RecordHealthCheckComparatorEngine.valuesEqual(d, dt)
+      RecordHealthCheckComparisonEngine.valuesEqual(d, dt)
     );
   }
 
@@ -420,7 +422,7 @@ private class RecordHealthCheckEngineTest {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     System.assertEquals(
       true,
-      RecordHealthCheckComparatorEngine.valuesEqual(
+      RecordHealthCheckComparisonEngine.valuesEqual(
         accountRecord.Id,
         String.valueOf(accountRecord.Id)
       )
@@ -443,25 +445,25 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_MultiRow_Summary',
       MasterLabel = 'Test MultiRow Summary',
-      CheckName__c = 'MultiRow Summary',
-      CheckMethod__c = 'Query',
-      Severity__c = 'Warning',
-      DataQuery__c = 'SELECT Email FROM Contact WHERE AccountId = {!Id}',
-      FieldToRead__c = 'Email',
-      WhenMultipleRows__c = 'AllRowsPass',
-      Operator__c = 'IsNotBlank',
-      WhenZeroRows__c = 'Fail',
-      WhenValueIsEmpty__c = 'MissingMeansNoMatch',
-      MessageWhenFailed__c = 'A contact is missing email.',
-      RunOrder__c = 10
+      CheckTitle__c = 'MultiRow Summary',
+      EvaluationType__c = 'QUERY',
+      FailureSeverity__c = 'WARNING',
+      SourceQuery__c = 'SELECT Email FROM Contact WHERE AccountId = {!record.Id}',
+      SourceQueryField__c = 'Email',
+      QueryResultHandling__c = 'ALL_ROWS_PASS',
+      ComparisonOperator__c = 'IS_NOT_BLANK',
+      NoRowsResult__c = 'FAIL',
+      EmptyValueHandling__c = 'AS_NO_MATCH',
+      FailureMessage__c = 'A contact is missing email.',
+      EvaluationOrder__c = 10
     );
 
     Test.startTest();
     RecordHealthCheckResult derived = new RecordHealthCheckSoqlEvaluator()
       .evaluate(rule, acc.Id, acc);
 
-    rule.FoundSummaryOverride__c = '{!failCount} of {!totalCount} contacts missing email';
-    rule.ExpectedSummaryOverride__c = 'every contact has an email';
+    rule.DisplayFoundText__c = '{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount} contacts missing email';
+    rule.DisplayExpectedText__c = 'every contact has an email';
     RecordHealthCheckResult overridden = new RecordHealthCheckSoqlEvaluator()
       .evaluate(rule, acc.Id, acc);
     Test.stopTest();
@@ -476,7 +478,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals(
       '1 of 2 contacts missing email',
       overridden.actualValue,
-      'Override should resolve {!failCount}/{!totalCount} tokens'
+      'Override should resolve {!rhcResult.failedRecordCount}/{!rhcResult.totalRecordCount} tokens'
     );
     System.assertEquals(
       'every contact has an email',
@@ -551,10 +553,10 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_Remediation_Fail',
       MasterLabel = 'Test Remediation Fail',
-      CheckName__c = 'Remediation Fail',
-      PrimaryActionUrl__c = '/lightning/r/Account/{!Id}/view',
-      PrimaryActionLabel__c = 'Open account',
-      FixInstructions__c = 'Review the record.'
+      CheckTitle__c = 'Remediation Fail',
+      ActionUrl__c = '/lightning/r/Account/{!record.Id}/view',
+      ActionLabel__c = 'Open account',
+      FixMessage__c = 'Review the record.'
     );
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = 'FAIL';
@@ -567,7 +569,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals(
       '/lightning/r/Account/' + accountRecord.Id + '/view',
       result.actionUrl,
-      'The {!Id} token should resolve to the record Id'
+      'The {!record.Id} token should resolve to the record Id'
     );
     System.assertEquals('Open account', result.actionLabel);
     System.assertEquals('Review the record.', result.fixInstructions);
@@ -638,10 +640,10 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_Remediation_Pass',
       MasterLabel = 'Test Remediation Pass',
-      CheckName__c = 'Remediation Pass',
-      PrimaryActionUrl__c = '/lightning/r/Account/{!Id}/view',
-      PrimaryActionLabel__c = 'Open account',
-      FixInstructions__c = 'Review the record.'
+      CheckTitle__c = 'Remediation Pass',
+      ActionUrl__c = '/lightning/r/Account/{!record.Id}/view',
+      ActionLabel__c = 'Open account',
+      FixMessage__c = 'Review the record.'
     );
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = 'PASS';
@@ -660,10 +662,10 @@ private class RecordHealthCheckEngineTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_Remediation_Unsafe',
       MasterLabel = 'Test Remediation Unsafe',
-      CheckName__c = 'Remediation Unsafe',
-      PrimaryActionUrl__c = 'javascript:alert(document.cookie)',
-      PrimaryActionLabel__c = 'Do not click',
-      FixInstructions__c = 'Contact your admin.'
+      CheckTitle__c = 'Remediation Unsafe',
+      ActionUrl__c = 'javascript:alert(document.cookie)',
+      ActionLabel__c = 'Do not click',
+      FixMessage__c = 'Contact your admin.'
     );
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = 'FAIL';
@@ -697,7 +699,7 @@ private class RecordHealthCheckEngineTest {
   static void resolveUrlMergeFieldsEncodesValues() {
     Account accountRecord = new Account(Name = 'Acme & Co');
     String resolved = new RecordHealthCheckFormulaEvaluator()
-      .resolveUrlMergeFields('/find?q={!Name}', accountRecord);
+      .resolveUrlMergeFields('/find?q={!record.Name}', accountRecord);
     System.assertEquals(
       '/find?q=Acme+%26+Co',
       resolved,
@@ -709,7 +711,7 @@ private class RecordHealthCheckEngineTest {
   static void failMessagePreservesNonBlankEvaluatorMessageOverMetadata() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
-      MessageWhenFailed__c = 'Generic metadata failure for {!Name}.'
+      FailureMessage__c = 'Generic metadata failure for {!record.Name}.'
     );
     RecordHealthCheckResult evalResult = new RecordHealthCheckResult();
     evalResult.status = 'FAIL';
@@ -721,7 +723,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals(
       'Plugin detail: inactive approver Alice.',
       evalResult.message,
-      'A non-blank evaluator message must not be replaced by MessageWhenFailed__c.'
+      'A non-blank evaluator message must not be replaced by FailureMessage__c.'
     );
   }
 
@@ -729,7 +731,7 @@ private class RecordHealthCheckEngineTest {
   static void failMessageFallsBackToMetadataWhenEvaluatorMessageBlank() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
-      MessageWhenFailed__c = 'Generic failure for {!Name}.'
+      FailureMessage__c = 'Generic failure for {!record.Name}.'
     );
     RecordHealthCheckResult evalResult = new RecordHealthCheckResult();
     evalResult.status = 'FAIL';
@@ -745,18 +747,24 @@ private class RecordHealthCheckEngineTest {
 
   @isTest
   static void mergeFieldsDoNotReExpandTokenTextFromFieldValues() {
-    Account accountRecord = new Account(Name = 'Acme', Description = '{!Name}');
+    Account accountRecord = new Account(
+      Name = 'Acme',
+      Description = '{!record.Name}'
+    );
     RecordHealthCheckFormulaEvaluator evaluator = new RecordHealthCheckFormulaEvaluator();
 
     System.assertEquals(
-      '{!Name} / Acme',
-      evaluator.resolveMergeFields('{!Description} / {!Name}', accountRecord),
+      '{!record.Name} / Acme',
+      evaluator.resolveMergeFields(
+        '{!record.Description} / {!record.Name}',
+        accountRecord
+      ),
       'Token-looking text from Description should remain literal.'
     );
     System.assertEquals(
-      '/find?q=%7B%21Name%7D&name=Acme',
+      '/find?q=%7B%21record.Name%7D&name=Acme',
       evaluator.resolveUrlMergeFields(
-        '/find?q={!Description}&name={!Name}',
+        '/find?q={!record.Description}&name={!record.Name}',
         accountRecord
       ),
       'URL merge values should be encoded once and never re-expanded.'
@@ -767,16 +775,16 @@ private class RecordHealthCheckEngineTest {
     return new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_Applicability_Branches',
       MasterLabel = 'Test Applicability Branches',
-      CheckName__c = 'Applicability Branches',
-      CheckMethod__c = 'Formula',
-      Severity__c = 'Warning',
-      PassFailFormula__c = 'TRUE',
-      MessageWhenFailed__c = 'Failed.',
-      MessageWhenCannotRun__c = 'Cannot run.',
-      RunOrder__c = 10,
-      RunThisCheckWhen__c = 'Always',
-      CountOperator__c = 'GreaterThan',
-      CountThreshold__c = 0
+      CheckTitle__c = 'Applicability Branches',
+      EvaluationType__c = 'FORMULA',
+      FailureSeverity__c = 'WARNING',
+      PassConditionFormula__c = 'TRUE',
+      FailureMessage__c = 'Failed.',
+      UnableToEvaluateMessage__c = 'Cannot run.',
+      EvaluationOrder__c = 10,
+      ApplicabilityMode__c = 'ALL_RECORDS',
+      ApplicabilityCountOperator__c = 'GREATER_THAN',
+      ApplicabilityCountThreshold__c = 0
     );
   }
 }

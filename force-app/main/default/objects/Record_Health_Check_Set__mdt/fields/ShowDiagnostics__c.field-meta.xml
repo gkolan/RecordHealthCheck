@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ShowDiagnostics__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >When checked, shows extra troubleshooting detail on the health check card and in the browser console - but only for users who also have the "Record Health Check View Details" custom permission (granted by the "Record Health Check Admin" permission set). All other users see the normal card. Leave unchecked in production and turn it off once troubleshooting is finished.</description>
+    <externalId>false</externalId>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Show Diagnostics</label>
+    <inlineHelpText
+  >Troubleshooting only. Shows extra detail - but only to users who also have the "Record Health Check Admin" permission set. Leave off in production.</inlineHelpText>
+    <type>Checkbox</type>
+</CustomField>

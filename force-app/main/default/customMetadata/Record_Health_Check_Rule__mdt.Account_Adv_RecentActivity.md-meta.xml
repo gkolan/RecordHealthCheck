@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,49 +11,49 @@
         <value xsi:type="xsd:string">Account_Advanced_Checks</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value xsi:type="xsd:string">Has Recent Activity</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
     >Apex check: verifies the account has at least one completed Task or logged Event within the configured look-back window (default 30 days, overridden here to 90).</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">Apex</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">APEX</value>
     </values>
     <values>
         <field>ApexClass__c</field>
         <value xsi:type="xsd:string">AccountHasRecentActivityCheck</value>
     </values>
     <values>
-        <field>ApexSettingsJson__c</field>
+        <field>ApexParametersJson__c</field>
         <value xsi:type="xsd:string">{"daysBack": 90}</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Warning</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">WARNING</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} has no completed tasks or logged events in the last 90 days.</value>
+    >{!record.Name} has no completed tasks or logged events in the last 90 days.</value>
     </values>
     <values>
-        <field>MessageWhenCannotRun__c</field>
+        <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Could not check recent activity for this account. Contact your administrator.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Always</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">ALL_RECORDS</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">70</value>
     </values>
     <values>

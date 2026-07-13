@@ -20,15 +20,15 @@ private class AccountStrategicReadinessCheckTest {
     System.assertEquals('FAIL', result.status);
     System.assertEquals('0', result.actualValue);
     System.assertEquals('80+', result.expectedValue);
-    // the Apex check captures structured provenance for both sides so an
+    // the Apex check captures structured value source for both sides so an
     // entitled viewer can audit where the score came from.
-    System.assertNotEquals(null, result.actualProvenance);
+    System.assertNotEquals(null, result.actualValueSource);
     System.assertEquals(
       'Strategic readiness score',
-      result.actualProvenance.sourceLabel
+      result.actualValueSource.sourceLabel
     );
-    System.assertEquals('0', result.actualProvenance.rawValueLabel);
-    System.assertNotEquals(null, result.expectedProvenance);
+    System.assertEquals('0', result.actualValueSource.rawValueLabel);
+    System.assertNotEquals(null, result.expectedValueSource);
   }
 
   @IsTest
@@ -44,11 +44,11 @@ private class AccountStrategicReadinessCheckTest {
     );
 
     System.assertEquals('PASS', result.status);
-    // Values and provenance are populated on a PASS too so a
+    // Values and value source are populated on a PASS too so a
     // green row stays auditable through the disclosure.
     System.assertEquals('25', result.actualValue);
-    System.assertNotEquals(null, result.actualProvenance);
-    System.assertEquals('25', result.actualProvenance.rawValueLabel);
+    System.assertNotEquals(null, result.actualValueSource);
+    System.assertEquals('25', result.actualValueSource.rawValueLabel);
   }
 
   @IsTest
@@ -82,7 +82,7 @@ private class AccountStrategicReadinessCheckTest {
     System.assertEquals('PASS', result.status);
     System.assertEquals('100', result.actualValue);
     System.assertEquals('80+', result.expectedValue);
-    System.assertNotEquals(null, result.actualProvenance);
+    System.assertNotEquals(null, result.actualValueSource);
   }
 
   @IsTest

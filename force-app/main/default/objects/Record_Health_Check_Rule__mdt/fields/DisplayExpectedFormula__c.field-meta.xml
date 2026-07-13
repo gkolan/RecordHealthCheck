@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DisplayExpectedFormula__c</fullName>
+    <label>Display: Expected Formula</label>
+    <description
+  >Optional and display only - it never affects pass/fail. A formula, evaluated on the current record, whose result is shown as the "Expected" value on the result row (the right side of the comparison - what the record should have had). Write fixed values in formula syntax, the same way as "Display: Found Formula". Its return type is set by "Formula Result Type". Leave blank to show the default "Passes when..." line echoing the "Pass Condition".</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>3</visibleLines>
+        <inlineHelpText
+  >Display only (not pass/fail). Formula for the "Expected" value shown on the row. Fixed values use formula syntax. Blank = shows the default "Pass Condition" line.</inlineHelpText>
+    <required>false</required>
+</CustomField>

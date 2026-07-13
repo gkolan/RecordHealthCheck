@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApplicabilityMode__c</fullName>
+    <label>Applies To</label>
+    <description
+  >Decides whether this check applies to the current record before it runs. "All records" runs it on every record. "When a formula is true" runs it only when the formula in "Applies When (Formula)" returns true. "When a count query matches" runs it only when the count from "Applies When (Count Query)" satisfies "Count Must Be" and "Count Value". When the condition is not met, the check is marked Skipped (not Failed). Defaults to "All records".</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>ALL_RECORDS</fullName><default
+        >true</default></value><value><fullName
+        >WHEN_FORMULA_TRUE</fullName><default>false</default></value><value
+      ><fullName>WHEN_COUNT_QUERY_MATCHES</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >Chooses whether the check applies to this record. "All records" = always. "When a formula is true" = gate on "Applies When (Formula)". "When a count query matches" = gate on "Applies When (Count Query)". If the gate isn't met, the check is Skipped.</inlineHelpText>
+    <required>false</required>
+</CustomField>

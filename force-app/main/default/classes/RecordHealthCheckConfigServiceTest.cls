@@ -49,11 +49,11 @@ private class RecordHealthCheckConfigServiceTest {
     Record_Health_Check_Set__mdt checkSet = new Record_Health_Check_Set__mdt(
       IsActive__c = true,
       ObjectApiName__c = 'Account',
-      PassedChecksDisplay__c = 'Show',
-      SkippedChecksDisplay__c = 'Hide',
-      RunChecksWhen__c = 'Automatic',
-      RowAppearance__c = 'AllAtOnce',
-      ComparisonDisplay__c = 'Bogus'
+      PassedChecksDisplay__c = 'SHOW_EACH_CHECK',
+      SkippedChecksDisplay__c = 'SHOW_COUNT_ONLY',
+      CardRunMode__c = 'RUN_ON_LOAD',
+      CardRevealMode__c = 'ALL_AT_ONCE',
+      FoundExpectedDisplay__c = 'Bogus'
     );
     // Account key prefix — no DML needed to get an Account-typed Id.
     Id accountId = '001000000000001AAA';
@@ -71,7 +71,7 @@ private class RecordHealthCheckConfigServiceTest {
         ex.reasonCode
       );
       System.assert(
-        ex.getMessage().contains('Comparison Display'),
+        ex.getMessage().contains('Found/Expected Display'),
         'Message should name the offending field: ' + ex.getMessage()
       );
     }
@@ -115,15 +115,15 @@ private class RecordHealthCheckConfigServiceTest {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Invalid_Query_Test',
       MasterLabel = 'Invalid Query Test',
-      CheckName__c = 'Invalid Query Test',
-      CheckMethod__c = 'Query',
-      Severity__c = 'Warning',
-      Operator__c = 'Equals',
-      WhenMultipleRows__c = 'OneResult',
-      CompareAgainst__c = 'FixedValue',
-      FixedValue__c = 'Hot',
-      MessageWhenFailed__c = 'Invalid query failed.',
-      RunOrder__c = 10
+      CheckTitle__c = 'Invalid Query Test',
+      EvaluationType__c = 'QUERY',
+      FailureSeverity__c = 'WARNING',
+      ComparisonOperator__c = 'EQUALS',
+      QueryResultHandling__c = 'ONE_RESULT',
+      ExpectedValueSource__c = 'FIXED_VALUE',
+      ExpectedFixedValue__c = 'Hot',
+      FailureMessage__c = 'Invalid query failed.',
+      EvaluationOrder__c = 10
     );
 
     RecordHealthCheckResult result = new RecordHealthCheckConfigService()

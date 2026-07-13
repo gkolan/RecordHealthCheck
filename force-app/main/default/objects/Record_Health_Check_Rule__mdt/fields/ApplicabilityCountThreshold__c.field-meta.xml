@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApplicabilityCountThreshold__c</fullName>
+    <label>Count Value</label>
+    <description
+  >Part of the applicability gate only - not the main pass/fail check. The number the count from "Applies When (Count Query)" is compared against, using "Count Must Be". The check runs only when that comparison is true; otherwise it is Skipped. Required when "Applies To" is "When a count query matches".</description>
+    <type>Number</type>
+    <precision>4</precision>
+    <scale>0</scale>
+        <inlineHelpText
+  >Applicability gate only. The number compared to the count, e.g. 0 with "Greater than" runs the check only when the count query returns at least one row. Required when "Applies To" = "When a count query matches".</inlineHelpText>
+    <required>false</required>
+    <unique>false</unique>
+</CustomField>

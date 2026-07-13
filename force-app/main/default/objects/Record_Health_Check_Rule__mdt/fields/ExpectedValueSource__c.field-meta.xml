@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ExpectedValueSource__c</fullName>
+    <label>Expected Value Comes From</label>
+    <description
+  >For a "Verify with a query" check, this says where the expected value comes from. No default. "Fixed value" - type it in "Expected Value (Fixed)". "Record formula" - enter it in "Expected Value (Formula)". "Comparison query" - the expected value comes from the "Comparison Query" result. Leave unset for "Compare two queries" (both sides are queries) and for the operators "Is empty" / "Is not empty".</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>FIXED_VALUE</fullName><default
+        >false</default></value><value><fullName
+        >RECORD_FORMULA</fullName><default>false</default></value><value
+      ><fullName>COMPARISON_QUERY</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >Where the expected value comes from (query checks). "Fixed value" -&gt; "Expected Value (Fixed)". "Record formula" -&gt; "Expected Value (Formula)". "Comparison query" -&gt; "Comparison Query". Leave unset for Compare two queries and "Is empty"/"Is not empty".</inlineHelpText>
+    <required>false</required>
+</CustomField>

@@ -10,7 +10,7 @@
  * ONLY at the outermost (depth-0) level, validates a single outer SELECT, injects
  * WITH USER_MODE in the correct place, and enforces an effective outer row cap.
  * Previously this logic was duplicated (and subtly different) across
- * RecordHealthCheckSoqlEvaluator, RecordHealthCheckDualSoqlEvaluator, and the
+ * RecordHealthCheckSoqlEvaluator, RecordHealthCheckCompareQueriesEvaluator, and the
  * engine's applicability path, using substring/regex scans that ignored
  * parentheses. That allowed several real defects this class fixes
  * an ORDER BY / GROUP BY / LIMIT inside a child subquery becoming the
@@ -227,8 +227,8 @@ public with sharing class RecordHealthCheckSoqlTemplate {
       firstDepth0Match(masked, PATTERN_GROUP_BY) >= 0;
   }
 
-  /** True only for a single scalar outer COUNT()/COUNT(Id) query without GROUP BY. */
-  public static Boolean isScalarCountQuery(String soql) {
+  /** True only for a single single-value outer COUNT()/COUNT(Id) query without GROUP BY. */
+  public static Boolean isSingleCountQuery(String soql) {
     if (String.isBlank(soql)) {
       return false;
     }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,65 +11,65 @@
         <value xsi:type="xsd:string">Account_Query_Coverage</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value xsi:type="xsd:string">Account Rating Is Hot</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
     >Comparison Operator = Equals on a Query check: a single-record query on this account, compared with a fixed picklist value. Completes the set of value operators demonstrated in this Check Set.</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">Query</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">QUERY</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT Rating FROM Account WHERE Id = {!Id}</value>
+    >SELECT Rating FROM Account WHERE Id = {!record.Id}</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">Rating</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">OneResult</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ONE_RESULT</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">Equals</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">EQUALS</value>
     </values>
     <values>
-        <field>CompareAgainst__c</field>
-        <value xsi:type="xsd:string">FixedValue</value>
+        <field>ExpectedValueSource__c</field>
+        <value xsi:type="xsd:string">FIXED_VALUE</value>
     </values>
     <values>
-        <field>FixedValue__c</field>
+        <field>ExpectedFixedValue__c</field>
         <value xsi:type="xsd:string">Hot</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Info</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} rating is not Hot. Update the rating or adjust this check&apos;s applicability.</value>
+    >{!record.Name} rating is not Hot. Update the rating or adjust this check's applicability.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Formula</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">WHEN_FORMULA_TRUE</value>
     </values>
     <values>
-        <field>RunWhenFormula__c</field>
+        <field>ApplicabilityFormula__c</field>
         <value xsi:type="xsd:string">NOT(ISBLANK(TEXT(Rating)))</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">50</value>
     </values>
     <values>

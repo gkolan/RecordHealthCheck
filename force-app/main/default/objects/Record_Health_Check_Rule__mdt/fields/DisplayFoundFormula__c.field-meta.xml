@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DisplayFoundFormula__c</fullName>
+    <label>Display: Found Formula</label>
+    <description
+  >Optional and display only - it never affects pass/fail. A formula, evaluated on the current record, whose result is shown as the "Found" value on the result row (the left side of the comparison - what the record has). Write fixed values in formula syntax: text in double quotes ("Cold"), numbers bare (100), TRUE or FALSE, dates as DATE(2025,1,31). Its return type is set by "Formula Result Type". Leave blank for no Found value. Example: BLANKVALUE(Debit_Total__c, 0).</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>3</visibleLines>
+        <inlineHelpText
+  >Display only (not pass/fail). Formula for the "Found" value shown on the row, e.g. BLANKVALUE(Debit_Total__c, 0). Fixed values use formula syntax ("Cold", 100, TRUE). Blank = no Found value.</inlineHelpText>
+    <required>false</required>
+</CustomField>

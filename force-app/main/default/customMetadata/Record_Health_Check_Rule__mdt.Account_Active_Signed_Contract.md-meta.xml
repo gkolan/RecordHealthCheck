@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,69 +11,67 @@
         <value xsi:type="xsd:string">Account_Compliance_Audit</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value xsi:type="xsd:string">Has an Active Signed Contract</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
     >Customer accounts must have an activated, signed, unexpired contract. If Query Finds No Records is set to Fail, so an account with no qualifying contract fails rather than passing quietly.</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">Query</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">QUERY</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT Id FROM Contract WHERE AccountId = {!Id} AND Status = &apos;Activated&apos; AND CustomerSignedDate != null AND EndDate &gt;= TODAY</value>
+    >SELECT Id FROM Contract WHERE AccountId = {!record.Id} AND Status = 'Activated' AND CustomerSignedDate != null AND EndDate &gt;= TODAY</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">Id</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">AnyRowPasses</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ANY_ROW_PASSES</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">IsNotBlank</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">IS_NOT_BLANK</value>
     </values>
     <values>
-        <field>WhenZeroRows__c</field>
-        <value xsi:type="xsd:string">Fail</value>
+        <field>NoRowsResult__c</field>
+        <value xsi:type="xsd:string">FAIL</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Error</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">CRITICAL</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} is a customer with no active, signed contract on file. Verify the agreement before continued service or billing.</value>
+    >{!record.Name} is a customer with no active, signed contract on file. Verify the agreement before continued service or billing.</value>
     </values>
     <values>
-        <field>MessageWhenCannotRun__c</field>
+        <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Could not verify contracts on this account. Contact your administrator.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Formula</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">WHEN_FORMULA_TRUE</value>
     </values>
     <values>
-        <field>RunWhenFormula__c</field>
-        <value
-      xsi:type="xsd:string"
-    >ISPICKVAL(Type, &quot;Customer&quot;)</value>
+        <field>ApplicabilityFormula__c</field>
+        <value xsi:type="xsd:string">ISPICKVAL(Type, "Customer")</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">40</value>
     </values>
     <values>

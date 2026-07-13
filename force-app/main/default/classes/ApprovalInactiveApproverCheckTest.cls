@@ -77,7 +77,7 @@ private class ApprovalInactiveApproverCheckTest {
     );
     System.assertEquals('0 inactive', result.actualValue);
     System.assertEquals('0 inactive', result.expectedValue);
-    System.assertNotEquals(null, result.actualProvenance);
+    System.assertNotEquals(null, result.actualValueSource);
   }
 
   @IsTest

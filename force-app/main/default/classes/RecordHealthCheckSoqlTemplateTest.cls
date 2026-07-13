@@ -223,7 +223,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(null);
     System.assertEquals(
       false,
-      RecordHealthCheckSoqlTemplate.isScalarCountQuery(null)
+      RecordHealthCheckSoqlTemplate.isSingleCountQuery(null)
     );
     String escapedLiteral = 'A = \'x\\\'\'';
     System.assertEquals(
@@ -273,7 +273,7 @@ private class RecordHealthCheckSoqlTemplateTest {
   @isTest
   static void systemModeRejectedByPrepareForExecution() {
     // the rejection also fires on the shared execution chokepoint, so
-    // the dual-SOQL and applicability paths (which skip validateNoDisallowedKeywords)
+    // the compare-queries and applicability paths (which skip validateNoDisallowedKeywords)
     // are protected too.
     try {
       RecordHealthCheckSoqlTemplate.prepareForExecution(

@@ -972,12 +972,12 @@
   }
 }
 
-/* ── Troubleshooting detail panel (DebugMode__c = true) ───────────────────── */
+/* ── Troubleshooting detail section (ShowDiagnostics__c = true) ───────────────────── */
 .rhc-debug-detail {
   margin-top: 0.375rem;
 }
 
-/* In debug mode the technical detail is shown inline (no click-to-expand), so
+/* When showDiagnostics is on the technical detail is shown inline (no click-to-expand), so
    this is a static caption above the message rather than a clickable summary. */
 .rhc-debug-detail__label {
   display: block;
@@ -1002,7 +1002,7 @@
   overflow-x: auto;
 }
 
-/* ── Diagnostics (debug mode only) ───────────────────────────────────────── */
+/* ── Diagnostics (showDiagnostics only) ───────────────────────────────────────── */
 .rhc-debug-meta {
   display: block;
   margin-top: 0.25rem;

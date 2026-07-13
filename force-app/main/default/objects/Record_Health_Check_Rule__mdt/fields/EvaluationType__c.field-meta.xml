@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EvaluationType__c</fullName>
+    <label>Evaluation Type</label>
+    <description
+  >How this check decides pass or fail. Required - there is no default, so you must choose one, and your choice determines which other fields you fill in (complete only the matching section). "Verify with a formula" evaluates a true/false formula on the current record - fill in "Pass Condition". "Verify with a query" runs one SOQL query and compares its result - fill in "Source Query", "Comparison Operator", and "Expected Value Comes From". "Compare two queries" compares the results of two SOQL queries - fill in "Source Query" and "Comparison Query". "Verify with Apex" runs your own Apex class - fill in "Apex Class".</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>FORMULA</fullName><default
+        >false</default></value><value><fullName>QUERY</fullName><default
+        >false</default></value><value><fullName
+        >COMPARE_TWO_QUERIES</fullName><default>false</default></value><value
+      ><fullName>APEX</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >Required - pick how the check works, then fill only the matching section. "Verify with a formula" = true/false formula on the record. "Verify with a query" = one SOQL query compared to an expected value. "Compare two queries" = compare two SOQL results. "Verify with Apex" = your Apex class.</inlineHelpText>
+    <required>false</required>
+</CustomField>

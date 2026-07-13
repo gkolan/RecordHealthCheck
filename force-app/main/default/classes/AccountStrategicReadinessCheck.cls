@@ -60,12 +60,12 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
     // . The disclosure keeps these off the default card.
     result.actualValue = String.valueOf(score);
     result.expectedValue = String.valueOf(minScore) + '+';
-    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       'Strategic readiness score',
       String.valueOf(score),
       'sum of met criteria'
     );
-    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
       'Minimum required score',
       String.valueOf(minScore),
       null

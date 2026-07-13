@@ -38,7 +38,7 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
     // Populate on pass and fail so an entitled viewer can audit a green row too.
     result.actualValue = unhealthyCount + ' unhealthy';
     result.expectedValue = '0 unhealthy';
-    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       'Unhealthy open opportunities',
       String.valueOf(unhealthyCount),
       openOpps.size() +
@@ -46,7 +46,7 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
         (openOpps.size() == 1 ? 'y' : 'ies') +
         ' scanned'
     );
-    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
       'Allowed unhealthy count',
       '0',
       null

@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CheckDescription__c</fullName>
+    <label>Check Description</label>
+    <description
+  >Optional extra context shown when a user hovers over (or keyboard-focuses) the "Check Title" on the record page. Use it to explain, in plain language, what the check looks at and why it matters. It is shown only on hover/focus - never inline on the row.</description>
+    <type>Text</type>
+    <length>255</length>
+    <inlineHelpText
+  >Optional. Extra context shown on hover over the check's title. Explain what the check looks at, in plain language.</inlineHelpText>
+    <required>false</required>
+</CustomField>

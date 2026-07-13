@@ -4,10 +4,6 @@
  */
 
 public with sharing class RecordHealthCheckEngine {
-  // Compiled once per transaction — reused across all collectRecordFields and applicability calls
-  private static final Pattern PATTERN_TOKEN = Pattern.compile(
-    '\\{!([A-Za-z0-9_\\.]+)\\}'
-  );
   private static final Pattern PATTERN_DOT_PATH = Pattern.compile(
     '\\b([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]+)+)\\b'
   );
@@ -92,8 +88,8 @@ public with sharing class RecordHealthCheckEngine {
   private RecordHealthCheckConfigService configService = new RecordHealthCheckConfigService();
   private RecordHealthCheckFormulaEvaluator formulaEvaluator = new RecordHealthCheckFormulaEvaluator();
   private RecordHealthCheckSoqlEvaluator soqlEvaluator = new RecordHealthCheckSoqlEvaluator();
-  private RecordHealthCheckDualSoqlEvaluator dualSoqlEvaluator = new RecordHealthCheckDualSoqlEvaluator();
-  private RecordHealthCheckApexEvaluatorDispatcher apexDispatcher = new RecordHealthCheckApexEvaluatorDispatcher();
+  private RecordHealthCheckCompareQueriesEvaluator compareQueriesEvaluator = new RecordHealthCheckCompareQueriesEvaluator();
+  private RecordHealthCheckApexEvaluator apexEvaluator = new RecordHealthCheckApexEvaluator();
   @TestVisible
   private static Map<String, RecordHealthCheckResult> transactionResultCache = new Map<String, RecordHealthCheckResult>();
   @TestVisible
@@ -248,8 +244,8 @@ public with sharing class RecordHealthCheckEngine {
     copy.expectedValueLabel = source.expectedValueLabel;
     copy.actualValueDetail = source.actualValueDetail;
     copy.expectedValueDetail = source.expectedValueDetail;
-    copy.actualProvenance = source.actualProvenance;
-    copy.expectedProvenance = source.expectedProvenance;
+    copy.actualValueSource = source.actualValueSource;
+    copy.expectedValueSource = source.expectedValueSource;
     copy.detailMessage = source.detailMessage;
     copy.adminDetailMessage = source.adminDetailMessage;
     copy.actionLabel = source.actionLabel;
@@ -269,7 +265,7 @@ public with sharing class RecordHealthCheckEngine {
     Set<String> visitedChain,
     RecordHealthCheckLogger logger
   ) {
-    Boolean debugMode = false;
+    Boolean showDiagnostics = false;
 
     // 1. Load rule — scoped to the named Check Set. Include inactive so we can
     // tell RULE_INACTIVE apart from RULE_NOT_FOUND (missing / wrong Check Set).
@@ -291,8 +287,8 @@ public with sharing class RecordHealthCheckEngine {
       logger.warn(checkDeveloperName, 'RULE_INACTIVE', null);
       RecordHealthCheckResult r = new RecordHealthCheckResult();
       r.checkDeveloperName = checkDeveloperName;
-      r.label = rule.CheckName__c;
-      r.priority = rule.RunOrder__c;
+      r.label = rule.CheckTitle__c;
+      r.priority = rule.EvaluationOrder__c;
       r.status = 'UNABLE_TO_EVALUATE';
       r.reasonCode = 'RULE_INACTIVE';
       r.message = 'This rule is inactive.';
@@ -300,7 +296,7 @@ public with sharing class RecordHealthCheckEngine {
     }
 
     // 1a. Validate the parent Check Set is still active and targets the right object.
-    // Also extract DebugMode__c for this run.
+    // Also extract ShowDiagnostics__c for this run.
     SObject checkSetRef = rule.getSObject('Record_Health_Check_Set__r');
     CheckSetContextOutcome checkSetOutcome = validateCheckSetContext(
       checkSetRef,
@@ -308,7 +304,7 @@ public with sharing class RecordHealthCheckEngine {
       checkDeveloperName,
       recordId
     );
-    debugMode = checkSetOutcome.debugMode;
+    showDiagnostics = checkSetOutcome.showDiagnostics;
     if (checkSetOutcome.result != null) {
       // CONFIG_INACTIVE or OBJECT_MISMATCH — surfaced here so all logging stays
       // in one layer (validateCheckSetContext itself does not log).
@@ -326,23 +322,23 @@ public with sharing class RecordHealthCheckEngine {
       checkDeveloperName,
       'START',
       new Map<String, Object>{
-        'type' => rule.CheckMethod__c,
-        'debugMode' => debugMode
+        'type' => rule.EvaluationType__c,
+        'showDiagnostics' => showDiagnostics
       }
     );
 
-    // server-side RequiresCheck__c gate — mirrors LWC client-side logic
-    if (String.isNotBlank(rule.RequiresCheck__c)) {
-      String prereqName = rule.RequiresCheck__c.trim();
+    // server-side PrerequisiteRule__c gate — mirrors LWC client-side logic
+    if (String.isNotBlank(rule.PrerequisiteRule__c)) {
+      String prereqName = rule.PrerequisiteRule__c.trim();
       if (visitedChain.contains(prereqName)) {
         RecordHealthCheckResult r = new RecordHealthCheckResult();
         r.checkDeveloperName = checkDeveloperName;
-        r.label = rule.CheckName__c;
-        r.priority = rule.RunOrder__c;
+        r.label = rule.CheckTitle__c;
+        r.priority = rule.EvaluationOrder__c;
         r.status = 'UNABLE_TO_EVALUATE';
         r.reasonCode = 'CIRCULAR_DEPENDENCY';
         r.message = 'Circular dependency with "' + prereqName + '".';
-        return applyCheckSetFlags(r, debugMode);
+        return applyCheckSetFlags(r, showDiagnostics);
       }
       Set<String> nextVisited = new Set<String>(visitedChain);
       nextVisited.add(checkDeveloperName);
@@ -357,12 +353,12 @@ public with sharing class RecordHealthCheckEngine {
         if (prereqResult.reasonCode == 'CIRCULAR_DEPENDENCY') {
           RecordHealthCheckResult circular = new RecordHealthCheckResult();
           circular.checkDeveloperName = checkDeveloperName;
-          circular.label = rule.CheckName__c;
-          circular.priority = rule.RunOrder__c;
+          circular.label = rule.CheckTitle__c;
+          circular.priority = rule.EvaluationOrder__c;
           circular.status = 'UNABLE_TO_EVALUATE';
           circular.reasonCode = 'CIRCULAR_DEPENDENCY';
           circular.message = 'Circular dependency with "' + prereqName + '".';
-          return applyCheckSetFlags(circular, debugMode);
+          return applyCheckSetFlags(circular, showDiagnostics);
         }
         logger.debug(
           checkDeveloperName,
@@ -374,12 +370,12 @@ public with sharing class RecordHealthCheckEngine {
         );
         RecordHealthCheckResult r = new RecordHealthCheckResult();
         r.checkDeveloperName = checkDeveloperName;
-        r.label = rule.CheckName__c;
-        r.priority = rule.RunOrder__c;
+        r.label = rule.CheckTitle__c;
+        r.priority = rule.EvaluationOrder__c;
         r.status = 'SKIPPED';
         r.reasonCode = 'DEPENDENCY_NOT_PASSED';
         r.message = 'Skipped because "' + prereqName + '" did not pass.';
-        return applyCheckSetFlags(r, debugMode);
+        return applyCheckSetFlags(r, showDiagnostics);
       }
     }
 
@@ -396,7 +392,7 @@ public with sharing class RecordHealthCheckEngine {
           'detail' => validationResult.detailMessage
         }
       );
-      return applyCheckSetFlags(validationResult, debugMode);
+      return applyCheckSetFlags(validationResult, showDiagnostics);
     }
 
     // 3. Load the base record (WITH USER_MODE enforces FLS for the running user).
@@ -411,13 +407,13 @@ public with sharing class RecordHealthCheckEngine {
       );
       RecordHealthCheckResult r = new RecordHealthCheckResult();
       r.checkDeveloperName = checkDeveloperName;
-      r.label = rule.CheckName__c;
-      r.priority = rule.RunOrder__c;
+      r.label = rule.CheckTitle__c;
+      r.priority = rule.EvaluationOrder__c;
       r.status = 'UNABLE_TO_EVALUATE';
       r.reasonCode = 'RECORD_NOT_ACCESSIBLE';
       r.message = 'The record could not be accessed. Contact your administrator.';
       r.detailMessage = ex.getMessage();
-      return applyCheckSetFlags(r, debugMode);
+      return applyCheckSetFlags(r, showDiagnostics);
     }
     if (record == null) {
       logger.warn(
@@ -427,12 +423,12 @@ public with sharing class RecordHealthCheckEngine {
       );
       RecordHealthCheckResult r = new RecordHealthCheckResult();
       r.checkDeveloperName = checkDeveloperName;
-      r.label = rule.CheckName__c;
-      r.priority = rule.RunOrder__c;
+      r.label = rule.CheckTitle__c;
+      r.priority = rule.EvaluationOrder__c;
       r.status = 'UNABLE_TO_EVALUATE';
       r.reasonCode = 'RECORD_NOT_ACCESSIBLE';
       r.message = 'The record could not be accessed. Contact your administrator.';
-      return applyCheckSetFlags(r, debugMode);
+      return applyCheckSetFlags(r, showDiagnostics);
     }
 
     // 4. Applicability gate (server-side, runs before every evaluator)
@@ -450,17 +446,17 @@ public with sharing class RecordHealthCheckEngine {
           'reasonCode' => applicabilityResult.reasonCode
         }
       );
-      // An applicability skip / unable result may carry a MessageWhenCannotRun__c
-      // template with {!FieldName} tokens; resolve them here too (the record is
+      // An applicability skip / unable result may carry a UnableToEvaluateMessage__c
+      // template with {!record.FieldName} tokens; resolve them here too (the record is
       // already loaded) so tokens never reach the UI.
-      resolveResultMessage(applicabilityResult, record);
-      return applyCheckSetFlags(applicabilityResult, debugMode);
+      resolveResultMessage(applicabilityResult, rule, record);
+      return applyCheckSetFlags(applicabilityResult, showDiagnostics);
     }
 
     logger.debug(
       checkDeveloperName,
       'APPLICABILITY_PASS',
-      new Map<String, Object>{ 'mode' => rule.RunThisCheckWhen__c }
+      new Map<String, Object>{ 'mode' => rule.ApplicabilityMode__c }
     );
 
     // 5. Route to evaluator
@@ -496,18 +492,18 @@ public with sharing class RecordHealthCheckEngine {
       logger.warn(checkDeveloperName, 'RESULT', resultFields);
     }
 
-    return applyCheckSetFlags(evalResult, debugMode);
+    return applyCheckSetFlags(evalResult, showDiagnostics);
   }
 
   // Copies detailMessage → adminDetailMessage when debug mode is on so the LWC
   // can surface it to admins without ever exposing raw internals in production.
   @TestVisible
-  private RecordHealthCheckResult applyDebugMode(
+  private RecordHealthCheckResult applyShowDiagnostics(
     RecordHealthCheckResult result,
-    Boolean debugMode
+    Boolean showDiagnostics
   ) {
     if (
-      debugMode &&
+      showDiagnostics &&
       RecordHealthCheckAccess.canViewDebugDetails() &&
       String.isNotBlank(result.detailMessage)
     ) {
@@ -520,11 +516,29 @@ public with sharing class RecordHealthCheckEngine {
 
   private RecordHealthCheckResult applyCheckSetFlags(
     RecordHealthCheckResult result,
-    Boolean debugMode
+    Boolean showDiagnostics
   ) {
+    applyLwcWireFields(result);
     applyPassesWhenEntitlement(result);
-    applyDetailProvenance(result);
-    return applyDebugMode(result, debugMode);
+    applyValueSourceDetail(result);
+    return applyShowDiagnostics(result, showDiagnostics);
+  }
+
+  @TestVisible
+  private RecordHealthCheckResult applyLwcWireFields(
+    RecordHealthCheckResult result
+  ) {
+    if (String.isNotBlank(result.severity)) {
+      result.severity = RecordHealthCheckConstants.toLwcSeverity(
+        result.severity
+      );
+    }
+    if (String.isNotBlank(result.evaluatorType)) {
+      result.evaluatorType = RecordHealthCheckConstants.toLwcEvaluatorType(
+        result.evaluatorType
+      );
+    }
+    return result;
   }
 
   // A Formula check with no display formulas echoes its raw pass/fail condition
@@ -533,7 +547,7 @@ public with sharing class RecordHealthCheckEngine {
   // only: without Record_Health_Check_View_Details the line is cleared and the
   // business user sees the failure message (plus any display-formula Found/Expected
   // chips, which stay ungated). Only the raw-condition echo is gated — an Expected
-  // value produced by ExpectedValueFormula__c carries no expectedValueLabel and is
+  // value produced by DisplayExpectedFormula__c carries no expectedValueLabel and is
   // left untouched.
   @TestVisible
   private RecordHealthCheckResult applyPassesWhenEntitlement(
@@ -549,20 +563,20 @@ public with sharing class RecordHealthCheckEngine {
     return result;
   }
 
-  // Renders the structured provenance the evaluators captured into the two
+  // Renders the structured value source the evaluators captured into the two
   // public *Detail strings, then gates them on Record_Health_Check_View_Details.
-  // Unlike debug detail, provenance is not tied to DebugMode__c. When the user
+  // Unlike debug detail, value source is not tied to ShowDiagnostics__c. When the user
   // lacks Record_Health_Check_View_Details the *Detail strings stay null.
   @TestVisible
-  private RecordHealthCheckResult applyDetailProvenance(
+  private RecordHealthCheckResult applyValueSourceDetail(
     RecordHealthCheckResult result
   ) {
     if (RecordHealthCheckAccess.canViewDetails()) {
-      result.actualValueDetail = RecordHealthCheckProvenance.render(
-        result.actualProvenance
+      result.actualValueDetail = RecordHealthCheckValueSource.render(
+        result.actualValueSource
       );
-      result.expectedValueDetail = RecordHealthCheckProvenance.render(
-        result.expectedProvenance
+      result.expectedValueDetail = RecordHealthCheckValueSource.render(
+        result.expectedValueSource
       );
     } else {
       result.actualValueDetail = null;
@@ -577,27 +591,27 @@ public with sharing class RecordHealthCheckEngine {
     Id recordId,
     SObject record
   ) {
-    if (rule.CheckMethod__c == 'Formula') {
+    if (rule.EvaluationType__c == 'FORMULA') {
       return formulaEvaluator.evaluate(rule, recordId, record);
     }
-    if (rule.CheckMethod__c == 'Query') {
+    if (rule.EvaluationType__c == 'QUERY') {
       return soqlEvaluator.evaluate(rule, recordId, record);
     }
-    if (rule.CheckMethod__c == 'Apex') {
-      return apexDispatcher.evaluate(rule, recordId, record);
+    if (rule.EvaluationType__c == 'APEX') {
+      return apexEvaluator.evaluate(rule, recordId, record);
     }
-    if (rule.CheckMethod__c == 'CompareTwoQueries') {
-      return dualSoqlEvaluator.evaluate(rule, recordId, record);
+    if (rule.EvaluationType__c == 'COMPARE_TWO_QUERIES') {
+      return compareQueriesEvaluator.evaluate(rule, recordId, record);
     }
 
     // Unrecognized — config service should have caught this, but guard defensively
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.checkDeveloperName = rule.DeveloperName;
-    result.label = rule.CheckName__c;
-    result.priority = rule.RunOrder__c;
+    result.label = rule.CheckTitle__c;
+    result.priority = rule.EvaluationOrder__c;
     result.status = 'UNABLE_TO_EVALUATE';
     result.reasonCode = 'INVALID_CHECK_TYPE';
-    result.message = 'This Check Type is not recognized.';
+    result.message = 'This Evaluation Type is not recognized.';
     return result;
   }
 
@@ -605,7 +619,7 @@ public with sharing class RecordHealthCheckEngine {
 
   @TestVisible
   private class CheckSetContextOutcome {
-    public Boolean debugMode = false;
+    public Boolean showDiagnostics = false;
     public RecordHealthCheckResult result;
   }
 
@@ -631,7 +645,7 @@ public with sharing class RecordHealthCheckEngine {
       return outcome;
     }
 
-    outcome.debugMode = checkSetRef.get('DebugMode__c') == true;
+    outcome.showDiagnostics = checkSetRef.get('ShowDiagnostics__c') == true;
     if (checkSetRef.get('IsActive__c') == false) {
       // Logged by the caller (doEvaluate) so all logging lives in one layer.
       RecordHealthCheckResult result = new RecordHealthCheckResult();
@@ -674,16 +688,16 @@ public with sharing class RecordHealthCheckEngine {
     SObject record
   ) {
     if (
-      rule.RunThisCheckWhen__c == 'Always' ||
-      rule.RunThisCheckWhen__c == null
+      rule.ApplicabilityMode__c == 'ALL_RECORDS' ||
+      rule.ApplicabilityMode__c == null
     ) {
       return null;
     }
 
-    if (rule.RunThisCheckWhen__c == 'Formula') {
+    if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
       String[] reasonCodeOut = new List<String>{ '' };
       Boolean applies = formulaEvaluator.evaluateApplicabilityFormula(
-        rule.RunWhenFormula__c,
+        rule.ApplicabilityFormula__c,
         record,
         reasonCodeOut
       );
@@ -701,14 +715,14 @@ public with sharing class RecordHealthCheckEngine {
       return null;
     }
 
-    if (rule.RunThisCheckWhen__c == 'SOQL') {
+    if (rule.ApplicabilityMode__c == 'WHEN_COUNT_QUERY_MATCHES') {
       return checkSoqlApplicability(rule, record);
     }
 
     return buildUnableResult(
       rule,
       'INVALID_CONFIG',
-      'Unrecognized Applicability Mode: ' + rule.RunThisCheckWhen__c
+      'Unrecognized Applicability Mode: ' + rule.ApplicabilityMode__c
     );
   }
 
@@ -717,7 +731,7 @@ public with sharing class RecordHealthCheckEngine {
     Record_Health_Check_Rule__mdt rule,
     SObject record
   ) {
-    if (String.isBlank(rule.RunWhenCountQuery__c)) {
+    if (String.isBlank(rule.ApplicabilityCountQuery__c)) {
       return buildUnableResult(
         rule,
         'INVALID_SOQL_TEMPLATE',
@@ -727,17 +741,17 @@ public with sharing class RecordHealthCheckEngine {
 
     try {
       String boundSoql = soqlEvaluator.bindTokens(
-        rule.RunWhenCountQuery__c,
+        rule.ApplicabilityCountQuery__c,
         record
       );
-      if (!RecordHealthCheckSoqlTemplate.isScalarCountQuery(boundSoql)) {
+      if (!RecordHealthCheckSoqlTemplate.isSingleCountQuery(boundSoql)) {
         return buildUnableResult(
           rule,
           'INVALID_SOQL_TEMPLATE',
-          'Applicability SOQL must be one scalar COUNT() or COUNT(Id) query without GROUP BY.'
+          'Applicability SOQL must be a single COUNT() or COUNT(Id) query without GROUP BY.'
         );
       }
-      if (rule.CountThreshold__c == null) {
+      if (rule.ApplicabilityCountThreshold__c == null) {
         return buildUnableResult(
           rule,
           'INVALID_CONFIG',
@@ -787,18 +801,18 @@ public with sharing class RecordHealthCheckEngine {
         );
       }
 
-      Boolean applies = applyApplicabilityComparator(
-        rule.CountOperator__c,
+      Boolean applies = applyApplicabilityComparison(
+        rule.ApplicabilityCountOperator__c,
         count,
-        (Integer) rule.CountThreshold__c
+        (Integer) rule.ApplicabilityCountThreshold__c
       );
 
       if (applies == null) {
         return buildUnableResult(
           rule,
           'INVALID_COMPARATOR',
-          'Applicability Comparator "' +
-            rule.CountOperator__c +
+          'Applicability comparison operator "' +
+            rule.ApplicabilityCountOperator__c +
             '" is not recognized.'
         );
       }
@@ -818,22 +832,22 @@ public with sharing class RecordHealthCheckEngine {
   }
 
   @TestVisible
-  private Boolean applyApplicabilityComparator(
-    String comparator,
+  private Boolean applyApplicabilityComparison(
+    String operator,
     Integer count,
     Integer threshold
   ) {
-    if (comparator == 'Equals')
+    if (operator == 'EQUALS')
       return count == threshold;
-    if (comparator == 'NotEquals')
+    if (operator == 'NOT_EQUALS')
       return count != threshold;
-    if (comparator == 'GreaterThan')
+    if (operator == 'GREATER_THAN')
       return count > threshold;
-    if (comparator == 'GreaterThanOrEqual')
+    if (operator == 'GREATER_THAN_OR_EQUAL')
       return count >= threshold;
-    if (comparator == 'LessThan')
+    if (operator == 'LESS_THAN')
       return count < threshold;
-    if (comparator == 'LessThanOrEqual')
+    if (operator == 'LESS_THAN_OR_EQUAL')
       return count <= threshold;
     return null;
   }
@@ -870,37 +884,37 @@ public with sharing class RecordHealthCheckEngine {
 
     // Invalid display-message tokens are intentionally ignored: message rendering
     // turns them into blanks and they must never make record loading fail.
-    addMergeFields(fields, objectType, rule.MessageWhenFailed__c);
-    addMergeFields(fields, objectType, rule.MessageWhenCannotRun__c);
-    // Remediation link fields may carry {!FieldName} tokens (including relationship
-    // paths like {!Owner.ManagerId}); load their fields so the token resolves.
-    addMergeFields(fields, objectType, rule.PrimaryActionUrl__c);
-    addMergeFields(fields, objectType, rule.PrimaryActionLabel__c);
-    addMergeFields(fields, objectType, rule.FixInstructions__c);
-    addMergeFields(fields, objectType, rule.DataQuery__c);
-    addMergeFields(fields, objectType, rule.CompareToQuery__c);
-    addMergeFields(fields, objectType, rule.RunWhenCountQuery__c);
+    addMergeFields(fields, objectType, rule.FailureMessage__c);
+    addMergeFields(fields, objectType, rule.UnableToEvaluateMessage__c);
+    // Remediation link fields may carry {!record.FieldName} tokens (including relationship
+    // paths like {!record.Owner.ManagerId}); load their fields so the token resolves.
+    addMergeFields(fields, objectType, rule.ActionUrl__c);
+    addMergeFields(fields, objectType, rule.ActionLabel__c);
+    addMergeFields(fields, objectType, rule.FixMessage__c);
+    addMergeFields(fields, objectType, rule.SourceQuery__c);
+    addMergeFields(fields, objectType, rule.ComparisonQuery__c);
+    addMergeFields(fields, objectType, rule.ApplicabilityCountQuery__c);
 
-    if (rule.CheckMethod__c == 'Formula') {
-      addFormulaFields(fields, objectType, rule.PassFailFormula__c);
-      // Optional Found / Expected scalar formulas get the SAME calculated-field
+    if (rule.EvaluationType__c == 'FORMULA') {
+      addFormulaFields(fields, objectType, rule.PassConditionFormula__c);
+      // Optional Found / Expected single-value formulas get the SAME calculated-field
       // dependency expansion as the pass/fail formula, so a balance check whose
       // operands are formula fields can display resolved numbers instead of UNABLE.
-      addFormulaFields(fields, objectType, rule.FoundValueFormula__c);
-      addFormulaFields(fields, objectType, rule.ExpectedValueFormula__c);
+      addFormulaFields(fields, objectType, rule.DisplayFoundFormula__c);
+      addFormulaFields(fields, objectType, rule.DisplayExpectedFormula__c);
     }
-    if (rule.CheckMethod__c == 'Query') {
-      // List checks read the scalar from ValueToTest__c; RecordFormula compares to RecordFormulaValue__c.
-      addFormulaFields(fields, objectType, rule.ValueToTest__c);
-      addFormulaFields(fields, objectType, rule.RecordFormulaValue__c);
+    if (rule.EvaluationType__c == 'QUERY') {
+      // List checks read the single-value from FindInListFormula__c; RecordFormula compares to ExpectedRecordFormula__c.
+      addFormulaFields(fields, objectType, rule.FindInListFormula__c);
+      addFormulaFields(fields, objectType, rule.ExpectedRecordFormula__c);
       // Multi-row summary overrides may reference record fields alongside the
-      // computed {!failCount}/{!totalCount} count tokens.
-      addMergeFields(fields, objectType, rule.FoundSummaryOverride__c);
-      addMergeFields(fields, objectType, rule.ExpectedSummaryOverride__c);
+      // computed {!rhcResult.failedRecordCount}/{!rhcResult.totalRecordCount} count tokens.
+      addMergeFields(fields, objectType, rule.DisplayFoundText__c);
+      addMergeFields(fields, objectType, rule.DisplayExpectedText__c);
     }
     // CompareTwoQueries: both sides are SOQL — merge tokens already handled above
-    if (rule.RunThisCheckWhen__c == 'Formula') {
-      addFormulaFields(fields, objectType, rule.RunWhenFormula__c);
+    if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
+      addFormulaFields(fields, objectType, rule.ApplicabilityFormula__c);
     }
 
     return fields;
@@ -915,9 +929,13 @@ public with sharing class RecordHealthCheckEngine {
       return;
     }
 
-    Matcher matcher = PATTERN_TOKEN.matcher(template);
-    while (matcher.find()) {
-      addReadableField(fields, objectType, matcher.group(1));
+    for (
+      String fieldPath : RecordHealthCheckTemplateService.recordPaths(
+        template,
+        RecordHealthCheckTemplateService.SURFACE_DISPLAY
+      )
+    ) {
+      addReadableField(fields, objectType, fieldPath);
     }
   }
 
@@ -1227,14 +1245,14 @@ public with sharing class RecordHealthCheckEngine {
   ) {
     RecordHealthCheckResult r = new RecordHealthCheckResult();
     r.checkDeveloperName = rule.DeveloperName;
-    r.label = rule.CheckName__c;
-    r.priority = rule.RunOrder__c;
-    r.evaluatorType = rule.CheckMethod__c;
+    r.label = rule.CheckTitle__c;
+    r.priority = rule.EvaluationOrder__c;
+    r.evaluatorType = rule.EvaluationType__c;
     r.status = 'SKIPPED';
     r.reasonCode = 'APPLICABILITY_NOT_MET';
-    if (rule.RunThisCheckWhen__c == 'Formula') {
+    if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
       r.message = 'This check does not apply because its formula applicability condition evaluated to false.';
-    } else if (rule.RunThisCheckWhen__c == 'SOQL') {
+    } else if (rule.ApplicabilityMode__c == 'WHEN_COUNT_QUERY_MATCHES') {
       r.message = 'This check does not apply because its SOQL applicability query did not meet the configured threshold.';
     } else {
       r.message = 'This check does not apply to the current record.';
@@ -1245,9 +1263,9 @@ public with sharing class RecordHealthCheckEngine {
   /**
    * Resolves merge tokens on the final result message. On FAIL, a non-blank
    * evaluator message (for example a custom Apex plugin message naming specific
-   * records) is preserved; MessageWhenFailed__c is the fallback when the
+   * records) is preserved; FailureMessage__c is the fallback when the
    * evaluator left message blank. Every other non-PASS status carries a
-   * MessageWhenCannotRun__c or skip template the evaluator already placed on
+   * UnableToEvaluateMessage__c or skip template the evaluator already placed on
    * the result. A bad token collapses to empty string and never changes status.
    */
   @TestVisible
@@ -1261,28 +1279,35 @@ public with sharing class RecordHealthCheckEngine {
     }
     if (evalResult.status == 'FAIL') {
       if (String.isBlank(evalResult.message)) {
-        evalResult.message = String.isNotBlank(rule.MessageWhenFailed__c)
+        evalResult.message = String.isNotBlank(rule.FailureMessage__c)
           ? formulaEvaluator.resolveMergeFields(
-              rule.MessageWhenFailed__c,
-              record
+              rule.FailureMessage__c,
+              record,
+              rule,
+              evalResult,
+              true
             )
           : 'Check failed.';
       } else {
-        resolveResultMessage(evalResult, record);
+        resolveResultMessage(evalResult, rule, record);
       }
       return;
     }
-    resolveResultMessage(evalResult, record);
+    resolveResultMessage(evalResult, rule, record);
   }
 
   private void resolveResultMessage(
     RecordHealthCheckResult result,
+    Record_Health_Check_Rule__mdt rule,
     SObject record
   ) {
     if (result != null && String.isNotBlank(result.message)) {
       result.message = formulaEvaluator.resolveMergeFields(
         result.message,
-        record
+        record,
+        rule,
+        result,
+        true
       );
     }
   }
@@ -1308,17 +1333,25 @@ public with sharing class RecordHealthCheckEngine {
 
     // Instructions (and an optional label) can stand on their own even without a
     // link, so resolve them regardless of URL validity.
-    result.fixInstructions = String.isBlank(rule.FixInstructions__c)
+    result.fixInstructions = String.isBlank(rule.FixMessage__c)
       ? null
-      : formulaEvaluator.resolveMergeFields(rule.FixInstructions__c, record);
+      : formulaEvaluator.resolveMergeFields(
+          rule.FixMessage__c,
+          record,
+          rule,
+          result,
+          true
+        );
 
-    if (String.isBlank(rule.PrimaryActionUrl__c)) {
+    if (String.isBlank(rule.ActionUrl__c)) {
       return;
     }
 
     String resolvedUrl = formulaEvaluator.resolveUrlMergeFields(
-      rule.PrimaryActionUrl__c,
-      record
+      rule.ActionUrl__c,
+      record,
+      rule,
+      result
     );
     String safeUrl = sanitizeActionUrl(resolvedUrl);
     if (safeUrl == null) {
@@ -1332,9 +1365,15 @@ public with sharing class RecordHealthCheckEngine {
     }
 
     result.actionUrl = safeUrl;
-    result.actionLabel = String.isBlank(rule.PrimaryActionLabel__c)
+    result.actionLabel = String.isBlank(rule.ActionLabel__c)
       ? 'Fix this'
-      : formulaEvaluator.resolveMergeFields(rule.PrimaryActionLabel__c, record);
+      : formulaEvaluator.resolveMergeFields(
+          rule.ActionLabel__c,
+          record,
+          rule,
+          result,
+          true
+        );
   }
 
   /**
@@ -1384,14 +1423,14 @@ public with sharing class RecordHealthCheckEngine {
   ) {
     RecordHealthCheckResult r = new RecordHealthCheckResult();
     r.checkDeveloperName = rule.DeveloperName;
-    r.label = rule.CheckName__c;
-    r.priority = rule.RunOrder__c;
-    r.evaluatorType = rule.CheckMethod__c;
+    r.label = rule.CheckTitle__c;
+    r.priority = rule.EvaluationOrder__c;
+    r.evaluatorType = rule.EvaluationType__c;
     r.status = 'UNABLE_TO_EVALUATE';
     r.reasonCode = reasonCode;
     r.detailMessage = detail;
-    r.message = String.isNotBlank(rule.MessageWhenCannotRun__c)
-      ? rule.MessageWhenCannotRun__c
+    r.message = String.isNotBlank(rule.UnableToEvaluateMessage__c)
+      ? rule.UnableToEvaluateMessage__c
       : 'This check could not be evaluated. Contact your administrator.';
     return r;
   }

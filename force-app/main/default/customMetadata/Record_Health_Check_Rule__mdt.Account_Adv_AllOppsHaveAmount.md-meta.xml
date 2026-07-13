@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,77 +11,77 @@
         <value xsi:type="xsd:string">Account_Advanced_Checks</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value
       xsi:type="xsd:string"
     >All Open Opportunities Have a Positive Amount</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Every open opportunity must have an Amount above zero. How To Interpret Query Results = AllRowsPass, and Expected Value Comes From = FixedValue. If Query Finds No Records = Skip, so an account with no open opportunities is skipped instead of passing for no real reason. If Query Field Value Is Empty skips opportunities whose Amount is blank rather than failing them.</value>
+    >Every open opportunity must have an Amount above zero. How To Interpret Query Results = AllRowsPass, and Expected Value Comes From = FixedValue. If Query Finds No Records = Skip, so an account with no open opportunities is skipped instead of passing for</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">Query</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">QUERY</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT Amount FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false</value>
+    >SELECT Amount FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">Amount</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">AllRowsPass</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ALL_ROWS_PASS</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">GreaterThan</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">GREATER_THAN</value>
     </values>
     <values>
-        <field>CompareAgainst__c</field>
-        <value xsi:type="xsd:string">FixedValue</value>
+        <field>ExpectedValueSource__c</field>
+        <value xsi:type="xsd:string">FIXED_VALUE</value>
     </values>
     <values>
-        <field>FixedValue__c</field>
+        <field>ExpectedFixedValue__c</field>
         <value xsi:type="xsd:string">0</value>
     </values>
     <values>
-        <field>WhenZeroRows__c</field>
-        <value xsi:type="xsd:string">Skip</value>
+        <field>NoRowsResult__c</field>
+        <value xsi:type="xsd:string">SKIP</value>
     </values>
     <values>
-        <field>WhenValueIsEmpty__c</field>
-        <value xsi:type="xsd:string">SkipRecordsWithMissingValue</value>
+        <field>EmptyValueHandling__c</field>
+        <value xsi:type="xsd:string">SKIP_RECORD</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Warning</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">WARNING</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} has one or more open opportunities with no amount. Every open opportunity must have a positive amount for accurate forecasting.</value>
+    >{!record.Name} has one or more open opportunities with no amount. Every open opportunity must have a positive amount for accurate forecasting.</value>
     </values>
     <values>
-        <field>MessageWhenCannotRun__c</field>
+        <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Could not evaluate opportunity amounts. Contact your administrator.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Always</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">ALL_RECORDS</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">50</value>
     </values>
     <values>

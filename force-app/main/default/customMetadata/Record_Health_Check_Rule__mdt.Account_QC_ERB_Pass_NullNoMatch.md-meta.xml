@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,61 +11,61 @@
         <value xsi:type="xsd:string">Account_Query_Coverage</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value xsi:type="xsd:string">All Contacts Have a Job Title</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >If Query Finds No Records = Pass: an account with no contacts passes, because an &quot;every contact must...&quot; rule is satisfied when there are no contacts to check. If Query Field Value Is Empty = MissingMeansNoMatch: a blank Title does not satisfy IsNotBlank, so it fails. Together these give the behavior admins usually want — pass when there is nothing to check, but never let a blank value slip through.</value>
+    >If Query Finds No Records = Pass: an account with no contacts passes, because an "every contact must..." rule is satisfied when there are no contacts to check. If Query Field Value Is Empty = MissingMeansNoMatch: a blank Title does not satisfy</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">Query</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">QUERY</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT Title FROM Contact WHERE AccountId = {!Id}</value>
+    >SELECT Title FROM Contact WHERE AccountId = {!record.Id}</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">Title</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">AllRowsPass</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ALL_ROWS_PASS</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">IsNotBlank</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">IS_NOT_BLANK</value>
     </values>
     <values>
-        <field>WhenZeroRows__c</field>
-        <value xsi:type="xsd:string">Pass</value>
+        <field>NoRowsResult__c</field>
+        <value xsi:type="xsd:string">PASS</value>
     </values>
     <values>
-        <field>WhenValueIsEmpty__c</field>
-        <value xsi:type="xsd:string">MissingMeansNoMatch</value>
+        <field>EmptyValueHandling__c</field>
+        <value xsi:type="xsd:string">AS_NO_MATCH</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Info</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} has one or more contacts without a Job Title. Titles help prioritize outreach and route communications correctly.</value>
+    >{!record.Name} has one or more contacts without a Job Title. Titles help prioritize outreach and route communications correctly.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Always</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">ALL_RECORDS</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">90</value>
     </values>
     <values>

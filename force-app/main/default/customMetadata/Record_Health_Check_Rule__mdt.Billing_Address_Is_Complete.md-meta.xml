@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,7 +11,7 @@
         <value xsi:type="xsd:string">Account_Examples_Formula</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">40</value>
     </values>
     <values>
@@ -19,29 +19,29 @@
         <value xsi:type="xsd:boolean">true</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value xsi:type="xsd:string">Billing Address Is Complete</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">Formula</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">FORMULA</value>
     </values>
     <values>
-        <field>PassFailFormula__c</field>
+        <field>PassConditionFormula__c</field>
         <value
       xsi:type="xsd:string"
     >AND(NOT(ISBLANK(BillingCity)), NOT(ISBLANK(BillingState)), NOT(ISBLANK(BillingCountry)))</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Always</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">ALL_RECORDS</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Error</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">CRITICAL</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Billing address is incomplete — City, State, and Country are all required.</value>

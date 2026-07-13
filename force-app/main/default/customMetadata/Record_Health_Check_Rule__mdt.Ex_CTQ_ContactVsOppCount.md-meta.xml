@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -13,7 +13,7 @@
     >Account_Examples_Compare_Two_Queries</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">10</value>
     </values>
     <values>
@@ -21,45 +21,45 @@
         <value xsi:type="xsd:boolean">true</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value
       xsi:type="xsd:string"
     >Contact Count Does Not Exceed Open Opportunity Count</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">CompareTwoQueries</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">COMPARE_TWO_QUERIES</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT COUNT() FROM Contact WHERE AccountId = {!Id}</value>
+    >SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}</value>
     </values>
     <values>
-        <field>CompareToQuery__c</field>
+        <field>ComparisonQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT COUNT() FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false</value>
+    >SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">OneResult</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ONE_RESULT</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">LessThanOrEqual</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">LESS_THAN_OR_EQUAL</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Always</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">ALL_RECORDS</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Info</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Contact count exceeds open opportunity count.</value>

@@ -5,11 +5,11 @@
 
 /**
  * Shared value extraction, coercion, and comparison for the SOQL evaluators.
- * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckDualSoqlEvaluator
- * previously carried their own copies of scalar/list extraction, QueryException
+ * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckCompareQueriesEvaluator
+ * previously carried their own copies of single-value/list extraction, QueryException
  * classification, type coercion, equality, and ordered comparison — and the copies
  * had drifted (notably Date/DateTime coercion). Centralizing them here
- * guarantees single-query and dual-query checks behave identically.
+ * guarantees single-query and compare-queries checks behave identically.
  * Apex boxes Date values through the Datetime branch when they are held as Object
  * so temporal comparisons consistently use Datetime semantics after the numeric
  * comparison attempt.
@@ -63,7 +63,7 @@ public with sharing class RecordHealthCheckValueResolver {
 
   /**
    * Resolves a list of string values, one per row. Null is included as '' so list
-   * comparators can distinguish [A, null, B] from [A, B] rather than silently
+   * operators can distinguish [A, null, B] from [A, B] rather than silently
    * collapsing them.
    */
   public static List<String> stringList(List<SObject> rows, String fieldName) {
@@ -167,34 +167,34 @@ public with sharing class RecordHealthCheckValueResolver {
   // ─── Ordered comparison ─────────────────────────────────────────────────────
 
   /**
-   * Applies an ordered comparator (GreaterThan/…/LessThanOrEqual) by trying typed
+   * Applies an ordered operator (GreaterThan/…/LessThanOrEqual) by trying typed
    * ladders in order of specificity: Decimal → DateTime. Throws
    * INCOMPATIBLE_COMPARISON_TYPES rather than ever falling back to lexicographic
    * string order.
    */
   public static Boolean applyOrdered(
-    String comparator,
+    String operator,
     Object primary,
     Object comparison
   ) {
     try {
       Decimal p = Decimal.valueOf(String.valueOf(primary));
       Decimal c = Decimal.valueOf(String.valueOf(comparison));
-      return orderedDecimal(comparator, p, c);
+      return orderedDecimal(operator, p, c);
     } catch (ResolverException re) {
       throw re;
     } catch (Exception numEx) {
       try {
         return orderedDateTime(
-          comparator,
+          operator,
           coerceDateTime(primary),
           coerceDateTime(comparison)
         );
       } catch (Exception dtEx) {
         throw new ResolverException(
           'INCOMPATIBLE_COMPARISON_TYPES',
-          'Comparator "' +
-            comparator +
+          'Comparison operator "' +
+            operator +
             '" requires comparable numeric, Date, or DateTime values.'
         );
       }
@@ -202,42 +202,38 @@ public with sharing class RecordHealthCheckValueResolver {
   }
 
   @TestVisible
-  private static Boolean orderedDecimal(
-    String comparator,
-    Decimal p,
-    Decimal c
-  ) {
-    if (comparator == 'GreaterThan')
+  private static Boolean orderedDecimal(String operator, Decimal p, Decimal c) {
+    if (operator == 'GREATER_THAN')
       return p > c;
-    if (comparator == 'GreaterThanOrEqual')
+    if (operator == 'GREATER_THAN_OR_EQUAL')
       return p >= c;
-    if (comparator == 'LessThan')
+    if (operator == 'LESS_THAN')
       return p < c;
-    if (comparator == 'LessThanOrEqual')
+    if (operator == 'LESS_THAN_OR_EQUAL')
       return p <= c;
     throw new ResolverException(
       'INVALID_COMPARATOR',
-      'Comparator "' + comparator + '" is not an ordered comparator.'
+      'Comparison operator "' + operator + '" is not an ordered operator.'
     );
   }
 
   @TestVisible
   private static Boolean orderedDateTime(
-    String comparator,
+    String operator,
     Datetime p,
     Datetime c
   ) {
-    if (comparator == 'GreaterThan')
+    if (operator == 'GREATER_THAN')
       return p > c;
-    if (comparator == 'GreaterThanOrEqual')
+    if (operator == 'GREATER_THAN_OR_EQUAL')
       return p >= c;
-    if (comparator == 'LessThan')
+    if (operator == 'LESS_THAN')
       return p < c;
-    if (comparator == 'LessThanOrEqual')
+    if (operator == 'LESS_THAN_OR_EQUAL')
       return p <= c;
     throw new ResolverException(
       'INVALID_COMPARATOR',
-      'Comparator "' + comparator + '" is not an ordered comparator.'
+      'Comparison operator "' + operator + '" is not an ordered operator.'
     );
   }
 

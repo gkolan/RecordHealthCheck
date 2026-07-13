@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FormulaResultType__c</fullName>
+    <label>Formula Result Type</label>
+    <description
+  >Declares the data type your formulas return. It applies to all single-value formulas in this check - "Value to find in the list (formula)" and "Expected Value (Formula)", which affect pass/fail, as well as "Display: Found Formula" and "Display: Expected Formula", which are display only. Leave "Auto" unless you know the return type; declaring it saves formula calls, but "Auto" always resolves correctly. Choices: "Auto", "Checkbox", "Number", "Date", "Date/Time", "Text".</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>AUTO</fullName><default
+        >true</default></value><value><fullName>BOOLEAN</fullName><default
+        >false</default></value><value><fullName>NUMBER</fullName><default
+        >false</default></value><value><fullName>DATE</fullName><default
+        >false</default></value><value><fullName>DATETIME</fullName><default
+        >false</default></value><value><fullName>TEXT</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+    <inlineHelpText
+  >The type your formulas return. Applies to every formula in the check (the list/expected value formulas and the display formulas). Leave "Auto" unless you know the type - "Auto" always works but uses more formula calls.</inlineHelpText>
+    <required>false</required>
+</CustomField>

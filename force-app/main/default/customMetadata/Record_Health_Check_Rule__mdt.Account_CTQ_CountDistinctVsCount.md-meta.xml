@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,85 +11,85 @@
         <value xsi:type="xsd:string">Account_Compare_Queries</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value
       xsi:type="xsd:string"
     >Distinct Cities Do Not Exceed Contact Count</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >CompareTwoQueries with COUNT(DISTINCT MailingCity) on the primary side and COUNT() on the comparison side. Distinct values can never exceed total row count.</value>
+    >Compare two queries with COUNT(DISTINCT MailingCity) on the source side and COUNT() on the comparison side. Distinct values can never exceed total row count.</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">CompareTwoQueries</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">COMPARE_TWO_QUERIES</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT COUNT(DISTINCT MailingCity) distinctCities FROM Contact WHERE AccountId = {!Id} AND MailingCity != null</value>
+    >SELECT COUNT(DISTINCT MailingCity) distinctCities FROM Contact WHERE AccountId = {!record.Id} AND MailingCity != null</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">distinctCities</value>
     </values>
     <values>
-        <field>CompareToQuery__c</field>
+        <field>ComparisonQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT COUNT() FROM Contact WHERE AccountId = {!Id}</value>
+    >SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">OneResult</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ONE_RESULT</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">LessThanOrEqual</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">LESS_THAN_OR_EQUAL</value>
     </values>
     <values>
-        <field>WhenValueIsEmpty__c</field>
-        <value xsi:type="xsd:string">SkipRecordsWithMissingValue</value>
+        <field>EmptyValueHandling__c</field>
+        <value xsi:type="xsd:string">SKIP_RECORD</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Info</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} has more distinct contact cities than total contacts, which indicates inconsistent contact data.</value>
+    >{!record.Name} has more distinct contact cities than total contacts, which indicates inconsistent contact data.</value>
     </values>
     <values>
-        <field>MessageWhenCannotRun__c</field>
+        <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Could not compare distinct contact cities against total contact count.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">SOQL</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">WHEN_COUNT_QUERY_MATCHES</value>
     </values>
     <values>
-        <field>RunWhenCountQuery__c</field>
+        <field>ApplicabilityCountQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT COUNT() FROM Contact WHERE AccountId = {!Id}</value>
+    >SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}</value>
     </values>
     <values>
-        <field>CountOperator__c</field>
-        <value xsi:type="xsd:string">GreaterThan</value>
+        <field>ApplicabilityCountOperator__c</field>
+        <value xsi:type="xsd:string">GREATER_THAN</value>
     </values>
     <values>
-        <field>CountThreshold__c</field>
+        <field>ApplicabilityCountThreshold__c</field>
         <value xsi:type="xsd:double">0</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">90</value>
     </values>
     <values>

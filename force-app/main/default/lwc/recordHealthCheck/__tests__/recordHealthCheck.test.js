@@ -496,9 +496,9 @@ describe("c-record-health-check — run orchestration", () => {
     expect(runRunId).not.toBe(defArgs.runId);
   });
 
-  it("shows per-row debug meta when debug mode is on", async () => {
+  it("shows per-row diagnostics meta when showDiagnostics is on", async () => {
     getCheckDefinitions.mockResolvedValue(
-      makeDefinitions({ triggerMode: "Automatic", debugMode: true })
+      makeDefinitions({ triggerMode: "Automatic", showDiagnostics: true })
     );
     evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
     await appendAndLoad(element);
@@ -513,7 +513,7 @@ describe("c-record-health-check — run orchestration", () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         triggerMode: "Automatic",
-        debugMode: true,
+        showDiagnostics: true,
         checks: [makeDefinitions().checks[0]]
       })
     );
@@ -1588,7 +1588,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     expect(rows[1].getAttribute("tabindex")).toBe("-1");
   });
 
-  it("logs a console summary and provenance group when debug mode completes a run", async () => {
+  it("logs a console summary and diagnostics group when showDiagnostics completes a run", async () => {
     const group = jest.spyOn(console, "group").mockImplementation(() => {});
     const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const table = jest.spyOn(console, "table").mockImplementation(() => {});
@@ -1597,7 +1597,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       .mockImplementation(() => {});
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
-        debugMode: true,
+        showDiagnostics: true,
         checks: [makeDefinitions().checks[0]]
       })
     );
@@ -1649,7 +1649,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     groupEnd.mockRestore();
   });
 
-  it("does not log an empty provenance group when debug details are absent", async () => {
+  it("does not log an empty diagnostics group when diagnostic details are absent", async () => {
     const group = jest.spyOn(console, "group").mockImplementation(() => {});
     const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const table = jest.spyOn(console, "table").mockImplementation(() => {});
@@ -1658,7 +1658,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       .mockImplementation(() => {});
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
-        debugMode: true,
+        showDiagnostics: true,
         checks: [makeDefinitions().checks[0]]
       })
     );
@@ -1946,7 +1946,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(a.showExpandedExpected).toBe(true);
   });
 
-  it("OnDemand: a failing row shows values inline without card provenance", () => {
+  it("OnDemand: a failing row shows values inline without card diagnostic details", () => {
     const collapsed = annotateCheck(
       resolved(failWithValuesAndProvenance),
       false,
@@ -1975,7 +1975,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(open.showExpandedActual).toBe(false);
   });
 
-  it("keeps card provenance out of the view model when expanding values", () => {
+  it("keeps card diagnostic details out of the view model when expanding values", () => {
     const a = annotateCheck(resolved(passWithValues), false, "OnDemand", true);
     expect(a.showExpandedActual).toBe(true);
     expect(a.showActualDetail).toBeUndefined();
@@ -1994,7 +1994,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(a.detailExpanded).toBe(false);
   });
 
-  it("AllRows: a passing row shows Found/Expected inline, no caret when there is no provenance", () => {
+  it("AllRows: a passing row shows Found/Expected inline, no caret when there are no diagnostic details", () => {
     const a = annotateCheck(resolved(passWithValues), false, "AllRows", false);
     expect(a.showInlineComparison).toBe(true);
     expect(a.showActual).toBe(true);

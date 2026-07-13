@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SourceQueryField__c</fullName>
+    <label>Source Query Field</label>
+    <description
+  >The API name of the field to read from the "Source Query" result. Needed when the Source Query returns field values. Leave blank when the Source Query uses COUNT() or another aggregate.</description>
+    <type>Text</type>
+    <length>255</length>
+        <inlineHelpText
+  >Which column from the "Source Query" to read, e.g. MailingCity. Leave blank for COUNT()/aggregate queries.</inlineHelpText>
+    <required>false</required>
+    <unique>false</unique>
+    <externalId>false</externalId>
+</CustomField>
