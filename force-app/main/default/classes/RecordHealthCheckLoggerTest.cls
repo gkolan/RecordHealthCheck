@@ -22,7 +22,7 @@ private class RecordHealthCheckLoggerTest {
     logger.debug(
       'Some_Check',
       'START',
-      new Map<String, Object>{ 'type' => 'Formula', 'debugMode' => true }
+      new Map<String, Object>{ 'type' => 'FORMULA', 'showDiagnostics' => true }
     );
     logger.info(
       'Some_Check',

@@ -20,7 +20,7 @@ private class AccountOpenOpportunityHealthCheckTest {
     System.assertEquals('PASS', result.status);
     System.assertEquals('0 unhealthy', result.actualValue);
     System.assertEquals('0 unhealthy', result.expectedValue);
-    System.assertNotEquals(null, result.actualProvenance);
+    System.assertNotEquals(null, result.actualValueSource);
   }
 
   @IsTest

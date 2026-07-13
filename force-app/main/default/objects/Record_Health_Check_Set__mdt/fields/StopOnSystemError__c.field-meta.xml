@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>StopOnSystemError__c</fullName>
-    <label>Stop After System Error</label>
+    <label>Stop after a system error</label>
     <description
-  >When ON, the run stops as soon as a check hits an unexpected system error. It does NOT stop for normal Fail or Skipped results — those let the remaining checks keep running.</description>
+  >When checked, the run stops as soon as a check hits an unexpected system error. It does NOT stop for normal Fail or Skipped results - those let the remaining checks keep running. Leave unchecked so a single system error does not hide the results of the other checks.</description>
     <type>Checkbox</type>
     <defaultValue>false</defaultValue>
     <inlineHelpText
-  >ON: stop the whole run if a check errors out unexpectedly. This does not stop on a normal Fail or Skip.</inlineHelpText>
+  >Checked = stop the whole run on an unexpected system error. Does not stop on a normal Fail or Skip. Off by default.</inlineHelpText>
 </CustomField>

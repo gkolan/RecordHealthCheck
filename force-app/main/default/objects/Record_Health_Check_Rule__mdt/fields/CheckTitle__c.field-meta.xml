@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CheckTitle__c</fullName>
+    <label>Check Title</label>
+    <description
+  >The name end users see for this check in the card row on the record page. Required on every check. This is the friendly, user-facing title only - it is NOT the record's Label or Record Name (DeveloperName) shown in Setup. Keep it short, specific, and plain-language so a user immediately understands what was checked, e.g. "Billing City present".</description>
+    <type>Text</type>
+    <length>255</length>
+        <inlineHelpText
+  >Required. The title users see for this check on the record page, e.g. "Billing City present". Keep it short and plain. Separate from the record's Setup Name/Label.</inlineHelpText>
+    <required>true</required>
+    <unique>false</unique>
+    <externalId>false</externalId>
+</CustomField>

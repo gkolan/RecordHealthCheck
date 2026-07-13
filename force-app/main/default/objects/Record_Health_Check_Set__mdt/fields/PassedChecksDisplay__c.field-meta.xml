@@ -1,27 +1,20 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>PassedChecksDisplay__c</fullName>
     <label>Passed Checks</label>
     <description
-  >Controls what happens to checks that PASS. Show each check keeps them listed. Hide checks, show count only removes the passed checks from the list; their count still appears in the summary bar at the bottom of the card.</description>
+  >Controls how checks that Pass appear. "Show each check" lists every passed check. "Show count only" removes passed checks from the list; their count still appears in the summary bar at the bottom of the card. Defaults to "Show each check".</description>
     <inlineHelpText
-  >Show each check = list every passed check. Hide checks, show count only = remove passed checks from the list; the count still shows in the summary bar.</inlineHelpText>
-    <required>true</required>
+  >How passing checks appear. "Show each check" (default) = list them all. "Show count only" = hide from the list; the count still shows in the summary bar.</inlineHelpText>
+    <required>false</required>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value>
-                <fullName>Show</fullName>
-                <default>true</default>
-                <label>Show each check</label>
-            </value>
-            <value>
-                <fullName>Hide</fullName>
-                <default>false</default>
-                <label>Hide checks, show count only</label>
-            </value>
-        </valueSetDefinition>
+            <value><fullName>SHOW_EACH_CHECK</fullName><default
+        >true</default></value><value><fullName
+        >SHOW_COUNT_ONLY</fullName><default
+        >false</default></value></valueSetDefinition>
     </valueSet>
 </CustomField>

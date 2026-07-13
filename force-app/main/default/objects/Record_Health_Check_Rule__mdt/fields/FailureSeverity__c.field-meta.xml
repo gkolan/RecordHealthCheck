@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FailureSeverity__c</fullName>
+    <label>Failure Severity</label>
+    <description
+  >The business-impact level shown only when this check results in Fail: "Critical" shows red, "Warning" shows amber, "Info" shows blue. It has no effect on Pass, Skipped, Unable to Evaluate, or system-error outcomes. Defaults to "Warning". Severity is deliberately separate from the engine's system-error status, which is why there is no "Error" choice.</description>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>CRITICAL</fullName><default
+        >false</default></value><value><fullName>WARNING</fullName><default
+        >true</default></value><value><fullName>INFO</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >Sets the color/level when the check fails: "Critical" = red, "Warning" = amber (default), "Info" = blue. No effect on non-fail outcomes.</inlineHelpText>
+    <required>false</required>
+</CustomField>

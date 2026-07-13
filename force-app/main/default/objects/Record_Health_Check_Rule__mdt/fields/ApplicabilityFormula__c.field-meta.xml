@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApplicabilityFormula__c</fullName>
+    <label>Applies When (Formula)</label>
+    <description
+  >A Salesforce formula returning true or false, evaluated against the current record. Required when "Applies To" is "When a formula is true". True means the check applies and runs; false means it is Skipped. Leave blank for any other "Applies To" choice. Formula syntax only - not Apex or SOQL.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>5</visibleLines>
+        <inlineHelpText
+  >Required when "Applies To" = "When a formula is true". Salesforce formula returning true/false, e.g. ISPICKVAL(Type, "Partner"). True = run the check; false = Skipped.</inlineHelpText>
+    <required>false</required>
+</CustomField>

@@ -11,7 +11,7 @@ import { parseAuraError } from "./healthCheckModel";
 import { annotateCheck, buildSummaryStats } from "./healthCheckPresentation";
 import { HealthCheckRunner } from "./healthCheckRunner";
 
-// Columns shown in the run-diagnostics table. Provenance stays in the nested
+// Columns shown in the run-diagnostics table. Value-source detail stays in the nested
 // group below — those strings are long and read better one check at a time.
 const RHC_DIAG_TABLE_COLUMNS = [
   "check",
@@ -84,7 +84,7 @@ export default class RecordHealthCheck extends LightningElement {
   @track skippedDisplayMode;
   @track comparisonDisplay = "OnDemand";
   @track stopOnFirstError;
-  @track debugMode = false;
+  @track showDiagnostics = false;
   @track totalCheckCount = 0;
   @track totalAvailableCheckCount = 0;
   @track inactiveRuleCount = 0;
@@ -385,7 +385,7 @@ export default class RecordHealthCheck extends LightningElement {
         ? response.comparisonDisplay
         : "OnDemand";
       this.stopOnFirstError = response.stopOnFirstError;
-      this.debugMode = response.debugMode === true;
+      this.showDiagnostics = response.showDiagnostics === true;
       this.totalCheckCount = response.checks.length;
       this.totalAvailableCheckCount =
         typeof response.totalAvailableCheckCount === "number"
@@ -569,7 +569,7 @@ export default class RecordHealthCheck extends LightningElement {
     return filtered.map((c) =>
       annotateCheck(
         c,
-        this.debugMode,
+        this.showDiagnostics,
         this.comparisonDisplay,
         this._isRowExpanded(c.developerName)
       )
@@ -828,8 +828,8 @@ export default class RecordHealthCheck extends LightningElement {
     return keys;
   }
 
-  get showDebugConsoleHint() {
-    return this.debugMode && this.runComplete;
+  get showDiagnosticsConsoleHint() {
+    return this.showDiagnostics && this.runComplete;
   }
 
   _buildRunDiagnostics() {

@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ActionUrl__c</fullName>
+    <label>Action URL</label>
+    <description
+  >Optional. The URL for the read-only remediation link labeled by "Action Label". Use it for docs, playbooks, or Salesforce deep links; it never updates records automatically. Supports {!FieldName} merge tokens, including relationship paths such as {!Owner.ManagerId}, resolved against the record before the link is shown. Both "Action Label" and "Action URL" must be set for the link to appear.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>3</visibleLines>
+    <inlineHelpText
+  >Optional. Where the remediation link goes - docs or a Salesforce page, e.g. /lightning/r/Report/00O.../view?fv0={!Id}. Read-only; may use {!FieldName} tokens. Set "Action Label" too.</inlineHelpText>
+    <required>false</required>
+</CustomField>

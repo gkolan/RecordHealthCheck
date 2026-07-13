@@ -98,7 +98,7 @@ function normalizeComparisonMode(mode) {
 }
 
 /** Add template-ready display flags for one check row. */
-export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
+export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
   const uiState = c.uiState;
   const result = c.result || {};
   const status = result.status || "";
@@ -171,7 +171,7 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
   const showActual = showInlineComparison && actualValue != null;
   const showExpected = showInlineComparison && expectedValue != null;
 
-  // Expanded region: values only when they were not already inline. Provenance
+  // Expanded region: values only when they were not already inline. Value-source
   // stays out of the card view and is logged through run diagnostics instead.
   const showExpandedActual =
     detailExpanded && valuesBehindCaret && actualValue != null;
@@ -227,11 +227,11 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
 
   const adminDetailMessage =
     (isResolved && c.result && c.result.adminDetailMessage) || null;
-  const showAdminDetail = debugMode && !!adminDetailMessage;
+  const showAdminDetail = showDiagnostics && !!adminDetailMessage;
 
   const r = c.result || {};
-  const debugMeta =
-    debugMode && isResolved
+  const diagnosticsMeta =
+    showDiagnostics && isResolved
       ? [
           r.status,
           r.reasonCode,
@@ -241,7 +241,7 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
           .filter(Boolean)
           .join(" · ")
       : "";
-  const showDebugMeta = !!debugMeta;
+  const showDiagnosticsMeta = !!diagnosticsMeta;
   const showRowAccent = !!rowAccentClass;
 
   return {
@@ -280,8 +280,8 @@ export function annotateCheck(c, debugMode, comparisonMode, isExpanded) {
     showExpandedExpected,
     adminDetailMessage,
     showAdminDetail,
-    debugMeta,
-    showDebugMeta,
+    diagnosticsMeta,
+    showDiagnosticsMeta,
     accessibleLabel
   };
 }

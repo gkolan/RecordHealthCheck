@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,67 +11,67 @@
         <value xsi:type="xsd:string">Account_Everyday_Use_Cases</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value xsi:type="xsd:string">All Contacts Have a Phone Number</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Every contact must have a phone number. Check Type = Query with How To Interpret Query Results = AllRowsPass and Comparison Operator = IsNotBlank. If Query Finds No Records = Pass, so an account with no contacts passes. If Query Field Value Is Empty = MissingMeansNoMatch, so a blank phone fails. This is not ListContainsAll — the list operators apply only to Check Type = CompareTwoQueries.</value>
+    >Every contact must have a phone. Query with every-record-passes and Is not empty. No rows = Pass (no contacts). Empty field value = Skip record.</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">Query</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">QUERY</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT Phone FROM Contact WHERE AccountId = {!Id}</value>
+    >SELECT Phone FROM Contact WHERE AccountId = {!record.Id}</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">Phone</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">AllRowsPass</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ALL_ROWS_PASS</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">IsNotBlank</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">IS_NOT_BLANK</value>
     </values>
     <values>
-        <field>WhenZeroRows__c</field>
-        <value xsi:type="xsd:string">Pass</value>
+        <field>NoRowsResult__c</field>
+        <value xsi:type="xsd:string">PASS</value>
     </values>
     <values>
-        <field>WhenValueIsEmpty__c</field>
-        <value xsi:type="xsd:string">MissingMeansNoMatch</value>
+        <field>EmptyValueHandling__c</field>
+        <value xsi:type="xsd:string">AS_NO_MATCH</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Warning</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">WARNING</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} has one or more contacts without a phone number. Every contact should be reachable by phone.</value>
+    >{!record.Name} has one or more contacts without a phone number. Every contact should be reachable by phone.</value>
     </values>
     <values>
-        <field>MessageWhenCannotRun__c</field>
+        <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Could not evaluate this health check. Contact your administrator.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">Always</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">ALL_RECORDS</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">10</value>
     </values>
     <values>

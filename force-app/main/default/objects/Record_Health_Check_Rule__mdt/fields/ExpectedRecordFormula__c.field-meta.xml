@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ExpectedRecordFormula__c</fullName>
+    <label>Expected Value (Formula)</label>
+    <description
+  >A Salesforce formula, evaluated on the current record, that produces the value to compare against. Used only when "Expected Value Comes From" is "Record formula". Formula syntax only - not Apex or SOQL. Example: AnnualRevenue / 10.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>5</visibleLines>
+        <inlineHelpText
+  >Salesforce formula giving the value to compare against, e.g. BillingCity or AnnualRevenue / 10. Used when "Expected Value Comes From" = "Record formula".</inlineHelpText>
+    <required>false</required>
+</CustomField>

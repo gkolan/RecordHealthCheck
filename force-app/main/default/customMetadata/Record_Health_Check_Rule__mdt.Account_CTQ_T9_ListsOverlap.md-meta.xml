@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,89 +11,89 @@
         <value xsi:type="xsd:string">Account_Compare_Queries</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value
       xsi:type="xsd:string"
     >Contact Cities Overlap With Parent Account Contacts</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >ListsOverlap: at least one contact mailing city on this account must appear in the set of contact mailing cities on the parent account. SOQL applicability gate skips the check when no parent account is set.</value>
+    >Lists overlap: at least one contact mailing city on this account must appear in the set of contact mailing cities on the parent account. SOQL applicability gate skips the check when no parent account is set.</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">CompareTwoQueries</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">COMPARE_TWO_QUERIES</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT MailingCity FROM Contact WHERE AccountId = {!Id} AND MailingCity != null</value>
+    >SELECT MailingCity FROM Contact WHERE AccountId = {!record.Id} AND MailingCity != null</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">MailingCity</value>
     </values>
     <values>
-        <field>CompareToQuery__c</field>
+        <field>ComparisonQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT MailingCity FROM Contact WHERE AccountId = {!ParentId} AND MailingCity != null</value>
+    >SELECT MailingCity FROM Contact WHERE AccountId = {!record.ParentId} AND MailingCity != null</value>
     </values>
     <values>
-        <field>CompareToField__c</field>
+        <field>ComparisonQueryField__c</field>
         <value xsi:type="xsd:string">MailingCity</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">CompareAsLists</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">COMPARE_AS_LISTS</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">ListsOverlap</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">LISTS_OVERLAP</value>
     </values>
     <values>
-        <field>WhenZeroRows__c</field>
-        <value xsi:type="xsd:string">Skip</value>
+        <field>NoRowsResult__c</field>
+        <value xsi:type="xsd:string">SKIP</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Warning</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">WARNING</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} has no contact cities in common with its parent account. Verify geographic alignment.</value>
+    >{!record.Name} has no contact cities in common with its parent account. Verify geographic alignment.</value>
     </values>
     <values>
-        <field>MessageWhenCannotRun__c</field>
+        <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Could not compare contact city lists. Contact your administrator.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">SOQL</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">WHEN_COUNT_QUERY_MATCHES</value>
     </values>
     <values>
-        <field>RunWhenCountQuery__c</field>
+        <field>ApplicabilityCountQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT COUNT() FROM Account WHERE Id = {!ParentId}</value>
+    >SELECT COUNT() FROM Account WHERE Id = {!record.ParentId}</value>
     </values>
     <values>
-        <field>CountOperator__c</field>
-        <value xsi:type="xsd:string">GreaterThan</value>
+        <field>ApplicabilityCountOperator__c</field>
+        <value xsi:type="xsd:string">GREATER_THAN</value>
     </values>
     <values>
-        <field>CountThreshold__c</field>
+        <field>ApplicabilityCountThreshold__c</field>
         <value xsi:type="xsd:double">0</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">30</value>
     </values>
     <values>

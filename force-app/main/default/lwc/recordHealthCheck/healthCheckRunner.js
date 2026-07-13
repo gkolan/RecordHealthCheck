@@ -312,7 +312,7 @@ export class HealthCheckRunner {
       this.host.runComplete = true;
       this.host.hasCompletedRunOnce = true;
       this._runInProgress = false;
-      if (this.host.debugMode) {
+      if (this.host.showDiagnostics) {
         this.host._logRunDiagnostics();
       }
     }

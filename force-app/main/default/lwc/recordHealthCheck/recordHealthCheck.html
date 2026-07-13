@@ -266,8 +266,8 @@
                     </template>
                   </div>
                 </template>
-                <template if:true={check.showDebugMeta}>
-                  <span class="rhc-debug-meta">{check.debugMeta}</span>
+                <template if:true={check.showDiagnosticsMeta}>
+                  <span class="rhc-debug-meta">{check.diagnosticsMeta}</span>
                 </template>
                 <template if:true={check.showAdminDetail}>
                   <div class="rhc-debug-detail">
@@ -308,7 +308,7 @@
           </div>
         </template>
 
-        <template if:true={showDebugConsoleHint}>
+        <template if:true={showDiagnosticsConsoleHint}>
           <p class="rhc-debug-console-hint" role="status">
             Check console (F12) for diagnostics.
           </p>

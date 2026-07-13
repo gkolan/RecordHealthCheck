@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ActionLabel__c</fullName>
+    <label>Action Label</label>
+    <description
+  >Optional. The text for a read-only remediation link shown with the "Fix Message" on a failed check, e.g. "Open Account guidance". It renders as a link, not a button, and never updates records. Both "Action Label" and "Action URL" must be set for the link to appear.</description>
+    <type>Text</type>
+    <length>80</length>
+    <inlineHelpText
+  >Optional. Link text shown with "Fix Message" on a failed check, e.g. "Open Account guidance". Read-only link (not a button). Set "Action URL" too.</inlineHelpText>
+    <required>false</required>
+</CustomField>

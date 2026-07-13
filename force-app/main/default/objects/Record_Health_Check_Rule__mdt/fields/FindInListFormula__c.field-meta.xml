@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FindInListFormula__c</fullName>
+    <label>Value to find in the list (formula)</label>
+    <description
+  >Required when "Evaluation Type" is "Verify with a query" and "Comparison Operator" is "List contains any" or "List contains none" (also set "How To Read Query Results" to "Compare as lists"). Enter a Salesforce formula, evaluated on the current record, whose result is the single value searched for in the list returned by "Comparison Query" - the list is the query, not this field. A bare field name is the simplest formula, e.g. BillingCountry; a literal is written in formula syntax, e.g. "US". Leave blank for every other Evaluation Type and operator.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>5</visibleLines>
+        <inlineHelpText
+  >For "Verify with a query" with "List contains any"/"List contains none". A formula on the record giving the value to look for in the "Comparison Query" list, e.g. BillingCountry (a bare field) or "US" (a literal). Leave blank otherwise.</inlineHelpText>
+    <required>false</required>
+</CustomField>

@@ -9,15 +9,15 @@ public class RecordHealthCheckDefinitionResponse {
   @AuraEnabled
   public String displayDescription;
   @AuraEnabled
-  public String triggerMode; // Automatic, Manual
+  public String triggerMode; // Automatic, Manual — mapped from CardRunMode__c
   @AuraEnabled
-  public String revealMode; // AllAtOnce, OneAtATime
+  public String revealMode; // AllAtOnce, OneAtATime — mapped from CardRevealMode__c
   @AuraEnabled
-  public String successDisplayMode; // Show, Hide
+  public String successDisplayMode; // Show, Hide — mapped from PassedChecksDisplay__c
   @AuraEnabled
-  public String skippedDisplayMode; // Show, Hide
+  public String skippedDisplayMode; // Show, Hide — mapped from SkippedChecksDisplay__c
   @AuraEnabled
-  public String comparisonDisplay; // OnDemand, FailuresOnly, AllRows — how Found/Expected reveal per row
+  public String comparisonDisplay; // OnDemand, FailuresOnly, AllRows — mapped from FoundExpectedDisplay__c
   @AuraEnabled
   public Boolean stopOnFirstError;
   @AuraEnabled
@@ -27,7 +27,7 @@ public class RecordHealthCheckDefinitionResponse {
   @AuraEnabled
   public Integer inactiveRuleCount; // inactive Rules on the Check Set (not run)
   @AuraEnabled
-  public Boolean debugMode; // mirrors DebugMode__c — tells LWC to show adminDetailMessage
+  public Boolean showDiagnostics; // mirrors ShowDiagnostics__c — tells LWC to show adminDetailMessage
   @AuraEnabled
   public List<RecordHealthCheckDefinition> checks;
 }

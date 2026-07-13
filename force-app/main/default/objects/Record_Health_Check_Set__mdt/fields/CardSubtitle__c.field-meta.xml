@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CardSubtitle__c</fullName>
+    <label>Card Subtitle</label>
+    <description
+  >Optional one-line text shown under the "Card Title" to explain what the card checks. Keep it to a sentence or two.</description>
+    <type>Text</type>
+    <length>255</length>
+    <inlineHelpText
+  >Optional. A short line under the "Card Title" explaining what the card checks.</inlineHelpText>
+    <required>false</required>
+</CustomField>

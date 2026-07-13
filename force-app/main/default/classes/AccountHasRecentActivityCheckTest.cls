@@ -26,14 +26,14 @@ private class AccountHasRecentActivityCheckTest {
     System.assertEquals('PASS', result.status);
     System.assertEquals('1 activity', result.actualValue);
     System.assertEquals('at least 1 activity', result.expectedValue);
-    System.assertNotEquals(null, result.actualProvenance);
+    System.assertNotEquals(null, result.actualValueSource);
     System.assertEquals(
       'Completed tasks + events',
-      result.actualProvenance.sourceLabel
+      result.actualValueSource.sourceLabel
     );
-    System.assertEquals('1', result.actualProvenance.rawValueLabel);
-    System.assertEquals('last 30 days', result.actualProvenance.coercionLabel);
-    System.assertNotEquals(null, result.expectedProvenance);
+    System.assertEquals('1', result.actualValueSource.rawValueLabel);
+    System.assertEquals('last 30 days', result.actualValueSource.coercionLabel);
+    System.assertNotEquals(null, result.expectedValueSource);
   }
 
   @IsTest
@@ -46,8 +46,8 @@ private class AccountHasRecentActivityCheckTest {
     System.assertEquals('FAIL', result.status);
     System.assertEquals('0 activities', result.actualValue);
     System.assertEquals('at least 1 activity', result.expectedValue);
-    System.assertNotEquals(null, result.actualProvenance);
-    System.assertEquals('0', result.actualProvenance.rawValueLabel);
+    System.assertNotEquals(null, result.actualValueSource);
+    System.assertEquals('0', result.actualValueSource.rawValueLabel);
   }
 
   @IsTest
@@ -71,10 +71,10 @@ private class AccountHasRecentActivityCheckTest {
     System.assertEquals('FAIL', result.status);
     System.assertEquals('0 activities', result.actualValue);
     System.assertEquals('at least 1 activity', result.expectedValue);
-    System.assertEquals('last 90 days', result.actualProvenance.coercionLabel);
+    System.assertEquals('last 90 days', result.actualValueSource.coercionLabel);
     System.assertEquals(
       'within 90 days',
-      result.expectedProvenance.coercionLabel
+      result.expectedValueSource.coercionLabel
     );
   }
 

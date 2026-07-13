@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FixMessage__c</fullName>
+    <label>Fix Message</label>
+    <description
+  >Optional user-facing guidance shown from a failed check's detail view, telling users how to resolve the issue. It is advisory and read-only - Record Health Check never updates records.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>3</visibleLines>
+    <inlineHelpText
+  >Optional. Tell users how to fix the failed check. Guidance only - nothing is changed automatically.</inlineHelpText>
+    <required>false</required>
+</CustomField>

@@ -7,8 +7,8 @@
  * Example implementation of RecordHealthCheckRule using the Apex evaluator.
  * Checks whether an Account has at least one completed Task or logged Event
  * within a configurable look-back window. The number of days is read from
- * ApexSettingsJson__c so it can be tuned per rule without a code change
- * ApexSettingsJson__c: {"daysBack": 90}
+ * ApexParametersJson__c so it can be tuned per rule without a code change
+ * ApexParametersJson__c: {"daysBack": 90}
  * Failure message, severity, and label all come from the CMT record — this
  * class determines PASS/FAIL and returns comparison values for the UI.
  */
@@ -47,12 +47,12 @@ public with sharing class AccountHasRecentActivityCheck implements RecordHealthC
       ' activit' +
       (activityCount == 1 ? 'y' : 'ies');
     result.expectedValue = 'at least 1 activity';
-    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       'Completed tasks + events',
       String.valueOf(activityCount),
       'last ' + daysBack + ' days'
     );
-    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
       'Required recent activity',
       '1',
       'within ' + daysBack + ' days'

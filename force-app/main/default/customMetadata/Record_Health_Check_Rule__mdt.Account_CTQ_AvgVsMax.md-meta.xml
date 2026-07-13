@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomMetadata
   xmlns="http://soap.sforce.com/2006/04/metadata"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,89 +11,89 @@
         <value xsi:type="xsd:string">Account_Compare_Queries</value>
     </values>
     <values>
-        <field>CheckName__c</field>
+        <field>CheckTitle__c</field>
         <value
       xsi:type="xsd:string"
     >Average Deal Does Not Exceed Largest Deal</value>
     </values>
     <values>
-        <field>Tooltip__c</field>
+        <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >CompareTwoQueries with AVG on the primary side and MAX on the comparison side. AVG is always less than or equal to MAX across the same row set.</value>
+    >Compare two queries with AVG on the source side and MAX on the comparison side. AVG is always less than or equal to MAX across the same row set.</value>
     </values>
     <values>
-        <field>CheckMethod__c</field>
-        <value xsi:type="xsd:string">CompareTwoQueries</value>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">COMPARE_TWO_QUERIES</value>
     </values>
     <values>
-        <field>DataQuery__c</field>
+        <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT AVG(Amount) avgDeal FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false AND Amount != null</value>
+    >SELECT AVG(Amount) avgDeal FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND Amount != null</value>
     </values>
     <values>
-        <field>FieldToRead__c</field>
+        <field>SourceQueryField__c</field>
         <value xsi:type="xsd:string">avgDeal</value>
     </values>
     <values>
-        <field>CompareToQuery__c</field>
+        <field>ComparisonQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT MAX(Amount) maxDeal FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false AND Amount != null</value>
+    >SELECT MAX(Amount) maxDeal FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND Amount != null</value>
     </values>
     <values>
-        <field>CompareToField__c</field>
+        <field>ComparisonQueryField__c</field>
         <value xsi:type="xsd:string">maxDeal</value>
     </values>
     <values>
-        <field>WhenMultipleRows__c</field>
-        <value xsi:type="xsd:string">OneResult</value>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">ONE_RESULT</value>
     </values>
     <values>
-        <field>Operator__c</field>
-        <value xsi:type="xsd:string">LessThanOrEqual</value>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">LESS_THAN_OR_EQUAL</value>
     </values>
     <values>
-        <field>WhenValueIsEmpty__c</field>
-        <value xsi:type="xsd:string">SkipRecordsWithMissingValue</value>
+        <field>EmptyValueHandling__c</field>
+        <value xsi:type="xsd:string">SKIP_RECORD</value>
     </values>
     <values>
-        <field>Severity__c</field>
-        <value xsi:type="xsd:string">Info</value>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
     <values>
-        <field>MessageWhenFailed__c</field>
+        <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!Name} average open deal size exceeds its largest open deal, which indicates inconsistent opportunity data.</value>
+    >{!record.Name} average open deal size exceeds its largest open deal, which indicates inconsistent opportunity data.</value>
     </values>
     <values>
-        <field>MessageWhenCannotRun__c</field>
+        <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
     >Could not compare average and maximum open opportunity amounts.</value>
     </values>
     <values>
-        <field>RunThisCheckWhen__c</field>
-        <value xsi:type="xsd:string">SOQL</value>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">WHEN_COUNT_QUERY_MATCHES</value>
     </values>
     <values>
-        <field>RunWhenCountQuery__c</field>
+        <field>ApplicabilityCountQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT COUNT() FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false AND Amount != null</value>
+    >SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND Amount != null</value>
     </values>
     <values>
-        <field>CountOperator__c</field>
-        <value xsi:type="xsd:string">GreaterThan</value>
+        <field>ApplicabilityCountOperator__c</field>
+        <value xsi:type="xsd:string">GREATER_THAN</value>
     </values>
     <values>
-        <field>CountThreshold__c</field>
+        <field>ApplicabilityCountThreshold__c</field>
         <value xsi:type="xsd:double">0</value>
     </values>
     <values>
-        <field>RunOrder__c</field>
+        <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">70</value>
     </values>
     <values>

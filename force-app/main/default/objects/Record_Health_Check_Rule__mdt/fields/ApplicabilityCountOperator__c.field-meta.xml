@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApplicabilityCountOperator__c</fullName>
+    <label>Count Must Be</label>
+    <description
+  >Part of the applicability gate only - not the main pass/fail check. Sets how the count from "Applies When (Count Query)" is compared to "Count Value"; the check runs only when this comparison is true. Required when "Applies To" is "When a count query matches". Choices: "Equal to", "Not equal to", "Greater than", "At least" (greater than or equal), "Less than", "At most" (less than or equal).</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>EQUALS</fullName><default
+        >false</default></value><value><fullName>NOT_EQUALS</fullName><default
+        >false</default></value><value><fullName>GREATER_THAN</fullName><default
+        >false</default></value><value><fullName
+        >GREATER_THAN_OR_EQUAL</fullName><default>false</default></value><value
+      ><fullName>LESS_THAN</fullName><default>false</default></value><value
+      ><fullName>LESS_THAN_OR_EQUAL</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >Applicability gate only. How the count is compared to "Count Value", e.g. "Greater than" with a "Count Value" of 0 runs the check only when at least one row matches. Required when "Applies To" = "When a count query matches".</inlineHelpText>
+    <required>false</required>
+</CustomField>

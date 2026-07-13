@@ -12,19 +12,19 @@ private class RecordHealthCheckSecurityAndOpsTest {
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
     // Troubleshooting detail now shares the single Advanced-tier grant with
-    // provenance; canViewDebugDetails() delegates to canViewDetails().
+    // value source; canViewDebugDetails() delegates to canViewDetails().
     RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
     System.assertEquals(false, RecordHealthCheckAccess.canViewDebugDetails());
     System.assertEquals(
       null,
-      engine.applyDebugMode(result, true).adminDetailMessage
+      engine.applyShowDiagnostics(result, true).adminDetailMessage
     );
 
     RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
     System.assertEquals(true, RecordHealthCheckAccess.canViewDebugDetails());
     System.assertEquals(
       'sensitive query detail',
-      engine.applyDebugMode(result, true).adminDetailMessage
+      engine.applyShowDiagnostics(result, true).adminDetailMessage
     );
     RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
     System.assertNotEquals(
@@ -80,12 +80,12 @@ private class RecordHealthCheckSecurityAndOpsTest {
   @isTest
   static void provenanceDetailRequiresViewDetailsPermission() {
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       'NumberOfEmployees',
       'null',
       'blank treated as 0'
     );
-    result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
       'Fixed value',
       '10',
       null
@@ -96,14 +96,14 @@ private class RecordHealthCheckSecurityAndOpsTest {
     // values themselves are unaffected — they are governed by display policy).
     RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
     System.assertEquals(false, RecordHealthCheckAccess.canViewDetails());
-    RecordHealthCheckResult gated = engine.applyDetailProvenance(result);
+    RecordHealthCheckResult gated = engine.applyValueSourceDetail(result);
     System.assertEquals(null, gated.actualValueDetail);
     System.assertEquals(null, gated.expectedValueDetail);
 
-    // Entitled → the structured provenance renders into the two strings.
+    // Entitled → the structured value source renders into the two strings.
     RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
     System.assertEquals(true, RecordHealthCheckAccess.canViewDetails());
-    RecordHealthCheckResult shown = engine.applyDetailProvenance(result);
+    RecordHealthCheckResult shown = engine.applyValueSourceDetail(result);
     System.assertEquals(
       'NumberOfEmployees → null (blank treated as 0)',
       shown.actualValueDetail
@@ -133,9 +133,9 @@ private class RecordHealthCheckSecurityAndOpsTest {
   @isTest
   static void fieldPlanningIgnoresLiteralsAndInvalidMessageTokens() {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
-      CheckMethod__c = 'Formula',
-      PassFailFormula__c = 'CONTAINS(Website, "example.com") && NOT(ISBLANK(Parent.Name))',
-      MessageWhenFailed__c = 'Bad token stays blank: {!Parent.Missing__c}'
+      EvaluationType__c = 'FORMULA',
+      PassConditionFormula__c = 'CONTAINS(Website, "example.com") && NOT(ISBLANK(Parent.Name))',
+      FailureMessage__c = 'Bad token stays blank: {!record.Parent.Missing__c}'
     );
 
     Set<String> fields = new RecordHealthCheckEngine()

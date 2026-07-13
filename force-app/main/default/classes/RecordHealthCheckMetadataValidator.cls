@@ -33,7 +33,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   // drift. Local aliases keep the call sites below readable.
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps the baseline + Check Set + dependency-graph checks (inline) plus a
-  // collect-all adapter (toIssue). The comparator/source/null-empty value sets live with
+  // collect-all adapter (toIssue). The operator/source/null-empty value sets live with
   // those producers.
   private static final Set<String> VALID_DISPLAY_MODES = RecordHealthCheckConstants.VALID_DISPLAY_MODES;
   private static final Set<String> VALID_TRIGGER_MODES = RecordHealthCheckConstants.VALID_TRIGGER_MODES;
@@ -58,12 +58,12 @@ public with sharing class RecordHealthCheckMetadataValidator {
         MasterLabel,
         ObjectApiName__c,
         IsActive__c,
-        RunChecksWhen__c,
-        RowAppearance__c,
-        ComparisonDisplay__c,
+        CardRunMode__c,
+        CardRevealMode__c,
+        FoundExpectedDisplay__c,
         PassedChecksDisplay__c,
         SkippedChecksDisplay__c,
-        PanelHeading__c
+        CardTitle__c
       FROM Record_Health_Check_Set__mdt
       WHERE IsActive__c = TRUE
     ];
@@ -73,40 +73,46 @@ public with sharing class RecordHealthCheckMetadataValidator {
       SELECT
         DeveloperName,
         MasterLabel,
-        CheckName__c,
-        RunOrder__c,
+        CheckTitle__c,
+        EvaluationOrder__c,
         IsActive__c,
-        CheckMethod__c,
-        Severity__c,
-        PassFailFormula__c,
-        ValueToTest__c,
-        DataQuery__c,
-        FieldToRead__c,
-        CompareAgainst__c,
-        FixedValue__c,
-        RecordFormulaValue__c,
-        CompareToQuery__c,
-        CompareToField__c,
-        Operator__c,
-        WhenMultipleRows__c,
-        WhenZeroRows__c,
-        WhenValueIsEmpty__c,
-        MessageWhenFailed__c,
+        EvaluationType__c,
+        FailureSeverity__c,
+        PassConditionFormula__c,
+        FindInListFormula__c,
+        SourceQuery__c,
+        SourceQueryField__c,
+        ExpectedValueSource__c,
+        ExpectedFixedValue__c,
+        ExpectedRecordFormula__c,
+        ComparisonQuery__c,
+        ComparisonQueryField__c,
+        ComparisonOperator__c,
+        QueryResultHandling__c,
+        NoRowsResult__c,
+        EmptyValueHandling__c,
+        DisplayFoundText__c,
+        DisplayExpectedText__c,
+        FailureMessage__c,
+        UnableToEvaluateMessage__c,
+        ActionLabel__c,
+        ActionUrl__c,
+        FixMessage__c,
         ApexClass__c,
-        ApexSettingsJson__c,
-        MaxRows__c,
-        RequiresCheck__c,
-        RunThisCheckWhen__c,
-        RunWhenFormula__c,
-        RunWhenCountQuery__c,
-        CountOperator__c,
-        CountThreshold__c,
+        ApexParametersJson__c,
+        MaxQueryRows__c,
+        PrerequisiteRule__c,
+        ApplicabilityMode__c,
+        ApplicabilityFormula__c,
+        ApplicabilityCountQuery__c,
+        ApplicabilityCountOperator__c,
+        ApplicabilityCountThreshold__c,
         Record_Health_Check_Set__c
       FROM Record_Health_Check_Rule__mdt
       WHERE IsActive__c = TRUE
       ORDER BY
         Record_Health_Check_Set__c ASC,
-        RunOrder__c ASC NULLS LAST,
+        EvaluationOrder__c ASC NULLS LAST,
         DeveloperName ASC
     ];
 
@@ -180,14 +186,14 @@ public with sharing class RecordHealthCheckMetadataValidator {
         ) {
           Record_Health_Check_Rule__mdt includedRule = setRules[i];
           if (
-            String.isNotBlank(includedRule.RequiresCheck__c) &&
-            !included.contains(includedRule.RequiresCheck__c.trim())
+            String.isNotBlank(includedRule.PrerequisiteRule__c) &&
+            !included.contains(includedRule.PrerequisiteRule__c.trim())
           ) {
             issues.add(
               new ValidationIssue(
                 'WARNING',
                 includedRule.DeveloperName,
-                'RequiresCheck__c',
+                'PrerequisiteRule__c',
                 'The dependency is outside the first-25 execution window, so this rule will be skipped.',
                 'DEPENDENCY_NOT_IN_RUN'
               )
@@ -236,13 +242,13 @@ public with sharing class RecordHealthCheckMetadataValidator {
       );
     }
 
-    if (String.isBlank(cs.PanelHeading__c)) {
+    if (String.isBlank(cs.CardTitle__c)) {
       issues.add(
         new ValidationIssue(
           'ERROR',
           cs.DeveloperName,
-          'PanelHeading__c',
-          'Panel Heading is required.',
+          'CardTitle__c',
+          'Card Title is required.',
           'MISSING_REQUIRED_FIELD'
         )
       );
@@ -278,46 +284,46 @@ public with sharing class RecordHealthCheckMetadataValidator {
 
     // Parity with RecordHealthCheckConfigService runtime validation so a Check
     // Set that deploys clean cannot still fail at definition-load time.
-    if (!VALID_TRIGGER_MODES.contains(cs.RunChecksWhen__c)) {
+    if (!VALID_TRIGGER_MODES.contains(cs.CardRunMode__c)) {
       issues.add(
         new ValidationIssue(
           'ERROR',
           cs.DeveloperName,
-          'RunChecksWhen__c',
-          'Run Checks When "' +
-            cs.RunChecksWhen__c +
-            '" is not recognized. Valid values: Automatic, Manual.',
+          'CardRunMode__c',
+          'When Checks Run "' +
+            cs.CardRunMode__c +
+            '" is not recognized. Valid values: RUN_ON_LOAD, RUN_ON_REQUEST.',
           'INVALID_CONFIG'
         )
       );
     }
 
-    if (!VALID_REVEAL_MODES.contains(cs.RowAppearance__c)) {
+    if (!VALID_REVEAL_MODES.contains(cs.CardRevealMode__c)) {
       issues.add(
         new ValidationIssue(
           'ERROR',
           cs.DeveloperName,
-          'RowAppearance__c',
+          'CardRevealMode__c',
           'Reveal Mode "' +
-            cs.RowAppearance__c +
-            '" is not recognized. Valid values: AllAtOnce, OneAtATime.',
+            cs.CardRevealMode__c +
+            '" is not recognized. Valid values: ALL_AT_ONCE, ONE_BY_ONE.',
           'INVALID_CONFIG'
         )
       );
     }
 
     if (
-      String.isNotBlank(cs.ComparisonDisplay__c) &&
-      !VALID_COMPARISON_DISPLAYS.contains(cs.ComparisonDisplay__c)
+      String.isNotBlank(cs.FoundExpectedDisplay__c) &&
+      !VALID_COMPARISON_DISPLAYS.contains(cs.FoundExpectedDisplay__c)
     ) {
       issues.add(
         new ValidationIssue(
           'ERROR',
           cs.DeveloperName,
-          'ComparisonDisplay__c',
-          'ComparisonDisplay "' +
-            cs.ComparisonDisplay__c +
-            '" is not recognized. Valid values: OnDemand, FailuresOnly, AllRows.',
+          'FoundExpectedDisplay__c',
+          'Found/Expected Display "' +
+            cs.FoundExpectedDisplay__c +
+            '" is not recognized. Valid values: ON_DEMAND, FAILURES_ONLY, ALL_ROWS.',
           'INVALID_CONFIG'
         )
       );
@@ -332,68 +338,74 @@ public with sharing class RecordHealthCheckMetadataValidator {
     Record_Health_Check_Rule__mdt rule
   ) {
     List<ValidationIssue> issues = new List<ValidationIssue>();
+    RecordHealthCheckTokenIssue tokenIssue = RecordHealthCheckConfigValidator.firstTemplateIssue(
+      rule
+    );
+    if (tokenIssue != null) {
+      issues.add(err(rule, null, tokenIssue.message, tokenIssue.reasonCode));
+    }
 
-    if (String.isBlank(rule.CheckName__c)) {
+    if (String.isBlank(rule.CheckTitle__c)) {
       issues.add(
         err(
           rule,
-          'CheckName__c',
-          'Label is required.',
+          'CheckTitle__c',
+          'Check Title is required.',
           'MISSING_REQUIRED_FIELD'
         )
       );
     }
-    if (rule.RunOrder__c == null) {
+    if (rule.EvaluationOrder__c == null) {
       issues.add(
         err(
           rule,
-          'RunOrder__c',
-          'Priority is required.',
+          'EvaluationOrder__c',
+          'Evaluation Order is required.',
           'MISSING_REQUIRED_FIELD'
         )
       );
     }
     if (
-      String.isBlank(rule.Severity__c) ||
-      !VALID_SEVERITIES.contains(rule.Severity__c)
+      String.isBlank(rule.FailureSeverity__c) ||
+      !VALID_SEVERITIES.contains(rule.FailureSeverity__c)
     ) {
       issues.add(
         err(
           rule,
-          'Severity__c',
+          'FailureSeverity__c',
           'Severity must be Error, Warning, or Info.',
           'INVALID_CONFIG'
         )
       );
     }
-    if (String.isBlank(rule.MessageWhenFailed__c)) {
+    if (String.isBlank(rule.FailureMessage__c)) {
       issues.add(
         err(
           rule,
-          'MessageWhenFailed__c',
+          'FailureMessage__c',
           'Message When Check Fails is required.',
           'MISSING_REQUIRED_FIELD'
         )
       );
     }
-    if (String.isBlank(rule.CheckMethod__c)) {
+    if (String.isBlank(rule.EvaluationType__c)) {
       issues.add(
         err(
           rule,
-          'CheckMethod__c',
-          'Check Type is required.',
+          'EvaluationType__c',
+          'Evaluation Type is required.',
           'MISSING_REQUIRED_FIELD'
         )
       );
       return issues; // can't validate further without Check Type
     }
 
-    if (!VALID_CHECK_TYPES.contains(rule.CheckMethod__c)) {
+    if (!VALID_CHECK_TYPES.contains(rule.EvaluationType__c)) {
       issues.add(
         err(
           rule,
-          'CheckMethod__c',
-          'Check Type "' + rule.CheckMethod__c + '" is not recognized.',
+          'EvaluationType__c',
+          'Evaluation Type "' + rule.EvaluationType__c + '" is not recognized.',
           'INVALID_CHECK_TYPE'
         )
       );
@@ -402,15 +414,15 @@ public with sharing class RecordHealthCheckMetadataValidator {
 
     // ApplicabilityMode validation (null / blank == Always, which is valid)
     if (
-      String.isNotBlank(rule.RunThisCheckWhen__c) &&
-      !VALID_APPLICABILITY_MODES.contains(rule.RunThisCheckWhen__c)
+      String.isNotBlank(rule.ApplicabilityMode__c) &&
+      !VALID_APPLICABILITY_MODES.contains(rule.ApplicabilityMode__c)
     ) {
       issues.add(
         err(
           rule,
-          'RunThisCheckWhen__c',
+          'ApplicabilityMode__c',
           'ApplicabilityMode "' +
-            rule.RunThisCheckWhen__c +
+            rule.ApplicabilityMode__c +
             '" is not recognized. Valid values: Always, Formula, SOQL.',
           'INVALID_CONFIG'
         )
@@ -421,17 +433,17 @@ public with sharing class RecordHealthCheckMetadataValidator {
     // so a misconfigured gate is caught at deploy time, not first evaluation.
     issues.addAll(validateApplicability(rule));
 
-    if (rule.CheckMethod__c == 'Formula') {
+    if (rule.EvaluationType__c == 'FORMULA') {
       issues.addAll(validateFormulaRule(rule));
-    } else if (rule.CheckMethod__c == 'Query') {
+    } else if (rule.EvaluationType__c == 'QUERY') {
       issues.addAll(validateQueryRule(rule));
-    } else if (rule.CheckMethod__c == 'Apex') {
+    } else if (rule.EvaluationType__c == 'APEX') {
       issues.addAll(validateApexRule(rule));
-    } else if (rule.CheckMethod__c == 'CompareTwoQueries') {
-      issues.addAll(validateDualSoqlRule(rule));
+    } else if (rule.EvaluationType__c == 'COMPARE_TWO_QUERIES') {
+      issues.addAll(validateCompareQueriesRule(rule));
     }
 
-    // MaxRows, null behavior, and empty-result behavior are validated for all
+    // MaxRows, empty-value handling, and empty-result behavior are validated for all
     // check types at top level. Shared producers emit the findings; toIssue maps
     // each to this class's reason code / field.
     addIssues(
@@ -491,10 +503,13 @@ public with sharing class RecordHealthCheckMetadataValidator {
     return toIssues(RecordHealthCheckRuleValidator.apexFindings(rule), rule);
   }
 
-  private List<ValidationIssue> validateDualSoqlRule(
+  private List<ValidationIssue> validateCompareQueriesRule(
     Record_Health_Check_Rule__mdt rule
   ) {
-    return toIssues(RecordHealthCheckRuleValidator.dualFindings(rule), rule);
+    return toIssues(
+      RecordHealthCheckRuleValidator.compareQueriesFindings(rule),
+      rule
+    );
   }
 
   private List<ValidationIssue> toIssues(
@@ -523,7 +538,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when APPLICABILITY_FORMULA_MISSING {
         return err(
           rule,
-          'RunWhenFormula__c',
+          'ApplicabilityFormula__c',
           'Applicability Formula is required when Applicability Mode is Formula.',
           'INVALID_FORMULA'
         );
@@ -531,7 +546,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when APPLICABILITY_SOQL_MISSING {
         return err(
           rule,
-          'RunWhenCountQuery__c',
+          'ApplicabilityCountQuery__c',
           'Applicability SOQL is required when Applicability Mode is SOQL.',
           'INVALID_SOQL_TEMPLATE'
         );
@@ -539,24 +554,24 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when APPLICABILITY_SOQL_NOT_SCALAR {
         return err(
           rule,
-          'RunWhenCountQuery__c',
-          'Applicability SOQL must be one scalar COUNT() or COUNT(Id) query without GROUP BY.',
+          'ApplicabilityCountQuery__c',
+          'Applicability SOQL must be a single COUNT() or COUNT(Id) query without GROUP BY.',
           'INVALID_SOQL_TEMPLATE'
         );
       }
       when APPLICABILITY_COMPARATOR_MISSING {
         return err(
           rule,
-          'CountOperator__c',
-          'Applicability Comparator is required when Applicability Mode is SOQL.',
+          'ApplicabilityCountOperator__c',
+          'Applicability comparison operator is required when Applicability Mode is SOQL.',
           'INVALID_COMPARATOR'
         );
       }
       when APPLICABILITY_COMPARATOR_INVALID {
         return err(
           rule,
-          'CountOperator__c',
-          'Applicability Comparator "' +
+          'ApplicabilityCountOperator__c',
+          'Applicability comparison operator "' +
             val +
             '" is not recognized. Valid values: Equals, NotEquals, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual.',
           'INVALID_COMPARATOR'
@@ -565,7 +580,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when APPLICABILITY_THRESHOLD_MISSING {
         return err(
           rule,
-          'CountThreshold__c',
+          'ApplicabilityCountThreshold__c',
           'Applicability Comparison Value is required when Applicability Mode is SOQL.',
           'MISSING_REQUIRED_FIELD'
         );
@@ -574,7 +589,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when FORMULA_MISSING {
         return err(
           rule,
-          'PassFailFormula__c',
+          'PassConditionFormula__c',
           'Formula is required for Formula checks.',
           'INVALID_FORMULA'
         );
@@ -583,23 +598,23 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when LIST_VALUE_TO_TEST_MISSING {
         return err(
           rule,
-          'ValueToTest__c',
-          'Value To Test is required as the primary value source for ListContainsAny/ListDoesNotContainAny.',
+          'FindInListFormula__c',
+          'Value To Test is required as the primary value source for List contains any/List contains none.',
           'INVALID_FORMULA'
         );
       }
       when LIST_COMPARE_QUERY_MISSING {
         return err(
           rule,
-          'CompareToQuery__c',
-          'Comparison Query is required as the list source for ListContainsAny/ListDoesNotContainAny.',
+          'ComparisonQuery__c',
+          'Comparison Query is required as the list source for List contains any/List contains none.',
           'INVALID_SOQL_TEMPLATE'
         );
       }
       when LIST_COMPARE_FIELD_MISSING {
         return err(
           rule,
-          'CompareToField__c',
+          'ComparisonQueryField__c',
           'Comparison Query Field is required for list comparison queries.',
           'MISSING_REQUIRED_FIELD'
         );
@@ -607,47 +622,49 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when PRIMARY_QUERY_MISSING {
         return err(
           rule,
-          'DataQuery__c',
-          'Primary Query is required for Query checks (except ListContainsAny/ListDoesNotContainAny).',
+          'SourceQuery__c',
+          'Source Query is required for Query checks (except List contains any/List contains none).',
           'INVALID_SOQL_TEMPLATE'
         );
       }
       when PRIMARY_QUERY_FIELD_MISSING {
         return err(
           rule,
-          'FieldToRead__c',
-          'Primary Query Field is required for non-aggregate queries.',
+          'SourceQueryField__c',
+          'Source Query Field is required for non-aggregate queries.',
           'MISSING_REQUIRED_FIELD'
         );
       }
       when DUAL_COMPARATOR_ON_SINGLE {
         return err(
           rule,
-          'Operator__c',
-          'Operator "' + val + '" requires Check Type Compare two queries.',
+          'ComparisonOperator__c',
+          'Operator "' +
+            val +
+            '" requires Evaluation Type Compare two queries.',
           'INVALID_COMPARATOR'
         );
       }
       when COMPARATOR_INVALID {
         return err(
           rule,
-          'Operator__c',
-          'Comparator "' + val + '" is not recognized.',
+          'ComparisonOperator__c',
+          'Comparison operator "' + val + '" is not recognized.',
           'INVALID_COMPARATOR'
         );
       }
       when COMPARATOR_MISSING {
         return err(
           rule,
-          'Operator__c',
-          'Comparator is required for Query checks.',
+          'ComparisonOperator__c',
+          'Comparison operator is required for Query checks.',
           'INVALID_COMPARATOR'
         );
       }
       when MULTI_ROWS_MISSING {
         return err(
           rule,
-          'WhenMultipleRows__c',
+          'QueryResultHandling__c',
           'How To Interpret Query Results is required for Query checks.',
           'MISSING_REQUIRED_FIELD'
         );
@@ -655,7 +672,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when MULTI_ROWS_INVALID {
         return err(
           rule,
-          'WhenMultipleRows__c',
+          'QueryResultHandling__c',
           'How To Interpret Query Results "' + val + '" is not recognized.',
           'INVALID_CONFIG'
         );
@@ -663,15 +680,15 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when COMPARE_AS_LISTS_ON_SINGLE {
         return err(
           rule,
-          'WhenMultipleRows__c',
-          'Compare query results as lists requires Check Type Compare two queries, not Check records with a query.',
+          'QueryResultHandling__c',
+          'Compare query results as lists requires Evaluation Type Compare two queries, not Check records with a query.',
           'INVALID_COMPARATOR'
         );
       }
       when COMPARE_AGAINST_MISSING {
         return err(
           rule,
-          'CompareAgainst__c',
+          'ExpectedValueSource__c',
           'Expected Value Comes From is required for Query checks except IsBlank/IsNotBlank.',
           'MISSING_REQUIRED_FIELD'
         );
@@ -679,7 +696,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when COMPARE_AGAINST_INVALID {
         return err(
           rule,
-          'CompareAgainst__c',
+          'ExpectedValueSource__c',
           'Expected Value Comes From "' + val + '" is not recognized.',
           'INVALID_CONFIG'
         );
@@ -687,7 +704,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when FIXED_VALUE_MISSING {
         return err(
           rule,
-          'FixedValue__c',
+          'ExpectedFixedValue__c',
           'Expected Value is required when Expected Value Comes From is A fixed value.',
           'MISSING_REQUIRED_FIELD'
         );
@@ -695,7 +712,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when RECORD_FORMULA_MISSING {
         return err(
           rule,
-          'RecordFormulaValue__c',
+          'ExpectedRecordFormula__c',
           'Expected Formula (on this record) is required when Expected Value Comes From is A formula on this record.',
           'INVALID_FORMULA'
         );
@@ -703,48 +720,48 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when ANOTHER_QUERY_MISSING {
         return err(
           rule,
-          'CompareToQuery__c',
-          'Second Query is required when Expected Value Comes From is A second query result.',
+          'ComparisonQuery__c',
+          'Comparison Query is required when Expected Value Comes From is Comparison query.',
           'INVALID_SOQL_TEMPLATE'
         );
       }
       when ANOTHER_QUERY_FIELD_MISSING {
         return err(
           rule,
-          'CompareToField__c',
+          'ComparisonQueryField__c',
           'Comparison Query Field is required for non-aggregate queries.',
           'MISSING_REQUIRED_FIELD'
         );
       }
-      // ── CompareTwoQueries (dual) ──
+      // ── Compare two queries ──
       when DUAL_PRIMARY_QUERY_MISSING {
         return err(
           rule,
-          'DataQuery__c',
-          'Primary Query is required for CompareTwoQueries checks.',
+          'SourceQuery__c',
+          'Source Query is required for Compare two queries checks.',
           'INVALID_SOQL_TEMPLATE'
         );
       }
       when DUAL_COMPARE_QUERY_MISSING {
         return err(
           rule,
-          'CompareToQuery__c',
-          'Comparison Query is required for CompareTwoQueries checks.',
+          'ComparisonQuery__c',
+          'Comparison Query is required for Compare two queries checks.',
           'INVALID_SOQL_TEMPLATE'
         );
       }
       when DUAL_PRIMARY_FIELD_MISSING {
         return err(
           rule,
-          'FieldToRead__c',
-          'Primary Query Field is required for non-aggregate primary queries.',
+          'SourceQueryField__c',
+          'Source Query Field is required for non-aggregate source queries.',
           'MISSING_REQUIRED_FIELD'
         );
       }
       when DUAL_COMPARE_FIELD_MISSING {
         return err(
           rule,
-          'CompareToField__c',
+          'ComparisonQueryField__c',
           'Comparison Query Field is required for non-aggregate comparison queries.',
           'MISSING_REQUIRED_FIELD'
         );
@@ -752,23 +769,23 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when DUAL_COMPARATOR_MISSING {
         return err(
           rule,
-          'Operator__c',
-          'Comparator is required for CompareTwoQueries checks.',
+          'ComparisonOperator__c',
+          'Comparison operator is required for Compare two queries checks.',
           'INVALID_COMPARATOR'
         );
       }
       when DUAL_COMPARATOR_INVALID {
         return err(
           rule,
-          'Operator__c',
-          'Comparator "' + val + '" is not recognized.',
+          'ComparisonOperator__c',
+          'Comparison operator "' + val + '" is not recognized.',
           'INVALID_COMPARATOR'
         );
       }
       when DUAL_MULTI_ROWS_MISSING {
         return err(
           rule,
-          'WhenMultipleRows__c',
+          'QueryResultHandling__c',
           'How To Interpret Query Results is required for Compare two queries checks.',
           'MISSING_REQUIRED_FIELD'
         );
@@ -776,7 +793,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when DUAL_MULTI_ROWS_INVALID {
         return err(
           rule,
-          'WhenMultipleRows__c',
+          'QueryResultHandling__c',
           'Compare two queries requires How To Interpret Query Results to be Expect one row or aggregate result, or Compare query results as lists.',
           'INVALID_COMPARATOR'
         );
@@ -784,16 +801,16 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when DUAL_LIST_MODE_NEEDS_LIST_COMPARATOR {
         return err(
           rule,
-          'Operator__c',
-          'CompareAsLists mode requires a list comparator: ListsOverlap, ListContainsAll, or ExactListMatch.',
+          'ComparisonOperator__c',
+          'Compare query results as lists mode requires a list operator: Lists overlap, List contains all, or Exact list match.',
           'INVALID_COMPARATOR'
         );
       }
       when DUAL_ONE_RESULT_NO_LIST_COMPARATOR {
         return err(
           rule,
-          'Operator__c',
-          'List comparators (ListsOverlap, ListContainsAll, ExactListMatch) require CompareAsLists mode.',
+          'ComparisonOperator__c',
+          'List operators (Lists overlap, List contains all, Exact list match) require Compare query results as lists mode.',
           'INVALID_COMPARATOR'
         );
       }
@@ -817,7 +834,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when APEX_PARAMS_INVALID {
         return err(
           rule,
-          'ApexSettingsJson__c',
+          'ApexParametersJson__c',
           'Apex Parameters must contain a valid JSON object.',
           'INVALID_APEX_PARAMETERS'
         );
@@ -826,7 +843,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when MAX_ROWS_INVALID {
         return err(
           rule,
-          'MaxRows__c',
+          'MaxQueryRows__c',
           'Max Rows Override must be a whole number between 1 and ' +
             FRAMEWORK_MAX_ROWS +
             '.',
@@ -836,17 +853,17 @@ public with sharing class RecordHealthCheckMetadataValidator {
       when NULL_BEHAVIOR_INVALID {
         return err(
           rule,
-          'WhenValueIsEmpty__c',
-          'Null Behavior "' +
+          'EmptyValueHandling__c',
+          'If Field Value Is Empty "' +
             val +
-            '" is not recognized. Valid values: MissingMeansNoMatch, SkipRecordsWithMissingValue, TreatMissingAsBlank.',
+            '" is not recognized. Valid values: Ignore the record, Treat as blank, Treat as not matching.',
           'INVALID_CONFIG'
         );
       }
       when EMPTY_BEHAVIOR_INVALID {
         return err(
           rule,
-          'WhenZeroRows__c',
+          'NoRowsResult__c',
           'Empty Result Behavior "' +
             val +
             '" is not recognized. Valid values: Pass, Fail, Skip, UnableToEvaluate.',
@@ -876,19 +893,19 @@ public with sharing class RecordHealthCheckMetadataValidator {
     Map<String, String> dependsOnMap = new Map<String, String>(); // devName → dependsOnDevName
 
     for (Record_Health_Check_Rule__mdt rule : rules) {
-      if (String.isBlank(rule.RequiresCheck__c)) {
+      if (String.isBlank(rule.PrerequisiteRule__c)) {
         continue;
       }
 
-      String depDevName = rule.RequiresCheck__c.trim();
+      String depDevName = rule.PrerequisiteRule__c.trim();
       Record_Health_Check_Rule__mdt dep = rulesByDevName.get(depDevName);
 
       if (dep == null) {
         issues.add(
           err(
             rule,
-            'RequiresCheck__c',
-            'DependsOnCheck must reference an existing rule DeveloperName. ' +
+            'PrerequisiteRule__c',
+            'Prerequisite Rule must reference an existing rule DeveloperName. ' +
               '"' +
               depDevName +
               '" was not found.',
@@ -904,8 +921,8 @@ public with sharing class RecordHealthCheckMetadataValidator {
         issues.add(
           err(
             rule,
-            'RequiresCheck__c',
-            'DependsOnCheck must reference a rule in the same Check Set. ' +
+            'PrerequisiteRule__c',
+            'Prerequisite Rule must reference a rule in the same Check Set. ' +
               '"' +
               depDevName +
               '" belongs to a different Check Set.',
@@ -918,21 +935,21 @@ public with sharing class RecordHealthCheckMetadataValidator {
       // Must have strictly lower Priority
       if (
         dep != null &&
-        dep.RunOrder__c != null &&
-        rule.RunOrder__c != null &&
-        dep.RunOrder__c >= rule.RunOrder__c
+        dep.EvaluationOrder__c != null &&
+        rule.EvaluationOrder__c != null &&
+        dep.EvaluationOrder__c >= rule.EvaluationOrder__c
       ) {
         issues.add(
           err(
             rule,
-            'RequiresCheck__c',
-            'DependsOnCheck must reference a rule with a strictly lower Priority. ' +
+            'PrerequisiteRule__c',
+            'Prerequisite Rule must reference a rule with a strictly lower Evaluation Order. ' +
               '"' +
               depDevName +
-              '" has Priority ' +
-              dep.RunOrder__c +
-              ' which is not lower than this rule\'s Priority ' +
-              rule.RunOrder__c +
+              '" has Evaluation Order ' +
+              dep.EvaluationOrder__c +
+              ' which is not lower than this rule\'s Evaluation Order ' +
+              rule.EvaluationOrder__c +
               '.',
             'INVALID_DEPENDENCY'
           )
@@ -979,7 +996,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
               issues.add(
                 err(
                   r,
-                  'RequiresCheck__c',
+                  'PrerequisiteRule__c',
                   'Dependency cycle detected: ' + cycleStr,
                   'INVALID_DEPENDENCY'
                 )
