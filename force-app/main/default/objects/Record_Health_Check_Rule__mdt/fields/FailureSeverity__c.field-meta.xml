@@ -6,6 +6,7 @@
   >The business-impact level shown only when this check results in Fail: "Critical" shows red, "Warning" shows amber, "Info" shows blue. It has no effect on Pass, Skipped, Unable to Evaluate, or system-error outcomes. Defaults to "Warning". Severity is deliberately separate from the engine's system-error status, which is why there is no "Error" choice.</description>
     <type>Picklist</type>
     <valueSet>
+        <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
             <value><fullName>CRITICAL</fullName><default

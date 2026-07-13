@@ -297,7 +297,7 @@ The strict V2 policy is preferred for a fresh-start breaking release. Whichever 
 
 ### 2.8 Field sizing and storage rules
 
-**✅ Completed** — shipped metadata and the generated 53-field registry (`docs/reference/field-size-registry.md`) are authoritative (2026-07-13), including the two additive Section 4 publication fields.
+**✅ Completed** — shipped metadata and the generated 53-field registry (`docs/v2/reference/field-size-registry.md`) are authoritative (2026-07-13), including the two additive Section 4 publication fields.
 
 The proposals considered a compact two-tier policy: 2,048 characters for human-readable long text and URLs, and 8,192 for formulas, SOQL, JSON, and list expressions. The implemented migration map currently uses `Text(255)` for `CheckDescription__c` and `CardSubtitle__c` because Salesforce Long Text Area starts at 256, and uses larger Long Text Area fields for unbounded configuration.
 
@@ -312,7 +312,7 @@ Before release, generate one authoritative size registry from shipped metadata. 
 
 ### 2.9 Exact value-contract requirements
 
-**✅ Completed** — restricted picklists and their `UPPER_SNAKE_CASE` values, labels, and defaults are shipped and verified as part of the field migration; shipped metadata is authoritative. Option A from §2.10 is adopted: applicability and prerequisite outcomes use `SKIPPED` with stable reason codes.
+**✅ Completed** — restricted picklists and their `UPPER_SNAKE_CASE` values, labels, and defaults are shipped and verified as part of the field migration; shipped metadata is authoritative. Option A from §2.10 is adopted: applicability and prerequisite outcomes use `SKIPPED` with stable reason codes. A microscopic audit (2026-07-13) found `FailureSeverity__c` was the one picklist shipped without `<restricted>true</restricted>` — contradicting this contract and the size registry's own "Restricted value set" row; it was corrected and redeployed, so all 15 picklists across both objects are now restricted.
 
 All picklists are restricted. The shipped V2 metadata is authoritative for exact `UPPER_SNAKE_CASE` values, labels, and defaults. The contract registry must cover at least:
 
@@ -341,7 +341,7 @@ Applicability formula misses use `NOT_APPLICABLE_BY_FORMULA`, applicability coun
 
 ### 2.11 Diagnostics display and field-level-security presentation
 
-**🟡 Partial** — implementation and local LWC verification are complete (108/108 tests, 2026-07-13). Required Apex/scratch-org security verification is blocked because the configured Salesforce login host is not resolving; see the Section 2.11 verification report.
+**✅ Completed** — implementation and local LWC verification are complete (108/108 Jest, 2026-07-13), and the previously blocked scratch-org security verification is now done. Server-side FLS/`USER_MODE` degradation is implemented in `RecordHealthCheckEngine`, `RecordHealthCheckValueResolver`, and `RecordHealthCheckFormulaEvaluator` (neutral-empty in normal mode; `FIELD_NOT_ACCESSIBLE` only under the diagnostics gate), and its `System.runAs`/`USER_MODE`/`FIELD_NOT_ACCESSIBLE` Apex tests pass as part of the full 183/183 run on a clean scratch org (`rhc-v2-audit`, 2026-07-13). The remaining human browser sign-off is the §9 Gate C smoke test, tracked in §9 — not a §2.11 implementation gap.
 
 Two presentation behaviors follow the same principle as Section 4.19: the default view stays clean and non-alarming, and an authorized, view-time diagnostics overlay reveals the full technical picture without mutating stored configuration or exposing anything to unauthorized users.
 
@@ -1142,6 +1142,6 @@ A complete field migration does not make V2 production-ready. These gates remain
 - **Jargon replacement** — finish the terminology cleanup; no `scalar`/`comparator` remaining in `force-app/`.
 - **Manual smoke test** — `Example_Account_360_Health_Check` on an Account record page, including permission paths, since automated tests do not cover the UI.
 - **Source-to-org readback** — an independent retrieve/diff artifact, not only a recorded successful deploy.
-- **Release and rollback closeout** — upgrade guide (`docs/installation/upgrading-to-v2.md`), backup/rollback evidence, version bump and tag, commit/PR review, and approvals.
+- **Release and rollback closeout** — upgrade guide (`docs/v2/installation/upgrading-to-v2.md`), backup/rollback evidence, version bump and tag, commit/PR review, and approvals.
 
 V2 may be marked production-ready only after every gate passes, with exceptions explicitly documented and approved. Breaking-change summary for release notes: all field API renames per `field-migration-before-after.md`, no dual-read compatibility with v1.x field names, Category vocabulary replaced, `MaxQueryRows` default 200, `EmptyValueHandling` default `AS_NO_MATCH`, `EvaluationOrder` default 100, severity Error → Critical, and long-text fields truncated to 255 characters where the type changed.
