@@ -1,0 +1,23 @@
+name: Generate catalog
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "packs/**/example.yml"
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run catalog
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: regenerate catalog"
+          file_pattern: catalog/*

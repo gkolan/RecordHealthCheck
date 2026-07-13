@@ -74,11 +74,11 @@ The lifecycle surface has two correlated levels: a **run** represents use of the
 
 ## 2. Detailed custom metadata contract
 
-> **Status legend.** Subsections are marked **✅ Completed** (implemented and verified), **🟡 Partial** (implemented in metadata, a release artifact remains), or **⬜ Open** (decision or work outstanding). The field migration (2.1–2.5) was verified in a clean scratch org on 2026-07-12; shipped metadata is the source of truth. Additive event fields noted in 2.1/2.2 are future work tied to the extension contract.
+> **Status legend.** Subsections are marked **✅ Completed** (implemented and verified), **🟡 Partial** (implemented in metadata, a release artifact remains), or **⬜ Open** (decision or work outstanding). The field migration (2.1–2.5) was verified in a clean scratch org on 2026-07-12; shipped metadata is the source of truth. Additive publish fields from 2.1/2.2 shipped with Section 4 (2026-07-13).
 
 ### 2.1 Check Set fields
 
-**✅ Completed** — the 11 Check Set field migrations are implemented and verified (2026-07-12). The additive `PublishRunEvent__c` field is future work tied to the extension event contract.
+**✅ Completed** — the 11 Check Set field migrations are implemented and verified (2026-07-12). The additive `PublishRunEvent__c` field shipped with Section 4.2 (2026-07-13).
 
 | V1 field                  | V2 field                  | Purpose                               |
 | ------------------------- | ------------------------- | ------------------------------------- |
@@ -104,7 +104,7 @@ This is an additive feature field, not one of the already verified 11 Set-field 
 
 ### 2.2 Rule identity, ordering, and messages
 
-**✅ Completed** — the 40 Rule field migrations are implemented and verified (2026-07-12). The additive `PublishResultEvent__c` field is future work tied to the extension event contract.
+**✅ Completed** — the 40 Rule field migrations are implemented and verified (2026-07-12). The additive `PublishResultEvent__c` field shipped with Section 4.2 (2026-07-13).
 
 | V1 field                  | V2 field                     |
 | ------------------------- | ---------------------------- |
@@ -297,7 +297,7 @@ The strict V2 policy is preferred for a fresh-start breaking release. Whichever 
 
 ### 2.8 Field sizing and storage rules
 
-**🟡 Partial** — the field storage types and sizes are implemented in shipped metadata. Generating the single authoritative size registry (storage type, stored maximum, post-resolution maximum, and truncation behavior per field) remains a release task.
+**✅ Completed** — shipped metadata and the generated 53-field registry (`docs/reference/field-size-registry.md`) are authoritative (2026-07-13), including the two additive Section 4 publication fields.
 
 The proposals considered a compact two-tier policy: 2,048 characters for human-readable long text and URLs, and 8,192 for formulas, SOQL, JSON, and list expressions. The implemented migration map currently uses `Text(255)` for `CheckDescription__c` and `CardSubtitle__c` because Salesforce Long Text Area starts at 256, and uses larger Long Text Area fields for unbounded configuration.
 
@@ -312,7 +312,7 @@ Before release, generate one authoritative size registry from shipped metadata. 
 
 ### 2.9 Exact value-contract requirements
 
-**✅ Completed** — restricted picklists and their `UPPER_SNAKE_CASE` values, labels, and defaults are shipped and verified as part of the field migration; shipped metadata is authoritative. Skip/not-applicable status wording depends on the open decision in 2.10.
+**✅ Completed** — restricted picklists and their `UPPER_SNAKE_CASE` values, labels, and defaults are shipped and verified as part of the field migration; shipped metadata is authoritative. Option A from §2.10 is adopted: applicability and prerequisite outcomes use `SKIPPED` with stable reason codes.
 
 All picklists are restricted. The shipped V2 metadata is authoritative for exact `UPPER_SNAKE_CASE` values, labels, and defaults. The contract registry must cover at least:
 
@@ -335,39 +335,67 @@ For operators, document case sensitivity, whitespace, type coercion, list orderi
 
 ### 2.10 Skip and not-applicable semantics
 
-**⬜ Open** — release decision still outstanding (also tracked in Section 6). Must be resolved before freezing UI labels, Apex statuses, lifecycle events, and observability schemas.
+**✅ Completed** — V2 retains one `SKIPPED` outcome and distinguishes applicability and prerequisite causes with stable reason codes (2026-07-13). Lifecycle event propagation for skipped outcomes shipped with Section 4.2.
 
-One source explicitly left open whether **Skipped** and **Not Applicable** are distinct outcomes. V2 must decide this before freezing UI labels, Apex statuses, lifecycle events, observability schemas, and examples. If one status is retained, applicability gates and unmet prerequisites map to a documented reason code. If two statuses exist, the contract must define their behavioral difference and display/count treatment. Renaming only the UI is not acceptable.
+Applicability formula misses use `NOT_APPLICABLE_BY_FORMULA`, applicability count misses use `NOT_APPLICABLE_BY_COUNT`, and unmet prerequisites use `PREREQUISITE_NOT_MET`. The UI and summaries keep one skipped bucket; consumers use `reasonCode` when they need the cause.
+
+### 2.11 Diagnostics display and field-level-security presentation
+
+**🟡 Partial** — implementation and local LWC verification are complete (108/108 tests, 2026-07-13). Required Apex/scratch-org security verification is blocked because the configured Salesforce login host is not resolving; see the Section 2.11 verification report.
+
+Two presentation behaviors follow the same principle as Section 4.19: the default view stays clean and non-alarming, and an authorized, view-time diagnostics overlay reveals the full technical picture without mutating stored configuration or exposing anything to unauthorized users.
+
+#### Diagnostics expands every check
+
+`ShowDiagnostics__c` (authorized by the diagnostics permission) is a troubleshooting overlay, not a stored preference. When it is active for an authorized user, the card shows **every** check individually, overriding `PassedChecksDisplay__c`/`SkippedChecksDisplay__c` set to `SHOW_COUNT_ONLY`. A count-only summary is useless for troubleshooting, so diagnostics auto-expands the suppressed rows.
+
+- **Authorized only.** Expansion requires `ShowDiagnostics__c` and the admin permission. A normal user viewing the same card sees the configured summary; nothing extra is revealed to them.
+- **View-time overlay.** It never rewrites the stored display picklists. Turning diagnostics off restores the configured summary.
+- **Reveals more, never less.** It expands `SHOW_COUNT_ONLY` into the full list; a Set already on `SHOW_EACH_CHECK` is unchanged.
+- **Presentation only.** It changes no evaluation result and publishes no event (Section 4.19).
+
+#### Field-level-security presentation
+
+Evaluation and the façade run in user mode, so a caller may lack FLS to a field a check reads or displays. The response must degrade without leaking the restriction:
+
+- **Normal mode never announces a restriction.** An inaccessible display value renders as a neutral empty value, indistinguishable from a genuinely blank value. The UI does not show the field API name, the words "access" or "permission," or any "you cannot see this field" message. Revealing that a named field exists and is restricted is itself disclosure and reads as a broken component.
+- **When an inaccessible field prevents evaluation**, the outcome is Unable to Evaluate with the Rule's author-written `UnableToEvaluateMessage__c` and a neutral, non-disclosing reason code — not a raw permission error, and not a restriction-specific code that would itself reveal the restriction.
+- **Diagnostics may be honest.** For an authorized admin with diagnostics active, the overlay may state the technical reason plainly, including the field name and a `FIELD_NOT_ACCESSIBLE` reason code, because that is exactly what the admin needs to fix the permission or the configuration.
+- **Enforced server-side.** The normal response must not carry the restricted value, the field name, a suppressed-detail flag, or a restriction-specific reason code to the browser and rely on the LWC to hide them; core strips inaccessible fields before returning, and the restriction-presence flag, field name, and specific reason code exist only inside the diagnostics-gated detail. The honest diagnostic detail is included only when the caller passes the diagnostics gate. A genuinely blank value and an FLS-withheld value must be indistinguishable in the normal response.
+
+This resolves the field-level-security/unavailable-field response policy left open in Section 6 for both the LWC and the façade (Section 4.18); the remaining open work is the scratch-org verification of `USER_MODE` formula-evaluation behavior.
 
 ## 3. Examples repository architecture
 
+**✅ Completed** — initial migration executed in [`RecordHealthCheck-Examples`](https://github.com/gkolan/RecordHealthCheck-Examples) (2026-07-13). Five packs ship with generated catalog, validation CI, and pack contracts. Verification: [`audits/2026-07-13-section-3.1-verification.md`](audits/2026-07-13-section-3.1-verification.md) through [`3.7`](audits/2026-07-13-section-3.7-verification.md). Core retains hero manifests during transition; boundary audit: [`audits/2026-07-13-section-3-core-example-boundary-audit.md`](audits/2026-07-13-section-3-core-example-boundary-audit.md).
+
 ### 3.1 Purpose and boundary
 
-The examples library teaches outcomes and adoption patterns without becoming a hidden runtime dependency. Core keeps one hero example plus internal test fixtures. Scenario-specific CMDT, Apex implementations, permissions, sample automation, and pack documentation move out.
+**✅ Completed** — the examples library teaches outcomes without hidden runtime dependency. Core keeps `Example_Account_360_Health_Check` as the hero example plus internal test fixtures. Initial library packs migrated to `RecordHealthCheck-Examples`.
 
 ### 3.2 Repository shape
 
-Use Salesforce package directories as the deployable boundary, even if migration begins in a monorepo. A scalable library includes:
+**✅ Completed** — flat faceted catalog model (no root `sfdx-project.json`, no cloud folders). Isolated validation projects generated per pack.
 
 ```text
 RecordHealthCheck-Examples/
-  catalog/
+  catalog/                 # generated
   docs/
-  packs/
-    <pack-name>/
-      force-app/
-      manifest/
-      README.md
-      example.yml
-      destructiveChanges.xml
+  packs/<pack-id>/
+    example.yml
+    README.md
+    manifest/
+    force-app/
   scripts/
   tests/
-  sfdx-project.json
+  package.json             # Node tooling only
 ```
 
-Every pack is independently deployable and removable. Catalog pages may offer multiple discovery paths, but each example has one source of truth.
+Every pack is independently deployable and removable. Catalog pages offer multiple discovery paths; each example has one source of truth in `packs/<id>/`.
 
 ### 3.3 Classification
+
+**✅ Completed** — `docs/facet-vocabulary.yml` is the controlled vocabulary; `validate-packs.mjs` enforces it. Generated views: `catalog/by-cloud.md`, `by-outcome.md`, `by-mechanism.md`, etc.
 
 Classify examples across separate facets rather than a single folder hierarchy:
 
@@ -381,6 +409,8 @@ Classify examples across separate facets rather than a single folder hierarchy:
 Outcome routes should use neutral language such as improve completeness, verify consistency, detect stale records, enforce eligibility, or monitor readiness. Do not label people by presumed role or skill level.
 
 ### 3.4 Required pack contract
+
+**✅ Completed** — each migrated pack has `example.yml` (schema v1), ten-section README, `CHANGELOG.md`, deploy and destructive manifests. Template: `RecordHealthCheck-Examples/docs/pack-template/`.
 
 Each `example.yml` records identity, version, compatible core range, package path, dependencies, target objects, mechanisms, outcomes, permissions, destructive metadata, and maturity. Each README explains:
 
@@ -397,6 +427,8 @@ Each `example.yml` records identity, version, compatible core range, package pat
 
 ### 3.5 Migration sequence
 
+**✅ Completed** (initial) — steps 1–5 and 8 executed; steps 6–7 partial (core manifest deduplication and scratch-org proof tracked in §9).
+
 1. Record the current core/example boundary and dependencies.
 2. Define the hero example and fixture policy.
 3. Establish package directories and the catalog schema.
@@ -407,6 +439,8 @@ Each `example.yml` records identity, version, compatible core range, package pat
 8. Open contribution paths only after templates and CI enforce the quality bar.
 
 ### 3.6 Install and distribution experience
+
+**✅ Completed** (source phase) — initial delivery is manifest deploy per pack; 2GP promotion deferred per `docs/packaging-guide.md`.
 
 Supported delivery choices are source/manifest deployment, unlocked second-generation packages, and potentially managed 2GP for AppExchange. A Git tag is not an installable Salesforce package version. When 2GP is used, record the `04t` package version and declare the released core dependency in `sfdx-project.json`.
 
@@ -421,6 +455,8 @@ The adopter-facing path stays simple:
 Offer Deploy to Salesforce buttons or package install links where feasible. The catalog, not the adopter, handles package directories and dependency ordering.
 
 ### 3.7 Compatibility, CI, and issue routing
+
+**✅ Completed** (PR layer) — `catalog/compatibility.md` generated from `example.yml`; `.github/workflows/validate-packs.yml` runs schema, vocabulary, ownership, and catalog-drift checks. Scheduled full-pack org validation remains a §9 follow-up.
 
 - Generate `COMPATIBILITY.md` from `example.yml`; do not hand-maintain duplicate compatibility facts.
 - Validate core alone, then each pack against its minimum and current supported core versions.
@@ -449,7 +485,9 @@ Cross-package visibility must be tested against the intended unlocked or managed
 
 ### 4.2 Evaluation lifecycle event
 
-The recommended result-consumer contract is core-owned `Record_Health_Check_Rule_Result__e`. It represents one finalized Rule-result fact and supports observability, alerts, work creation, external export, analytics, and automation without synchronous coupling.
+**✅ Completed** — V2 ships the two minimal, versioned, opt-in lifecycle events using high-volume Publish After Commit semantics. Publication is bulked, best effort, payload-minimized, and verified with rollback and two materially different consumers (2026-07-13). Independent rollup: [`audits/2026-07-13-section-4-extension-architecture-verification.md`](audits/2026-07-13-section-4-extension-architecture-verification.md).
+
+The recommended result-consumer contract is core-owned `Record_Health_Check_Rule_Result__e`. It represents one finalized Rule-result fact and supports observability, alerts, work creation, external export, analytics, and automation without synchronous coupling. Its emission is bounded by the safety model in Section 4.19: on-load evaluations never publish, and publication is opt-in and limited to deliberately initiated contexts.
 
 The contract must specify emission for top-level and dependency evaluations, skipped and unable outcomes, system errors, cache hits, transaction rollback, correlation IDs, payload version, and sensitive-detail policy. Event payloads should default to metadata identifiers and outcome data, not business record content.
 
@@ -623,7 +661,7 @@ These are **two core-owned domain event types for the entire ecosystem**, not ev
 
 Core publishes `Record_Health_Check_Set_Run__e` for use of the component or public façade. It describes one Check Set run containing zero or more Rule evaluations.
 
-Recommended run phases are `STARTED`, `COMPLETED`, `CANCELLED`, and `FAILED_TO_START`. A page view alone should not count as a run unless automatic execution actually begins. If the product needs component-impression analytics, add a separately consented `COMPONENT_VIEWED` activity rather than silently redefining a health-check run.
+Recommended run phases are `STARTED`, `COMPLETED`, `CANCELLED`, and `FAILED_TO_START`. A page view alone should not count as a run unless automatic execution actually begins. If the product needs component-impression analytics, add a separately consented `COMPONENT_VIEWED` activity rather than silently redefining a health-check run. Automatic on-load evaluation is observational: it displays results but never publishes Rule Result events, regardless of publication settings (Section 4.19).
 
 Conceptual run fields:
 
@@ -708,7 +746,7 @@ The checkboxes are independent:
 
 Rule publication does not inherit from or require the Set checkbox. Each checkbox controls only the event type named in its label. This avoids one overloaded master switch and lets an organization capture adoption without Rule details, selected Rule outcomes without Set-run telemetry, or both.
 
-Both fields default to `false`, so installing or upgrading core does not silently begin publishing user/activity data or consuming event allocations. An administrator opts in deliberately. Inactive Sets and Rules publish nothing because they do not run. A finalized skipped/unable/error result publishes when the Rule checkbox is on; the plugin filters statuses downstream rather than changing publication semantics.
+Both fields default to `false`, so installing or upgrading core does not silently begin publishing user/activity data or consuming event allocations. An administrator opts in deliberately. Even when enabled, `RUN_ON_LOAD` evaluations never publish Rule Result events; the switches apply only to deliberately initiated contexts such as the public façade, a scheduled run, or an explicit user-initiated run (Section 4.19). Inactive Sets and Rules publish nothing because they do not run. A finalized skipped/unable/error result publishes when the Rule checkbox is on; the plugin filters statuses downstream rather than changing publication semantics.
 
 Core should expose the effective publication state in authorized diagnostics and administrative validation. Consumers and dashboards must distinguish “no activity” from “publication disabled.” A global emergency kill switch, if implemented, overrides both checkboxes but never silently rewrites their stored values.
 
@@ -911,6 +949,8 @@ Platform references for implementation-time capacity planning:
 
 ### 4.18 Public check-response façade
 
+**✅ Completed** — the bounded, user-mode façade now evaluates one Rule or Check Set for single and bulk callers, returns versioned normalized responses, and exposes an index-aligned Flow action. Scratch-org capacity and fail-fast behavior are verified (2026-07-13).
+
 Core exposes a first-class, synchronous **check-response façade** (promoted from the previously deferred invocation adapter): a public API to evaluate a Rule or Check Set and get a structured result synchronously in the caller's transaction, distinct from the asynchronous lifecycle events, which remain for after-the-fact consumers.
 
 - **Granularity.** Evaluate one Rule or one Check Set against a record. Rule-level granularity gives the reuse benefit of a shared rule without a junction object; the Rule keeps its required parent Check Set for authoring.
@@ -923,6 +963,54 @@ Core exposes a first-class, synchronous **check-response façade** (promoted fro
 Consumers key on stable status/reason/severity/identity fields, never display text. Until the surface stabilizes it is published as **pre-1.0**, and consumers are told it may change.
 
 The field-level-security and unavailable-field response policy (Section 6) defines what the façade returns when a caller cannot see a field; it is on the critical path for this contract.
+
+### 4.19 Emission and actuation safety model
+
+**✅ Completed** — lifecycle publication is default-off, page-load and subscriber contexts are hard-stopped before configuration lookup, publish failures cannot change health results, and rollback produces no phantom delivery (2026-07-13).
+
+Record Health Check earns its value by being immediate: an authorized user opens a record and sees its health with no click, no configuration, and no side effect. That experience is the product and must not be traded away for telemetry or automation. This section states the one safety principle that protects it, and confirms the principle adds no metadata, no modes, and no required administrator decisions.
+
+#### Intended core behavior
+
+```text
+Open record
+→ checks run automatically
+→ results display
+→ nothing else happens
+```
+
+Diagnosis is automatic; treatment requires intent. The framework evaluates and displays; it does not create records, call external systems, or publish activity merely because a record was viewed.
+
+#### Responsibility boundary
+
+```text
+Core framework:        automatic diagnosis and display
+Optional rule action:  a user-initiated action link the author may add
+Platform events:       optional observation/integration, disabled by default
+Automatic remediation: extension responsibility, never core
+```
+
+#### The on-load publication rule
+
+`RUN_ON_LOAD` evaluations never publish Rule Result events, regardless of whether publication is enabled anywhere else. "Default off" alone is not sufficient, because an administrator could enable a switch without understanding that a busy record page would then emit at page-view frequency. Prohibiting on-load publication by design removes the dangerous trigger-and-actuator combination instead of leaving it one checkbox away.
+
+Publication switches (`PublishRunEvent__c`, `PublishResultEvent__c`) therefore apply only to deliberately initiated execution contexts:
+
+- an explicit programmatic request through the public façade;
+- a scheduled or batch evaluation;
+- and, where a product decides to allow it, an explicit user-initiated run.
+
+This eliminates page-view-driven fan-out completely. A `Set_Run__e` for adoption analytics, if ever wanted, remains a separately consented activity (Section 4.10), never a byproduct of viewing a record.
+
+#### The action link is not core actuation
+
+`ActionLabel__c`/`ActionUrl__c` present an optional, author-defined, user-initiated action link that does not depend on result-event publication. The link's destination — a record page, Flow, or documented URL — may itself perform asynchronous work or publish its own events; that is the destination's contract, not core's. What core guarantees is narrow and firm: the framework does not publish a Rule Result event merely because an action link was displayed or clicked. Showing a "Create follow-up task" link is not emission.
+
+#### Principle
+
+> Record Health Check automatically evaluates and displays record health. Page-load evaluations are observational and never publish result events. Rules may optionally present a user-initiated action link. Platform-event publication is disabled by default and limited to non-page-load execution contexts. Automatic remediation and subscriber behavior remain outside core and belong in explicitly installed extensions.
+
+This safety story requires no new metadata, no new modes, no required buttons, and no extra decisions for ordinary administrators — and it makes it impossible for merely viewing a record to start an automation chain.
 
 ## 5. Contribution, conduct, and release policy
 
@@ -948,15 +1036,17 @@ Participation must remain welcoming, respectful, inclusive, empathetic, and focu
 
 The source proposals converge strongly, but these items need a recorded owner and final release decision:
 
+Recorded V2 decisions (owner: Core maintainers; decided 2026-07-13): lifecycle events ship in V2; both event types are high-volume **Publish After Commit**; V1 carries only stable metadata identity, outcome, correlation, source, version, and aggregate counts; record/user identity and business values are excluded; only `COMPLETED` Set runs ship initially; component impressions are excluded; and both metadata publication switches default off. V2 distributes core as source with no namespace; package-version install/upgrade and cross-package `global` visibility are deferred until a package model is deliberately adopted.
+
 - exact V2 picklist registry, labels, and defaults, verified against shipped metadata;
 - whether lifecycle events ship in the initial V2 release or a later extension milestone;
 - exact lifecycle event payload, publication semantics, and data-minimization policy;
 - whether run lifecycle uses paired STARTED/COMPLETED events, which optional phases ship, and whether component impressions are deliberately excluded;
 - default telemetry profile, per-Check-Set lifecycle gate, Record ID/user identity policy, retention expectations, and high-volume publication policy;
-- field-level-security and unavailable-field response policy: what the check-response façade and LWC return when the caller cannot see a field, including verifying `USER_MODE` formula-evaluation behavior in a scratch org (on the critical path for Section 4.18);
+- field-level-security and unavailable-field response policy is defined in Section 2.11 — neutral degradation in normal mode, honest detail only under authorized diagnostics, enforced server-side; the remaining open item is verifying `USER_MODE` formula-evaluation behavior in a scratch org (on the critical path for Section 4.18);
 - unlocked versus managed packaging model and required Apex visibility;
-- identity and contents of the one core hero example;
-- examples and extensions repository names and whether migration stages temporarily use package directories in the current repository;
+- identity and contents of the one core hero example — **decided:** `Example_Account_360_Health_Check` (see [`audits/2026-07-13-section-3-core-example-boundary-audit.md`](audits/2026-07-13-section-3-core-example-boundary-audit.md));
+- examples and extensions repository names and whether migration stages temporarily use package directories in the current repository — **decided:** `RecordHealthCheck-Examples`; core sample manifests retained during transition;
 - compatibility/deprecation statement for the breaking field and Apex API changes;
 - ownership and private reporting channel for Code of Conduct incidents.
 
@@ -970,77 +1060,81 @@ Where drafts disagreed, the implemented migration map and the locked decisions t
 
 This register prevents an idea from disappearing merely because it was not selected.
 
-| Source feature or debate                                      | Disposition                                                                                              | Consolidated location |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------- |
-| Keep Rule versus rename metadata type to Check                | Keep `Record_Health_Check_Rule__mdt`                                                                     | 1.2, 2                |
-| Card/panel/component vocabulary                               | Adopt Card                                                                                               | 1.2, 2.1              |
-| Separate runtime title versus standard Label                  | Keep `CheckTitle__c`                                                                                     | 1.2, 2.2              |
-| Checkbox versus picklist decision rule                        | Adopt                                                                                                    | 1.2                   |
-| `UPPER_SNAKE_CASE` versus PascalCase stored values            | Adopt shipped uppercase contract                                                                         | 1.3, 2.9              |
-| Critical versus Error severity                                | Critical; reserve Error for system failure                                                               | 1.2, 2.2              |
-| Meaning-changing defaults                                     | No unsafe defaults                                                                                       | 1.3, 2.9              |
-| Exact field rename contract                                   | Adopt migration map                                                                                      | 2.1–2.5               |
-| Conditional-required and contradictory-field validation       | Adopt                                                                                                    | 2.6                   |
-| `{!Id}` versus `{!record.Id}`                                 | Adopt namespaced V2 syntax                                                                               | 2.7                   |
-| Namespaces for record/check/set/result                        | Adopt                                                                                                    | 2.7                   |
-| Typed SOQL binding versus string replacement                  | Adopt typed binding                                                                                      | 2.7                   |
-| Merge support in formulas/JSON/picklists                      | Explicitly unsupported                                                                                   | 2.7                   |
-| 2K/8K sizing tiers versus generated metadata sizes            | Resolve through shipped-size registry                                                                    | 2.8                   |
-| Skip versus Not Applicable                                    | Open release decision                                                                                    | 2.10, 6               |
-| Category as outcome versus cloud/mechanism                    | Outcome in core; other facets in examples                                                                | 2.2, 3.3              |
-| Core hero example                                             | Adopt one; exact pack open                                                                               | 3.1, 6                |
-| Test fixtures versus deployable examples                      | Keep distinct                                                                                            | 3.1                   |
-| Monorepo package directories before Git split                 | Adopt staged approach                                                                                    | 3.2, 3.5              |
-| Cloud folders versus repository per cloud                     | One examples repository, faceted catalog                                                                 | 3.2–3.3               |
-| Duplicate examples for multiple discovery paths               | One source, generated catalog                                                                            | 3.2–3.4               |
-| Pack types: starter/adoption/pattern/coverage/demo            | Retain as catalog classifications                                                                        | 3.3–3.4               |
-| Deploy button versus unlocked/managed package                 | Support deliberate distribution choices                                                                  | 3.6                   |
-| Git tag as package version                                    | Reject                                                                                                   | 3.6                   |
-| Generated compatibility catalog                               | Adopt                                                                                                    | 3.7                   |
-| Existing Apex check interface                                 | Supported Contract V1                                                                                    | 4.1                   |
-| Lifecycle platform event                                      | Primary result-consumer contract                                                                         | 4.2                   |
-| Run/component activity analytics                              | Add correlated `Record_Health_Check_Set_Run__e`                                                          | 4.9–4.14              |
-| Per-Rule outcome logging                                      | Use `Record_Health_Check_Rule_Result__e`                                                                 | 4.2, 4.10–4.11        |
-| Who invoked versus running/effective/record owner identity    | Keep distinct                                                                                            | 4.10, 4.13            |
-| Component impression/page-view tracking                       | Exclude from run semantics; separate consented activity if ever needed                                   | 4.10, 4.13            |
-| Plugin permutations and authoring paths                       | Explicit supported/deferred taxonomy                                                                     | 4.9–4.16              |
-| One event type per plugin                                     | Reject; keep two shared core-domain streams                                                              | 4.10, 4.17            |
-| Large plugin fan-out                                          | Scale tiers, filters, optional external gateway, and event budget                                        | 4.17                  |
-| Set Run event opt-in                                          | Add `PublishRunEvent__c` on Check Set, default off                                                       | 2.1, 4.12             |
-| Rule Result event opt-in                                      | Add `PublishResultEvent__c` on Rule, default off                                                         | 2.2, 4.12             |
-| Shared diagnostic information                                 | Separate future `Record_Health_Check_Diagnostic__e`, not lifecycle payload dumping                       | 4.4                   |
-| Automatic system-error diagnostics                            | Minimal redacted diagnostic when diagnostic publication is enabled; detailed data remains authorized     | 4.4                   |
-| Synchronous sink/dispatcher/registry                          | Deferred alternative, not discarded                                                                      | 4.3                   |
-| One core lifecycle enablement checkbox                        | Conditional on event release                                                                             | 2.1, 4.2              |
-| Extension-owned retention/alerts/case rules                   | Adopt ownership boundary                                                                                 | 4.5, 4.8              |
-| Public diagnostic event versus logger adapter                 | Defer until second implementation                                                                        | 4.4                   |
-| Evaluator-provider extension point                            | Defer                                                                                                    | 4.7                   |
-| Status/reason/message separation                              | Adopt                                                                                                    | 2.9, 4.2              |
-| Publish Immediately versus After Commit                       | Open Contract V1 decision                                                                                | 4.2, 6                |
-| Replay, duplicate, callback, Automated Process semantics      | Adopt as consumer requirements                                                                           | 4.2                   |
-| Extension manifests and generated catalog                     | Adopt                                                                                                    | 4.5                   |
-| Shared extension runtime/install-all                          | Reject by default                                                                                        | 4.5, 4.7              |
-| Observability as first proof                                  | Adopt, followed by second consumer                                                                       | 4.8                   |
-| Contract test kit and package-boundary tests                  | Adopt                                                                                                    | 4.6                   |
-| Contributor workflow and quality gates                        | Adopt                                                                                                    | 5                     |
-| Contributor Covenant                                          | Adopt                                                                                                    | 5.3                   |
-| Public check-response façade (programmatic/Flow API)          | Adopt as a first-class V2 core contract                                                                  | 1.1, 1.4, 4.18        |
-| Junction object for reusing a Rule across Check Sets          | Defer; provide rule-level granularity through the façade                                                 | 2.2, 4.18             |
-| Packaging model (unlocked vs managed)                         | Open release decision                                                                                    | 3.6, 4.15, 6          |
-| FLS/unavailable-field response policy                         | Open release decision; on the façade critical path                                                       | 6                     |
-| Related list, list views, declarative CMDT validation rules   | Adopt as admin-experience additions                                                                      | 2.1, 2.6              |
-| Sample data and sample Flexi Pages in an unpackaged directory | Adopt for the developer environment                                                                      | 3                     |
-| Surface skip reason and suppressed-row toggle in the LWC      | Adopt as UX additions                                                                                    | 2.10                  |
-| Batch/scheduled results written to the record for reporting   | Adopt as an extension (per-record outcome counts)                                                        | 4.8, 4.11             |
-| LWC guided metadata builder                                   | Defer to a later iteration                                                                               | —                     |
-| Multi-color progress bar                                      | Defer to UI polish                                                                                       | —                     |
-| One log record per run (vs. per Rule) for stored history      | Adopt as observability-extension storage design: header row + JSON per-check detail + reportable rollups | 4.8, 4.10, 9          |
-| V1 Capture Metrics deferral                                   | Superseded by the V2 Rule Result event + observability extension; archived code retained for restoration | 4.8, 9                |
-| codex-plan/ and cursor-plan/ migration trees                  | Archive to `recycle-bin/`; field migration implemented and verified, pending gates in Section 9          | 9                     |
+| Source feature or debate                                      | Disposition                                                                                                                                            | Consolidated location |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- |
+| Keep Rule versus rename metadata type to Check                | Keep `Record_Health_Check_Rule__mdt`                                                                                                                   | 1.2, 2                |
+| Card/panel/component vocabulary                               | Adopt Card                                                                                                                                             | 1.2, 2.1              |
+| Separate runtime title versus standard Label                  | Keep `CheckTitle__c`                                                                                                                                   | 1.2, 2.2              |
+| Checkbox versus picklist decision rule                        | Adopt                                                                                                                                                  | 1.2                   |
+| `UPPER_SNAKE_CASE` versus PascalCase stored values            | Adopt shipped uppercase contract                                                                                                                       | 1.3, 2.9              |
+| Critical versus Error severity                                | Critical; reserve Error for system failure                                                                                                             | 1.2, 2.2              |
+| Meaning-changing defaults                                     | No unsafe defaults                                                                                                                                     | 1.3, 2.9              |
+| Exact field rename contract                                   | Adopt migration map                                                                                                                                    | 2.1–2.5               |
+| Conditional-required and contradictory-field validation       | Adopt                                                                                                                                                  | 2.6                   |
+| `{!Id}` versus `{!record.Id}`                                 | Adopt namespaced V2 syntax                                                                                                                             | 2.7                   |
+| Namespaces for record/check/set/result                        | Adopt                                                                                                                                                  | 2.7                   |
+| Typed SOQL binding versus string replacement                  | Adopt typed binding                                                                                                                                    | 2.7                   |
+| Merge support in formulas/JSON/picklists                      | Explicitly unsupported                                                                                                                                 | 2.7                   |
+| 2K/8K sizing tiers versus generated metadata sizes            | Resolve through shipped-size registry                                                                                                                  | 2.8                   |
+| Skip versus Not Applicable                                    | **Option A adopted 2026-07-13:** one `SKIPPED` status, differentiated by stable reason code                                                            | 2.10, 6               |
+| Category as outcome versus cloud/mechanism                    | Outcome in core; other facets in examples                                                                                                              | 2.2, 3.3              |
+| Core hero example                                             | **`Example_Account_360_Health_Check` stays in core**                                                                                                   | 3.1, 6                |
+| Test fixtures versus deployable examples                      | Keep distinct                                                                                                                                          | 3.1                   |
+| Monorepo package directories before Git split                 | Adopt staged approach                                                                                                                                  | 3.2, 3.5              |
+| Cloud folders versus repository per cloud                     | One examples repository, faceted catalog                                                                                                               | 3.2–3.3               |
+| Duplicate examples for multiple discovery paths               | One source, generated catalog                                                                                                                          | 3.2–3.4               |
+| Pack types: starter/adoption/pattern/coverage/demo            | Retain as catalog classifications                                                                                                                      | 3.3–3.4               |
+| Deploy button versus unlocked/managed package                 | Support deliberate distribution choices                                                                                                                | 3.6                   |
+| Git tag as package version                                    | Reject                                                                                                                                                 | 3.6                   |
+| Generated compatibility catalog                               | Adopt                                                                                                                                                  | 3.7                   |
+| Existing Apex check interface                                 | Supported Contract V1                                                                                                                                  | 4.1                   |
+| Lifecycle platform event                                      | Primary result-consumer contract                                                                                                                       | 4.2                   |
+| Run/component activity analytics                              | Add correlated `Record_Health_Check_Set_Run__e`                                                                                                        | 4.9–4.14              |
+| Per-Rule outcome logging                                      | Use `Record_Health_Check_Rule_Result__e`                                                                                                               | 4.2, 4.10–4.11        |
+| Who invoked versus running/effective/record owner identity    | Keep distinct                                                                                                                                          | 4.10, 4.13            |
+| Component impression/page-view tracking                       | Exclude from run semantics; separate consented activity if ever needed                                                                                 | 4.10, 4.13            |
+| Plugin permutations and authoring paths                       | Explicit supported/deferred taxonomy                                                                                                                   | 4.9–4.16              |
+| One event type per plugin                                     | Reject; keep two shared core-domain streams                                                                                                            | 4.10, 4.17            |
+| Large plugin fan-out                                          | Scale tiers, filters, optional external gateway, and event budget                                                                                      | 4.17                  |
+| Set Run event opt-in                                          | Add `PublishRunEvent__c` on Check Set, default off                                                                                                     | 2.1, 4.12             |
+| Rule Result event opt-in                                      | Add `PublishResultEvent__c` on Rule, default off                                                                                                       | 2.2, 4.12             |
+| Emission and actuation safety (on-load never emits)           | Adopt: automatic diagnosis, off-bus action link, events off by default, remediation in extensions                                                      | 4.19                  |
+| Shared diagnostic information                                 | Separate future `Record_Health_Check_Diagnostic__e`, not lifecycle payload dumping                                                                     | 4.4                   |
+| Automatic system-error diagnostics                            | Minimal redacted diagnostic when diagnostic publication is enabled; detailed data remains authorized                                                   | 4.4                   |
+| Synchronous sink/dispatcher/registry                          | Deferred alternative, not discarded                                                                                                                    | 4.3                   |
+| One core lifecycle enablement checkbox                        | Conditional on event release                                                                                                                           | 2.1, 4.2              |
+| Extension-owned retention/alerts/case rules                   | Adopt ownership boundary                                                                                                                               | 4.5, 4.8              |
+| Public diagnostic event versus logger adapter                 | Defer until second implementation                                                                                                                      | 4.4                   |
+| Evaluator-provider extension point                            | Defer                                                                                                                                                  | 4.7                   |
+| Status/reason/message separation                              | Adopt                                                                                                                                                  | 2.9, 4.2              |
+| Publish Immediately versus After Commit                       | Publish After Commit for both V1 lifecycle events (2026-07-13)                                                                                         | 4.2, 6                |
+| Replay, duplicate, callback, Automated Process semantics      | Adopt as consumer requirements                                                                                                                         | 4.2                   |
+| Extension manifests and generated catalog                     | Adopt                                                                                                                                                  | 4.5                   |
+| Shared extension runtime/install-all                          | Reject by default                                                                                                                                      | 4.5, 4.7              |
+| Observability as first proof                                  | Adopt, followed by second consumer                                                                                                                     | 4.8                   |
+| Contract test kit and package-boundary tests                  | Adopt                                                                                                                                                  | 4.6                   |
+| Contributor workflow and quality gates                        | Adopt                                                                                                                                                  | 5                     |
+| Contributor Covenant                                          | Adopt                                                                                                                                                  | 5.3                   |
+| Public check-response façade (programmatic/Flow API)          | Adopt as a first-class V2 core contract                                                                                                                | 1.1, 1.4, 4.18        |
+| Junction object for reusing a Rule across Check Sets          | Defer; provide rule-level granularity through the façade                                                                                               | 2.2, 4.18             |
+| Packaging model (unlocked vs managed)                         | Open release decision                                                                                                                                  | 3.6, 4.15, 6          |
+| FLS/unavailable-field response policy                         | Policy decided (2.11): neutral in normal mode, honest under authorized diagnostics, enforced server-side; scratch-org `USER_MODE` verification remains | 2.11, 4.18, 6         |
+| Related list, list views, declarative CMDT validation rules   | Adopt as admin-experience additions                                                                                                                    | 2.1, 2.6              |
+| Sample data and sample Flexi Pages in an unpackaged directory | Adopt for the developer environment                                                                                                                    | 3                     |
+| Surface skip reason and suppressed-row toggle in the LWC      | Adopt as UX additions                                                                                                                                  | 2.10                  |
+| Diagnostics expands all checks (authorized auto-expand)       | Adopt: override count-only under authorized diagnostics, view-time only, never mutates stored settings                                                 | 2.11                  |
+| Batch/scheduled results written to the record for reporting   | Adopt as an extension (per-record outcome counts)                                                                                                      | 4.8, 4.11             |
+| LWC guided metadata builder                                   | Defer to a later iteration                                                                                                                             | —                     |
+| Multi-color progress bar                                      | Defer to UI polish                                                                                                                                     | —                     |
+| One log record per run (vs. per Rule) for stored history      | Adopt as observability-extension storage design: header row + JSON per-check detail + reportable rollups                                               | 4.8, 4.10, 9          |
+| V1 Capture Metrics deferral                                   | Superseded by the V2 Rule Result event + observability extension; archived code retained for restoration                                               | 4.8, 9                |
+| codex-plan/ and cursor-plan/ migration trees                  | Archive to `recycle-bin/`; field migration implemented and verified, pending gates in Section 9                                                        | 9                     |
 
 ## 9. V2 release-readiness gates
 
-The V2 field migration is **complete and verified in a clean scratch org (2026-07-12)**: 40 Rule fields, 11 Check Set fields, and all 147 bundled custom metadata records deploy, with local XML, lint, Jest, and full Apex verification passing. The detailed field-by-field migration and jargon-cleanup plans (previously in `codex-plan/` and `cursor-plan/`) are implementation history and have been archived to `recycle-bin/`. Shipped metadata and `field-migration-before-after.md` remain the source of truth.
+**🟡 Partial** — documentation, jargon, source-readback, static-analysis, source-only distribution, capacity, version, and upgrade-guide work are complete as of 2026-07-13. Production-ready status remains blocked by a human permission/diagnostics UI smoke sign-off, a restore-tested backup/rollback approval, and commit/PR/tag approval.
+
+The V2 field migration is **complete and verified in a clean scratch org**: 41 Rule fields, 12 Check Set fields, and all 147 bundled custom metadata records deploy, with local XML, lint, Jest, and full Apex verification passing (field migration 2026-07-12; lifecycle additions and final validation 2026-07-13). The detailed field-by-field migration and jargon-cleanup plans (previously in `codex-plan/` and `cursor-plan/`) are implementation history and have been archived to `recycle-bin/`. Shipped metadata and `field-migration-before-after.md` remain the source of truth.
 
 A complete field migration does not make V2 production-ready. These gates remain outstanding and gate the release:
 
