@@ -72,10 +72,6 @@
         <members>AccountHasRecentActivityCheckTest</members>
         <members>AccountOpenOpportunityHealthCheck</members>
         <members>AccountOpenOpportunityHealthCheckTest</members>
-        <members>AccountStrategicReadinessCheck</members>
-        <members>AccountStrategicReadinessCheckTest</members>
-        <members>ApprovalInactiveApproverCheck</members>
-        <members>ApprovalInactiveApproverCheckTest</members>
         <members>RecordHealthCheck</members>
         <members>RecordHealthCheckAccess</members>
         <members>RecordHealthCheckApexEvaluator</members>
