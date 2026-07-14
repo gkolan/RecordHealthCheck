@@ -73,6 +73,7 @@ Full walkthrough: [First 10 Minutes](docs/v2/start/first-10-minutes.md)
 - Custom Metadata configuration
 - Formula, SOQL, compare-two-SOQL, and Apex checks
 - Guided remediation: optional "Fix it" deep links and fix instructions on failing checks
+- Per-placement visual treatment: SLDS 2 (default) or SLDS 1, set on the App Builder card — see [Design System](docs/v2/guides/design-system.md)
 - One Hero Account Check Set for the first working card
 - User and Admin Permission Sets
 

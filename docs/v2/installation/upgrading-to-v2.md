@@ -38,7 +38,7 @@ Run the local gates and a clean-org validation:
 npm run prettier:verify
 npm run lint
 npm run check:namespaced-tokens
-npm test -- --runInBand
+npm test
 sf project deploy start --manifest manifest/package-core.xml --test-level RunLocalTests --target-org <validation-org> --wait 30
 sf project deploy start --manifest manifest/package-Example_Account_360_Health_Check.xml --target-org <validation-org> --wait 30
 sf apex run --file scripts/apex/validateMetadata.apex --target-org <validation-org>

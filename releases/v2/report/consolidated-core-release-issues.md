@@ -176,7 +176,7 @@ Codex, Cursor) so nothing is lost in the merge.
 | BLK-5  | `prettier:verify` fails                 | C-Rel, Codex         | ☑ done — gate passes                                                                                                                                       |
 | BLK-6  | Coverage false green (0%)               | Codex                | ☑ done — real instrumentation + threshold bites                                                                                                            |
 | BLK-7  | `rhcRun` tokens error at runtime        | Cursor               | ☑ done — `rhcRun` removed from allowlist; validation rejects it                                                                                            |
-| BLK-8  | Design System feature undocumented      | C-Rel, C-Doc         | ☐                                                                                                                                                          |
+| BLK-8  | Design System feature undocumented      | C-Rel, C-Doc         | ☑ done — new `docs/v2/guides/design-system.md` + README bullet + getting-started line (no CHANGELOG file exists to amend)                                  |
 | BLK-9  | "One hero set" vs 15 sets in Core       | Codex, Cursor        | ◑ partial — doc-comment + `package-core.xml` cleaned, audit wording corrected; **CMDT deletion + 7-test fixture migration deferred to org session (HI-1)** |
 | BLK-10 | Workflow calls gitignored script        | Cursor               | ☐                                                                                                                                                          |
 | BLK-11 | Manual smoke / rollback / PR / tag open | Codex, Cursor        | ☐ (org + human — user-driven)                                                                                                                              |
@@ -225,13 +225,13 @@ Codex, Cursor) so nothing is lost in the merge.
   `docs/v2/installation/upgrading-to-v2.md:41` repeats it. **Fix:** generate or drop hard-coded test
   counts; document the correct wrapper syntax; add a draft-tag install rehearsal before announcement.
 
-| ID   | High item                              | Sources       | Status                                                                   |
-| ---- | -------------------------------------- | ------------- | ------------------------------------------------------------------------ |
-| HI-1 | Apex re-verify on final SHA            | Codex, Cursor | ☐                                                                        |
-| HI-2 | Gate `validateAsJson`                  | Cursor        | ☑ done — dropped `@AuraEnabled`; Apex/CI-only + covering test            |
-| HI-3 | Client-side `actionUrl` guard          | Cursor        | ☑ done — `safeActionUrl` allows only `/`-path or `https:`; +6 Jest cases |
-| HI-4 | Triage 455 Moderate + 97 suppressions  | Codex         | ☐                                                                        |
-| HI-5 | Stale test counts / `runInBand` syntax | Codex, Cursor | ☐                                                                        |
+| ID   | High item                              | Sources       | Status                                                                     |
+| ---- | -------------------------------------- | ------------- | -------------------------------------------------------------------------- |
+| HI-1 | Apex re-verify on final SHA            | Codex, Cursor | ☐                                                                          |
+| HI-2 | Gate `validateAsJson`                  | Cursor        | ☑ done — dropped `@AuraEnabled`; Apex/CI-only + covering test              |
+| HI-3 | Client-side `actionUrl` guard          | Cursor        | ☑ done — `safeActionUrl` allows only `/`-path or `https:`; +6 Jest cases   |
+| HI-4 | Triage 455 Moderate + 97 suppressions  | Codex         | ☐                                                                          |
+| HI-5 | Stale test counts / `runInBand` syntax | Codex, Cursor | ☑ done — dropped hardcoded "106" counts; removed non-forwarded `runInBand` |
 
 ---
 
@@ -328,16 +328,16 @@ Codex, Cursor) so nothing is lost in the merge.
     model, mobile/Experience Cloud support status.
 - **Trim (density):** `show-diagnostics.md` overlapping permission tables → one "who sees what" matrix.
 
-| ID    | Doc item                                  | Sources              | Status |
-| ----- | ----------------------------------------- | -------------------- | ------ |
-| DOC-1 | Broken examples links (reconciled)        | Codex, Cursor, C-Doc | ☐      |
-| DOC-2 | Flat vs `/v2/` nav migration              | C-Doc                | ☐      |
-| DOC-3 | Planning docs leak to Pages / bad links   | C-Doc, Cursor        | ☐      |
-| DOC-4 | "Message When Failed" label               | C-Doc                | ☐      |
-| DOC-5 | Strip v1.2.0 prose from README            | all                  | ☐      |
-| DOC-6 | Jargon + factual drift pass               | Cursor, Codex, C-Doc | ☐      |
-| DOC-7 | Dedup three field-guides                  | C-Doc                | ☐      |
-| DOC-8 | Missing V2 how-tos + limitations/versions | Cursor, Codex, C-Doc | ☐      |
+| ID    | Doc item                                  | Sources              | Status                                                                                        |
+| ----- | ----------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------- |
+| DOC-1 | Broken examples links (reconciled)        | Codex, Cursor, C-Doc | ☐                                                                                             |
+| DOC-2 | Flat vs `/v2/` nav migration              | C-Doc                | ☐                                                                                             |
+| DOC-3 | Planning docs leak to Pages / bad links   | C-Doc, Cursor        | ☐                                                                                             |
+| DOC-4 | "Message When Failed" label               | C-Doc                | ☑ already clean — no "Failure Message" prose remains in `docs/v2`/README (was a wiki finding) |
+| DOC-5 | Strip v1.2.0 prose from README            | all                  | ☐                                                                                             |
+| DOC-6 | Jargon + factual drift pass               | Cursor, Codex, C-Doc | ☐                                                                                             |
+| DOC-7 | Dedup three field-guides                  | C-Doc                | ☐                                                                                             |
+| DOC-8 | Missing V2 how-tos + limitations/versions | Cursor, Codex, C-Doc | ☐                                                                                             |
 
 ---
 
