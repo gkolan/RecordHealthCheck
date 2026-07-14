@@ -30,7 +30,7 @@ Table: API field name | Value | Notes
 Name the pattern (e.g. "Query + OneResult + RecordFormula") and cite a shipped DeveloperName if one exists.
 
 ## Class sketch (Apex only)
-When EvaluationType__c = Apex: list SOQL/objects to read, JSON keys for ApexParametersJson__c, PASS/FAIL logic, and the required actualValue/expectedValue fields. Cite shipped class if applicable.
+When CheckMethod__c = Apex: list SOQL/objects to read, JSON keys for ApexSettingsJson__c, PASS/FAIL logic, and the required actualValue/expectedValue fields. Cite shipped class if applicable.
 
 ## Applicability & dependencies
 Only if not All records / no dependency.
@@ -40,17 +40,17 @@ One sentence when relevant.
 
 RULES YOU MUST FOLLOW:
 1. Use exact API names (__c suffix) in configuration tables.
-2. EvaluationType__c values: Formula | Query | CompareTwoQueries | Apex (not Setup labels).
-3. Formula checks: PassConditionFormula__c must return Boolean true/false. Ignore ExpectedValueSource__c, ComparisonOperator__c, SourceQuery__c.
-4. Query checks: primary value usually from SourceQuery__c; comparison via ExpectedValueSource__c = FixedValue | RecordFormula | AnotherQuery.
-5. CompareTwoQueries: both sides from SOQL; no ExpectedValueSource__c.
+2. CheckMethod__c values: Formula | Query | CompareTwoQueries | Apex (not Setup labels).
+3. Formula checks: PassFailFormula__c must return Boolean true/false. Ignore CompareAgainst__c, Operator__c, DataQuery__c.
+4. Query checks: primary value usually from DataQuery__c; comparison via CompareAgainst__c = FixedValue | RecordFormula | AnotherQuery.
+5. CompareTwoQueries: both sides from SOQL; no CompareAgainst__c.
 6. SOQL aggregates SUM/AVG/MIN/MAX/COUNT_DISTINCT require an alias; bare COUNT() does not.
-7. SOQL merge tokens: {!record.FieldApiName} on the current record (e.g. {!record.Id}, {!record.AnnualRevenue}, {!record.Customer_Tier__c}).
+7. SOQL merge tokens: {!FieldApiName} on the current record (e.g. {!Id}, {!AnnualRevenue}, {!Customer_Tier__c}).
 8. Max 25 active Rules per Check Set per run. Use applicability gates to reduce noise.
 9. Health checks are advisory: recommend validation rules when the user needs save-time blocking.
 10. If metadata cannot express the rule, recommend Apex (RecordHealthCheckRule interface) and say what the class must do. Cite an example from docs/examples/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). Ship class API name only if it exists in the package: AccountHasRecentActivityCheck, AccountOpenOpportunityHealthCheck. Do not recommend Apex for save-time field format rules: use validation rules.
-11. QueryResultHandling__c = OneResult for aggregates and single COUNT(); AnyRowPasses / AllRowsPass for row-by-row; CompareAsLists for list operators.
-12. ListContainsAny / ListDoesNotContainAny: primary single value from FindInListFormula__c, list from ComparisonQuery__c (not SourceQuery__c). PassConditionFormula__c is record-formula-only.
+11. WhenMultipleRows__c = OneResult for aggregates and scalar COUNT(); AnyRowPasses / AllRowsPass for row-by-row; CompareAsLists for list comparators.
+12. ListContainsAny / ListDoesNotContainAny: primary scalar from ValueToTest__c, list from CompareToQuery__c (not DataQuery__c). PassFailFormula__c is record-formula-only.
 13. Do not invent field API names: use names the user provided or mark them as placeholders to verify in Setup.
 
 DECISION ORDER:
@@ -68,29 +68,29 @@ When unsure, ask one clarifying question: base object, child relationship, thres
 User describes a business rule
 │
 ├─ Answer is only on the current record (or Parent.Field via formula)?
-│  └─ YES → EvaluationType__c = Formula
-│            Required: PassConditionFormula__c (Boolean)
+│  └─ YES → CheckMethod__c = Formula
+│            Required: PassFailFormula__c (Boolean)
 │
 ├─ One query result compared to something?
-│  └─ YES → EvaluationType__c = Query
-│            Primary: SourceQuery__c (+ SourceQueryField__c unless bare COUNT())
+│  └─ YES → CheckMethod__c = Query
+│            Primary: DataQuery__c (+ FieldToRead__c unless bare COUNT())
 │            Compare to: FixedValue | RecordFormula | AnotherQuery | (none for IsBlank/IsNotBlank)
 │
 ├─ Two independent queries compared?
-│  └─ YES → EvaluationType__c = CompareTwoQueries
-│            SourceQuery__c + ComparisonQuery__c
+│  └─ YES → CheckMethod__c = CompareTwoQueries
+│            DataQuery__c + CompareToQuery__c
 │
-├─ single value must appear in / stay out of a query result list?
-│  └─ YES → EvaluationType__c = Query
-│            FindInListFormula__c = single value (field or formula on record)
-│            ComparisonQuery__c = list source
-│            QueryResultHandling__c = CompareAsLists
-│            ComparisonOperator__c = ListContainsAny | ListDoesNotContainAny
+├─ Scalar value must appear in / stay out of a query result list?
+│  └─ YES → CheckMethod__c = Query
+│            ValueToTest__c = scalar (field or formula on record)
+│            CompareToQuery__c = list source
+│            WhenMultipleRows__c = CompareAsLists
+│            Operator__c = ListContainsAny | ListDoesNotContainAny
 │
 └─ Needs code, external data, or unsupported shape?
-   └─ EvaluationType__c = Apex
+   └─ CheckMethod__c = Apex
       ApexClass__c = class implementing RecordHealthCheckRule
-      ApexParametersJson__c = optional JSON object for per-Rule tuning
+      ApexSettingsJson__c = optional JSON object for per-Rule tuning
       See docs/examples/index.md#example-catalog for the apex examples
 ```
 
@@ -104,7 +104,7 @@ User describes a business rule
 
 Do **not** recommend Apex for phone/email format or required-field-on-save rules: use **validation rules**.
 
-When recommending Apex, also output a **Class sketch** section: what to query, what `status` to return, required `actualValue`/`expectedValue` for `PASS` / `FAIL`, and suggested `ApexParametersJson__c` keys.
+When recommending Apex, also output a **Class sketch** section: what to query, what `status` to return, required `actualValue`/`expectedValue` for `PASS` / `FAIL`, and suggested `ApexSettingsJson__c` keys.
 
 ### Validation rule vs health check
 
@@ -131,15 +131,15 @@ Minimum fields when creating a new Check Set:
 | `DeveloperName` | Developer Name | Yes | `Account_Pipeline_Health` |
 | `MasterLabel` | Label | Yes | `Account Sales Pipeline Health` |
 | `ObjectApiName__c` | Record Object API Name | Yes | `Account` |
-| `CardTitle__c` | Card Title | Yes | `Sales Pipeline Health` |
-| `CardSubtitle__c` | Card Subtitle | No | `Open pipeline vs revenue targets` |
-| `CardRunMode__c` | Start Checks | Yes | `Automatic` or `Manual` |
-| `CardRevealMode__c` | How checks appear | Yes | `AllAtOnce` or `OneAtATime` |
+| `PanelHeading__c` | Panel Title | Yes | `Sales Pipeline Health` |
+| `PanelSubheading__c` | Panel Subtitle | No | `Open pipeline vs revenue targets` |
+| `RunChecksWhen__c` | Start Checks | Yes | `Automatic` or `Manual` |
+| `RowAppearance__c` | How checks appear | Yes | `AllAtOnce` or `OneAtATime` |
 | `PassedChecksDisplay__c` | Passed Checks | Yes | `Show` or `Hide` |
 | `SkippedChecksDisplay__c` | Skipped Checks | Yes | `Show` or `Hide` |
-| `FoundExpectedDisplay__c` | Found/Expected Display | Yes | `OnDemand` (default), `FailuresOnly`, or `AllRows` |
+| `ComparisonDisplay__c` | Found/Expected Display | Yes | `OnDemand` (default), `FailuresOnly`, or `AllRows` |
 | `IsActive__c` | Active | No | `true` |
-| `ShowDiagnostics__c` | Show Troubleshooting Details | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Details` (from `Record_Health_Check_Admin`). See [Show Troubleshooting Details guide](show-diagnostics.md). |
+| `DebugMode__c` | Show Troubleshooting Details | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Details` (from `Record_Health_Check_Admin`). See [Show Troubleshooting Details guide](debug-mode.md). |
 
 **Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `configName`.
 
@@ -152,16 +152,16 @@ Always include (all Check Types):
 | `DeveloperName` | Developer Name | Yes | `Account_Pipeline_Meets_15x_Revenue` |
 | `MasterLabel` | Label | Yes | `Sales Pipeline Meets 1.5x Revenue` |
 | `Record_Health_Check_Set__c` | Check Set | Yes | `Account_Pipeline_Health` |
-| `CheckTitle__c` | Check Name (user-facing row title) | Yes | `Open pipeline ≥ 1.5× annual revenue` |
-| `EvaluationType__c` | Check Type | Yes | `Query` |
-| `EvaluationOrder__c` | Run Order (lower runs first) | Yes | `10` (use gaps: 10, 20, 30…) |
+| `CheckName__c` | Check Name (user-facing row title) | Yes | `Open pipeline ≥ 1.5× annual revenue` |
+| `CheckMethod__c` | Check Type | Yes | `Query` |
+| `RunOrder__c` | Run Order (lower runs first) | Yes | `10` (use gaps: 10, 20, 30…) |
 | `Category__c` | Category | No | `Sales Pipeline`, `Required Field Completeness`, `Data Quality`, or blank. Metadata only — UI grouping not implemented yet. |
-| `FailureSeverity__c` | Failure Severity | Yes | `Error`, `Warning`, or `Info` |
-| `FailureMessage__c` | Message When Check Fails | Yes | `{!record.Name} pipeline is below 1.5× annual revenue.` |
-| `FixMessage__c` | Fix Instructions | No | `Review open opportunities…` (renders on FAIL rows) |
-| `ActionLabel__c` | Action Button Label | No | `Open pipeline playbook` |
-| `ActionUrl__c` | Action Button URL | No | `/lightning/r/Report/00O.../view?fv0={!record.Id}` or `https://example.com/pipeline-playbook` |
-| `ApplicabilityMode__c` | Applies To | Yes | `Always`, `Formula`, or `SOQL` |
+| `Severity__c` | Failure Severity | Yes | `Error`, `Warning`, or `Info` |
+| `MessageWhenFailed__c` | Message When Check Fails | Yes | `{!Name} pipeline is below 1.5× annual revenue.` |
+| `FixInstructions__c` | Fix Instructions | No | `Review open opportunities…` (renders on FAIL rows) |
+| `PrimaryActionLabel__c` | Action Button Label | No | `Open pipeline playbook` |
+| `PrimaryActionUrl__c` | Action Button URL | No | `/lightning/r/Report/00O.../view?fv0={!Id}` or `https://example.com/pipeline-playbook` |
+| `RunThisCheckWhen__c` | Applies To | Yes | `Always`, `Formula`, or `SOQL` |
 | `IsActive__c` | Active | No | `true` |
 
 Add type-specific fields from Section 5.
@@ -174,35 +174,35 @@ Name the pattern and reference a shipped example when possible (Section 7-8). Fo
 
 ### 4.5 Class sketch (Apex only)
 
-When `EvaluationType__c` = `Apex`, add a section after the Rule table. See [Apex plugin reference](../apex/plugin-reference.md) for full patterns.
+When `CheckMethod__c` = `Apex`, add a section after the Rule table. See [Apex plugin reference](../apex/plugin-reference.md) for full patterns.
 
 | Item | What to include |
 | ---- | --------------- |
 | `recordId` | `context.recordId` for SOQL; query extra fields: `context.record` is partial |
 | Parent / custom fields | `Parent.BillingCity` in SELECT, or `Primary_Contact__r.Email` |
-| JSON defaults | Apex constants + `ApexParametersJson__c` keys (e.g. `daysBack`) with bounds |
+| JSON defaults | Apex constants + `ApexSettingsJson__c` keys (e.g. `daysBack`) with bounds |
 | Shipped vs custom | `AccountHasRecentActivityCheck`, `AccountOpenOpportunityHealthCheck` only when pattern matches |
 | Outcome | `PASS`/`FAIL`; required `actualValue`/`expectedValue` on both statuses |
-| Applicability | Why `ApplicabilityMode__c` is not `Always` if gated |
+| Applicability | Why `RunThisCheckWhen__c` is not `Always` if gated |
 
 ## 5. Rule fields by Check Type
 
-### 5.1 Formula (`EvaluationType__c` = `Formula`)
+### 5.1 Formula (`CheckMethod__c` = `Formula`)
 
 Setup label: **Check fields on this record**.
 
 | API field | Required | Value |
 | --- | --- | --- |
-| `PassConditionFormula__c` | Yes | Boolean formula; `true` = pass |
-| `DisplayFoundFormula__c` | Optional | single-value formula shown as **Found** (left side of a comparison). Display only — does not affect pass/fail. |
-| `DisplayExpectedFormula__c` | Optional | single-value formula shown as **Expected** (right side). Display only; blank = Expected echoes `PassConditionFormula__c`. |
-| `FormulaResultType__c` | Optional | Type of the Found/Expected scalars (`Number`/`Text`/`Date`/`DateTime`/`Boolean`), or `Auto`. |
+| `PassFailFormula__c` | Yes | Boolean formula; `true` = pass |
+| `FoundValueFormula__c` | Optional | Scalar formula shown as **Found** (left side of a comparison). Display only — does not affect pass/fail. |
+| `ExpectedValueFormula__c` | Optional | Scalar formula shown as **Expected** (right side). Display only; blank = Expected echoes `PassFailFormula__c`. |
+| `ScalarFormulaReturnType__c` | Optional | Type of the Found/Expected scalars (`Number`/`Text`/`Date`/`DateTime`/`Boolean`), or `Auto`. |
 
 Operands in any of these formulas may be calculated fields (formula, roll-up) at any depth — the engine loads the full dependency chain.
 
-**Found/Expected are display-only and NOT compared to each other.** `PassConditionFormula__c` performs the comparison and decides pass/fail. Set Found/Expected only for comparison/balance checks, and mirror each side of the Pass/Fail comparison (Found = left operand, Expected = right) so the row does not mislead. For framework-driven comparison with an operator, use a Query check (`ExpectedValueSource__c` = `FixedValue` / `RecordFormula` / `AnotherQuery`).
+**Found/Expected are display-only and NOT compared to each other.** `PassFailFormula__c` performs the comparison and decides pass/fail. Set Found/Expected only for comparison/balance checks, and mirror each side of the Pass/Fail comparison (Found = left operand, Expected = right) so the row does not mislead. For framework-driven comparison with an operator, use a Query check (`CompareAgainst__c` = `FixedValue` / `RecordFormula` / `AnotherQuery`).
 
-**Leave unset:** `SourceQuery__c`, `ComparisonOperator__c`, `ExpectedValueSource__c`, `QueryResultHandling__c` (ignored).
+**Leave unset:** `DataQuery__c`, `Operator__c`, `CompareAgainst__c`, `WhenMultipleRows__c` (ignored).
 
 **Examples:**
 
@@ -214,63 +214,63 @@ BillingCity = ShippingCity
 NOT(ISBLANK(Parent.BillingCity))
 ```
 
-### 5.2 Query (`EvaluationType__c` = `Query`)
+### 5.2 Query (`CheckMethod__c` = `Query`)
 
 Setup label: **Check records with a query**.
 
 | API field | When required |
 | --- | --- |
-| `SourceQuery__c` | Always, except `ListContainsAny` / `ListDoesNotContainAny` |
-| `SourceQueryField__c` | When query selects fields or aliased aggregates; omit for bare `COUNT()` |
-| `QueryResultHandling__c` | Always: `OneResult`, `AnyRowPasses`, `AllRowsPass`, `CompareAsLists` |
-| `ComparisonOperator__c` | Always (see Section 6) |
-| `ExpectedValueSource__c` | When comparison operator needs a right-hand side (`FixedValue`, `RecordFormula`, `AnotherQuery`) |
-| `ExpectedFixedValue__c` | When `ExpectedValueSource__c` = `FixedValue` |
-| `ExpectedRecordFormula__c` | When `ExpectedValueSource__c` = `RecordFormula` |
-| `ComparisonQuery__c` | When `ExpectedValueSource__c` = `AnotherQuery`, or list operators |
-| `ComparisonQueryField__c` | When comparison query returns field values (not bare `COUNT()`) |
-| `NoRowsResult__c` | Required for `AnyRowPasses`, `AllRowsPass`, `CompareAsLists` |
-| `EmptyValueHandling__c` | Recommended for row-by-row modes; default `SkipRecordsWithMissingValue` |
+| `DataQuery__c` | Always, except `ListContainsAny` / `ListDoesNotContainAny` |
+| `FieldToRead__c` | When query selects fields or aliased aggregates; omit for bare `COUNT()` |
+| `WhenMultipleRows__c` | Always: `OneResult`, `AnyRowPasses`, `AllRowsPass`, `CompareAsLists` |
+| `Operator__c` | Always (see Section 6) |
+| `CompareAgainst__c` | When comparator needs a right-hand side (`FixedValue`, `RecordFormula`, `AnotherQuery`) |
+| `FixedValue__c` | When `CompareAgainst__c` = `FixedValue` |
+| `RecordFormulaValue__c` | When `CompareAgainst__c` = `RecordFormula` |
+| `CompareToQuery__c` | When `CompareAgainst__c` = `AnotherQuery`, or list comparators |
+| `CompareToField__c` | When comparison query returns field values (not bare `COUNT()`) |
+| `WhenZeroRows__c` | Required for `AnyRowPasses`, `AllRowsPass`, `CompareAsLists` |
+| `WhenValueIsEmpty__c` | Recommended for row-by-row modes; default `SkipRecordsWithMissingValue` |
 
 **List membership exception** (`ListContainsAny`, `ListDoesNotContainAny`):
 
 | API field | Role |
 | --- | --- |
-| `FindInListFormula__c` | Primary single value (field or formula on record). |
-| `ComparisonQuery__c` | SOQL returning the list |
-| `ComparisonQueryField__c` | Column to read from list query |
-| `QueryResultHandling__c` | `CompareAsLists` |
+| `ValueToTest__c` | Primary scalar (field or formula on record). |
+| `CompareToQuery__c` | SOQL returning the list |
+| `CompareToField__c` | Column to read from list query |
+| `WhenMultipleRows__c` | `CompareAsLists` |
 
-### 5.3 Compare two queries (`EvaluationType__c` = `CompareTwoQueries`)
+### 5.3 Compare two queries (`CheckMethod__c` = `CompareTwoQueries`)
 
 | API field | Required |
 | --- | --- |
-| `SourceQuery__c` | Yes: primary side |
-| `ComparisonQuery__c` | Yes: comparison side |
-| `SourceQueryField__c` | When primary returns fields or aliased aggregates |
-| `ComparisonQueryField__c` | When comparison returns fields or aliased aggregates |
-| `QueryResultHandling__c` | `OneResult` (single value) or `CompareAsLists` (list operators) |
-| `ComparisonOperator__c` | single value or list comparison operator |
+| `DataQuery__c` | Yes: primary side |
+| `CompareToQuery__c` | Yes: comparison side |
+| `FieldToRead__c` | When primary returns fields or aliased aggregates |
+| `CompareToField__c` | When comparison returns fields or aliased aggregates |
+| `WhenMultipleRows__c` | `OneResult` (scalar) or `CompareAsLists` (list comparators) |
+| `Operator__c` | Scalar or list comparator |
 
-**Leave unset:** `ExpectedValueSource__c` (both sides are queries).
+**Leave unset:** `CompareAgainst__c` (both sides are queries).
 
-List operators for `CompareAsLists`: `ListsOverlap`, `ListContainsAll`, `ExactListMatch`.
+List comparators for `CompareAsLists`: `ListsOverlap`, `ListContainsAll`, `ExactListMatch`.
 
-### 5.4 Apex (`EvaluationType__c` = `Apex`)
+### 5.4 Apex (`CheckMethod__c` = `Apex`)
 
 Full walkthroughs: [Apex examples index](../examples/index.md#example-catalog) · [Apex plugin reference](../apex/plugin-reference.md) · [Contract](../apex/plugin-contract.md)
 
 | API field | Required | Notes |
 | --- | --- | --- |
 | `ApexClass__c` | Yes | Class implementing `RecordHealthCheckRule`: deploy before activating Rule |
-| `ApexParametersJson__c` | No | JSON **object** (not array), e.g. `{"daysBack": 90}`, `{"minDigits": 10}`, `{"staleDays": 30}` |
+| `ApexSettingsJson__c` | No | JSON **object** (not array), e.g. `{"daysBack": 90}`, `{"minDigits": 10}`, `{"staleDays": 30}` |
 
 **Plugin contract (summary):** Full how-to: [Apex plugin reference](../apex/plugin-reference.md).
 
 ```apex
 public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
   Id recordId = context.recordId;           // page record: use in SOQL binds
-  Map<String, Object> params = context.parameters;  // from ApexParametersJson__c
+  Map<String, Object> params = context.parameters;  // from ApexSettingsJson__c
   // Query fields WITH USER_MODE: do not assume context.record is complete
   RecordHealthCheckResult result = new RecordHealthCheckResult();
   result.status = 'PASS' or 'FAIL';
@@ -280,8 +280,8 @@ public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
 ```
 
 - Query with `WITH USER_MODE`. Load fields not on `context.record` via SOQL.
-- On `FAIL`, set `message` only when metadata **FailureMessage__c** is not enough; metadata still supplies **Severity**.
-- Pair with applicability (`ApplicabilityMode__c` = `Formula` or `SOQL`) when the check should not run for every record.
+- On `FAIL`, set `message` only when metadata **MessageWhenFailed__c** is not enough; metadata still supplies **Severity**.
+- Pair with applicability (`RunThisCheckWhen__c` = `Formula` or `SOQL`) when the check should not run for every record.
 
 **Shipped classes:**
 
@@ -294,21 +294,21 @@ Do **not** invent class names as shipped unless listed above. For composite scor
 
 ### 5.5 Applicability (all rules)
 
-| `ApplicabilityMode__c` | Additional fields |
+| `RunThisCheckWhen__c` | Additional fields |
 | --- | --- |
 | `Always` | None |
-| `Formula` | `ApplicabilityFormula__c` (Boolean, `true` = run check) |
-| `SOQL` | `ApplicabilityCountQuery__c` (`SELECT COUNT()` or `SELECT COUNT(Id)`), `ApplicabilityCountOperator__c`, `ApplicabilityCountThreshold__c` |
+| `Formula` | `RunWhenFormula__c` (Boolean, `true` = run check) |
+| `SOQL` | `RunWhenCountQuery__c` (`SELECT COUNT()` or `SELECT COUNT(Id)`), `CountOperator__c`, `CountThreshold__c` |
 
 ### 5.6 Dependencies
 
 | API field | Value |
 | --- | --- |
-| `PrerequisiteRule__c` | `DeveloperName` of prerequisite Rule in same Check Set (must have lower `EvaluationOrder__c`) |
+| `RequiresCheck__c` | `DeveloperName` of prerequisite Rule in same Check Set (must have lower `RunOrder__c`) |
 
 Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
-## 6. operators (`ComparisonOperator__c`)
+## 6. Comparators (`Operator__c`)
 
 | API value | Setup label (approx.) | Needs right-hand side? | Valid with |
 | --- | --- | --- | --- |
@@ -322,8 +322,8 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | `DoesNotContain` | Does not contain | Yes | Query, CompareTwoQueries (case-sensitive) |
 | `IsBlank` | Is empty | No | Query |
 | `IsNotBlank` | Is not empty | No | Query |
-| `ListContainsAny` | List includes any of | List in `ComparisonQuery__c` | Query only |
-| `ListDoesNotContainAny` | List excludes all of | List in `ComparisonQuery__c` | Query only |
+| `ListContainsAny` | List includes any of | List in `CompareToQuery__c` | Query only |
+| `ListDoesNotContainAny` | List excludes all of | List in `CompareToQuery__c` | Query only |
 | `ListsOverlap` | Lists overlap | Second query list | CompareTwoQueries + CompareAsLists |
 | `ListContainsAll` | List contains all | Second query list | CompareTwoQueries + CompareAsLists |
 | `ExactListMatch` | Exact list match | Second query list | CompareTwoQueries + CompareAsLists |
@@ -340,7 +340,7 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | Aggregate ≥ static threshold | Query | OneResult | SUM/AVG/etc. vs FixedValue |
 | Aggregate ≥ per-record formula | Query | OneResult | SUM/etc. vs RecordFormula |
 | Aggregate ≥ second query | Query | OneResult | vs AnotherQuery |
-| Two counts or aggregates compared | CompareTwoQueries | OneResult | single-value operator |
+| Two counts or aggregates compared | CompareTwoQueries | OneResult | scalar comparator |
 | Account field in child list | Query | CompareAsLists | ListContainsAny + ValueToTest |
 | Field not in reference list | Query | CompareAsLists | ListDoesNotContainAny |
 | Two lists overlap / contain / match | CompareTwoQueries | CompareAsLists | ListsOverlap / ListContainsAll / ExactListMatch |
@@ -360,16 +360,16 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | SOQL left, record formula right | Query + `RecordFormula` |
 | SOQL left, second query right | Query + `AnotherQuery` |
 | Two queries compared | CompareTwoQueries |
-| Formula single value in query list | Query + `ListContainsAny` / `ListDoesNotContainAny` |
+| Formula scalar in query list | Query + `ListContainsAny` / `ListDoesNotContainAny` |
 | SUM vs `AnnualRevenue * 1.5` | Query + OneResult + `RecordFormula` |
 
 ### Unsupported or awkward (recommend workaround)
 
 | Shape | Problem | Workaround |
 | --- | --- | --- |
-| Formula check + Expected Value Comes From | Formula path ignores comparison fields | Put full logic in `PassConditionFormula__c` |
-| Formula left, SOQL single value right (Equals, GreaterThan, …) | Primary must be `SourceQuery__c` for single-value operators | Flip: query left, `RecordFormula` right; or CompareTwoQueries; or Apex |
-| `SELECT SUM(x) FROM ...` without alias | Framework cannot read column | Add alias: `SUM(Amount) totalAmt` + `SourceQueryField__c = totalAmt` |
+| Formula check + Expected Value Comes From | Formula path ignores comparison fields | Put full logic in `PassFailFormula__c` |
+| Formula left, SOQL scalar right (Equals, GreaterThan, …) | Primary must be `DataQuery__c` for scalar comparators | Flip: query left, `RecordFormula` right; or CompareTwoQueries; or Apex |
+| `SELECT SUM(x) FROM ...` without alias | Framework cannot read column | Add alias: `SUM(Amount) totalAmt` + `FieldToRead__c = totalAmt` |
 | Multiplier on CompareTwoQueries right side | Both sides are raw query values only | Use Query + `RecordFormula`, or Apex |
 | Blocking save on fail | Product is read-time only | Validation rule or Flow |
 | More than 25 active rules | Hard cap per run | Split Check Sets or deactivate low-value rules |
@@ -379,16 +379,16 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 ### Merge tokens
 
-- Syntax: `{!record.FieldApiName}` on the **base record** (the record page object).
-- Examples: `{!record.Id}`, `{!record.OwnerId}`, `{!record.AnnualRevenue}`, `{!record.Parent.BillingCity}`, `{!record.Customer_Tier__c}`.
+- Syntax: `{!FieldApiName}` on the **base record** (the record page object).
+- Examples: `{!Id}`, `{!OwnerId}`, `{!AnnualRevenue}`, `{!Parent.BillingCity}`, `{!Customer_Tier__c}`.
 - Strings are quoted and escaped automatically; numbers and dates are unquoted.
-- The exact substring `'{!record.Field}'` inside a larger literal works (for example `Name LIKE '{!record.Name}%'`).
+- The exact substring `'{!Field}'` inside a larger literal works (for example `Name LIKE '{!Name}%'`).
 - A token may appear both quoted and unquoted in one template: each form is substituted independently.
 - User must have read FLS on token fields or check returns `UNABLE_TO_EVALUATE`.
 
 ### Aggregates
 
-| Function | Alias required? | `SourceQueryField__c` |
+| Function | Alias required? | `FieldToRead__c` |
 | --- | --- | --- |
 | `COUNT()` | No | Leave blank |
 | `COUNT(field)` | Yes | Alias name |
@@ -398,14 +398,14 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | `MIN(field)` | Yes | Alias name |
 | `MAX(field)` | Yes | Alias name |
 
-**Wrong:** `SELECT SUM(Amount) FROM Opportunity WHERE AccountId = {!record.Id}`
-**Right:** `SELECT SUM(Amount) pipelineTotal FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` + `SourceQueryField__c = pipelineTotal`
+**Wrong:** `SELECT SUM(Amount) FROM Opportunity WHERE AccountId = {!Id}`  
+**Right:** `SELECT SUM(Amount) pipelineTotal FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false` + `FieldToRead__c = pipelineTotal`
 
 ### Null / empty rows
 
-- Aggregates return `null` when no rows match: pair with applicability SOQL (`COUNT > 0`) or `EmptyValueHandling__c = SkipRecordsWithMissingValue`.
-- **`NoRowsResult__c`:** `Pass`, `Fail`, `Skip`, `UnableToEvaluate` when a query returns **zero rows** (including CompareTwoQueries OneResult when either side's query is empty).
-- **`EmptyValueHandling__c`:** when rows exist but a field under test is null and the comparison operator cannot decide (typically `SkipRecordsWithMissingValue`), the check is **SKIPPED** with `VALUE_IS_EMPTY`: not governed by `NoRowsResult__c`.
+- Aggregates return `null` when no rows match: pair with applicability SOQL (`COUNT > 0`) or `WhenValueIsEmpty__c = SkipRecordsWithMissingValue`.
+- **`WhenZeroRows__c`:** `Pass`, `Fail`, `Skip`, `UnableToEvaluate` when a query returns **zero rows** (including CompareTwoQueries OneResult when either side's query is empty).
+- **`WhenValueIsEmpty__c`:** when rows exist but a field under test is null and the comparator cannot decide (typically `SkipRecordsWithMissingValue`), the check is **SKIPPED** with `VALUE_IS_EMPTY`: not governed by `WhenZeroRows__c`.
 
 ## 10. Worked examples (copy-ready)
 
@@ -413,11 +413,11 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Formula` |
-| `PassConditionFormula__c` | `NOT(ISBLANK(BillingCity))` |
-| `ApplicabilityMode__c` | `Always` |
-| `FailureSeverity__c` | `Error` |
-| `FailureMessage__c` | `{!record.Name} is missing Billing City.` |
+| `CheckMethod__c` | `Formula` |
+| `PassFailFormula__c` | `NOT(ISBLANK(BillingCity))` |
+| `RunThisCheckWhen__c` | `Always` |
+| `Severity__c` | `Error` |
+| `MessageWhenFailed__c` | `{!Name} is missing Billing City.` |
 
 Shipped: `Account_DQ_BillingCity` in `Account_Data_Quality`.
 
@@ -425,12 +425,12 @@ Shipped: `Account_DQ_BillingCity` in `Account_Data_Quality`.
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Query` |
-| `SourceQuery__c` | `SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}` |
-| `QueryResultHandling__c` | `OneResult` |
-| `ComparisonOperator__c` | `GreaterThan` |
-| `ExpectedValueSource__c` | `FixedValue` |
-| `ExpectedFixedValue__c` | `0` |
+| `CheckMethod__c` | `Query` |
+| `DataQuery__c` | `SELECT COUNT() FROM Contact WHERE AccountId = {!Id}` |
+| `WhenMultipleRows__c` | `OneResult` |
+| `Operator__c` | `GreaterThan` |
+| `CompareAgainst__c` | `FixedValue` |
+| `FixedValue__c` | `0` |
 
 Shipped: `Account_EU_HasAtLeastOneContact`.
 
@@ -438,16 +438,16 @@ Shipped: `Account_EU_HasAtLeastOneContact`.
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Query` |
-| `SourceQuery__c` | `SELECT SUM(TotalPrice) totalPipeline FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND TotalPrice != null` |
-| `SourceQueryField__c` | `totalPipeline` |
-| `QueryResultHandling__c` | `OneResult` |
-| `ComparisonOperator__c` | `GreaterThanOrEqual` |
-| `ExpectedValueSource__c` | `RecordFormula` |
-| `ExpectedRecordFormula__c` | `AnnualRevenue * 1.5` |
-| `EmptyValueHandling__c` | `SkipRecordsWithMissingValue` |
-| `ApplicabilityMode__c` | `Formula` |
-| `ApplicabilityFormula__c` | `NOT(ISBLANK(AnnualRevenue)) && AnnualRevenue > 0` |
+| `CheckMethod__c` | `Query` |
+| `DataQuery__c` | `SELECT SUM(TotalPrice) totalPipeline FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false AND TotalPrice != null` |
+| `FieldToRead__c` | `totalPipeline` |
+| `WhenMultipleRows__c` | `OneResult` |
+| `Operator__c` | `GreaterThanOrEqual` |
+| `CompareAgainst__c` | `RecordFormula` |
+| `RecordFormulaValue__c` | `AnnualRevenue * 1.5` |
+| `WhenValueIsEmpty__c` | `SkipRecordsWithMissingValue` |
+| `RunThisCheckWhen__c` | `Formula` |
+| `RunWhenFormula__c` | `NOT(ISBLANK(AnnualRevenue)) && AnnualRevenue > 0` |
 
 Use `Amount` instead of `TotalPrice` if products are not used. Similar shipped pattern: `Account_CTQ_SumVsAnnualRevenue` (1:1 revenue, via CompareTwoQueries).
 
@@ -455,13 +455,13 @@ Use `Amount` instead of `TotalPrice` if products are not used. Similar shipped p
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Query` |
-| `FindInListFormula__c` | `BillingState` |
-| `ComparisonQuery__c` | `SELECT MailingState FROM Contact WHERE AccountId = {!record.Id} AND MailingState != null` |
-| `ComparisonQueryField__c` | `MailingState` |
-| `QueryResultHandling__c` | `CompareAsLists` |
-| `ComparisonOperator__c` | `ListContainsAny` |
-| `NoRowsResult__c` | `Skip` |
+| `CheckMethod__c` | `Query` |
+| `ValueToTest__c` | `BillingState` |
+| `CompareToQuery__c` | `SELECT MailingState FROM Contact WHERE AccountId = {!Id} AND MailingState != null` |
+| `CompareToField__c` | `MailingState` |
+| `WhenMultipleRows__c` | `CompareAsLists` |
+| `Operator__c` | `ListContainsAny` |
+| `WhenZeroRows__c` | `Skip` |
 
 Shipped: `Account_QC_ListContainsAny`.
 
@@ -469,10 +469,10 @@ Shipped: `Account_QC_ListContainsAny`.
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Formula` |
-| `PassConditionFormula__c` | `NOT(ISBLANK(BillingCountry))` |
-| `ApplicabilityMode__c` | `Formula` |
-| `ApplicabilityFormula__c` | `ISPICKVAL(Type, "Partner")` |
+| `CheckMethod__c` | `Formula` |
+| `PassFailFormula__c` | `NOT(ISBLANK(BillingCountry))` |
+| `RunThisCheckWhen__c` | `Formula` |
+| `RunWhenFormula__c` | `ISPICKVAL(Type, "Partner")` |
 
 Shipped: `Account_Adv_PartnerBillingCountry`.
 
@@ -480,12 +480,12 @@ Shipped: `Account_Adv_PartnerBillingCountry`.
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Apex` |
+| `CheckMethod__c` | `Apex` |
 | `ApexClass__c` | `AccountHasRecentActivityCheck` |
-| `ApexParametersJson__c` | `{"daysBack": 90}` |
-| `ApplicabilityMode__c` | `Always` |
-| `FailureSeverity__c` | `Warning` |
-| `FailureMessage__c` | `{!record.Name} has no completed tasks or logged events in the last 90 days.` |
+| `ApexSettingsJson__c` | `{"daysBack": 90}` |
+| `RunThisCheckWhen__c` | `Always` |
+| `Severity__c` | `Warning` |
+| `MessageWhenFailed__c` | `{!Name} has no completed tasks or logged events in the last 90 days.` |
 
 Sample Rule in `package-Account_Advanced_Checks.xml`: `Account_Adv_RecentActivity`. Doc: [apex/01-recent-activity.md](../examples/apex/01-recent-activity.md).
 
@@ -493,15 +493,15 @@ Sample Rule in `package-Account_Advanced_Checks.xml`: `Account_Adv_RecentActivit
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Apex` |
+| `CheckMethod__c` | `Apex` |
 | `ApexClass__c` | `AccountOpenOpportunityHealthCheck` |
-| `ApexParametersJson__c` | `{"staleDays": 30}` |
-| `ApplicabilityMode__c` | `SOQL` |
-| `ApplicabilityCountQuery__c` | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
-| `ApplicabilityCountOperator__c` | `GreaterThan` |
-| `ApplicabilityCountThreshold__c` | `0` |
-| `FailureSeverity__c` | `Error` |
-| `FailureMessage__c` | One or more open opportunities are stale, missing a Next Step, or have no close date this quarter. |
+| `ApexSettingsJson__c` | `{"staleDays": 30}` |
+| `RunThisCheckWhen__c` | `SOQL` |
+| `RunWhenCountQuery__c` | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!Id} AND IsClosed = false` |
+| `CountOperator__c` | `GreaterThan` |
+| `CountThreshold__c` | `0` |
+| `Severity__c` | `Error` |
+| `MessageWhenFailed__c` | One or more open opportunities are stale, missing a Next Step, or have no close date this quarter. |
 
 Doc: [apex/02-open-opportunity-health.md](../examples/apex/02-open-opportunity-health.md).
 
@@ -509,11 +509,11 @@ Doc: [apex/02-open-opportunity-health.md](../examples/apex/02-open-opportunity-h
 
 | API field | Value |
 | --- | --- |
-| `EvaluationType__c` | `Apex` |
+| `CheckMethod__c` | `Apex` |
 | `ApexClass__c` | `AccountStrategicReadinessCheck` *(not in package: deploy separately)* |
-| `ApexParametersJson__c` | `{"minScore": 80, "activityDaysBack": 60}` |
-| `ApplicabilityMode__c` | `Formula` |
-| `ApplicabilityFormula__c` | `ISPICKVAL(Type, "Strategic")` |
+| `ApexSettingsJson__c` | `{"minScore": 80, "activityDaysBack": 60}` |
+| `RunThisCheckWhen__c` | `Formula` |
+| `RunWhenFormula__c` | `ISPICKVAL(Type, "Strategic")` |
 
 Include a **Class sketch** when outputting this pattern. Full reference code: [apex/03-strategic-readiness.md](../examples/apex/03-strategic-readiness.md).
 
@@ -524,8 +524,8 @@ Include a **Class sketch** when outputting this pattern. Full reference code: [a
 | Check Set `DeveloperName` | `Object_Purpose` | `Account_Pipeline_Health` |
 | Rule `DeveloperName` | `Object_ShortDescription` | `Account_Pipeline_Meets_15x_Revenue` |
 | Rule `MasterLabel` | Spaces, readable in Setup | `Sales Pipeline Meets 1.5x Revenue` |
-| Rule `CheckTitle__c` | User-facing, concise | `Open pipeline ≥ 1.5× revenue` |
-| `EvaluationOrder__c` | Gaps of 10 | 10, 20, 30 (dependencies: prerequisite lower) |
+| Rule `CheckName__c` | User-facing, concise | `Open pipeline ≥ 1.5× revenue` |
+| `RunOrder__c` | Gaps of 10 | 10, 20, 30 (dependencies: prerequisite lower) |
 
 ## 12. Sample Check Sets (reference for LLMs)
 
@@ -536,7 +536,7 @@ Deploy `manifest/package-core.xml` first, then `manifest/package-<DeveloperName>
 | `Account_Everyday_Use_Cases` | `package-Account_Everyday_Use_Cases.xml` | 16 | Production-style everyday patterns |
 | `Account_Data_Quality` | `package-Account_Data_Quality.xml` | 4 | Simple formula basics |
 | `Account_Formula_Coverage` | `package-Account_Formula_Coverage.xml` | 7 | Formula variations |
-| `Account_Query_Coverage` | `package-Account_Query_Coverage.xml` | 17 | Every Query comparison operator |
+| `Account_Query_Coverage` | `package-Account_Query_Coverage.xml` | 17 | Every Query comparator |
 | `Account_Aggregate_Coverage` | `package-Account_Aggregate_Coverage.xml` | 6 | SUM, AVG, MIN, MAX, COUNT |
 | `Account_Compare_Queries` | `package-Account_Compare_Queries.xml` | 10 | Dual-query patterns |
 | `Account_Advanced_Checks` | `package-Account_Advanced_Checks.xml` | 8 | Dependencies, thresholds, Apex |
@@ -550,8 +550,8 @@ Full rule list: [Examples: Sample Check Set packages](../examples/index.md#sampl
 
 | Limit | Value |
 | --- | --- |
-| Active rules per run | 25 (lowest `EvaluationOrder__c` first) |
-| SOQL rows per query | 2000 default (`MaxQueryRows__c` can lower, not raise) |
+| Active rules per run | 25 (lowest `RunOrder__c` first) |
+| SOQL rows per query | 2000 default (`MaxRows__c` can lower, not raise) |
 | Formula eval calls per Apex transaction | 100 platform; framework guards at ~95 |
 | Concurrent evaluate calls (LWC) | 5 when Stop After System Error is off |
 | Component placement | Record pages only (needs `recordId`) |

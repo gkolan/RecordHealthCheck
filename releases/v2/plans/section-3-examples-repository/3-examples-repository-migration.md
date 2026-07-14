@@ -1,15 +1,15 @@
 # Plan 3 — Examples repository architecture and migration
 
-| Field           | Value                                                                               |
-| --------------- | ----------------------------------------------------------------------------------- |
-| Release section | [`V2-RELEASE-PLAN.md §3.1–§3.7`](../../V2-RELEASE-PLAN.md)                          |
-| Status          | ✅ **Completed (initial)** — 2026-07-13; five packs in `RecordHealthCheck-Examples` |
-| Type            | Repository architecture + staged content migration                                  |
-| Owner           | _Unassigned — record in [`V2-RELEASE-PLAN.md §6`](../../V2-RELEASE-PLAN.md)_        |
-| Effort          | L — new repository shape, catalog generation, per-pack CI, staged content moves     |
-| Risk            | Medium — mis-structuring now is expensive to undo once packs and 2GP versions exist |
-| Depends on      | Hero-example identity decision (`§6`); can stage in-repo before the Git split       |
-| Blocks          | Nothing hard; part of the ecosystem three-repo boundary (`§1.1`)                    |
+| Field           | Value                                                                                                             |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Release section | [`V2-RELEASE-PLAN.md §3.1–§3.7`](../../V2-RELEASE-PLAN.md)                                                        |
+| Status          | 🟡 **Extraction incomplete** — Examples repository populated; Core fixture migration and duplicate removal remain |
+| Type            | Repository architecture + staged content migration                                                                |
+| Owner           | _Unassigned — record in [`V2-RELEASE-PLAN.md §6`](../../V2-RELEASE-PLAN.md)_                                      |
+| Effort          | L — new repository shape, catalog generation, per-pack CI, staged content moves                                   |
+| Risk            | Medium — mis-structuring now is expensive to undo once packs and 2GP versions exist                               |
+| Depends on      | Hero-example identity decision (`§6`); can stage in-repo before the Git split                                     |
+| Blocks          | Nothing hard; part of the ecosystem three-repo boundary (`§1.1`)                                                  |
 
 > **Design note.** This plan reflects a design review that corrected an earlier draft. The
 > information architecture (flat canonical packs, metadata-driven facets, generated discovery) was
@@ -450,8 +450,9 @@ engine/LWC/schema → core; pack → examples; integration → extensions.
       copies core or peer-pack source.
 - [x] CI runs the PR validation layer; scheduled/release layers documented — cloud-dependent NPC pack publishes validation method + date.
 - [ ] All five paths proven: core-only, each pack alone, multiple together, upgrade, removal (deferred to §9 scratch-org proof).
-- [x] Core retains exactly one hero example; test fixtures stay in core and are not deployable
-      examples.
+- [ ] Core retains exactly one Hero example; test fixtures stay in Core only under fixture-specific
+      names and are not deployable or documented as examples. As of 2026-07-14, public example
+      names still support Core tests and duplicated library metadata/manifests remain.
 
 ## 11. Open decisions (from `§6`)
 

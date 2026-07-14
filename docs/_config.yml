@@ -25,4 +25,7 @@ exclude:
   - audits/
   - enhancements/
   - review/
+  - reviews/
   - spec/
+  - slides/
+  - demo/

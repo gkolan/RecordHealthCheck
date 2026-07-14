@@ -23,7 +23,7 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
             href="https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main"
             >Deploy to Salesforce</a
           >
-          <a class="btn btn-ghost btn-lg" href="{{ '/quick-start.html' | relative_url }}">Quick Start</a>
+          <a class="btn btn-ghost btn-lg" href="{{ '/v2/quick-start.html' | relative_url }}">Quick Start</a>
         </div>
         <div class="badge-row">
           <span class="ghbadge"><span class="k">license</span><span class="v ok">Apache-2.0</span></span>
@@ -98,18 +98,17 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
         <strong>sandbox</strong>, and click <strong>Deploy</strong>. Then, in
         Setup, assign the <code>Record_Health_Check_User</code> permission set. A
         click-by-click walkthrough is in
-        <a href="{{ '/installation/sandbox.html' | relative_url }}"
+        <a href="{{ '/v2/installation/sandbox.html' | relative_url }}"
           >Install in your sandbox</a
         >.
       </p>
       <p class="install-note">
-        <strong>Upgrading to v1.2.0?</strong> Re-open each record page that
-        already has the component, pick the Check Set again in App Builder, and
-        save. The old <code>configName</code> /
-        <code>comparisonDisclosure</code> properties are gone. Details:
-        <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/README.md"
-          >README upgrade note</a
-        >.
+        <strong>Upgrading to V2?</strong> V2 is a breaking metadata-contract
+        release. Back up custom metadata, then follow
+        <a href="{{ '/v2/installation/upgrading-to-v2.html' | relative_url }}"
+          >Upgrading to V2</a
+        >. Historical v1.x docs remain under
+        <a href="{{ '/v1/' | relative_url }}">docs/v1</a>.
       </p>
     </div>
 
@@ -152,7 +151,7 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
     </div>
 
     <p class="center" style="margin-top: 26px">
-      <a class="btn btn-primary" href="{{ '/installation/getting-started.html' | relative_url }}">Read the full Getting Started guide</a>
+      <a class="btn btn-primary" href="{{ '/v2/installation/getting-started.html' | relative_url }}">Read the full Getting Started guide</a>
     </p>
   </div>
 </section>
@@ -164,34 +163,35 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
       <div class="kicker">Curated examples</div>
       <h2>Learn the pattern, then explore</h2>
       <p>
-        Start with the four core examples. Use the full catalog after first
-        setup when a business rule needs a specific variation.
+        Core ships one hero Check Set. Every other pattern lives in the
+        <a href="https://github.com/gkolan/RecordHealthCheck-Examples">RecordHealthCheck-Examples</a>
+        repository — start with these four, then browse the full catalog.
       </p>
     </div>
     <div class="teaser-grid">
-      <a class="teaser" href="{{ '/examples/formula/02-either-or-field.html' | relative_url }}">
+      <a class="teaser" href="https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/formula/02-either-or-field.md">
         <div class="tt"><span class="ref">Check fields on this record</span></div>
         <h4>Phone or Website required</h4>
         <p>At least one of Phone or Website must be populated; both blank fails.</p>
       </a>
-      <a class="teaser" href="{{ '/examples/soql/single-query/01-child-count-minimum-one.html' | relative_url }}">
+      <a class="teaser" href="https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/soql/single-query/01-child-count-minimum-one.md">
         <div class="tt"><span class="ref">Check records with a query</span></div>
         <h4>At least one Contact</h4>
         <p>The Account must have one or more related Contacts (COUNT vs a threshold).</p>
       </a>
-      <a class="teaser" href="{{ '/examples/soql/compare-two-queries/01-aggregate-counts.html' | relative_url }}">
+      <a class="teaser" href="https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/soql/compare-two-queries/01-aggregate-counts.md">
         <div class="tt"><span class="ref">Compare two queries</span></div>
         <h4>Contacts vs open Opportunities</h4>
         <p>Contact count must not exceed the count of open Opportunities on the Account.</p>
       </a>
-      <a class="teaser" href="{{ '/examples/apex/03-strategic-readiness.html' | relative_url }}">
+      <a class="teaser" href="https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/apex/03-strategic-readiness.md">
         <div class="tt"><span class="ref">Use custom Apex</span></div>
         <h4>Strategic account readiness</h4>
         <p>Strategic Accounts get one weighted readiness score versus a minimum.</p>
       </a>
     </div>
     <div class="morelink">
-      <a href="{{ '/examples/' | relative_url }}">Browse examples after first setup →</a>
+      <a href="https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/index.md">Browse the Examples pattern library →</a>
     </div>
   </div>
 </section>
@@ -264,38 +264,38 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
     </div>
 
     <div class="doc-paths">
-      <a class="doc-path primary" href="{{ '/quick-start.html' | relative_url }}">
+      <a class="doc-path primary" href="{{ '/v2/quick-start.html' | relative_url }}">
         <div class="path-kicker">New here</div>
         <h3>Start quickly</h3>
         <p>One card, one Rule, one business-rule pattern.</p>
         <span>Open Quick Start</span>
       </a>
-      <a class="doc-path" href="{{ '/installation/admin-quick-start.html' | relative_url }}">
+      <a class="doc-path" href="{{ '/v2/installation/admin-quick-start.html' | relative_url }}">
         <div class="path-kicker">Admin</div>
         <h3>Understand what users see</h3>
         <p>The plain-English model and result statuses.</p>
         <span>Read Admin Quick Start</span>
       </a>
-      <a class="doc-path" href="{{ '/examples/' | relative_url }}">
+      <a class="doc-path" href="https://github.com/gkolan/RecordHealthCheck-Examples">
         <div class="path-kicker">Builder</div>
         <h3>Explore the example library</h3>
-        <p>Optional patterns to use by need.</p>
-        <span>Open examples</span>
+        <p>Optional packs and patterns in RecordHealthCheck-Examples.</p>
+        <span>Open Examples repo</span>
       </a>
     </div>
 
     <div class="doc-library">
       <div class="doc-shelf">
         <h3>Install and first setup</h3>
-        <a href="{{ '/installation/sandbox.html' | relative_url }}">
+        <a href="{{ '/v2/installation/sandbox.html' | relative_url }}">
           <span>Install in a sandbox</span>
           <small>Click-by-click deploy button walkthrough.</small>
         </a>
-        <a href="{{ '/installation/getting-started.html' | relative_url }}">
+        <a href="{{ '/v2/installation/getting-started.html' | relative_url }}">
           <span>Getting Started</span>
           <small>Deploy the package and create your first Rule.</small>
         </a>
-        <a href="{{ '/start/first-10-minutes.html' | relative_url }}">
+        <a href="{{ '/v2/start/first-10-minutes.html' | relative_url }}">
           <span>First 10 Minutes</span>
           <small>One working card before deeper configuration.</small>
         </a>
@@ -303,19 +303,19 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
 
       <div class="doc-shelf">
         <h3>Configure checks</h3>
-        <a href="{{ '/examples/' | relative_url }}">
-          <span>Examples catalog</span>
-          <small>Optional patterns to explore by need.</small>
+        <a href="https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/examples-index.md">
+          <span>Examples pack catalog</span>
+          <small>Optional packs to explore by need (separate repo).</small>
         </a>
-        <a href="{{ '/guides/configuration-guide.html' | relative_url }}">
+        <a href="{{ '/v2/guides/configuration-guide.html' | relative_url }}">
           <span>Configuration Guide</span>
           <small>Every Check Set and Rule field.</small>
         </a>
-        <a href="{{ '/guides/action-links.html' | relative_url }}">
+        <a href="{{ '/v2/guides/action-links.html' | relative_url }}">
           <span>Action links</span>
           <small>Report links, related lists, and fix instructions.</small>
         </a>
-        <a href="{{ '/guides/llm-configuration.html' | relative_url }}">
+        <a href="{{ '/v2/guides/llm-configuration.html' | relative_url }}">
           <span>Configure with AI</span>
           <small>Prompt an assistant to draft metadata tables.</small>
         </a>
@@ -323,16 +323,24 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
 
       <div class="doc-shelf">
         <h3>Reference and extension</h3>
-        <a href="{{ '/metadata/' | relative_url }}">
+        <a href="{{ '/v2/metadata/' | relative_url }}">
           <span>Metadata reference</span>
           <small>Custom Metadata types and field definitions.</small>
         </a>
-        <a href="{{ '/apex/plugin-reference.html' | relative_url }}">
+        <a href="{{ '/v2/apex/programmatic-api.html' | relative_url }}">
+          <span>Apex and Flow API</span>
+          <small>run, runSet, and the packaged Flow action.</small>
+        </a>
+        <a href="{{ '/v2/reference/lifecycle-events.html' | relative_url }}">
+          <span>Lifecycle events</span>
+          <small>Opt-in Rule Result and Check Set Run events.</small>
+        </a>
+        <a href="{{ '/v2/apex/plugin-reference.html' | relative_url }}">
           <span>Apex plugin reference</span>
-          <small>Call the engine and write custom checks.</small>
+          <small>Write custom check plugins.</small>
         </a>
         <a
-          href="{{ '/reference/record-health-check-design-spec.html' | relative_url }}"
+          href="{{ '/v2/reference/record-health-check-design-spec.html' | relative_url }}"
         >
           <span>Design Specification</span>
           <small>The formal contract: engine, metadata, and LWC.</small>
@@ -342,8 +350,8 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
 
     <p class="doc-fineprint">
       Need operational help? Use
-      <a href="{{ '/guides/show-diagnostics.html' | relative_url }}"
-        >Show Troubleshooting Details</a
+      <a href="{{ '/v2/guides/show-diagnostics.html' | relative_url }}"
+        >Show Diagnostics</a
       >.
     </p>
   </div>
@@ -363,7 +371,7 @@ description: Metadata-driven, advisory record health checks for Salesforce — r
         href="https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main"
         >Deploy to Salesforce</a
       >
-      <a class="btn btn-ghost btn-lg" href="{{ '/quick-start.html' | relative_url }}" style="color: #e9eef4; border-color: rgba(255,255,255,0.25)">Quick Start</a>
+      <a class="btn btn-ghost btn-lg" href="{{ '/v2/quick-start.html' | relative_url }}" style="color: #e9eef4; border-color: rgba(255,255,255,0.25)">Quick Start</a>
     </div>
   </div>
 </section>

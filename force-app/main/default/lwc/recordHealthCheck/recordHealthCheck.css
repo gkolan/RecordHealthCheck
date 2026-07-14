@@ -47,23 +47,23 @@
 
 .rhc-card {
   display: block;
-  background: var(--slds-g-color-neutral-base-100, #ffffff);
+  background: var(--rhc-theme-card-background);
   /* A clearly visible border + soft elevation so the card reads as a
      self-contained unit on ANY surface — including a white Lightning tab,
      where the lightest border/shadow tokens would otherwise vanish and the
      component would look borderless. */
-  border: 1px solid var(--slds-g-color-border-base-2, #c9c7c5);
+  border: 1px solid var(--rhc-theme-card-border);
   /* Match standard Lightning cards (related lists, record panels). */
-  border-radius: var(--slds-g-radius-border-2, 0.25rem);
-  box-shadow: var(--slds-g-shadow-2, 0 2px 6px 0 rgba(0, 0, 0, 0.16));
+  border-radius: var(--rhc-theme-card-radius);
+  box-shadow: var(--rhc-theme-card-shadow);
   /* Let row/summary tooltips extend past the card edge; bottom rounding is applied
      on the last body child instead of clipping popovers. */
   overflow: visible;
 }
 
 .rhc-body > :last-child {
-  border-bottom-left-radius: var(--slds-g-radius-border-2, 0.25rem);
-  border-bottom-right-radius: var(--slds-g-radius-border-2, 0.25rem);
+  border-bottom-left-radius: var(--rhc-theme-card-radius);
+  border-bottom-right-radius: var(--rhc-theme-card-radius);
 }
 
 .rhc-header {
@@ -72,10 +72,10 @@
   gap: 0.375rem;
   min-width: 0;
   padding: 0.875rem 1rem 0.875rem;
-  background: var(--slds-g-color-neutral-base-99, #fafafa);
+  background: var(--rhc-theme-header-background);
   border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
-  border-top-left-radius: var(--slds-g-radius-border-2, 0.25rem);
-  border-top-right-radius: var(--slds-g-radius-border-2, 0.25rem);
+  border-top-left-radius: var(--rhc-theme-card-radius);
+  border-top-right-radius: var(--rhc-theme-card-radius);
 }
 
 /* Title + action button share one row; the description below spans the full
@@ -104,7 +104,7 @@
      title so the component title sits at the same level as native page cards. */
   font-size: 1rem;
   font-weight: 700;
-  color: var(--slds-g-color-neutral-base-10, #181818);
+  color: var(--rhc-theme-text);
   line-height: 1.25;
   margin: 0;
 }
@@ -114,7 +114,7 @@
   /* SLDS body_regular (13px) — the card's supporting body text. */
   font-size: 0.8125rem;
   font-weight: 400;
-  color: var(--slds-g-color-neutral-base-50, #706e6b);
+  color: var(--rhc-theme-text-weak);
   line-height: 1.35;
   margin: 0;
 }
@@ -393,7 +393,7 @@
 .rhc-row:focus {
   outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
   outline-offset: -2px;
-  background: var(--slds-g-color-neutral-base-97, #f5f5f5);
+  background: var(--rhc-theme-row-hover);
 }
 
 .rhc-row + .rhc-row {
@@ -401,7 +401,7 @@
 }
 
 .rhc-row:hover {
-  background: var(--slds-g-color-neutral-base-97, #f5f5f5);
+  background: var(--rhc-theme-row-hover);
 }
 
 /* ── Row icon ──────────────────────────────────────────────────────────────── */

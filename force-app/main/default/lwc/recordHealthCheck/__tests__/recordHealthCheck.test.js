@@ -146,6 +146,45 @@ function createComponent() {
   return el;
 }
 
+describe("c-record-health-check — design theme", () => {
+  let element;
+
+  afterEach(() => {
+    if (element?.isConnected) {
+      document.body.removeChild(element);
+    }
+  });
+
+  it("defaults to the SLDS 2 visual treatment", () => {
+    element = createComponent();
+    document.body.appendChild(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-theme--slds2")
+    ).not.toBeNull();
+  });
+
+  it("supports the SLDS 1 visual treatment", () => {
+    element = createComponent();
+    element.designSystem = "SLDS 1";
+    document.body.appendChild(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-theme--slds1")
+    ).not.toBeNull();
+  });
+
+  it("falls back to SLDS 2 for an unsupported value", () => {
+    element = createComponent();
+    element.designSystem = "unsupported";
+    document.body.appendChild(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-theme--slds2")
+    ).not.toBeNull();
+  });
+});
+
 describe("c-record-health-check — load and error states", () => {
   let element;
 

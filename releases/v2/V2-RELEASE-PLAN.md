@@ -367,11 +367,20 @@ This resolves the field-level-security/unavailable-field response policy left op
 
 ## 3. Examples repository architecture
 
-**✅ Completed** — initial migration executed in [`RecordHealthCheck-Examples`](https://github.com/gkolan/RecordHealthCheck-Examples) (2026-07-13). Five packs ship with generated catalog, validation CI, and pack contracts. Verification: [`audits/2026-07-13-section-3.1-verification.md`](audits/2026-07-13-section-3.1-verification.md) through [`3.7`](audits/2026-07-13-section-3.7-verification.md). Core retains hero manifests during transition; boundary audit: [`audits/2026-07-13-section-3-core-example-boundary-audit.md`](audits/2026-07-13-section-3-core-example-boundary-audit.md).
+**🟡 Repository populated; Core extraction incomplete.** The independent
+[`RecordHealthCheck-Examples`](https://github.com/gkolan/RecordHealthCheck-Examples) repository now
+contains 12 validated packs with generated catalogs and pack documentation. The release owner ended
+the temporary duplication period on 2026-07-14. Core must migrate tests away from public example
+names and remove every non-Hero example record, optional example Apex class, and non-Hero manifest
+before V2 release. Boundary audit:
+[`audits/2026-07-13-section-3-core-example-boundary-audit.md`](audits/2026-07-13-section-3-core-example-boundary-audit.md).
 
 ### 3.1 Purpose and boundary
 
-**✅ Completed** — the examples library teaches outcomes without hidden runtime dependency. Core keeps `Example_Account_360_Health_Check` as the hero example plus internal test fixtures. Initial library packs migrated to `RecordHealthCheck-Examples`.
+**🟡 Content migrated; duplicate removal open.** The examples library teaches outcomes without a
+hidden Core dependency. Core keeps `Example_Account_360_Health_Check` as the Hero plus internal test
+fixtures that are not presented or deployed as examples. Public example names still used by Core
+tests must be replaced with fixture-specific names before their duplicated metadata is removed.
 
 ### 3.2 Repository shape
 

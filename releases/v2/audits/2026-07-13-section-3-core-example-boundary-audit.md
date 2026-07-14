@@ -19,15 +19,15 @@ rg -l "Account_Data_Quality|Account_Everyday_Use_Cases|Account_Examples_Apex" ma
 
 ## Findings
 
-| Item                        | Status         | Evidence                                                                                                                                                                  | Disposition                                                                               |
-| --------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Hero example                | Pass           | `Example_Account_360_Health_Check` in `manifest/package-Example_Account_360_Health_Check.xml`; referenced in `README.md`, `docs/start/first-10-minutes.md`, §9 smoke gate | **Stays in core**                                                                         |
-| Hero Apex dependency        | Pass           | `AccountHasRecentActivityCheck` in `package-core.xml`; used by `Example_Recent_Activity` rule in hero set                                                                 | **Stays in core** (ships with engine)                                                     |
-| Core example Apex (library) | Gap → migrated | `AccountStrategicReadinessCheck`, `ApprovalInactiveApproverCheck` were in core `package-core.xml` and `Account_Examples_Apex` manifest                                    | **Moved** to `RecordHealthCheck-Examples/packs/apex-advanced-checks`                      |
-| Core example Apex (shared)  | Pass           | `AccountOpenOpportunityHealthCheck` remains in core; referenced by library rules without duplicate source                                                                 | **Stays in core**; packs declare core dependency only                                     |
-| Sample Check Sets (library) | Gap → migrated | 14 non-hero manifests under `manifest/package-Account_*.xml`                                                                                                              | **Initial packs migrated**; core manifests remain during transition for existing adopters |
-| Test fixtures               | Pass           | `RecordHealthCheckTestDataFactory`, engine tests, validator tests — not packaged as deployable examples                                                                   | **Stay in core**                                                                          |
-| Example documentation       | Gap → migrated | `docs/examples/` removed from core; content lives in `RecordHealthCheck-Examples/docs/pattern-library/`                                                                   | **Ecosystem link** replaces in-core catalog                                               |
+| Item                        | Status         | Evidence                                                                                                                                                                     | Disposition                                                                               |
+| --------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Hero example                | Pass           | `Example_Account_360_Health_Check` in `manifest/package-Example_Account_360_Health_Check.xml`; referenced in `README.md`, `docs/v2/start/first-10-minutes.md`, §9 smoke gate | **Stays in core**                                                                         |
+| Hero Apex dependency        | Pass           | `AccountHasRecentActivityCheck` in `package-core.xml`; used by `Example_Recent_Activity` rule in hero set                                                                    | **Stays in core** (ships with engine)                                                     |
+| Core example Apex (library) | Gap → migrated | `AccountStrategicReadinessCheck`, `ApprovalInactiveApproverCheck` were in core `package-core.xml` and `Account_Examples_Apex` manifest                                       | **Moved** to `RecordHealthCheck-Examples/packs/apex-advanced-checks`                      |
+| Core example Apex (shared)  | Pass           | `AccountOpenOpportunityHealthCheck` remains in core; referenced by library rules without duplicate source                                                                    | **Stays in core**; packs declare core dependency only                                     |
+| Sample Check Sets (library) | Gap → migrated | 14 non-hero manifests under `manifest/package-Account_*.xml`                                                                                                                 | **Initial packs migrated**; core manifests remain during transition for existing adopters |
+| Test fixtures               | Pass           | `RecordHealthCheckTestDataFactory`, engine tests, validator tests — not packaged as deployable examples                                                                      | **Stay in core**                                                                          |
+| Example documentation       | Gap → migrated | `docs/examples/` removed from core; content lives in `RecordHealthCheck-Examples/docs/pattern-library/`                                                                      | **Ecosystem link** replaces in-core catalog                                               |
 
 ## Hero and fixture policy (§6 decision recorded)
 
@@ -39,7 +39,12 @@ rg -l "Account_Data_Quality|Account_Everyday_Use_Cases|Account_Examples_Apex" ma
 
 ## Verdict
 
-**Boundary recorded.** Core retains one hero example plus engine-shipped Apex used by the hero.
-Library content has an initial migration in `RecordHealthCheck-Examples`; core manifests are
-retained temporarily so existing deploy paths do not break until a follow-up core PR removes
-duplicated sample manifests.
+**Boundary recorded, extraction incomplete.** Core may retain only the Hero example plus Apex that
+the Hero requires. The release owner ended the transition on 2026-07-14: every other reusable Check
+Set, Rule pattern, scenario, and optional example Apex class belongs only in the independent
+`RecordHealthCheck-Examples` repository.
+
+Core still contains duplicated library metadata, optional example Apex, and 14 non-Hero manifests.
+Some Core tests depend on those public example names. V2 release now requires a fixture migration:
+replace test dependencies with clearly named internal fixtures, keep those fixtures out of public
+install paths, then remove the duplicated library records, classes, and manifests from Core.

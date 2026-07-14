@@ -1,11 +1,11 @@
 # Check Set fields (`Record_Health_Check_Set__mdt`)
 
-Parent metadata record for one health-check card on a record page. The Lightning component points at a Check Set through the **Check Set** App Builder property (`checkSetName` in the LWC, sent to Apex as `configName`).
+Parent metadata record for one health-check panel on a record page. The Lightning component points at a Check Set through the **Check Set** App Builder property (`checkSetName` in the LWC, sent to Apex as `configName`).
 
 > [!NOTE]
 > This reference is the source of truth for Check Set fields. Guides and examples link here rather than restating these values.
 
-Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troubleshooting: [Show Troubleshooting Details](../guides/show-diagnostics.md).
+Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troubleshooting: [Show Troubleshooting Details](../guides/debug-mode.md).
 
 ## Field reference
 
@@ -15,8 +15,8 @@ Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troublesh
 | ----------- | -------- | ---- | -------- | ----------- |
 | Developer Name | `DeveloperName` | Text | Yes | API key selected by the Lightning component's **Check Set** property. Stable link between the page and metadata; survives label changes. |
 | Label | Master Label | Text | Yes | Name shown in Setup record lists. Standard metadata identity; not shown to end users in the component. |
-| Card Title | `CardTitle__c` | Text | Yes | Card header title (for example, `Account Health Check`). Required in Custom Metadata and by the deploy-time validator. If a blank value somehow reaches runtime, the card falls back to the Check Set label, then developer name, so the title is never empty. |
-| Card Subtitle | `CardSubtitle__c` | Text | No | One-line subtitle beneath the title row (full card width). Brief context without opening each Rule. |
+| Panel Title | `PanelHeading__c` | Text | Yes | Card header title (for example, `Account Health Check`). Required in Custom Metadata and by the deploy-time validator. If a blank value somehow reaches runtime, the card falls back to the Check Set label, then developer name, so the title is never empty. |
+| Panel Subtitle | `PanelSubheading__c` | Text | No | One-line subtitle beneath the title row (full card width). Brief context without opening each Rule. |
 
 ### Scope
 
@@ -29,18 +29,18 @@ Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troublesh
 
 | Setup label | API name | Type | Required | Description |
 | ----------- | -------- | ---- | -------- | ----------- |
-| Start Checks | `CardRunMode__c` | Picklist | Yes | `Automatic`: run after page load. `Manual`: wait for **Run** / **Rerun**. While checks run the button shows a spinner; the label stays **Run** (first run) or **Rerun** (after any completed run), never "Running…". Busy detail is in `title` / `aria-label`. See [picklist values](#start-checks-runcheckswhen__c). |
+| Start Checks | `RunChecksWhen__c` | Picklist | Yes | `Automatic`: run after page load. `Manual`: wait for **Run** / **Rerun**. While checks run the button shows a spinner; the label stays **Run** (first run) or **Rerun** (after any completed run), never "Running…". Busy detail is in `title` / `aria-label`. See [picklist values](#start-checks-runcheckswhen__c). |
 | Stop After System Error | `StopOnSystemError__c` | Checkbox | No | Stops remaining checks after the first `ERROR` status and runs checks sequentially (one Apex call at a time). Does **not** stop on `FAIL`, `SKIPPED`, or `UNABLE_TO_EVALUATE`. |
 
 ### Result presentation
 
 | Setup label | API name | Type | Required | Description |
 | ----------- | -------- | ---- | -------- | ----------- |
-| How checks appear | `CardRevealMode__c` | Picklist | Yes | `AllAtOnce`: every eligible check is listed on load (pending) and fills in its result in place. `OneAtATime` (**default**): no rows on load; each check appears as the run reaches it. Cosmetic only — same checks, order, and outcomes either way. Checks hidden by Passed/Skipped display modes stay hidden in both modes. |
-| Found/Expected Display | `FoundExpectedDisplay__c` | Picklist | Yes | Controls when **Found** / **Expected** values appear for each check. Default: **On demand**. See [picklist values](#foundexpected-display-comparisondisplay__c). Detailed source/value notes do not render on the card; for users with **`Record_Health_Check_View_Details`** they appear in the F12 console diagnostics. See [comparison diagnostic details](../reference/record-health-check-design-spec.md#comparison-diagnostic details). |
+| How checks appear | `RowAppearance__c` | Picklist | Yes | `AllAtOnce`: every eligible check is listed on load (pending) and fills in its result in place. `OneAtATime` (**default**): no rows on load; each check appears as the run reaches it. Cosmetic only — same checks, order, and outcomes either way. Checks hidden by Passed/Skipped display modes stay hidden in both modes. |
+| Found/Expected Display | `ComparisonDisplay__c` | Picklist | Yes | Controls when **Found** / **Expected** values appear for each check. Default: **On demand**. See [picklist values](#foundexpected-display-comparisondisplay__c). Detailed source/value notes do not render on the card; for users with **`Record_Health_Check_View_Details`** they appear in the F12 console diagnostics. See [Comparison provenance](../reference/record-health-check-design-spec.md#comparison-provenance). |
 | Passed Checks | `PassedChecksDisplay__c` | Picklist | Yes | `Show` (default) lists passed checks; `Hide` removes them but the **Passed** summary pill still shows the count (hover for rule labels). |
 | Skipped Checks | `SkippedChecksDisplay__c` | Picklist | Yes | Same options for `SKIPPED` checks. `Show` (default) lists them; `Hide` collapses them into the **Skipped** summary pill. |
-| Show Troubleshooting Details | `ShowDiagnostics__c` | Checkbox | No | When checked **and** the viewer has **`Record_Health_Check_View_Details`** (from permission set `Record_Health_Check_Admin`), shows extra troubleshooting detail on the card and in the browser console. Does **not** affect what regular users see. Walkthrough: [Show Troubleshooting Details](../guides/show-diagnostics.md). |
+| Show Troubleshooting Details | `DebugMode__c` | Checkbox | No | When checked **and** the viewer has **`Record_Health_Check_View_Details`** (from permission set `Record_Health_Check_Admin`), shows extra troubleshooting detail on the card and in the browser console. Does **not** affect what regular users see. Walkthrough: [Show Troubleshooting Details](../guides/debug-mode.md). |
 
 ### Framework limits (not fields)
 
@@ -51,7 +51,7 @@ Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troublesh
 
 ## Picklist values
 
-### Start Checks (`CardRunMode__c`)
+### Start Checks (`RunChecksWhen__c`)
 
 | Value (API) | Setup label | Behavior |
 | ----------- | ----------- | -------- |
@@ -67,14 +67,14 @@ Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Troublesh
 
 Use `Hide` on Check Sets like `Account_Data_Quality` when a failures-only check list is needed but an at-a-glance pass count in the summary bar is still required.
 
-### How checks appear (`CardRevealMode__c`)
+### How checks appear (`RowAppearance__c`)
 
 | Value (API) | Setup label | Behavior |
 | ----------- | ----------- | -------- |
 | `AllAtOnce` | Show all checks at once | Every eligible check is listed on load as a pending row, then fills in (loading → done) in place. The list length is stable from the start. Checks hidden by Passed or Skipped display modes are still hidden. |
 | `OneAtATime` | Reveal checks one at a time | **Default.** No check rows on load (just the run hint); each eligible check appears as the ordered run reaches it, so the list grows as the run advances rather than all rows landing at once. |
 
-### Found/Expected Display (`FoundExpectedDisplay__c`)
+### Found/Expected Display (`ComparisonDisplay__c`)
 
 | Value (API) | Setup label | Behavior |
 | ----------- | ----------- | -------- |

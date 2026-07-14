@@ -1,12 +1,12 @@
-# Action Links and Fix Instructions
+# Action Links and Fix Message
 
 Action links give users a read-only next step when a Rule fails.
 
 They are configured on the Rule with:
 
-- **Action Button Label** (`ActionLabel__c`)
-- **Action Button URL** (`ActionUrl__c`)
-- **Fix Instructions** (`FixMessage__c`)
+- **Action Label** (`ActionLabel__c`)
+- **Action URL** (`ActionUrl__c`)
+- **Fix Message** (`FixMessage__c`)
 
 These fields render only on **FAIL** rows. They do not render on Pass, Skipped, Unable to evaluate, or Error rows.
 
@@ -16,12 +16,12 @@ Record Health Check does not update records. Use action links for navigation, re
 
 When a Rule fails, the card can show:
 
-- A link, using **Action Button Label**
-- Supporting text, using **Fix Instructions**
+- A link, using **Action Label**
+- Supporting text, using **Fix Message**
 
-If **Action Button URL** is blank or rejected for safety, **Fix Instructions** can still show.
+If **Action URL** is blank or rejected for safety, **Fix Message** can still show.
 
-If **Action Button Label** is blank and the URL is valid, the link label defaults to `Fix this`.
+If **Action Label** is blank and the URL is valid, the link label defaults to `Fix this`.
 
 ## Allowed URL Formats
 
@@ -41,11 +41,11 @@ Do not use:
 - URLs containing backslashes
 - URLs that resolve to more than 2000 characters
 
-Unsafe URLs are dropped. Fix Instructions can still render.
+Unsafe URLs are dropped. Fix Message can still render.
 
 ## Merge Tokens
 
-Action URLs and Fix Instructions support merge tokens from the current record:
+Action URLs and Fix Message support merge tokens from the current record:
 
 ```text
 {!record.Id}
@@ -94,7 +94,7 @@ Report Ids are created when the report is deployed or created in the org. To get
 
 1. Open the report in Salesforce.
 2. Copy the `00O...` value from the browser URL.
-3. Paste it into **Action Button URL**.
+3. Paste it into **Action URL**.
 
 A report link is org-specific. A report Id from one org does not work in another org.
 
@@ -104,13 +104,13 @@ A report link is org-specific. A report Id from one org does not work in another
 
 Use this when a failed Rule means a user needs to fix related Contacts.
 
-Action Button Label:
+Action Label:
 `View contacts to fix`
 
-Action Button URL:
+Action URL:
 `/lightning/r/Account/{!record.Id}/related/Contacts/view`
 
-Fix Instructions:
+Fix Message:
 `Open the account's contacts and add the missing email addresses.`
 
 This pattern ships in the `Example_Every_Contact_Has_Email` sample Rule.
@@ -119,13 +119,13 @@ This pattern ships in the `Example_Every_Contact_Has_Email` sample Rule.
 
 Use this when a failed Rule means a user needs to review a filtered report.
 
-Action Button Label:
+Action Label:
 `View high-priority cases`
 
-Action Button URL:
+Action URL:
 `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}`
 
-Fix Instructions:
+Fix Message:
 `Review the open high-priority cases before your next renewal or executive conversation.`
 
 This pattern ships in the `Example_No_High_Priority_Cases` sample Rule. Replace the report Id with the Id from your org.
@@ -134,13 +134,13 @@ This pattern ships in the `Example_No_High_Priority_Cases` sample Rule. Replace 
 
 Use this when the next step is a help page outside Salesforce.
 
-Action Button Label:
+Action Label:
 `Open data quality playbook`
 
-Action Button URL:
+Action URL:
 `https://example.com/data-quality-playbook`
 
-Fix Instructions:
+Fix Message:
 `Review the playbook before changing ownership or account tier fields.`
 
 Only `https://` external links are allowed.
@@ -151,5 +151,5 @@ Only `https://` external links are allowed.
 - [ ] The URL starts with `/` or `https://`.
 - [ ] Report links use the report Id from the target org.
 - [ ] Merge tokens refer to fields readable on the current record.
-- [ ] Fix Instructions still make sense if the link is hidden.
+- [ ] Fix Message still make sense if the link is hidden.
 - [ ] The Rule has a useful failure message before the action link.

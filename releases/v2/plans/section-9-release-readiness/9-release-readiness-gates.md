@@ -81,7 +81,7 @@ An independent retrieve/diff artifact, not only a recorded successful deploy (`�
 
 ### Gate E — Release and rollback closeout
 
-- Upgrade guide **`docs/installation/upgrading-to-v2.md`** — **complete**; it covers the breaking
+- Upgrade guide **`docs/v2/installation/upgrading-to-v2.md`** — **complete**; it covers the breaking
   field renames, no dual-read compatibility, backup prerequisites, and rollback procedure.
 - Source version bump — **complete** (`2.0.0`). The release tag remains outstanding.
 - Backup/rollback evidence — **open**: restore the retained v1.x artifact and exported metadata in
@@ -154,7 +154,7 @@ If these land in the same V2 release, their own acceptance criteria roll up into
 - [ ] Gate C: recorded manual smoke test on an Account record page incl. permission + diagnostics
       paths.
 - [x] Gate D: committed source-to-org readback/diff artifact.
-- [ ] Gate E: `docs/installation/upgrading-to-v2.md` written; backup/rollback evidence; version
+- [ ] Gate E: `docs/v2/installation/upgrading-to-v2.md` written; backup/rollback evidence; version
       bump + tag; PR reviewed + approved.
 - [x] Gate F: Salesforce Code Analyzer (incl. security ruleset) runs in CI; findings fixed or
       justified-suppressed.
