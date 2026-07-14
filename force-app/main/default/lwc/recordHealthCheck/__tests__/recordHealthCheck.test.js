@@ -8,7 +8,8 @@ import RecordHealthCheck from "c/recordHealthCheck";
 import {
   annotateCheck,
   buildSummaryStats,
-  splitMessageLines
+  splitMessageLines,
+  safeActionUrl
 } from "../healthCheckPresentation";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
 import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
@@ -2582,5 +2583,84 @@ describe("c-record-health-check — multi-line messages", () => {
     // Lines joined with ". " — no raw newline, no empty run from the blank line.
     expect(label).toContain("Out of balance. Contact Finance.");
     expect(label).not.toContain("\n");
+  });
+});
+
+describe("safeActionUrl — client-side scheme guard (HI-3)", () => {
+  // Assemble dangerous schemes with a variable operand so ESLint flags neither
+  // a literal script URL (no-script-url) nor a useless concat (no-useless-concat),
+  // while the runtime value under test stays exactly "javascript:"/"vbscript:".
+  const colon = ":";
+  const jsScheme = "javascript" + colon;
+  const vbScheme = "vbscript" + colon;
+
+  it("accepts an in-app absolute path", () => {
+    expect(safeActionUrl("/lightning/r/Report/00O/view?fv0=001")).toBe(
+      "/lightning/r/Report/00O/view?fv0=001"
+    );
+  });
+
+  it("accepts an https URL regardless of case", () => {
+    expect(safeActionUrl("https://example.com/x")).toBe(
+      "https://example.com/x"
+    );
+    expect(safeActionUrl("HTTPS://example.com/x")).toBe(
+      "HTTPS://example.com/x"
+    );
+  });
+
+  it("trims surrounding whitespace before deciding", () => {
+    expect(safeActionUrl("  /path  ")).toBe("/path");
+  });
+
+  it("rejects dangerous and non-allowlisted schemes", () => {
+    for (const bad of [
+      jsScheme + "alert(1)",
+      jsScheme.toUpperCase() + "alert(1)",
+      "  " + jsScheme + "alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "http://example.com/x",
+      "mailto:a@b.com",
+      "//evil.example.com/x",
+      vbScheme + "msgbox(1)",
+      "relative/path"
+    ]) {
+      expect(safeActionUrl(bad)).toBeNull();
+    }
+  });
+
+  it("rejects empty and non-string input", () => {
+    expect(safeActionUrl("")).toBeNull();
+    expect(safeActionUrl("   ")).toBeNull();
+    expect(safeActionUrl(null)).toBeNull();
+    expect(safeActionUrl(undefined)).toBeNull();
+    expect(safeActionUrl(42)).toBeNull();
+  });
+
+  it("annotateCheck drops a javascript: link but keeps the instructions", () => {
+    const resolved = (result) => ({
+      uiState: "RESOLVED",
+      label: "L",
+      description: null,
+      result
+    });
+    const a = annotateCheck(
+      resolved({
+        status: "FAIL",
+        severity: "Warning",
+        message: "Contacts missing email.",
+        actionUrl: jsScheme + "alert(document.cookie)",
+        actionLabel: "Fix this",
+        fixInstructions: "Open the filtered report for this account."
+      }),
+      false,
+      "OnDemand",
+      false
+    );
+    expect(a.actionUrl).toBeNull();
+    expect(a.showAction).toBe(false);
+    // The instructions survive independently so the user isn't left stranded.
+    expect(a.showFixInstructions).toBe(true);
+    expect(a.showActionBlock).toBe(true);
   });
 });

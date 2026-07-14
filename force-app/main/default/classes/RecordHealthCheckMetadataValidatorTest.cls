@@ -15,6 +15,22 @@ private class RecordHealthCheckMetadataValidatorTest {
     System.assertNotEquals(null, issues);
   }
 
+  // validateAsJson() is the Apex/CI entry point (no longer @AuraEnabled, HI-2).
+  // It must still return well-formed JSON for setup tooling and CI.
+  @isTest
+  static void validateAsJsonReturnsSerializedIssues() {
+    Test.startTest();
+    String json = RecordHealthCheckMetadataValidator.validateAsJson();
+    Test.stopTest();
+
+    System.assertNotEquals(null, json, 'validateAsJson should return JSON');
+    Object parsed = JSON.deserializeUntyped(json);
+    System.assert(
+      parsed instanceof List<Object>,
+      'validateAsJson should serialize a list of validation issues'
+    );
+  }
+
   // Guards the shipped examples: every active packaged Check Set and Rule must
   // validate clean. If this fails, an example rule has drifted out of spec and
   // would surface a runtime error to an admin who copied it. The failure

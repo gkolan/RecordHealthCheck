@@ -119,10 +119,17 @@ public with sharing class RecordHealthCheckMetadataValidator {
     return validateRecordsForTest(checkSets, allRules);
   }
 
-  /** Machine-readable entry point for setup tooling and CI. */
-  // Not cacheable: callers always get fresh results, so validation never goes stale
-  // after a metadata edit.
-  @AuraEnabled
+  /**
+   * Machine-readable entry point for setup tooling and CI.
+   *
+   * Deliberately NOT `@AuraEnabled` (HI-2): this serializes the full validation
+   * of every Check Set and Rule — query, Apex class, and formula surfaces —
+   * which is admin/setup information, not per-record data. Exposing it to the
+   * LWC/Aura surface would hand that config detail to any user who can invoke
+   * component Apex, with no permission gate. CI and setup tooling call this
+   * public static method directly from Apex (test, anonymous, or Tooling API),
+   * so no Aura exposure is needed.
+   */
   public static String validateAsJson() {
     return JSON.serialize(new RecordHealthCheckMetadataValidator().validate());
   }
