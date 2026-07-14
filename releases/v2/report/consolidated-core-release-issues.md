@@ -225,13 +225,13 @@ Codex, Cursor) so nothing is lost in the merge.
   `docs/v2/installation/upgrading-to-v2.md:41` repeats it. **Fix:** generate or drop hard-coded test
   counts; document the correct wrapper syntax; add a draft-tag install rehearsal before announcement.
 
-| ID   | High item                              | Sources       | Status |
-| ---- | -------------------------------------- | ------------- | ------ |
-| HI-1 | Apex re-verify on final SHA            | Codex, Cursor | ☐      |
-| HI-2 | Gate `validateAsJson`                  | Cursor        | ☐      |
-| HI-3 | Client-side `actionUrl` guard          | Cursor        | ☐      |
-| HI-4 | Triage 455 Moderate + 97 suppressions  | Codex         | ☐      |
-| HI-5 | Stale test counts / `runInBand` syntax | Codex, Cursor | ☐      |
+| ID   | High item                              | Sources       | Status                                                                   |
+| ---- | -------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| HI-1 | Apex re-verify on final SHA            | Codex, Cursor | ☐                                                                        |
+| HI-2 | Gate `validateAsJson`                  | Cursor        | ☑ done — dropped `@AuraEnabled`; Apex/CI-only + covering test            |
+| HI-3 | Client-side `actionUrl` guard          | Cursor        | ☑ done — `safeActionUrl` allows only `/`-path or `https:`; +6 Jest cases |
+| HI-4 | Triage 455 Moderate + 97 suppressions  | Codex         | ☐                                                                        |
+| HI-5 | Stale test counts / `runInBand` syntax | Codex, Cursor | ☐                                                                        |
 
 ---
 

@@ -3,6 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Defense-in-depth guard for the guided-remediation link. Apex already
+ * sanitizes `actionUrl`, but the component must not trust that alone before
+ * binding it to an `href`. Accept only an in-app absolute path (a single
+ * leading "/", never protocol-relative "//host") or an explicit `https:` URL;
+ * anything else — `javascript:`, `data:`, plain `http:`, mailto, relative — is
+ * dropped so the link disappears and the fix instructions stand on their own.
+ */
+export function safeActionUrl(url) {
+  if (typeof url !== "string") {
+    return null;
+  }
+  const trimmed = url.trim();
+  if (trimmed === "" || trimmed.startsWith("//")) {
+    return null;
+  }
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+  if (/^https:/i.test(trimmed)) {
+    return trimmed;
+  }
+  return null;
+}
+
 /** View-formatting helpers: map check results into template-ready flags and classes. */
 const OUTCOME_STYLES = {
   pass: { label: "Pass", modifier: "pass", message: false },
@@ -181,7 +206,7 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
   // Guided remediation: a read-only deep link and/or fix instructions the server
   // populates only on FAIL (actionUrl is blank on any other status). Instructions
   // may stand alone when the link was omitted or failed sanitization server-side.
-  const actionUrl = isResolved && result.actionUrl ? result.actionUrl : null;
+  const actionUrl = isResolved ? safeActionUrl(result.actionUrl) : null;
   const actionLabel = actionUrl ? result.actionLabel || "Fix this" : null;
   const fixInstructions =
     isResolved && result.fixInstructions ? result.fixInstructions : null;
