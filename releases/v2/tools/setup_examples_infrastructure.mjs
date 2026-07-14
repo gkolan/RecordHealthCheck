@@ -404,7 +404,7 @@ See \`removal.status\` in \`example.yml\`. Deploy \`manifest/destructiveChanges.
 
 ## 10. Technical references
 
-- [Configuration guide](https://github.com/gkolan/RecordHealthCheck/tree/main/docs/guides/configuration-guide.md)
+- [Configuration guide](https://github.com/gkolan/RecordHealthCheck/tree/main/docs/v2/guides/configuration-guide.md)
 `);
 
 write('docs/pack-template/manifest/package.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

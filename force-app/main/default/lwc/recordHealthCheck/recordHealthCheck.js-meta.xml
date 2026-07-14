@@ -19,6 +19,14 @@
         datasource="apex://RecordHealthCheckSetPicklist"
         description="Choose the Check Set to run on this record page. The list shows active Check Sets whose Record Object API Name matches this page's object. If the list is empty, create and activate a Check Set for this object under Setup - Custom Metadata Types - Record Health Check Set."
       />
+            <property
+        name="designSystem"
+        type="String"
+        label="Design System"
+        datasource="SLDS 2,SLDS 1"
+        default="SLDS 2"
+        description="Choose the SLDS visual treatment for Record Health Check. SLDS 2 is designed for the Salesforce Cosmos theme; SLDS 1 preserves the legacy styling. This setting does not change the org theme."
+      />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

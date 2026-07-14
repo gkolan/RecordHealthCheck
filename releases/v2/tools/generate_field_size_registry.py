@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate docs/reference/field-size-registry.md from shipped CMDT XML.
+"""Generate docs/v2/reference/field-size-registry.md from shipped CMDT XML.
 
 Run from the repository root with:
   python3 releases/v2/tools/generate_field_size_registry.py
@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[3]
 OBJECTS = ROOT / "force-app/main/default/objects"
-OUTPUT = ROOT / "docs/reference/field-size-registry.md"
+OUTPUT = ROOT / "docs/v2/reference/field-size-registry.md"
 NS = {"m": "http://soap.sforce.com/2006/04/metadata"}
 
 

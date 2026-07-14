@@ -4,6 +4,8 @@
  */
 
 import { LightningElement, api, track } from "lwc";
+import slds1Styles from "./recordHealthCheckSlds1.css";
+import slds2Styles from "./recordHealthCheckSlds2.css";
 import USER_ID from "@salesforce/user/Id";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
 import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
@@ -41,7 +43,24 @@ const SETUP_ERROR_CODES = new Set([
 ]);
 
 export default class RecordHealthCheck extends LightningElement {
+  static stylesheets = [slds1Styles, slds2Styles];
+
   _checkSetName;
+
+  /**
+   * Selects the custom visual treatment owned by Record Health Check. The org
+   * theme still determines which SLDS runtime Lightning base components use.
+   */
+  @api designSystem = "SLDS 2";
+
+  get themeClass() {
+    const normalizedVersion = String(
+      this.designSystem || "SLDS 2"
+    ).toUpperCase();
+    return normalizedVersion === "SLDS 1"
+      ? "rhc-theme rhc-theme--slds1"
+      : "rhc-theme rhc-theme--slds2";
+  }
 
   @api
   get checkSetName() {

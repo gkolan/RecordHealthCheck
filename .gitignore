@@ -117,3 +117,6 @@ recycle-bin/
 # Examples library lives in its own repository (RecordHealthCheck-Examples).
 # A local checkout may sit here for convenience but must never be tracked in core (§3.1 boundary).
 /RecordHealthCheck-Examples/
+
+# Personal, portable scratch-org setup kit — never tracked; meant to be movable out of the repo.
+/scratch-org-setup/

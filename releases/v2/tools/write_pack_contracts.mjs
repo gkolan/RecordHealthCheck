@@ -303,7 +303,7 @@ ${removal}
 
 ## 10. Technical references
 
-- [Record Health Check configuration guide](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/guides/configuration-guide.md)
+- [Record Health Check configuration guide](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/v2/guides/configuration-guide.md)
 - [Pattern library](../../docs/pattern-library/index.md)
 - Pack contract: \`example.yml\`
 `;

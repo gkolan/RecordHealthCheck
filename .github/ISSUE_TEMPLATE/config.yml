@@ -7,5 +7,5 @@ contact_links:
     url: https://github.com/gkolan/RecordHealthCheck/security/advisories/new
     about: Report a vulnerability privately. Do not open a public issue.
   - name: Documentation
-    url: https://github.com/gkolan/RecordHealthCheck/tree/main/docs/examples/index.md
+    url: https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/examples-index.md
     about: Installation, admin, and design docs — many questions are answered here.

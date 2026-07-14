@@ -1,0 +1,51 @@
+.rhc-theme--slds2 {
+  --rhc-theme-card-background: var(--slds-g-color-surface-container-1, #ffffff);
+  --rhc-theme-card-border: transparent;
+  --rhc-theme-card-radius: var(--slds-g-radius-border-4, 1rem);
+  --rhc-theme-card-shadow: none;
+  --rhc-theme-header-background: transparent;
+  --rhc-theme-row-hover: var(--slds-g-color-surface-container-2, #f7f7f7);
+  --rhc-theme-text: var(--slds-g-color-on-surface-1, #181818);
+  --rhc-theme-text-weak: var(--slds-g-color-on-surface-2, #5c5c5c);
+}
+
+.rhc-theme--slds2 .rhc-header {
+  position: relative;
+  padding-block: 1rem;
+  border-bottom: 0;
+}
+
+.rhc-theme--slds2 .rhc-header::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: var(--slds-g-color-border-base-2, #c9c9c9);
+}
+
+/* Breathing room between the header divider and the first check row, matching
+   the gap used between rows. */
+.rhc-theme--slds2 .rhc-list {
+  padding-top: 0.5rem;
+}
+
+/* No rules between rows in SLDS 2 — rows are separated by whitespace instead.
+   Override the base border-top and add a gap between adjacent rows so each
+   check reads as its own block. */
+.rhc-theme--slds2 .rhc-row + .rhc-row {
+  border-top: 0;
+  margin-top: 0.5rem;
+}
+
+/* Drop the horizontal rule shown before the Found / Expected comparison; with
+   no row borders it reads as visual clutter. */
+.rhc-theme--slds2 .rhc-row__divider {
+  display: none;
+}
+
+.rhc-theme--slds2 .rhc-stats-bar {
+  margin: 0.75rem;
+  border-radius: var(--slds-g-radius-border-3, 0.75rem);
+}

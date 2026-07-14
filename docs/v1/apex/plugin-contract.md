@@ -34,11 +34,11 @@ Source: [`RecordHealthCheckRule.cls`](../../force-app/main/default/classes/Recor
 | `status` | **Yes** | `PASS` or `FAIL` for normal checks |
 | `actualValue` | **Required for `PASS` / `FAIL`** | **Found** comparison value. Blank determinate Apex results are rejected with `APEX_EVALUATOR_ERROR`. |
 | `expectedValue` | **Required for `PASS` / `FAIL`** | **Expected** comparison value. Blank determinate Apex results are rejected with `APEX_EVALUATOR_ERROR`. |
-| `actualValueSource` | Optional | Internal detail for the Found side; surfaced as `actualValueDetail` in the nested `[RHC] Source detail` **browser console** group, never on the card. See [Troubleshooting Details](../guides/show-diagnostics.md#what-you-see-in-the-browser-console) for the conditions that reveal it. |
-| `expectedValueSource` | Optional | Internal detail for the Expected side; surfaced as `expectedValueDetail` in the same console group, under the same conditions. |
+| `actualProvenance` | Optional | Internal detail for the Found side; surfaced as `actualValueDetail` in the nested `[RHC] Source detail` **browser console** group, never on the card. See [Troubleshooting Details](../guides/debug-mode.md#what-you-see-in-the-browser-console) for the conditions that reveal it. |
+| `expectedProvenance` | Optional | Internal detail for the Expected side; surfaced as `expectedValueDetail` in the same console group, under the same conditions. |
 | `message` | Optional | Used on `FAIL` when non-blank; else metadata message |
 
-Evaluator sets `label`, `severity`, `durationMs`, etc. Details: [Apex plugin reference 6](plugin-reference.md#6-returning-recordhealthcheckresult).
+Dispatcher sets `label`, `severity`, `durationMs`, etc. Details: [Apex plugin reference 6](plugin-reference.md#6-returning-recordhealthcheckresult).
 
 ## Apex Settings JSON
 
@@ -50,12 +50,12 @@ Optional JSON **object** on the Rule → `context.parameters`. Defaults live in 
 - `public with sharing class` on the plugin
 - Read-time advisory: avoid DML/callouts unless intentional
 
-## Evaluator flow
+## Dispatcher flow
 
 ```text
-Rule (Apex) → RecordHealthCheckApexEvaluator
+Rule (Apex) → RecordHealthCheckApexEvaluatorDispatcher
   → Type.forName(ApexClass__c)
-  → parse ApexParametersJson__c
+  → parse ApexSettingsJson__c
   → build RecordHealthCheckContext
   → plugin.evaluate(context)
   → finalize (severity, message, validate status)

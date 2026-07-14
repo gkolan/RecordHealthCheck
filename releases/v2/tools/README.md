@@ -19,7 +19,7 @@ and verification. This is the home for any script an agent or human writes that 
 
 - One-off temporary files or scratch output — use your session scratchpad, not the repo.
 - Generated **output** artifacts themselves — those belong next to what they document (a size
-  registry under `docs/reference/`, an audit under `../audits/`). `tools/` holds the _generator_,
+  registry under `docs/v2/reference/`, an audit under `../audits/`). `tools/` holds the _generator_,
   the output lives where it is consumed.
 
 ## Conventions

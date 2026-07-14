@@ -28,7 +28,7 @@ contributing, you agree that your contributions are licensed under the
    - The **Check Set** and **Rule** Developer Names involved (not screenshots of labels only).
    - The object and a sketch of the field/query values that triggered it.
    - Whether **Show Troubleshooting Details** was on, and the `[RHC]` summary from the browser console
-     (see [Troubleshooting Details](docs/guides/debug-mode.md)). **Redact record data and Org IDs.**
+     (see [Troubleshooting Details](docs/v2/guides/show-diagnostics.md)). **Redact record data and Org IDs.**
    - Org type (Production / Sandbox / Scratch) and API version.
 4. Submit. A maintainer will triage and may ask for a minimal reproduction.
 
@@ -86,7 +86,7 @@ feedback by pushing more commits to the same branch.
   validation, reason-code documentation, and both positive and misconfiguration
   tests. Do not add another parser or comparison operator copy: extend the shared modules.
 
-See [`docs/reference/architecture-map.md`](docs/reference/architecture-map.md) to find where things live.
+See [`docs/v2/reference/architecture-map.md`](docs/v2/reference/architecture-map.md) to find where things live.
 
 ## Documentation changes
 
@@ -98,4 +98,4 @@ Docs must match the code at the same commit. Follow these authoring standards:
 - **No em-dashes**: replace each em-dash by hand with a period, comma, or parentheses, never a blanket swap to a colon.
 
 The design specification is canonical
-in [`docs/reference/record-health-check-design-spec.md`](docs/reference/record-health-check-design-spec.md).
+in [`docs/v2/reference/record-health-check-design-spec.md`](docs/v2/reference/record-health-check-design-spec.md).
