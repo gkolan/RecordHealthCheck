@@ -131,6 +131,23 @@ Codex, Cursor) so nothing is lost in the merge.
      `manifest/package-core.xml` for a clean install, and correct the "one hero" claim.
 - **Note:** Prior §3 audit language claiming these were "moved" is inaccurate while they remain in
   Core — correct that audit wording too (Cursor §4.5).
+- **Decision (2026-07-14):** option 1 (boundary completion), executed in two phases.
+  - **Phase 1 — done (verifiable off-org):** doc-comment in `RecordHealthCheck.cls:11` repointed to
+    the hero set; the two optional example Apex classes + tests
+    (`AccountStrategicReadinessCheck`, `ApprovalInactiveApproverCheck`) removed from
+    `manifest/package-core.xml`; §3 boundary-audit "moved" wording corrected to "deferred".
+  - **Phase 2 — deferred to the HI-1 org session (Apex tests run only in an org):**
+    1. Build clearly-named internal fixture CMDT (a Core-only, non-cataloged set + rules) that
+       exercise every path the current tests cover: QUERY (`Account_QC_IsNotBlank`), FORMULA,
+       COMPARE, dependency-cache + remediation fields (`Account_DQ_BillingCity`), coverage variety,
+       and the missing-rule case (`Does_Not_Exist`).
+    2. Repoint the **7 coupled test classes** — `RecordHealthCheckEngineTest`, `…CoverageTest`,
+       `…ControllerTest`, `…ConfigServiceTest`, `…LoggerTest`, `…FacadeTest`,
+       `…LifecyclePublisherTest` — from the sample names to the fixtures.
+    3. Delete the 14 non-hero sets + 123 rules, the two example `.cls`+test sources, and the 14
+       `manifest/package-Account_*.xml` files.
+    4. Re-run the full Apex suite in a scratch org; confirm green **and** that Apex coverage still
+       clears the gate before tagging.
 
 ### BLK-10 — Release-gate workflow calls a gitignored Apex script
 
@@ -150,19 +167,19 @@ Codex, Cursor) so nothing is lost in the merge.
 - **Fix:** Run the smoke + rollback scripts in disposable orgs, attach sanitized evidence, review the
   final diff, approve exceptions explicitly, then tag the reviewed SHA.
 
-| ID     | Blocker                                 | Sources              | Status                                                          |
-| ------ | --------------------------------------- | -------------------- | --------------------------------------------------------------- |
-| BLK-1  | Untracked SLDS CSS imports              | C-Rel, Cursor        | ☑ done — both CSS modules tracked in `a1243e3`                  |
-| BLK-2  | Uncommitted V2 changeset                | C-Rel, Codex, Cursor | ☑ done — release snapshot committed (`a1243e3`)                 |
-| BLK-3  | GitHub installs v1.2.0 / no tag         | all four             | ☐ (publish step — user-driven)                                  |
-| BLK-4  | `check:namespaced-tokens` fails         | Codex                | ☑ done — excludes `docs/v1`; gate exits 0                       |
-| BLK-5  | `prettier:verify` fails                 | C-Rel, Codex         | ☑ done — gate passes                                            |
-| BLK-6  | Coverage false green (0%)               | Codex                | ☑ done — real instrumentation + threshold bites                 |
-| BLK-7  | `rhcRun` tokens error at runtime        | Cursor               | ☑ done — `rhcRun` removed from allowlist; validation rejects it |
-| BLK-8  | Design System feature undocumented      | C-Rel, C-Doc         | ☐                                                               |
-| BLK-9  | "One hero set" vs 15 sets in Core       | Codex, Cursor        | ☐ (decision: trim Core to hero set)                             |
-| BLK-10 | Workflow calls gitignored script        | Cursor               | ☐                                                               |
-| BLK-11 | Manual smoke / rollback / PR / tag open | Codex, Cursor        | ☐ (org + human — user-driven)                                   |
+| ID     | Blocker                                 | Sources              | Status                                                                                                                                                     |
+| ------ | --------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BLK-1  | Untracked SLDS CSS imports              | C-Rel, Cursor        | ☑ done — both CSS modules tracked in `a1243e3`                                                                                                             |
+| BLK-2  | Uncommitted V2 changeset                | C-Rel, Codex, Cursor | ☑ done — release snapshot committed (`a1243e3`)                                                                                                            |
+| BLK-3  | GitHub installs v1.2.0 / no tag         | all four             | ☐ (publish step — user-driven)                                                                                                                             |
+| BLK-4  | `check:namespaced-tokens` fails         | Codex                | ☑ done — excludes `docs/v1`; gate exits 0                                                                                                                  |
+| BLK-5  | `prettier:verify` fails                 | C-Rel, Codex         | ☑ done — gate passes                                                                                                                                       |
+| BLK-6  | Coverage false green (0%)               | Codex                | ☑ done — real instrumentation + threshold bites                                                                                                            |
+| BLK-7  | `rhcRun` tokens error at runtime        | Cursor               | ☑ done — `rhcRun` removed from allowlist; validation rejects it                                                                                            |
+| BLK-8  | Design System feature undocumented      | C-Rel, C-Doc         | ☐                                                                                                                                                          |
+| BLK-9  | "One hero set" vs 15 sets in Core       | Codex, Cursor        | ◑ partial — doc-comment + `package-core.xml` cleaned, audit wording corrected; **CMDT deletion + 7-test fixture migration deferred to org session (HI-1)** |
+| BLK-10 | Workflow calls gitignored script        | Cursor               | ☐                                                                                                                                                          |
+| BLK-11 | Manual smoke / rollback / PR / tag open | Codex, Cursor        | ☐ (org + human — user-driven)                                                                                                                              |
 
 ---
 
