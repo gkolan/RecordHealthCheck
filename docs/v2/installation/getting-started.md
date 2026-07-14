@@ -109,7 +109,8 @@ The Permission Set named `Record_Health_Check_User` grants Apex class access to 
 
    If the list is empty, no active Check Set targets this object yet. Create or activate one under **Setup → Custom Metadata Types → Record Health Check Set**.
 
-5. **Save** and **Activate** the page. Assign the page to the right app and profiles if prompted.
+5. _(Optional)_ Set **Design System** to **SLDS 2** (default) or **SLDS 1** to match the page's visual style. This changes only the card, not your org theme — see [Design System](../guides/design-system.md).
+6. **Save** and **Activate** the page. Assign the page to the right app and profiles if prompted.
 
 The component only works on **record pages** because it needs the current record’s Id.
 
