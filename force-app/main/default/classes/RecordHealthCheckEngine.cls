@@ -150,10 +150,10 @@ public with sharing class RecordHealthCheckEngine {
     );
     Long startMs = System.currentTimeMillis();
 
-    // do NOT reset the FormulaEval budget here. Salesforce's 100-call
-    // The platform FormulaEval limit is transaction-wide and only clears at the
-    // end of the Apex transaction, not per check, so the framework counter must
-    // accumulate across the whole transaction too. Resetting it per check would
+    // do NOT reset the FormulaEval budget here. The platform's 100-call
+    // FormulaEval limit is transaction-wide and only clears at the end of the
+    // Apex transaction, not per check, so the framework counter must accumulate
+    // across the whole transaction too. Resetting it per check would
     // let any caller that loops evaluate() in one transaction (Flow, batch,
     // anonymous Apex) drive the framework count back to zero while the real
     // platform count keeps climbing — the guard would then green-light the call

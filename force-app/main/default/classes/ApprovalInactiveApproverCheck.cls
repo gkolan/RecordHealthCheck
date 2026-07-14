@@ -232,8 +232,7 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
           settings.maxNames = parsed;
         }
       } catch (Exception ex) {
-        // Invalid JSON settings are non-fatal; keep the default maxNames value.
-        settings.maxNames = settings.maxNames;
+        // Invalid maxNames is non-fatal: leave settings.maxNames at its default.
       }
     }
     return settings;
