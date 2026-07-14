@@ -216,13 +216,18 @@ V2 should replace ambiguous flat tokens such as `{!Id}`, `{!Name}`, and `{!Owner
 {!rhcResult.failedRecordCount}
 {!rhcResult.totalRecordCount}
 {!rhcResult.reasonCode}
-{!rhcRun.runId}
-{!rhcRun.source}
 ```
+
+> **Deferred: `rhcRun.*`** — the run-context namespace (`{!rhcRun.runId}`,
+> `{!rhcRun.source}`, …) is designed but **not shipped in v2.0.0**. Run context
+> is not yet populated on the evaluate/`runSet` paths, so the namespace is
+> intentionally absent from the token allowlist and config validation rejects
+> those tokens rather than accepting one that would fail at runtime (BLK-7).
+> Re-add the namespace and its property allowlist together with the wiring.
 
 This is an architectural change, not merely a spelling change. The namespace identifies the data source, prevents collisions between record fields and framework values, allows the validator to determine when a token is available, and leaves room for future token families without guessing what a bare name means.
 
-`rhcRule`, `rhcSet`, `rhcResult`, and `rhcRun` are deliberately product-qualified. Generic `{!check.*}`, `{!set.*}`, `{!result.*}`, and `{!run.*}` namespaces are not supported because those words can refer to unrelated concepts in formulas, extensions, or future host applications.
+`rhcRule`, `rhcSet`, `rhcResult`, and (when wired) `rhcRun` are deliberately product-qualified. Generic `{!check.*}`, `{!set.*}`, `{!result.*}`, and `{!run.*}` namespaces are not supported because those words can refer to unrelated concepts in formulas, extensions, or future host applications.
 
 The property name must distinguish Setup identity from user-facing presentation:
 

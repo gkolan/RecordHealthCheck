@@ -83,27 +83,22 @@ private class RecordHealthCheckTemplateServiceTest {
   }
 
   @IsTest
-  static void resolvesRunLifecycleProperties() {
-    RecordHealthCheckRunContext run = new RecordHealthCheckRunContext(
-      'durable-1',
-      'APEX'
+  static void rejectsDeferredRunNamespace() {
+    // The `rhcRun` namespace is deferred (BLK-7): validation must reject its
+    // tokens so config never accepts a token that would fail at runtime.
+    List<RecordHealthCheckTokenIssue> issues = RecordHealthCheckTemplateService.validate(
+      '{!rhcRun.runId}',
+      'DISPLAY'
     );
-    RecordHealthCheckMergeContext context = new RecordHealthCheckMergeContext();
-    context.run = run;
     System.assertEquals(
-      'durable-1/APEX',
-      RecordHealthCheckTemplateService.resolveDisplay(
-        '{!rhcRun.runId}/{!rhcRun.source}',
-        context
-      )
+      1,
+      issues.size(),
+      'Expected exactly one issue for the deferred rhcRun namespace'
     );
-    run.complete();
-    System.assertNotEquals(
-      null,
-      RecordHealthCheckTemplateService.resolveDisplay(
-        '{!rhcRun.completedAt}',
-        context
-      )
+    System.assertEquals(
+      'UNSUPPORTED_TOKEN_NAMESPACE',
+      issues[0].reasonCode,
+      'rhcRun should be reported as an unsupported namespace'
     );
   }
 

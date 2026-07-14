@@ -4,8 +4,7 @@ public class RecordHealthCheckTokenRegistry {
     'record',
     'rhcRule',
     'rhcSet',
-    'rhcResult',
-    'rhcRun'
+    'rhcResult'
   };
   public static final Set<String> RULE_PROPERTIES = new Set<String>{
     'developerName',
@@ -32,13 +31,11 @@ public class RecordHealthCheckTokenRegistry {
     'totalRecordCount',
     'reasonCode'
   };
-  public static final Set<String> RUN_PROPERTIES = new Set<String>{
-    'runId',
-    'source',
-    'startedAt',
-    'completedAt',
-    'durationMs'
-  };
+  // NOTE: the `rhcRun` token namespace is deferred until run context is
+  // populated on the evaluate/runSet paths (BLK-7). It is intentionally absent
+  // from NAMESPACES so config validation rejects `{!rhcRun.*}` rather than
+  // accepting a token that would always fail at runtime. Re-add the namespace
+  // and its property allowlist together with the wiring.
 
   public static Boolean contains(String namespaceName, String property) {
     if (namespaceName == 'record')
@@ -49,8 +46,6 @@ public class RecordHealthCheckTokenRegistry {
       return SET_PROPERTIES.contains(property);
     if (namespaceName == 'rhcResult')
       return RESULT_PROPERTIES.contains(property);
-    if (namespaceName == 'rhcRun')
-      return RUN_PROPERTIES.contains(property);
     return false;
   }
 }

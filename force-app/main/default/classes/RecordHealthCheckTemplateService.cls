@@ -224,9 +224,11 @@ public class RecordHealthCheckTemplateService {
         unavailable(token, 'The result is not finalized.');
       return resultValue(context, token.propertyPath);
     }
-    if (context.run == null)
-      unavailable(token, 'Run context is not available.');
-    return runValue(context.run, token.propertyPath, token);
+    // Validation only lets allowlisted namespaces reach here; anything else
+    // (e.g. the deferred `rhcRun`) is treated as unavailable rather than
+    // resolved. See RecordHealthCheckTokenRegistry (BLK-7).
+    unavailable(token, 'The token namespace is not supported.');
+    return null;
   }
 
   private static void unavailable(
@@ -311,27 +313,6 @@ public class RecordHealthCheckTemplateService {
     if (property == 'totalRecordCount')
       return context.totalRecordCount;
     return context.result.reasonCode;
-  }
-
-  private static Object runValue(
-    RecordHealthCheckRunContext run,
-    String property,
-    RecordHealthCheckToken token
-  ) {
-    if (property == 'runId')
-      return run.runId;
-    if (property == 'source')
-      return run.source;
-    if (property == 'startedAt')
-      return run.startedAt;
-    if (property == 'completedAt') {
-      if (run.completedAt == null)
-        unavailable(token, 'The run is not complete.');
-      return run.completedAt;
-    }
-    if (run.durationMs == null)
-      unavailable(token, 'The run is not complete.');
-    return run.durationMs;
   }
 
   private static Object dynamicGet(SObject source, String fieldName) {
