@@ -20,6 +20,14 @@ TARGETS = (
     ROOT / "force-app" / "main" / "default" / "classes",
     ROOT / "docs",
 )
+# The v1 docs are a frozen archive: they describe the v1 product, where flat
+# `{!Field}` tokens were the real syntax. They must keep it, so they are never
+# scanned or rewritten. (BLK-4: policy (a) — immutable v1 archive.)
+ARCHIVE = ROOT / "docs" / "v1"
+# V2 docs occasionally need to *show* a rejected legacy token as an example
+# (e.g. the reason-codes catalog). A line carrying this marker is left as-is so
+# the gate can't be re-broken by a legitimate documentation example.
+ALLOW_MARKER = "legacy-token-ok"
 
 
 def replacement(body: str) -> str | None:
@@ -32,6 +40,8 @@ def replacement(body: str) -> str | None:
 def files():
     for target in TARGETS:
         for path in target.rglob("*"):
+            if ARCHIVE == path or ARCHIVE in path.parents:
+                continue  # frozen v1 archive keeps its original flat-token syntax
             if path.is_file() and path.suffix in {
                 ".cls",
                 ".md",
@@ -56,6 +66,11 @@ def main() -> int:
             new = replacement(match.group(1))
             if new is None:
                 return match.group(0)
+            line_start = original.rfind("\n", 0, match.start()) + 1
+            line_end = original.find("\n", match.end())
+            line = original[line_start : line_end if line_end != -1 else None]
+            if ALLOW_MARKER in line:
+                return match.group(0)  # documented example of a rejected token
             changes.append(
                 {
                     "file": str(path.relative_to(ROOT)),

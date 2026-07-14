@@ -150,19 +150,19 @@ Codex, Cursor) so nothing is lost in the merge.
 - **Fix:** Run the smoke + rollback scripts in disposable orgs, attach sanitized evidence, review the
   final diff, approve exceptions explicitly, then tag the reviewed SHA.
 
-| ID     | Blocker                                 | Sources              | Status |
-| ------ | --------------------------------------- | -------------------- | ------ |
-| BLK-1  | Untracked SLDS CSS imports              | C-Rel, Cursor        | ☐      |
-| BLK-2  | Uncommitted V2 changeset                | C-Rel, Codex, Cursor | ☐      |
-| BLK-3  | GitHub installs v1.2.0 / no tag         | all four             | ☐      |
-| BLK-4  | `check:namespaced-tokens` fails         | Codex                | ☐      |
-| BLK-5  | `prettier:verify` fails                 | C-Rel, Codex         | ☐      |
-| BLK-6  | Coverage false green (0%)               | Codex                | ☐      |
-| BLK-7  | `rhcRun` tokens error at runtime        | Cursor               | ☐      |
-| BLK-8  | Design System feature undocumented      | C-Rel, C-Doc         | ☐      |
-| BLK-9  | "One hero set" vs 15 sets in Core       | Codex, Cursor        | ☐      |
-| BLK-10 | Workflow calls gitignored script        | Cursor               | ☐      |
-| BLK-11 | Manual smoke / rollback / PR / tag open | Codex, Cursor        | ☐      |
+| ID     | Blocker                                 | Sources              | Status                                          |
+| ------ | --------------------------------------- | -------------------- | ----------------------------------------------- |
+| BLK-1  | Untracked SLDS CSS imports              | C-Rel, Cursor        | ☑ done — both CSS modules tracked in `a1243e3`  |
+| BLK-2  | Uncommitted V2 changeset                | C-Rel, Codex, Cursor | ☑ done — release snapshot committed (`a1243e3`) |
+| BLK-3  | GitHub installs v1.2.0 / no tag         | all four             | ☐ (publish step — user-driven)                  |
+| BLK-4  | `check:namespaced-tokens` fails         | Codex                | ☑ done — excludes `docs/v1`; gate exits 0       |
+| BLK-5  | `prettier:verify` fails                 | C-Rel, Codex         | ☑ done — gate passes                            |
+| BLK-6  | Coverage false green (0%)               | Codex                | ☑ done — real instrumentation + threshold bites |
+| BLK-7  | `rhcRun` tokens error at runtime        | Cursor               | ☐                                               |
+| BLK-8  | Design System feature undocumented      | C-Rel, C-Doc         | ☐                                               |
+| BLK-9  | "One hero set" vs 15 sets in Core       | Codex, Cursor        | ☐ (decision: trim Core to hero set)             |
+| BLK-10 | Workflow calls gitignored script        | Cursor               | ☐                                               |
+| BLK-11 | Manual smoke / rollback / PR / tag open | Codex, Cursor        | ☐ (org + human — user-driven)                   |
 
 ---
 
