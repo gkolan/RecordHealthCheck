@@ -3,11 +3,11 @@
     <fullName>FixMessage__c</fullName>
     <label>Fix Message</label>
     <description
-  >Optional user-facing guidance shown from a failed check's detail view, telling users how to resolve the issue. It is advisory and read-only - Record Health Check never updates records.</description>
+  >Optional next-step guidance displayed in the detail for a failed check. Tell the user what to review or change, using language that is specific to the failed requirement. Pair it with an Action URL when a useful page, record, report, or playbook can take the user directly to that next step.</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>3</visibleLines>
     <inlineHelpText
-  >Optional. Tell users how to fix the failed check. Guidance only - nothing is changed automatically.</inlineHelpText>
+  >Optional guidance shown after a failure. Give the user a specific next step, such as "Review open Opportunities and their Amount values."</inlineHelpText>
     <required>false</required>
 </CustomField>

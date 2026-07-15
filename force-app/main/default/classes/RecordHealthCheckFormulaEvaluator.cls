@@ -4,6 +4,14 @@
  */
 
 public with sharing class RecordHealthCheckFormulaEvaluator {
+  private RecordHealthCheckRunContext runContext;
+
+  public RecordHealthCheckFormulaEvaluator withRunContext(
+    RecordHealthCheckRunContext value
+  ) {
+    runContext = value;
+    return this;
+  }
   // Track FormulaEval calls for the whole Apex transaction to avoid hitting
   // Salesforce's 100-call platform limit, which is itself transaction-wide
   // and uncatchable. This static accumulates for the life of the transaction and
@@ -42,7 +50,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   ) {
     Long startMs = System.currentTimeMillis();
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.checkDeveloperName = rule.DeveloperName;
+    result.ruleDeveloperName = rule.DeveloperName;
     result.label = rule.CheckTitle__c;
     result.priority = rule.EvaluationOrder__c;
     result.evaluatorType = 'FORMULA';
@@ -476,7 +484,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   public String resolveMergeFields(String template, SObject record) {
     return RecordHealthCheckTemplateService.resolveDisplay(
       template,
-      new RecordHealthCheckMergeContext().withRecord(record)
+      new RecordHealthCheckMergeContext().withRecord(record).withRun(runContext)
     );
   }
 
@@ -493,6 +501,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         .withRecord(record)
         .withRule(rule)
         .withResult(result, resultFinalized)
+        .withRun(runContext)
     );
   }
 
@@ -505,7 +514,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   public String resolveUrlMergeFields(String template, SObject record) {
     return RecordHealthCheckTemplateService.resolveUrl(
       template,
-      new RecordHealthCheckMergeContext().withRecord(record)
+      new RecordHealthCheckMergeContext().withRecord(record).withRun(runContext)
     );
   }
 
@@ -521,6 +530,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         .withRecord(record)
         .withRule(rule)
         .withResult(result, true)
+        .withRun(runContext)
     );
   }
 

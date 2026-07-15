@@ -45,6 +45,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `RULE_INACTIVE` | `UNABLE_TO_EVALUATE` | Rule is inactive. |
 | `INVALID_CHECK_TYPE` | `UNABLE_TO_EVALUATE` | Evaluation Type missing or unrecognized. |
 | `INVALID_CONFIG` | definition / unable | Invalid Check Set display or identity configuration. |
+| `MISSING_REQUIRED_FIELD` | validation | A required Check Set or Rule field (e.g. Base Object API Name, Card Title) is blank (deploy/CI validator). |
 | `CHECK_LIMIT_EXCEEDED` | definition / validation | More than 25 active Rules selected for a run (runtime omit + validator). |
 | `INVALID_DEPENDENCY` | validation | Prerequisite metadata is invalid (deploy/CI validator). |
 
@@ -122,7 +123,8 @@ These often appear on the card chrome rather than a single Rule row:
 
 ## Related
 
-- [Programmatic API and Flow](../apex/programmatic-api.md)
+- [Apex API](../apex/public-api.md)
+- [Flow actions](../flow/actions.md)
 - [Lifecycle events](lifecycle-events.md)
 - [Show Diagnostics](../guides/show-diagnostics.md)
 - [Design Specification](record-health-check-design-spec.md)

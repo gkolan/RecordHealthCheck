@@ -3,7 +3,7 @@
     <fullName>Category__c</fullName>
     <label>Category</label>
     <description
-  >Optional grouping used to organize checks within a longer card. Choose the outcome this check protects: "Completeness", "Consistency", "Timeliness", "Eligibility", "Readiness", "Risk", "Compliance", or "Relationship coverage". Leave blank to leave the check ungrouped. Category is display grouping only and has no effect on whether the check passes or fails.</description>
+  >Optional classification for the business outcome protected by this Rule, such as Completeness, Readiness, Risk, or Compliance. Use it to make metadata easier to find, report on, and reuse. The V2 card does not currently group checks by Category. This choice does not change evaluation, severity, order, or the result shown to users.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -21,6 +21,6 @@
         >false</default></value></valueSetDefinition>
     </valueSet>
     <inlineHelpText
-  >Optional. Groups related checks on the card by outcome, e.g. "Completeness" or "Compliance". Blank = ungrouped. Does not affect pass/fail.</inlineHelpText>
+  >Optional business-outcome classification. The V2 card does not currently group checks by this value, and it does not affect the result.</inlineHelpText>
     <required>false</required>
 </CustomField>

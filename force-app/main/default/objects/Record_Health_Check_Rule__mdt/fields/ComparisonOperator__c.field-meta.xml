@@ -31,6 +31,6 @@
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >Required for query checks (no default). "Is empty"/"Is not empty" need no value. "List contains any"/"List contains none": Verify with a query, "Compare as lists", record value from "Value to find in the list (formula)", list from "Comparison Query". "Lists overlap"/"Lists contain all"/"Lists match exactly": Compare two queries with "Compare as lists".</inlineHelpText>
+  >Required for query checks. Choose how Found is compared with Expected. Empty operators need no Expected value; list operators require "Compare as lists".</inlineHelpText>
     <required>false</required>
 </CustomField>

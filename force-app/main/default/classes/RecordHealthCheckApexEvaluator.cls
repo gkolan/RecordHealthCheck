@@ -14,6 +14,13 @@ public with sharing class RecordHealthCheckApexEvaluator {
 
   private RecordHealthCheckFormulaEvaluator formulaEvaluator = new RecordHealthCheckFormulaEvaluator();
 
+  public RecordHealthCheckApexEvaluator withRunContext(
+    RecordHealthCheckRunContext value
+  ) {
+    formulaEvaluator.withRunContext(value);
+    return this;
+  }
+
   // ─── Public entry point ───────────────────────────────────────────────────
 
   public RecordHealthCheckResult evaluate(
@@ -23,7 +30,7 @@ public with sharing class RecordHealthCheckApexEvaluator {
   ) {
     Long startMs = System.currentTimeMillis();
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.checkDeveloperName = rule.DeveloperName;
+    result.ruleDeveloperName = rule.DeveloperName;
     result.label = rule.CheckTitle__c;
     result.priority = rule.EvaluationOrder__c;
     result.evaluatorType = 'APEX';
@@ -141,7 +148,7 @@ public with sharing class RecordHealthCheckApexEvaluator {
     );
     context.record = record;
     context.parameters = parameters;
-    context.checkDeveloperName = rule.DeveloperName;
+    context.ruleDeveloperName = rule.DeveloperName;
 
     return invokeAndFinalize(
       (RecordHealthCheckRule) instance,
@@ -252,7 +259,7 @@ public with sharing class RecordHealthCheckApexEvaluator {
     }
 
     // Ensure identifying fields are always set from metadata (Apex may omit them)
-    apexResult.checkDeveloperName = rule.DeveloperName;
+    apexResult.ruleDeveloperName = rule.DeveloperName;
     apexResult.label = rule.CheckTitle__c;
     apexResult.priority = rule.EvaluationOrder__c;
     apexResult.evaluatorType = 'APEX';

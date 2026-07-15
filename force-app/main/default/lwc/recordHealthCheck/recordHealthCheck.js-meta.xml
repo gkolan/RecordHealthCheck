@@ -23,9 +23,9 @@
         name="designSystem"
         type="String"
         label="Design System"
-        datasource="SLDS 2,SLDS 1"
-        default="SLDS 2"
-        description="Choose the SLDS visual treatment for Record Health Check. SLDS 2 is designed for the Salesforce Cosmos theme; SLDS 1 preserves the legacy styling. This setting does not change the org theme."
+        datasource="SLDS 1,SLDS 2"
+        default="SLDS 1"
+        description="Choose the SLDS visual treatment for Record Health Check. SLDS 1 is the default while SLDS 2 adoption is still new; choose SLDS 2 for pages using the Salesforce Cosmos theme. This setting does not change the org theme."
       />
         </targetConfig>
     </targetConfigs>

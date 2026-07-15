@@ -12,6 +12,8 @@ private class RecordHealthCheckConfigServiceTest {
 
   @isTest
   static void getDefinitionResponseLoadsSettingsAndAppliesCheckLimit() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
@@ -79,6 +81,8 @@ private class RecordHealthCheckConfigServiceTest {
 
   @isTest
   static void getDefinitionResponseRejectsObjectMismatch() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
     try {
@@ -131,6 +135,6 @@ private class RecordHealthCheckConfigServiceTest {
 
     System.assertEquals('UNABLE_TO_EVALUATE', result.status);
     System.assertEquals('INVALID_SOQL_TEMPLATE', result.reasonCode);
-    System.assertEquals('Invalid_Query_Test', result.checkDeveloperName);
+    System.assertEquals('Invalid_Query_Test', result.ruleDeveloperName);
   }
 }

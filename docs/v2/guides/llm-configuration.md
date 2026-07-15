@@ -1,12 +1,18 @@
-# Record Health Check: LLM Configuration Guide
+# Record Health Check: LLM configuration guide
 
 **Version:** 2.0.0 (2026-07-13)
 
 This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Getting Started: Step 4](../installation/getting-started.md#step-4-create-your-first-rule). For every field explained, see the [Configuration Guide](configuration-guide.md). For formal contracts, see the [Design Specification](../reference/record-health-check-design-spec.md).
 
-## 1. What this product does (one paragraph)
+## 1. What this product does
 
-Record Health Check is a **read-time, advisory** Lightning card on **record pages**. Check Sets (`Record_Health_Check_Set__mdt`) and Rules (`Record_Health_Check_Rule__mdt`) live in Custom Metadata. The component evaluates the current record and shows each Rule as **Pass**, **Fail**, **Skipped**, **Unable to evaluate**, or **Error**. It does **not** block saves. Use it when data *should* be healthy but must not hard-stop users (related-record checks, aggregates, coaching on existing records).
+Record Health Check is a **read-time, advisory** Lightning card on **record pages**. Check Sets
+(`Record_Health_Check_Set__mdt`) and Rules (`Record_Health_Check_Rule__mdt`) live in Custom Metadata.
+
+The component evaluates the current record and shows each Rule as **Pass**, **Fail**, **Skipped**,
+**Unable to evaluate**, or **Error**. It does not block saves. Use it when data should be healthy but
+must not hard-stop users, including related-record checks, aggregates, and coaching on existing
+records.
 
 ## 2. System prompt (copy into a Gemini gem or custom GPT)
 
@@ -30,7 +36,7 @@ Table: API field name | Value | Notes
 Name the pattern (e.g. "QUERY + ONE_RESULT + RECORD_FORMULA") and cite a shipped DeveloperName if one exists.
 
 ## Class sketch (Apex only)
-When EvaluationType__c = APEX: list SOQL/objects to read, JSON keys for ApexParametersJson__c, PASS/FAIL logic, and the required actualValue/expectedValue fields. Cite shipped class if applicable.
+When EvaluationType__c = APEX: list SOQL/objects to read, JSON keys for ApexParametersJson__c, PASS/FAIL logic, and the required actualValue/expectedValue fields. Cite the optional Examples pack when applicable.
 
 ## Applicability & dependencies
 Only if not ALL_RECORDS / no dependency.
@@ -48,7 +54,7 @@ RULES YOU MUST FOLLOW:
 7. SOQL merge tokens: {!record.FieldApiName} on the current record (e.g. {!record.Id}, {!record.AnnualRevenue}, {!record.Customer_Tier__c}).
 8. Max 25 active Rules per Check Set per run. Use applicability gates to reduce noise.
 9. Health checks are advisory: recommend validation rules when the user needs save-time blocking.
-10. If metadata cannot express the rule, recommend Apex (RecordHealthCheckRule interface) and say what the class must do. Cite an example from https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). Ship class API name only if it exists in the package: AccountHasRecentActivityCheck, AccountOpenOpportunityHealthCheck. Do not recommend Apex for save-time field format rules: use validation rules.
+10. If metadata cannot express the rule, recommend Apex (RecordHealthCheckRule interface) and say what the class must do. Cite an example from https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). Treat every example class as an optional Examples-pack dependency; Core ships no example implementations. Do not recommend Apex for save-time field format rules: use validation rules.
 11. QueryResultHandling__c = ONE_RESULT for aggregates and single COUNT(); ANY_ROW_PASSES / ALL_ROWS_PASS for row-by-row; COMPARE_AS_LISTS for list operators.
 12. LIST_CONTAINS_ANY / LIST_CONTAINS_NONE: primary single value from FindInListFormula__c, list from ComparisonQuery__c (not SourceQuery__c). PassConditionFormula__c is record-formula-only.
 13. Do not invent field API names: use names the user provided or mark them as placeholders to verify in Setup.
@@ -142,7 +148,7 @@ Minimum fields when creating a new Check Set:
 | `ShowDiagnostics__c` | Show Diagnostics | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Details` (from `Record_Health_Check_Admin`). See [Show Diagnostics guide](show-diagnostics.md). |
 | `PublishRunEvent__c` | Publish Run Event | No | `false` by default; page-load runs never publish |
 
-**Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `configName`.
+**Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `checkSetDeveloperName`.
 
 ### 4.3 Rule table
 
@@ -168,7 +174,11 @@ Always include (all Evaluation Types):
 
 Add type-specific fields from Section 5.
 
-Use remediation fields only for read-only guidance or deep links. Do not describe an automatic write action; the card remains advisory. Unsafe or overlong URLs are dropped, but Fix Message can still render. For report links, related-list links, and external playbook examples, see [Action Links and Fix Message](action-links.md).
+Use remediation fields for guidance and explicit navigation. Rendering or opening a link does not
+make Record Health Check perform DML, although a destination can be an edit or prefilled create page
+where the user chooses whether to save. Unsafe or overlong URLs are dropped, but Fix Message can
+still render. For create-page, Knowledge, report, related-list, and external examples, see
+[Action links and Fix Message](action-links.md).
 
 ### 4.4 Pattern citation
 
@@ -176,14 +186,14 @@ Name the pattern and reference a shipped example when possible (Section 7-8). Fo
 
 ### 4.5 Class sketch (Apex only)
 
-When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex plugin reference](../apex/plugin-reference.md) for full patterns.
+When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex reference](../apex/apex-reference.md) for full patterns.
 
 | Item | What to include |
 | ---- | --------------- |
 | `recordId` | `context.recordId` for SOQL; query extra fields: `context.record` is partial |
 | Parent / custom fields | `Parent.BillingCity` in SELECT, or `Primary_Contact__r.Email` |
 | JSON defaults | Apex constants + `ApexParametersJson__c` keys (e.g. `daysBack`) with bounds |
-| Shipped vs custom | `AccountHasRecentActivityCheck`, `AccountOpenOpportunityHealthCheck` only when pattern matches |
+| Examples-pack vs custom | Use an Examples-pack class only when that pack is installed and the pattern matches |
 | Outcome | `PASS`/`FAIL`; required `actualValue`/`expectedValue` on both statuses |
 | Applicability | Why `ApplicabilityMode__c` is not `ALL_RECORDS` if gated |
 
@@ -260,14 +270,14 @@ List operators for `COMPARE_AS_LISTS`: `LISTS_OVERLAP`, `LISTS_CONTAIN_ALL`, `LI
 
 ### 5.4 Apex (`EvaluationType__c` = `APEX`)
 
-Full walkthroughs: [Apex examples index](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/index.md#example-catalog) · [Apex plugin reference](../apex/plugin-reference.md) · [Contract](../apex/plugin-contract.md)
+Full walkthroughs: [Apex examples index](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/index.md#example-catalog) · [Apex example](../apex/apex-example.md) · [Apex reference](../apex/apex-reference.md)
 
 | API field | Required | Notes |
 | --- | --- | --- |
 | `ApexClass__c` | Yes | Class implementing `RecordHealthCheckRule`: deploy before activating Rule |
 | `ApexParametersJson__c` | No | JSON **object** (not array), e.g. `{"daysBack": 90}`, `{"minDigits": 10}`, `{"staleDays": 30}` |
 
-**Plugin contract (summary):** Full how-to: [Apex plugin reference](../apex/plugin-reference.md).
+**Apex interface summary:** Full patterns: [Apex reference](../apex/apex-reference.md).
 
 ```apex
 public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
@@ -312,7 +322,7 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 ## 6. operators (`ComparisonOperator__c`)
 
-| API value | Setup label (approx.) | Needs right-hand side? | Valid with |
+| API value | Setup label | Needs right-hand side? | Valid with |
 | --- | --- | --- | --- |
 | `EQUALS` | Equals | Yes | QUERY, COMPARE_TWO_QUERIES |
 | `NOT_EQUALS` | Does not equal | Yes | QUERY, COMPARE_TWO_QUERIES |
@@ -375,7 +385,7 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | Multiplier on COMPARE_TWO_QUERIES right side | Both sides are raw query values only | Use QUERY + RECORD_FORMULA, or APEX |
 | Blocking save on fail | Product is read-time only | Validation rule or Flow |
 | More than 25 active rules | Hard cap per run | Split Check Sets or deactivate low-value rules |
-| Org-wide batch audit | No packaged scheduler | Apex batch calling `RecordHealthCheck.run` |
+| Org-wide batch audit | No packaged scheduler | Apex batch calling `RecordHealthCheck.runRule` |
 
 ## 9. SOQL rules for LLMs
 
@@ -411,18 +421,22 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 ## 10. Worked examples (copy-ready)
 
-### 10.1 Billing City required (Formula)
+### 10.1 Portfolio readiness (Formula)
 
 | API field | Value |
 | --- | --- |
 | `EvaluationType__c` | `FORMULA` |
-| `PassConditionFormula__c` | `NOT(ISBLANK(BillingCity))` |
+| `PassConditionFormula__c` | `AND(OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website))), NOT(ISBLANK(BillingCountry)), AnnualRevenue >= Parent.Parent.AnnualRevenue * 0.10)` |
+| `DisplayFoundFormula__c` | `AnnualRevenue` |
+| `DisplayExpectedFormula__c` | `Parent.Parent.AnnualRevenue * 0.10` |
+| `FormulaResultType__c` | `NUMBER` |
 | `ApplicabilityMode__c` | `ALL_RECORDS` |
 | `FailureSeverity__c` | `CRITICAL` |
-| `FailureMessage__c` | `{!record.Name} is missing Billing City.` |
+| `FailureMessage__c` | `{!record.Name} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.` |
 
-Optional example: `Account_DQ_BillingCity` in the `account-data-quality` pack from
-[RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples/tree/main/packs/account-data-quality).
+This example deliberately demonstrates multiple conditions and a two-level parent relationship.
+Ask whether the org guarantees both parent levels; otherwise recommend a shallower relationship or
+an applicability condition.
 
 ### 10.2 At least one Contact (Query)
 
@@ -479,7 +493,7 @@ Shipped: `Account_QC_ListContainsAny` (`LIST_CONTAINS_ANY`).
 
 Shipped: `Account_Adv_PartnerBillingCountry`.
 
-### 10.6 Recent Task/Event activity (Apex: multi-object)
+### 10.6 Recent Task/Event activity (Apex: Multi-object)
 
 | API field | Value |
 | --- | --- |
@@ -492,7 +506,7 @@ Shipped: `Account_Adv_PartnerBillingCountry`.
 
 Sample Rule in the Examples **apex-advanced-checks** pack (see pack README). Doc: [apex/01-recent-activity.md](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/apex/01-recent-activity.md).
 
-### 10.7 Unhealthy open Opportunities (Apex: child aggregation)
+### 10.7 Unhealthy open Opportunities (Apex: Child aggregation)
 
 | API field | Value |
 | --- | --- |
@@ -508,7 +522,7 @@ Sample Rule in the Examples **apex-advanced-checks** pack (see pack README). Doc
 
 Doc: [apex/02-open-opportunity-health.md](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/apex/02-open-opportunity-health.md).
 
-### 10.8 Strategic readiness score (Apex: composite, custom deploy)
+### 10.8 Strategic readiness score (Apex: Composite, custom deploy)
 
 | API field | Value |
 | --- | --- |
@@ -593,3 +607,10 @@ When building a Gemini gem for this project:
 4. Tell users to paste: base object, fields involved, pass/fail semantics, and whether zero children should pass or skip.
 5. Require gem output to use Section 4 tables (API names, not Setup-only labels).
 6. Link humans to [Getting Started](../installation/getting-started.md) for entering metadata in Setup.
+
+## Related
+
+- [Configuration guide](configuration-guide.md)
+- [Metadata reference](../metadata/index.md)
+- [Apex reference](../apex/apex-reference.md)
+- [Reason codes](../reference/reason-codes.md)

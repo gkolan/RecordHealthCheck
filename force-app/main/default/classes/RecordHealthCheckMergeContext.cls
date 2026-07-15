@@ -4,6 +4,7 @@ public class RecordHealthCheckMergeContext {
   public Record_Health_Check_Rule__mdt rule;
   public SObject checkSet;
   public RecordHealthCheckResult result;
+  public RecordHealthCheckRunContext run;
   public Integer failedRecordCount;
   public Integer totalRecordCount;
   public Boolean resultFinalized = false;
@@ -27,6 +28,12 @@ public class RecordHealthCheckMergeContext {
   ) {
     result = value;
     resultFinalized = finalized == true;
+    return this;
+  }
+  public RecordHealthCheckMergeContext withRun(
+    RecordHealthCheckRunContext value
+  ) {
+    run = value;
     return this;
   }
 }

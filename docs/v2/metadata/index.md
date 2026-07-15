@@ -1,6 +1,8 @@
-# Custom Metadata Types and Fields
+# Custom Metadata Types and fields
 
-Field reference for the two Custom Metadata Types that hold Record Health Check configuration. Setup labels are what appears in the metadata editor; API names are what metadata XML, Apex, and the LLM guide use.
+Field reference for the two Custom Metadata Types that hold Record Health Check configuration. Setup
+labels are what appear in the metadata editor; API names are what metadata XML, Apex, and the LLM
+guide use.
 
 | Plain name | Setup name | API type | Field reference |
 | ---------- | ---------- | -------- | --------------- |
@@ -14,8 +16,10 @@ Field reference for the two Custom Metadata Types that hold Record Health Check 
 | [Check Set fields](check-set.md) | Every field on the Check Set type |
 | [Rule fields](rule-fields.md) | Every field on the Rule type |
 | [Reason codes](../reference/reason-codes.md) | Stable codes for skipped, unable, setup, and error outcomes |
-| [Lifecycle events](../reference/lifecycle-events.md) | Opt-in Rule Result and Check Set Run platform events |
-| [Programmatic API and Flow](../apex/programmatic-api.md) | `run` / `runSet` and the packaged Flow action |
+| [Platform events](../reference/lifecycle-events.md) | Opt-in Rule Result and Check Set Run events |
+| [Apex API](../apex/public-api.md) | Public `runRule` / `runSet` methods |
+| [Flow actions](../flow/actions.md) | Packaged Rule and Set Flow actions |
+| [Lightning component runs](../lwc/runs-and-events.md) | Automatic versus explicit publication behavior |
 | [Field size registry](../reference/field-size-registry.md) | Authoritative stored/runtime size limits |
 | [Configuration Guide](../guides/configuration-guide.md) | Mental model, walkthroughs, troubleshooting, go-live checklist |
 | [Design Specification](../reference/record-health-check-design-spec.md) | Formal runtime contract |

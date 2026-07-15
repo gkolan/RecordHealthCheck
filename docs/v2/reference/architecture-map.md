@@ -1,6 +1,9 @@
-# Architecture Map
+# Architecture map
 
-The fastest way to navigate the codebase and find the right file to change. This file is an index, not a spec: for contracts and behavior see the [design spec](record-health-check-design-spec.md), [Programmatic API and Flow](../apex/programmatic-api.md), and [Lifecycle events](lifecycle-events.md).
+The fastest way to navigate the codebase and find the right file to change. This file is an index,
+not a spec: for contracts and behavior see the [design spec](record-health-check-design-spec.md),
+[Apex API](../apex/public-api.md), [Flow actions](../flow/actions.md), and
+[Platform events](lifecycle-events.md).
 
 > [!IMPORTANT]
 > Facts here must match the code. If responsibility moves between classes, update this file in the same change.
@@ -20,8 +23,9 @@ Record page LWC  recordHealthCheck
         └─ evaluateCheck ───────► Engine ─► evaluators ─► RecordHealthCheckResult
 
 Apex / Flow façade
-  └─ RecordHealthCheck.run / runSet
-  └─ RecordHealthCheckFlowAction (invocable)
+  └─ RecordHealthCheck.runRule / runSet
+  ├─ RecordHealthCheckRunRuleFlowAction (invocable)
+  └─ RecordHealthCheckRunSetFlowAction (invocable)
         ├─ Engine (same path)
         └─ RecordHealthCheckLifecyclePublisher (opt-in, Publish After Commit)
               ├─ Record_Health_Check_Rule_Result__e
@@ -36,8 +40,9 @@ The evaluation path is **read-only** (`with sharing`, `WITH USER_MODE`).
 
 | Class | Responsibility |
 | ----- | -------------- |
-| `RecordHealthCheck` | Public façade: `run` / `runSet` (single + bulk), caps, façade lifecycle publish. |
-| `RecordHealthCheckFlowAction` | Packaged Flow invocable **Run Record Health Check**. |
+| `RecordHealthCheck` | Public façade: `runRule` / `runSet` (single + bulk), caps, façade lifecycle publish. |
+| `RecordHealthCheckRunRuleFlowAction` | Packaged Flow invocable **Run Record Health Check Rule**. |
+| `RecordHealthCheckRunSetFlowAction` | Packaged Flow invocable **Run Record Health Check Set**. |
 | `RecordHealthCheckController` | `@AuraEnabled` LWC seam: definitions + evaluate one check (**no** event publish). |
 | `RecordHealthCheckEngine` | Orchestrates one check: applicability, dependencies, evaluator routing, result normalization, diagnostics gating. |
 | `RecordHealthCheckLifecyclePublisher` | Best-effort opt-in platform event publication. |
@@ -79,7 +84,7 @@ The evaluation path is **read-only** (`with sharing`, `WITH USER_MODE`).
 
 | Class | Responsibility |
 | ----- | -------------- |
-| `RecordHealthCheckResult` | Sync Rule response (`contractVersion` `0.1`). |
+| `RecordHealthCheckResult` | Stable sync Rule response (`contractVersion` `1.0`). |
 | `RecordHealthCheckSetResult` | Sync Check Set response with rollup counts. |
 | `RecordHealthCheckAdminDetail` | Structured diagnostics payload. |
 | `RecordHealthCheckDefinition` / `…DefinitionResponse` | LWC definition payload. |
@@ -95,8 +100,16 @@ The evaluation path is **read-only** (`with sharing`, `WITH USER_MODE`).
 | Need | Doc |
 | ---- | --- |
 | Field reference | [Check Set](../metadata/check-set.md), [Rule](../metadata/rule-fields.md) |
-| Apex / Flow callers | [Programmatic API and Flow](../apex/programmatic-api.md) |
+| Apex callers | [Apex API](../apex/public-api.md) |
+| Flow callers | [Flow actions](../flow/actions.md) |
+| Lightning component | [Lightning component runs](../lwc/runs-and-events.md) |
 | Events | [Lifecycle events](lifecycle-events.md) |
 | Reason codes | [Reason codes](reason-codes.md) |
 | Formal runtime contract | [Design Specification](record-health-check-design-spec.md) |
 | Upgrade | [Upgrading to V2](../installation/upgrading-to-v2.md) |
+
+## Related
+
+- [V2 documentation index](../README.md)
+- [Integration overview](../integrate/overview.md)
+- [Configuration guide](../guides/configuration-guide.md)

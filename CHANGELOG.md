@@ -2,9 +2,7 @@
 
 This project follows [Semantic Versioning](https://semver.org/). Notable changes are documented here starting with the first public release.
 
-## [Unreleased]
-
-## [2.0.0] - 2026-07-13
+## [2.0.0] - 2026-07-15
 
 ### Breaking changes
 
@@ -13,7 +11,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - `RecordHealthCheckDualSoqlEvaluator` renamed to `RecordHealthCheckCompareQueriesEvaluator`.
 - Plugin API `RecordHealthCheckProvenance` / `actualProvenance` / `expectedProvenance` renamed to `RecordHealthCheckValueSource` / `actualValueSource` / `expectedValueSource`.
 - `RecordHealthCheckComparatorEngine` renamed to `RecordHealthCheckComparisonEngine` (comparison helper methods renamed accordingly).
-- Rule and Check Set field API names changed as listed in `releases/v2/field-migration-before-after.md`; V2 does not dual-read v1.x names.
+- Rule and Check Set field API names changed as listed in `docs/v2/reference/field-migration-before-after.md`; V2 does not dual-read v1.x names.
 - Public constant names ending in `COMPARATORS` now end in `OPERATORS`; value-resolver methods named `scalarFromRow` / `scalarList` are now `singleValueFromRow` / `singleValueList`.
 - Reason code `INVALID_COMPARATOR` is now `INVALID_OPERATOR`.
 - Category vocabulary changed, Severity `Error` became `Critical`, and long-text fields that became Text are limited to 255 characters.
@@ -24,13 +22,38 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Versioned, bounded synchronous Rule/Check Set façade and Flow action.
 - Opt-in, Publish After Commit Set Run and Rule Result lifecycle events.
 - Stable reason-code catalog, diagnostics-only restricted detail, and explicit skip causes.
+- Completed the hard-cut V2 identity contract across LWC, Apex, Flow, diagnostics, and tests:
+  `checkSetDeveloperName` identifies a Check Set and `ruleDeveloperName` identifies a Rule. No
+  compatibility aliases or internal mapping fields remain. `completeRun` now also accepts
+  `recordId`.
+- Promoted the synchronous Apex and Flow response contract from pre-release `0.1` to stable `1.0`;
+  this remains independent from the lifecycle-event `1.0` contract and product version `2.0.0`.
+- Standardized the public Apex lifecycle source as `APEX_API` / `SOURCE_APEX_API`.
+- Added `Record_Health_Check_Log__e`, a versioned (`1.0`), restricted diagnostics platform event
+  for framework errors. The logger now buffers every `ERROR` line and publishes it once per
+  transaction via `RecordHealthCheckLogger.flush()`, so a check that fails to run leaves a durable,
+  `RunId`-correlated trace instead of only an ephemeral `System.debug` line. Default on (opt-out
+  via `publishErrorEvents`); `PublishImmediately` so it survives the rollback a failing check
+  triggers. Core only emits the event — persistence, retention, and reporting are owned by the
+  Record Health Check extension package. Subscribers must call
+  `RecordHealthCheckLogger.enterSubscriberContext()` to avoid feedback loops.
+- Added `RecordId__c` to all three platform events (`Record_Health_Check_Set_Run__e`,
+  `Record_Health_Check_Rule_Result__e`, `Record_Health_Check_Log__e`), populated with the evaluated
+  record's ID whenever one is available. The record is stamped onto each `RecordHealthCheckResult`
+  at the evaluation boundary and carried through to the events. Field values remain excluded.
+- Split integration documentation into shareable Apex API, Flow action, Lightning component, and
+  platform-event references while preserving the former combined URL as a navigation page.
+- Added a Set-first integration overview with explicit product boundaries, quickstarts, status and
+  failure semantics, limits, testing guidance, and surface-selection links.
 
 ## [1.2.0]: 2026-07-09
 
 ### App Builder & setup
 
 - Admins pick a Check Set from a dropdown in Lightning App Builder instead of typing a developer name. The list shows active Check Sets for that page's object, and auto-selects when there is only one.
-- Removed support for the old `configName` and `comparisonDisclosure` component properties. After upgrade, open existing record pages in App Builder, re-add or reconfigure the component with the new **Check Set** picker, and save. There is no automatic migration for the old properties.
+- Removed obsolete component properties. After upgrade, open existing record pages in App Builder,
+  re-add or reconfigure the component with the new **Check Set** picker, and save. There is no
+  automatic migration for the old properties.
 - If the LWC has no Check Set selected, Apex reports whether any Check Sets exist for that object so the banner can say choose one, activate one, or create one.
 - Setup banners speak to end users first (**Health Check Needs Setup** / not ready yet), with a short note to ask a Salesforce admin. They no longer read like App Builder how-to steps.
 

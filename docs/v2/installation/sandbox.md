@@ -1,7 +1,7 @@
 # Install Record Health Check in a sandbox
 
-Install V2 Core and its Hero Check Set in a Salesforce sandbox before considering a production
-deployment. V2 keeps optional examples in the separate
+Install V2 Core in a Salesforce sandbox before considering a production deployment. V2 keeps all
+examples in the separate
 [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples) repository.
 
 ## Before you start
@@ -19,25 +19,20 @@ sf org display --target-org rhc-sandbox
 
 Confirm that the displayed org is the intended sandbox.
 
-## 2. Deploy Core and the Hero
+## 2. Deploy Core
 
 From the `RecordHealthCheck` repository root:
 
 ```bash
 sf project deploy start \
-  --manifest manifest/package-core.xml \
+  --manifest manifest/package.xml \
   --target-org rhc-sandbox \
   --wait 30
 
-sf project deploy start \
-  --manifest manifest/package-Example_Account_360_Health_Check.xml \
-  --target-org rhc-sandbox \
-  --wait 30
 ```
 
 The first deployment installs the framework, Lightning Web Component, Custom Metadata Types, and
-permission sets. The second installs the one Core Hero Check Set, its nine Rules, and its report.
-It does not install optional example packs.
+permission sets. Core does not install Check Set or Rule records.
 
 ## 3. Assign permission
 
@@ -54,7 +49,7 @@ Authors and troubleshooting administrators can also receive `Record_Health_Check
 1. Open an Account in the sandbox.
 2. Select **Setup → Edit Page**.
 3. Add **Record Health Check** to the Lightning record page.
-4. Select `Example_Account_360_Health_Check` in the **Check Set** property.
+4. Select a Check Set you created or installed from the Examples repository.
 5. Save and activate the page.
 
 Open an Account and confirm the card shows Pass, Fail, Skipped, or Unable to Check results. The
@@ -72,10 +67,17 @@ and install only the pack you need by following the
 | Problem | What to check |
 | --- | --- |
 | Apex deployment permission error | Ask a Salesforce administrator with deployment access to run the installation. |
-| Hero metadata cannot find a type or field | Confirm the Core manifest finished successfully before deploying the Hero manifest. |
-| Card has no Check Set choice | Confirm the Hero manifest deployed and the Account page is being edited. |
+| Example metadata cannot find a type or field | Confirm Core finished successfully before deploying the example pack. |
+| Card has no Check Set choice | Create a Check Set or install an example pack for the record page's object. |
 | User cannot see or run the card | Assign `Record_Health_Check_User` and check record, object, and field access. |
 | A Rule shows Unable to Check | Review the reason code, Rule configuration, and the running user's field access. |
 
 For deeper review, use [Show Diagnostics](../guides/show-diagnostics.md) and the
 [reason-code reference](../reference/reason-codes.md).
+
+## Next steps
+
+- [Admin quick start](admin-quick-start.md) — learn the result model
+- [Getting started](getting-started.md) — create and test a Rule
+- [Configuration guide](../guides/configuration-guide.md) — configure advanced behavior
+- [Upgrading to V2](upgrading-to-v2.md) — migrate an existing installation

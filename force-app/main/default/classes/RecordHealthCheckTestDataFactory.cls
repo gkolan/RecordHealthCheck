@@ -7,6 +7,14 @@
 public class RecordHealthCheckTestDataFactory {
   public static final String HEALTHY_ACCOUNT_NAME_PREFIX = 'Record Health Test Account';
 
+  public static Boolean hasIntegrationFixtures() {
+    return [
+        SELECT COUNT()
+        FROM Record_Health_Check_Set__mdt
+        WHERE DeveloperName = 'Account_Data_Quality'
+      ] > 0;
+  }
+
   public static void createTestRecords() {
     String token = uniqueToken();
     Account healthyAccount = new Account(

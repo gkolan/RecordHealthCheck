@@ -2,7 +2,7 @@
 public with sharing class RecordHealthCheckLifecyclePublisher {
   public static final String CONTRACT_VERSION = '1.0';
   public static final String CORE_VERSION = '2.0.0';
-  public static final String SOURCE_FACADE = 'FACADE';
+  public static final String SOURCE_APEX_API = 'APEX_API';
   public static final String SOURCE_FLOW = 'FLOW';
   public static final String SOURCE_USER_INITIATED = 'USER_INITIATED';
   public static final String SOURCE_SCHEDULED = 'SCHEDULED';
@@ -10,6 +10,13 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
   public static final String SOURCE_RUN_ON_LOAD = 'RUN_ON_LOAD';
   public static final String SOURCE_SUBSCRIBER = 'SUBSCRIBER';
   public static final Integer PUBLISH_CHUNK_SIZE = 100;
+  private static final Set<String> PUBLISHABLE_SOURCES = new Set<String>{
+    SOURCE_APEX_API,
+    SOURCE_FLOW,
+    SOURCE_USER_INITIATED,
+    SOURCE_SCHEDULED,
+    SOURCE_BATCH
+  };
 
   @TestVisible
   private static Boolean subscriberContextOverride = false;
@@ -56,7 +63,10 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
       FailedCount__c = response.failedCount,
       SkippedCount__c = response.skippedCount,
       UnableCount__c = response.unableCount,
-      SystemErrorCount__c = response.systemErrorCount
+      SystemErrorCount__c = response.systemErrorCount,
+      RecordId__c = response.recordId == null
+        ? null
+        : String.valueOf(response.recordId)
     );
     publishSetEvents(new List<Record_Health_Check_Set_Run__e>{ eventRecord });
   }
@@ -71,7 +81,7 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
       return;
     Set<String> names = new Set<String>();
     for (RecordHealthCheckResult result : results) {
-      names.add(result.checkDeveloperName);
+      names.add(result.ruleDeveloperName);
     }
     Set<String> enabled = publishRuleNamesOverride;
     if (enabled == null) {
@@ -91,18 +101,18 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
 
     List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>();
     for (RecordHealthCheckResult result : results) {
-      if (!enabled.contains(result.checkDeveloperName))
+      if (!enabled.contains(result.ruleDeveloperName))
         continue;
       events.add(
         new Record_Health_Check_Rule_Result__e(
           ContractVersion__c = CONTRACT_VERSION,
           EventId__c = newEventId(
             String.isBlank(result.runId) ? runId : result.runId,
-            result.checkDeveloperName
+            result.ruleDeveloperName
           ),
           RunId__c = String.isBlank(result.runId) ? runId : result.runId,
           CheckSetDeveloperName__c = checkSetDeveloperName,
-          RuleDeveloperName__c = result.checkDeveloperName,
+          RuleDeveloperName__c = result.ruleDeveloperName,
           Status__c = result.status,
           ReasonCode__c = result.reasonCode,
           Severity__c = result.severity,
@@ -110,7 +120,10 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
           Source__c = source,
           CoreVersion__c = CORE_VERSION,
           ContainsRestrictedDetail__c = result.adminDetail != null &&
-            result.adminDetail.containsRestrictedDetail == true
+            result.adminDetail.containsRestrictedDetail == true,
+          RecordId__c = result.recordId == null
+            ? null
+            : String.valueOf(result.recordId)
         )
       );
     }
@@ -119,8 +132,7 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
 
   @TestVisible
   private static Boolean canPublish(String source) {
-    return source != SOURCE_RUN_ON_LOAD &&
-      source != SOURCE_SUBSCRIBER &&
+    return PUBLISHABLE_SOURCES.contains(source) &&
       subscriberContextOverride != true;
   }
 

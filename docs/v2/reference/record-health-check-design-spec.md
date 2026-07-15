@@ -1,4 +1,4 @@
-# Record Health Check Design Specification
+# Record Health Check design specification
 
 **Version:** 2.0.0 (2026-07-13) — aligned with shipped V2 Custom Metadata in `force-app/`
 
@@ -20,7 +20,9 @@ For Setup walkthroughs and field tables, see [Getting Started](../installation/g
 | Goal | Start here |
 | ---- | ---------- |
 | Configure checks in Setup | [Getting Started](../installation/getting-started.md) → [Configuration Guide](../guides/configuration-guide.md) |
-| Call from Apex or Flow | [Programmatic API and Flow](../apex/programmatic-api.md) |
+| Call from Apex | [Apex API](../apex/public-api.md) |
+| Call from Flow | [Flow actions](../flow/actions.md) |
+| Understand Lightning publication | [Lightning component runs](../lwc/runs-and-events.md) |
 | Subscribe to lifecycle events | [Lifecycle events](lifecycle-events.md) |
 | Reason codes | [Reason codes](reason-codes.md) |
 | Review runtime layout and contracts | Sections 1-3, 9-15, and the field reference in Sections 4-5 |
@@ -52,9 +54,9 @@ Terminology is consistent across all documents:
 **Out of scope today (with nuance):**
 
 - **Full result history on the record page.** The LWC does not show past runs; nothing is persisted (see [14](#14-logging-and-observability)).
-- **Background health monitoring as a product feature.** There is no built-in scheduler. Checks **can** be invoked via the public façade (`RecordHealthCheck.run` / `runSet`) and the packaged Flow action `RecordHealthCheckFlowAction`, subject to call caps (`MAX_RECORDS_PER_CALL` / `MAX_EVALUATIONS_PER_CALL`).
+- **Background health monitoring as a product feature.** There is no built-in scheduler. Checks **can** be invoked via the public façade (`RecordHealthCheck.runRule` / `runSet`) and the separate packaged Rule and Set Flow actions, subject to call caps (`MAX_RECORDS_PER_CALL` / `MAX_EVALUATIONS_PER_CALL`).
 
-## 3. Runtime Architecture
+## 3. Runtime architecture
 
 | Layer | Responsibility |
 | ----- | -------------- |
@@ -62,8 +64,8 @@ Terminology is consistent across all documents:
 | `RecordHealthCheckConstants` | Single source of truth for valid-value sets and framework caps (25 checks, 2000 rows). |
 | Apex Controller | Exposes definition loading and single-check evaluation to LWC. |
 | `RecordHealthCheck` façade | Apex entry for one Rule or one Check Set (single + bulk), with call caps and opt-in lifecycle publication. |
-| Packaged Flow action | `RecordHealthCheckFlowAction` — **Run Record Health Check**; same façade. |
-| Lifecycle events | Opt-in Publish After Commit events for deliberate façade runs; page-load never publishes. |
+| Packaged Flow actions | **Run Record Health Check Rule** and **Run Record Health Check Set**; same façade logic. |
+| Lifecycle events | Opt-in Publish After Commit events for deliberate LWC, façade, and Flow runs; automatic page-load never publishes. |
 | Config Service | Loads metadata and validates Check Set and Rule configuration. |
 | Engine | Loads the current record, checks applicability and dependencies, routes to evaluators, and normalizes results. |
 | Evaluators | Execute `FORMULA`, `QUERY`, `COMPARE_TWO_QUERIES`, or `APEX` checks. |
@@ -75,7 +77,7 @@ Terminology is consistent across all documents:
 
 Primary flow:
 
-1. LWC calls `RecordHealthCheckController.getCheckDefinitions(configName, recordId)` using its selected `checkSetName` as the Apex `configName` parameter.
+1. LWC calls `RecordHealthCheckController.getCheckDefinitions(checkSetDeveloperName, recordId)` using its selected `checkSetName` as the Apex `checkSetDeveloperName` parameter.
 2. Apex loads one active Check Set by `DeveloperName`.
 3. Apex confirms the current record object matches `ObjectApiName__c`.
 4. Apex returns ordered active Rule definitions.
@@ -89,9 +91,9 @@ Primary flow:
 | Surface | Entry point | Notes |
 | ------- | ----------- | ----- |
 | Lightning record page | LWC `recordHealthCheck` | Primary UX: requires `recordId` and `checkSetName`. Exposed on `lightning__RecordPage` only. |
-| Apex (any context) | `RecordHealthCheck.run(configName, checkDeveloperName, recordId)` | One Rule per call; catchable failures return result statuses. An optional overload adds a `runId` for log correlation. |
+| Apex (any context) | `RecordHealthCheck.runRule(ruleDeveloperName, recordId)` | One Rule per call; its parent Check Set is discovered automatically. Catchable failures return result statuses. An optional overload adds a `runId` for log correlation. |
 
-## 4. Check Set Model (`Record_Health_Check_Set__mdt`)
+## 4. Check Set model (`Record_Health_Check_Set__mdt`)
 
 A Check Set defines one group of Rules for one component instance on one object.
 
@@ -107,7 +109,7 @@ A Check Set defines one group of Rules for one component instance on one object.
 | Concurrent evaluations | Up to **5 in flight** when `StopOnSystemError__c` is false | The LWC queues all eligible checks (up to 25) but caps concurrent `evaluateCheck` Apex calls at `MAX_CONCURRENT_EVALUATIONS` (5); additional checks wait in a client-side queue. Display order remains priority-ordered via a drain buffer. When `StopOnSystemError__c` is true, checks run **sequentially** (one Apex call at a time). |
 | Run isolation | Per run | LWC increments `_runToken` on each run so stale in-flight results from a prior run are discarded. |
 
-## 5. Rule Model (`Record_Health_Check_Rule__mdt`)
+## 5. Rule model (`Record_Health_Check_Rule__mdt`)
 
 A Rule defines one check inside a Check Set.
 
@@ -130,7 +132,7 @@ Dependency contract:
 
 Applicability is evaluated before the Rule evaluator. If false, the Rule returns `SKIPPED` with `NOT_APPLICABLE_BY_FORMULA` or `NOT_APPLICABLE_BY_COUNT` (depending on mode). If it cannot be evaluated safely, the Rule returns `UNABLE_TO_EVALUATE`. Empty query results that are configured to skip use `APPLICABILITY_NOT_MET` separately from these gates.
 
-## 6. Evaluation Types
+## 6. Evaluation types
 
 Setup field: **Evaluation Type** (`EvaluationType__c`). Subsections below use API values; Setup picklist labels are in parentheses.
 
@@ -150,13 +152,21 @@ Operands in `PassConditionFormula__c` may be **calculated fields** (formula, rol
 
 **Optional Found / Expected display** (`DisplayFoundFormula__c`, `DisplayExpectedFormula__c`): when set, each is evaluated as a single value (via `resolveFormulaSingleValue`, honoring `FormulaResultType__c`) and populates `actualValue` / `expectedValue` for the row, formatted like Query checks. They are **display-only** — pass/fail stays decided by the Boolean `PassConditionFormula__c`, the two sides are not compared to each other, and an unresolvable display formula falls back to the default (a `Passes when` line echoing the unquoted pass/fail formula) without changing status. They get the same calculated-field dependency expansion as `PassConditionFormula__c`.
 
-Uses Salesforce FormulaEval API (`Formula.builder()`). Requires API v63.0+ (Spring '25). Salesforce platform limit: **100 FormulaEval calls per Apex transaction**. The framework tracks calls for the whole transaction and throws `FORMULA_EVAL_LIMIT` when the count reaches **95** (a 5-call safety margin). A single Rule can consume multiple FormulaEval calls (formula body, applicability, merge-field resolution). Flow or batch jobs that evaluate many checks in one transaction share one budget.
+Uses Salesforce FormulaEval API (`Formula.builder()`) and requires API v63.0+ (Spring '25).
+Salesforce allows **100 FormulaEval calls per Apex transaction**. The framework stops at **95** with
+`FORMULA_EVAL_LIMIT`, preserving a five-call safety margin.
+
+A single Rule can consume multiple FormulaEval calls for the formula body, applicability, and
+merge-field resolution. Flow or batch jobs that evaluate many checks in one transaction share the
+same budget.
 
 ### Check records with a query (`QUERY`)
 
 Runs `SourceQuery__c` and compares the extracted result to a static value, formula value, query value, empty-value blank check, or list.
 
-single value aggregate SOQL is supported for `ONE_RESULT`. Supported functions: `COUNT`, `COUNT_DISTINCT`, `SUM`, `AVG`, `MIN`, `MAX`. Alias aggregate expressions and reference the alias from `SourceQueryField__c` or `ComparisonQueryField__c`.
+Single-value aggregate SOQL is supported for `ONE_RESULT`. Supported functions are `COUNT`,
+`COUNT_DISTINCT`, `SUM`, `AVG`, `MIN`, and `MAX`. Alias aggregate expressions and reference the alias
+from `SourceQueryField__c` or `ComparisonQueryField__c`.
 
 | `QueryResultHandling__c` | Behavior |
 | ---------------------------- | -------- |
@@ -178,7 +188,13 @@ Runs `SourceQuery__c` and `ComparisonQuery__c`.
 
 ### Use custom Apex (`APEX`)
 
-Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, passes `RecordHealthCheckContext`. Use custom Apex may return `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. Any other status string is rejected with `APEX_EVALUATOR_ERROR`. Determinate Apex results (`PASS` / `FAIL`) must set both `actualValue` and `expectedValue`; missing Found/Expected values are rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and failure message.
+Instantiates `ApexClass__c`, requires `RecordHealthCheckRule`, and passes
+`RecordHealthCheckContext`. Custom Apex may return `PASS`, `FAIL`, `SKIPPED`,
+`UNABLE_TO_EVALUATE`, or `ERROR`; any other status is rejected with `APEX_EVALUATOR_ERROR`.
+
+Determinate results (`PASS` / `FAIL`) must set both `actualValue` and `expectedValue`. Missing values
+are rejected with `APEX_EVALUATOR_ERROR`. Only `FAIL` is post-processed for metadata severity and
+failure message.
 
 **Plugin contract:** Implementations must use `with sharing`, enforce CRUD/FLS on
 their own queries, avoid unbounded DML/callouts, and return only a documented
@@ -189,7 +205,7 @@ current public interface supports same-namespace/source deployments; a managed
 package intended for subscriber implementations would require a deliberately
 versioned `global` contract.
 
-**Shipped example:** `AccountHasRecentActivityCheck` checks closed Tasks and
+**Examples-repository implementation:** `AccountHasRecentActivityCheck` checks closed Tasks and
 Events in a look-back window. `daysBack` is bounded to 1-3650 and defaults to 30
 when missing, malformed, or outside the range.
 
@@ -219,7 +235,24 @@ Ordered comparisons try `Decimal`, then `DATETIME`, then `DATE`. Incompatible ty
 
 **Case sensitivity:** `CONTAINS` and `DOES_NOT_CONTAIN` are case-sensitive. `EQUALS` / `NOT_EQUALS` use typed comparison when possible; otherwise they compare string forms case-sensitively. List membership and list-mode overlap operators (`LIST_CONTAINS_ANY`, `LIST_CONTAINS_NONE`, `LISTS_OVERLAP`, `LISTS_CONTAIN_ALL`, `LISTS_MATCH_EXACTLY`) compare case-insensitively.
 
-**Display formatting:** On a determinate `PASS` or `FAIL`, Query and CompareTwoQueries evaluators populate `actualValue` and `expectedValue` on the result using `RecordHealthCheckComparisonEngine` helpers (`operatorLabel`, `formatValue`, `formatList`, `describeExpected`). `formatValue` wraps **every** non-blank single value in double quotes (text, number, Boolean, date/time) so mixed-type comparisons read uniformly (`"1"` beside `at least "2"` instead of bare `1` beside `"2"`), and humanizes the value first: numbers gain thousands separators (`"50,000"`; a trailing `.0` is dropped), Booleans read `"Yes"` / `"No"`, dates/datetimes render in the running user's locale and time zone, and semicolon-delimited multi-select values render comma-separated (`"Hot, Warm, Cold"`). Pure `DATE` values are formatted through the `DATE` branch before `Datetime` so orgs where Apex type checks overlap do not mis-render dates as datetimes. Typed values are converted directly; the same shapes arriving as metadata operand strings (the Expected side) are matched textually so both sides humanize identically. `operatorLabel` returns verb phrases for the expected side: e.g. `to equal "Technology"`, `at least "50,000"`, `to be one of ["North", "South"]`. Null/blank values render as `(blank)`; empty lists as `(none)`. List previews cap at 10 values with a `(N total)` suffix when truncated. `IS_BLANK` / `IS_NOT_BLANK` show the comparison operator phrase only (no operand). Formula evaluators route `PassConditionFormula__c` through `formatValue` for `expectedValue` (e.g. `"NOT(ISBLANK(BillingCity))"`). The LWC renders these as labelled **Found** / **Expected** chips per Check Set **Found/Expected Display** (`FoundExpectedDisplay__c`; see [9](#comparison-display-contract) and [15](#15-lwc-behavior)).
+**Display formatting:** On a determinate `PASS` or `FAIL`, Query and CompareTwoQueries evaluators
+populate `actualValue` and `expectedValue` using `RecordHealthCheckComparisonEngine` helpers.
+
+- `formatValue` quotes every non-blank single value so mixed types read uniformly. Numbers gain
+  thousands separators, Booleans read `"Yes"` / `"No"`, dates use the running user's locale and time
+  zone, and semicolon-delimited values become comma-separated.
+- Pure `DATE` values use the `DATE` branch before `Datetime`. Typed values and equivalent metadata
+  operand strings humanize consistently on both sides.
+- `operatorLabel` produces phrases such as `to equal "Technology"`, `at least "50,000"`, and
+  `to be one of ["North", "South"]`.
+- Null or blank values render as `(blank)`; empty lists render as `(none)`. List previews show at
+  most 10 values and add an `(N total)` suffix when truncated.
+- `IS_BLANK` and `IS_NOT_BLANK` show only the operator phrase. Formula evaluators format
+  `PassConditionFormula__c` for `expectedValue` in the same pipeline.
+
+The LWC renders the result as **Found** and **Expected** chips according to Check Set
+**Found/Expected Display** (`FoundExpectedDisplay__c`; see
+[comparison display](#comparison-display-contract) and [LWC behavior](#15-lwc-behavior)).
 
 ## 8. Applicability
 
@@ -229,13 +262,13 @@ Ordered comparisons try `Decimal`, then `DATETIME`, then `DATE`. Incompatible ty
 | `WHEN_FORMULA_TRUE` | `ApplicabilityFormula__c` must return Boolean `true` to proceed. |
 | `WHEN_COUNT_QUERY_MATCHES` | `ApplicabilityCountQuery__c` returns a COUNT; `ApplicabilityCountOperator__c` compares it to `ApplicabilityCountThreshold__c`. |
 
-## 9. Result Contract (`RecordHealthCheckResult`)
+## 9. Result contract (`RecordHealthCheckResult`)
 
 | Field | Purpose |
 | ----- | ------- |
-| `contractVersion` | Sync response contract (`0.1`). Additive. |
+| `contractVersion` | Stable sync response contract (`1.0`). Additive. |
 | `runId` | Correlation id for the evaluation. |
-| `checkDeveloperName` | Rule key. |
+| `ruleDeveloperName` | Rule key. |
 | `label` | User-facing Check Title. |
 | `priority` | Display ordering value. |
 | `evaluatorType` | `FORMULA`, `QUERY`, `COMPARE_TWO_QUERIES`, or `APEX`. |
@@ -248,7 +281,7 @@ Ordered comparisons try `Decimal`, then `DATETIME`, then `DATE`. Incompatible ty
 | `expectedValueLabel` | Caption for Expected / Passes when. |
 | `actualValueDetail` | Human-readable diagnostic details note for the **Found** side (for example `Rating → "Cold"`). Populated when the evaluator sets `actualValueSource` **and** the running user has **`Record_Health_Check_View_Details`**. Not tied to `ShowDiagnostics__c`. |
 | `expectedValueDetail` | diagnostic details note for the **Expected** side. Same gating as `actualValueDetail`. |
-| `actionLabel` | Read-only remediation link label from `ActionLabel__c`; defaults to `Fix this` when a safe URL exists without a label. Populated only on `FAIL`. |
+| `actionLabel` | Remediation link label from `ActionLabel__c`; defaults to `Fix this` when a safe URL exists without a label. Populated only on `FAIL`. |
 | `actionUrl` | Resolved and sanitized remediation URL from `ActionUrl__c`. Supports merge tokens. Only same-org relative paths and `https://` URLs are allowed; unsafe or over-2000-character resolved URLs are dropped. Populated only on `FAIL`. |
 | `fixInstructions` | Optional guidance from `FixMessage__c`, with merge tokens resolved. Populated only on `FAIL`; may render even when `actionUrl` is dropped. |
 | `detailMessage` | Diagnostic detail (server-side; not `@AuraEnabled`). |
@@ -272,7 +305,7 @@ Evaluators populate internal `RecordHealthCheckValueSource.Detail` on `actualVal
 | Screen readers | Values enter `aria-label` when visible (inline or expanded). diagnostic details is excluded from the card's accessible name because it is console-only. |
 | Formula checks | By default no separable single-value "found" value: `expectedValue` carries the unquoted pass/fail formula and `expectedValueLabel` is `Passes when`. This `Passes when` line is **Advanced-tier** — the engine clears it for users without `Record_Health_Check_View_Details`, so a business user sees the failure message only (see [Comparison visibility model and permission tiers](#comparison-visibility-model-and-permission-tiers)). Optional display-only `DisplayFoundFormula__c` / `DisplayExpectedFormula__c` single values populate the two sides (under the standard `Found` / `Expected` keys, ungated) for balance/comparison checks; pass/fail stays decided solely by the Boolean `PassConditionFormula__c`, and an unresolvable display formula falls back to the default. |
 | Skipped / unable / error | Neither value nor diagnostic details is shown: these outcomes have no determinate comparison. |
-| Programmatic API | `RecordHealthCheck.run` returns the same fields on `RecordHealthCheckResult`. |
+| Programmatic API | `RecordHealthCheck.runRule` returns the same fields on `RecordHealthCheckResult`. |
 
 ### Remediation display contract
 
@@ -349,9 +382,9 @@ Otherwise a business user sees the **failure message only**
 intentional, not a regression: display formulas are how an admin gives business
 users chips on a Formula check.
 
-**Behavior as of v1.2.0:** The **Passes when** line is Advanced-tier only. Business users see the failure message and any display-formula Found/Expected chips; diagnostic details renders in browser console diagnostics only (and only with `ShowDiagnostics__c` on), not on the card.
+**V2 behavior:** The **Passes when** line is Advanced-tier only. Business users see the failure message and any display-formula Found/Expected chips; diagnostic details renders in browser console diagnostics only (and only with `ShowDiagnostics__c` on), not on the card.
 
-**Implementation (shipped in v1.2.0).**
+**Implementation.**
 
 - Apex `RecordHealthCheckAccess`: both getters resolve to `Record_Health_Check_View_Details`.
 - Apex `RecordHealthCheckEngine.applyPassesWhenEntitlement` and `applyValueSourceDetail` gate Advanced-tier strings.
@@ -386,9 +419,9 @@ behavior IDs **B14**, **B18**; and the §17 custom-permission list.
 | `totalAvailableCheckCount` | Active Rules before the 25-check cap. |
 | `checksOmittedByLimit` | True when Rules were truncated. |
 | `inactiveRuleCount` | Inactive Rules on the Check Set (not run). The LWC shows `N inactive rule(s) omitted.` when this is greater than zero, pluralizing `rule` / `rules` on N. |
-| `checks` | Ordered `RecordHealthCheckDefinition` list (`developerName`, `label`, `description`, `priority`, `dependsOnCheckDeveloperName`). |
+| `checks` | Ordered `RecordHealthCheckDefinition` list (`developerName`, `label`, `description`, `priority`, `dependsOnRuleDeveloperName`). |
 
-## 10. Reason Codes
+## 10. Reason codes
 
 Canonical catalog: [Reason codes](reason-codes.md).
 
@@ -427,7 +460,7 @@ Safety contract:
 - Non-aggregate queries receive `LIMIT maxRows + 1` when no explicit limit is present (default **200**, overridable via `MaxQueryRows__c` (hard cap 2000)).
 - Results exceeding the row cap are rejected with `GOVERNOR_LIMIT_RISK`.
 
-## 12. Message Tokens
+## 12. Message tokens
 
 Failure and unable-to-evaluate messages may use `{!record.FieldApiName}` merge tokens. Unresolved tokens are replaced with blank text. A bad message token does not change Rule status.
 
@@ -435,9 +468,10 @@ Failure and unable-to-evaluate messages may use `{!record.FieldApiName}` merge t
 
 ## 13. Programmatic API (`RecordHealthCheck` and Flow)
 
-Canonical how-to: [Programmatic API and Flow](../apex/programmatic-api.md). Lifecycle publication: [Lifecycle events](lifecycle-events.md).
+Canonical how-to: [Apex API](../apex/public-api.md) and [Flow actions](../flow/actions.md). Lifecycle
+publication: [Platform events](lifecycle-events.md).
 
-The façade delegates to the same engine as the LWC. Catchable evaluation failures surface as result statuses; uncatchable Apex governor limit exceptions behave like any other Apex API. Sync responses carry `contractVersion = 0.1`.
+The façade delegates to the same engine as the LWC. Catchable evaluation failures surface as result statuses; uncatchable Apex governor limit exceptions behave like any other Apex API. Sync responses carry the stable `contractVersion = 1.0`.
 
 ### Caps
 
@@ -449,34 +483,34 @@ The façade delegates to the same engine as the LWC. Catchable evaluation failur
 ### Apex — one Rule
 
 ```apex
-RecordHealthCheckResult r = RecordHealthCheck.run(
-    'Account_Data_Quality',
+RecordHealthCheckResult r = RecordHealthCheck.runRule(
     'Account_DQ_BillingCity',
     accountId);
-RecordHealthCheck.run(configName, checkName, recordId, 'ticket-12345'); // optional runId
-List<RecordHealthCheckResult> bulk = RecordHealthCheck.run(configName, checkName, recordIds);
+RecordHealthCheck.runRule(checkName, recordId, 'ticket-12345'); // optional runId
+List<RecordHealthCheckResult> bulk = RecordHealthCheck.runRule(checkName, recordIds);
 ```
 
 ### Apex — Check Set
 
 ```apex
-RecordHealthCheckSetResult setResult = RecordHealthCheck.runSet(configName, recordId);
-List<RecordHealthCheckSetResult> bulkSets = RecordHealthCheck.runSet(configName, recordIds);
+RecordHealthCheckSetResult setResult = RecordHealthCheck.runSet(checkSetDeveloperName, recordId);
+List<RecordHealthCheckSetResult> bulkSets = RecordHealthCheck.runSet(checkSetDeveloperName, recordIds);
 ```
 
 `RecordHealthCheckSetResult` includes rollup `status`, outcome counts, and ordered `results`. Rollup priority: `ERROR` → `UNABLE_TO_EVALUATE` → `FAIL` → `PASS` → `SKIPPED`.
 
 ### Flow — packaged action
 
-Invocable **Run Record Health Check** (`RecordHealthCheckFlowAction`):
+Two invocable actions mirror the Apex methods:
 
-- Required: Check Set API Name, Record ID.
-- Optional: Rule API Name (blank = whole Check Set).
-- Outputs: status, counts (set path), reasonCode (rule path), `resultJson`.
+- **Run Record Health Check Rule** requires Rule API Name and Record ID and returns status, reason code, and `resultJson`.
+- **Run Record Health Check Set** requires Check Set API Name and Record ID and returns status, outcome counts, and `resultJson`.
 
 ### Lifecycle publication
 
-Façade (and Flow-via-façade) runs may publish opt-in platform events after commit when `PublishRunEvent__c` / `PublishResultEvent__c` are enabled. LWC page evaluations never publish. See [Lifecycle events](lifecycle-events.md).
+Explicit LWC Run/Rerun, façade, and Flow runs may publish opt-in platform events after commit when
+`PublishRunEvent__c` / `PublishResultEvent__c` are enabled. Automatic LWC page-load evaluations
+never publish. See [Lifecycle events](lifecycle-events.md).
 
 ### Anonymous Apex runner
 
@@ -493,7 +527,7 @@ All framework log lines flow through `RecordHealthCheckLogger`: the engine, cont
 
 | Concept | Behavior |
 | ------- | -------- |
-| `runId` | Correlation id: one id is reused for an Automatic definition request and its automatic run; manual reruns receive a fresh id. Callers may supply one to `RecordHealthCheck.run`. Control characters and excessive lengths are removed by the logger. |
+| `runId` | Correlation id: one id is reused for an Automatic definition request and its automatic run; manual reruns receive a fresh id. Callers may supply one to `RecordHealthCheck.runRule`. Control characters and excessive lengths are removed by the logger. |
 | `user` | `UserInfo.getUserId()`: authoritative, not client-supplied. |
 | Levels | `ERROR`, `WARN`, `INFO`, `DEBUG` (maps to `FINE` in `System.debug`). |
 
@@ -600,7 +634,7 @@ Before the first Manual run (both `ONE_BY_ONE` and `ALL_AT_ONCE`), shows one lin
 - Applies `PassedChecksDisplay__c` and `SkippedChecksDisplay__c`: rows in `SHOW_COUNT_ONLY` mode are filtered from the list even when `CardRevealMode__c` is `ALL_AT_ONCE`.
 - Shows **Found** / **Expected** comparison chips per Check Set **Found/Expected Display** (`FoundExpectedDisplay__c`; see [9](#comparison-display-contract)): failed checks show values inline in every mode; passing checks show inline only with **Every check** (`ALL_ROWS`), otherwise behind an expander with **On demand** (`ON_DEMAND`) or hidden with **Failed checks only** (`FAILURES_ONLY`). Formula checks may show Expected only unless display formulas populate both sides; the raw `Passes when` line is Advanced-tier (`Record_Health_Check_View_Details`).
 - diagnostic details (`actualValueDetail` / `expectedValueDetail`) does not render on the card. For viewers with **`Record_Health_Check_View_Details`**, source details appear only in the F12 browser console diagnostics.
-- Shows a read-only remediation block on `FAIL` rows when Apex returns `actionUrl` and/or `fixInstructions`: the link uses `actionLabel` (defaulting to `Fix this` server-side when needed), and instructions render as quiet helper text. If URL sanitization drops the link, instructions can still render.
+- Shows a remediation block on `FAIL` rows when Apex returns `actionUrl` and/or `fixInstructions`: the link uses `actionLabel` (defaulting to `Fix this` server-side when needed), and instructions render as quiet helper text. Rendering or opening the link does not make Record Health Check perform DML; the destination can still be an edit or create page. If URL sanitization drops the link, instructions can still render.
 - Renders `FailureMessage__c` / `UnableToEvaluateMessage__c` across multiple lines: newlines authored in Setup become separate visual lines (interior blank lines preserved as spacing), folded into one sentence for the row `aria-label`.
 - Shows `adminDetailMessage` **inline** (no click-to-expand), per-row diagnostics-meta, and console footnote when `ShowDiagnostics__c` is on **and** the user has `Record_Health_Check_View_Details` (see [Show Diagnostics guide](../guides/show-diagnostics.md)).
 
@@ -647,9 +681,9 @@ Requires `Record_Health_Check_View_Details` plus **Show Diagnostics** on the Che
 
 | Property | Type | Purpose |
 | -------- | ---- | ------- |
-| `checkSetName` | String | `DeveloperName` of the `Record_Health_Check_Set__mdt` record to run. Selected in Lightning App Builder from a picklist (`apex://RecordHealthCheckSetPicklist`) scoped to the record page's object and sorted by DeveloperName; both the displayed label and the stored value are the DeveloperName (unique and stable). The picklist auto-selects the object's sole active Check Set when exactly one exists (`getDefaultValue`); with zero or several, the admin picks. Sent to Apex under the `configName` parameter. This is the **only** design-time property — the former `comparisonDisclosure` was removed. |
+| `checkSetName` | String | `DeveloperName` of the `Record_Health_Check_Set__mdt` record to run. Selected in Lightning App Builder from a picklist (`apex://RecordHealthCheckSetPicklist`) scoped to the record page's object and sorted by DeveloperName; both the displayed label and the stored value are the DeveloperName (unique and stable). The picklist auto-selects the object's sole active Check Set when exactly one exists (`getDefaultValue`); with zero or several, the admin picks. Sent to Apex under the `checkSetDeveloperName` parameter. This is the **only** design-time property — the former `comparisonDisclosure` was removed. |
 
-## 16. Validation Rules
+## 16. Validation rules
 
 `RecordHealthCheckMetadataValidator` (deploy-time) and `RecordHealthCheckConfigService` (runtime) validate overlapping rules. Both alias valid-value sets from `RecordHealthCheckConstants`. The validator is a CI and Anonymous Apex utility; there is no Setup UI wired to it yet.
 
@@ -661,16 +695,13 @@ exposes structured JSON through `validateAsJson()` for CI.
 
 Validation must catch: missing required fields, unknown modes and Evaluation Types, invalid **`FoundExpectedDisplay__c`**, invalid Operator / **How To Read Query Results** combinations, invalid **If Query Finds No Records** values, invalid Apex JSON, missing or cyclic dependencies, and row safety values outside framework caps.
 
-## 17. Deployment Contents
+## 17. Deployment contents
 
 - Apex classes and interfaces (including `RecordHealthCheck` façade, `RecordHealthCheckLogger`, `RecordHealthCheckConstants`, `RecordHealthCheckSoqlTemplate`, `RecordHealthCheckValueResolver`, `RecordHealthCheckValueSource`)
 - Lightning Web Component
 - Custom Metadata Type definitions and fields
-- Sample Custom Metadata: **hero** Check Set `Example_Account_360_Health_Check` in Core. Reusable
-  scenario packs and the pattern library live in
-  [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples) (V2 §3 boundary).
-  Core may still contain transitional sample records during migration — prefer Core + hero manifests
-  for new installs.
+- No sample Custom Metadata. Reusable scenario packs and the pattern library live in
+  [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples).
 - Layout metadata for Custom Metadata editing
 - Custom permissions: `Record_Health_Check_View_Details`, `Record_Health_Check_Configure`
 - Permission Sets: `Record_Health_Check_User`, `Record_Health_Check_Admin`
@@ -678,7 +709,7 @@ Validation must catch: missing required fields, unknown modes and Evaluation Typ
 
 Deploy via `force-app` or `manifest/package.xml`.
 
-## 18. Default Behavior Summary
+## 18. Default behavior summary
 
 | Field | CMT default | Runtime when blank on Rule |
 | ----- | ----------- | -------------------------- |
@@ -688,7 +719,7 @@ Deploy via `force-app` or `manifest/package.xml`.
 
 For `ANY_ROW_PASSES`, `ALL_ROWS_PASS`, and `COMPARE_AS_LISTS`, set `NoRowsResult__c` explicitly so intent is visible in metadata.
 
-## 19. Resolved Issues (formerly 18)
+## 19. Resolved issues (formerly 18)
 
 These items were previously tracked as known bugs and are **fixed** in the current codebase:
 
@@ -730,17 +761,17 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | B35 | Check Set **Found/Expected Display** (`FoundExpectedDisplay__c`) controls Found/Expected visibility: **On demand** (`ON_DEMAND`, default), **Failed checks only** (`FAILURES_ONLY`), or **Every check** (`ALL_ROWS`); the expander appears on checks that have values hidden behind it. |
 | B36 | `actualValueDetail` / `expectedValueDetail` diagnostic detail notes gated by `Record_Health_Check_View_Details`; rendered from `RecordHealthCheckValueSource` by the engine. |
 | B37a | Category Rule fields ship in metadata; LWC grouping is not implemented yet. |
-| B37b | Remediation Rule fields (`FixMessage__c`, `ActionLabel__c`, `ActionUrl__c`) render as read-only guidance on `FAIL` rows. Unsafe or over-2000-character resolved URLs are dropped, but fix instructions may still render. |
+| B37b | Remediation Rule fields (`FixMessage__c`, `ActionLabel__c`, `ActionUrl__c`) render guidance and navigation on `FAIL` rows. The link itself performs no DML; a destination page may let the user edit or create a record. Unsafe or over-2000-character resolved URLs are dropped, but fix instructions may still render. |
 | B38 | `Record_Health_Check_Configure` custom permission ships in Admin set for future admin tooling; no runtime branch today. |
 
-## 20. Open Limitations and Edge Cases
+## 20. Open limitations and edge cases
 
 | Area | Behavior | Mitigation |
 | ---- | -------- | ---------- |
 | FormulaEval budget | Platform limit 100 calls/transaction; framework throws at 95 when the transaction-wide counter is reached. A single Rule can use multiple calls. | Prefer SOQL checks; keep formula-heavy Rules sparse per Check Set; avoid many formula checks in one Flow/batch transaction. |
 | Declared single-value formula return type | `FormulaResultType__c` (`AUTO` default): when set, declares a comparison/value-to-test formula's return type so it resolves in **one** FormulaEval call instead of probing up to eight. The declared type is **trusted**: if it is wrong but the platform still coerces the formula to that type (e.g. declaring `TEXT` for a numeric formula yields the string `"1000"` rather than the number `1000`), the resolved value's type changes and ordered comparisons (`GREATER_THAN`, etc.) may switch to lexical semantics. A declared type that the platform **rejects** degrades safely back to the full probe. | Leave as `AUTO` unless the formula's return type is known; set it only to the formula's actual type. Auto always resolves correctly: it only costs more FormulaEval calls. |
 | Server dependency cost | Within one Apex transaction the engine memoizes prerequisite results in a static cache keyed by config + record + check. The LWC still evaluates each Rule in its own transaction, so a prerequisite may run twice (once as its own row, once when a dependent calls the server). | Accept cost for safety on the record-page path; direct Apex chains benefit from memoization. |
-| Same-transaction re-evaluation | Dependency memoization cache is **cleared after each top-level** `evaluate()` / `run()`. A second call in the same Apex transaction reloads the record and re-evaluates. Memoization applies only **within** one evaluation when resolving `PrerequisiteRule__c` chains. | Safe for Flow/batch loops that call `run()` after DML; do not rely on cross-call memoization. |
+| Same-transaction re-evaluation | Dependency memoization cache is **cleared after each top-level** `evaluate()` / `runRule()`. A second call in the same Apex transaction reloads the record and re-evaluates. Memoization applies only **within** one evaluation when resolving `PrerequisiteRule__c` chains. | Safe for Flow/batch loops that call `runRule()` after DML; do not rely on cross-call memoization. |
 | SOQL tokens inside partial literals | The exact substring `'{!record.Field}'` inside a larger literal is substituted (for example `Name LIKE '{!record.Name}%'` → `Name LIKE 'Acme%'`). Exotic nesting (multiple tokens in one literal, escaped quotes) is untested. | Prefer standalone `'{!record.Field}'` or unquoted `{!record.Field}` tokens; test wildcard patterns on representative data. |
 | `WITH SYSTEM_MODE` in Rule SOQL templates | Rejected at **any** parenthesis depth before execution; framework queries run `WITH USER_MODE`. | Do not embed elevated access in Check Set templates. |
 | Dual-query list null semantics | Under `AS_NO_MATCH`, null list values use distinct internal sentinels (nulls do not match each other). All-null rows with `SKIP_RECORD` → **SKIPPED**. CompareAsLists still applies `NoRowsResult__c` when either side has **zero rows**, without distinguishing which side was empty. | Use applicability SOQL when only one side being empty should change the outcome. |
@@ -750,8 +781,8 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | single value vs list case sensitivity | single value `CONTAINS` / `DOES_NOT_CONTAIN` are **case-sensitive**; list operators (`LIST_CONTAINS_ANY`, dual list modes) normalize to lowercase. | Match casing in static values or use list operators for case-insensitive membership. |
 | DateTime token / comparison timezone | Ordered DateTime coercion treats values ending in `Z` as GMT; other strings use `Datetime.valueOf` (org/user context). Cross-type `DATE` vs `DATETIME` equality may not align. | Use consistent types; test with org timezone. |
 | Apex recent-activity Events | `AccountHasRecentActivityCheck` filters Events on **`ActivityDate`**, not `StartDateTime`: timed events can appear active when start time is before the cutoff. | Tune `daysBack` or implement a custom check using `StartDateTime` if needed. |
-| Schema describe churn | Field planning and validation call `getDescribe()` on hot paths. v1.2.0 caches global/object/field describe per Apex transaction in `RecordHealthCheckDescribeCache`. | No action for normal record-page use; avoid unbounded custom plugins that bypass the cache. |
-| Flow/batch governor pressure | Each `RecordHealthCheck.run` or Flow input row is a full engine evaluation (record load + evaluator). Bulk flows multiply SOQL/FormulaEval cost. | Keep batch sizes small; prefer targeted Rules; monitor debug logs. |
+| Schema describe churn | Field planning and validation call `getDescribe()` on hot paths. V2 caches global/object/field describe per Apex transaction in `RecordHealthCheckDescribeCache`. | No action for normal record-page use; avoid unbounded custom plugins that bypass the cache. |
+| Flow/batch governor pressure | Each `RecordHealthCheck.runRule` or Flow Rule input row is a full engine evaluation (record load + evaluator). Bulk flows multiply SOQL/FormulaEval cost. | Keep batch sizes small; prefer targeted Rules; monitor debug logs. |
 | Multi-select picklist tokens | Unquoted `{!record.Field}` on a resolved multi-select expands to `('A', 'B')`; quoted `'{!record.Field}'` keeps `'A;B;C'`. Relationship paths behave the same when the related record is loaded. | Use direct field tokens when possible; ensure relationship fields are collected by the engine. |
 | 25-check cap | Dependents skip with `DEPENDENCY_NOT_IN_RUN` if prerequisite is omitted. UI shows **First 25 of N shown** (N = `totalAvailableCheckCount`). Deploy-time validator emits `CHECK_LIMIT_EXCEEDED` WARNING when a Check Set has more than 25 active Rules and warns when a dependency target is outside the first-25 window. | Keep Check Sets ≤ 25 active Rules or raise priority of prerequisites. |
 | Stop on first error | Only `ERROR` stops the run; `FAIL` and `UNABLE_TO_EVALUATE` do not. Enables sequential execution. | Document intent; use dependencies if sequencing matters. |
@@ -759,7 +790,7 @@ These items were previously tracked as known bugs and are **fixed** in the curre
 | Static comparison values | `ExpectedFixedValue__c` is untyped text. | Use simple literals; normalize in SOQL or Apex for locale-specific formats. |
 | Blank `CardTitle__c` at runtime | Required in CMT field metadata and caught by the validator. If blank metadata still reaches `getDefinitionResponse`, the LWC falls back to Check Set `MasterLabel`, then `DeveloperName`, so the card title is never empty. | Prefer a real Card Title; the fallback is a safety net, not a substitute for good labeling. |
 | Record save | No automatic re-run after inline edit. | User clicks **Rerun** or refreshes the page. |
-| Component placement | Record-page only (`lightning__RecordPage`). | Use `RecordHealthCheck.run` or Flow for non-record-page automation. |
+| Component placement | Record-page only (`lightning__RecordPage`). | Use `RecordHealthCheck.runRule`, `runSet`, or Flow for non-record-page automation. |
 | `checksOmittedByLimit` logging | When Rules are truncated, Apex emits a WARN with `CHECK_LIMIT_EXCEEDED` and the LWC shows **First 25 of N shown**. | Review Check Set active Rule count during configuration. |
 | Category UI | `Category__c` is editable in Setup but rows are not grouped by category on the card yet. | Use Category for authoring consistency and future grouping; do not expect visible row groups today. |
 | Remediation links | `FixMessage__c`, `ActionLabel__c`, and `ActionUrl__c` render only on failed checks. URLs are resolved from merge tokens and sanitized; unsafe or over-2000-character URLs are dropped. | Use same-org relative links or `https://` URLs. Keep instructions helpful even when a URL cannot render. |

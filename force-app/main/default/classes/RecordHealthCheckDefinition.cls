@@ -13,5 +13,5 @@ public class RecordHealthCheckDefinition {
   @AuraEnabled
   public Decimal priority;
   @AuraEnabled
-  public String dependsOnCheckDeveloperName; // null when no dependency
+  public String dependsOnRuleDeveloperName; // null when no dependency
 }

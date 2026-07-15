@@ -1,4 +1,4 @@
-# Record Health Check Configuration Guide
+# Record Health Check configuration guide
 
 This guide explains how Check Sets and Rules wire to the Lightning record page card, how to choose an Evaluation Type, and how to troubleshoot common misconfigurations. The card is advisory: it shows pass, fail, skipped, unable, or error for each Rule without blocking saves or persisting results. Prerequisites: Custom Metadata edit access in Setup and a deployed `recordHealthCheck` component.
 
@@ -16,7 +16,7 @@ This guide explains how Check Sets and Rules wire to the Lightning record page c
 | [5. Result meanings](#5-result-meanings) | Status and severity |
 | [6. Formula rules](#6-formula-rules) | Record-formula patterns |
 | [7. Query rules](#7-query-rules) | Single-query patterns |
-| [8. Compare two queries rules](#8-comparetwoqueries-rules) | Dual-query patterns |
+| [8. Compare two queries rules](#8-compare-two-queries-rules) | Dual-query patterns |
 | [9. Apex rules](#9-apex-rules) | Use custom Apex patterns |
 | [10. Applicability and dependencies](#10-applicability-and-dependencies) | Gating and prerequisites |
 | [11. Merge tokens](#11-merge-tokens) | `{!record.Field}` in messages and SOQL |
@@ -27,16 +27,17 @@ This guide explains how Check Sets and Rules wire to the Lightning record page c
 
 For ready-to-deploy patterns, use the
 [RecordHealthCheck-Examples catalog](https://github.com/gkolan/RecordHealthCheck-Examples/tree/main/catalog).
-For detailed behavior, see the [Design Specification](../reference/record-health-check-design-spec.md).
-For setup, see [Getting Started](../installation/getting-started.md). For action link examples, see
-[Action Links and Fix Message](action-links.md). For troubleshooting detail, see
+For detailed behavior, see the [Design specification](../reference/record-health-check-design-spec.md).
+
+For setup, see [Getting started](../installation/getting-started.md). For action-link patterns, see
+[Action links and Fix Message](action-links.md). For troubleshooting detail, see
 [Show Diagnostics](show-diagnostics.md).
 
 ## 1. Mental Model
 
 | Piece | What it means |
 | ----- | ------------- |
-| Component instance | The Lightning record page component. It points to one Check Set through the **Check Set** picker in App Builder (`checkSetName` in the LWC, sent to Apex as `configName`). |
+| Component instance | The Lightning record page component. It points to one Check Set through the **Check Set** picker in App Builder (`checkSetName` in the LWC, sent to Apex as `checkSetDeveloperName`). |
 | Check Set | A group of Rules for one base object (for example, Account). Stored in `Record_Health_Check_Set__mdt`. |
 | Rule | One individual check inside a Check Set. Stored in `Record_Health_Check_Rule__mdt`. |
 | Evaluation Type | How a Rule checks the record: Formula, Query, Compare Two Queries, or Apex. |
@@ -72,7 +73,7 @@ Representative Account patterns (deployable versions are in the
 - Query + `ANY_ROW_PASSES`: At least one open Opportunity exceeds 10% of Annual Revenue.
 - `COMPARE_TWO_QUERIES`: Contact count equals open Opportunity count.
 - Dependency: Contact Email checked only after "has Contacts" passes.
-- Apex: Recent activity via shipped class `AccountHasRecentActivityCheck`.
+- Apex: Recent activity via an implementation from the Examples repository.
 
 ## 3. Check Set Fields
 
@@ -80,7 +81,7 @@ Every field on `Record_Health_Check_Set__mdt`: including picklist values for **W
 
 ## 4. Rule Fields
 
-Every field on `Record_Health_Check_Rule__mdt` is documented in **[Rule fields](../metadata/rule-fields.md)**. Optional **Category** is metadata-only for now (UI grouping planned). Optional **Fix Message**, **Action Label**, and **Action URL** fields render as read-only guidance on failed checks. Examples: [Action Links and Fix Message](action-links.md).
+Every field on `Record_Health_Check_Rule__mdt` is documented in **[Rule fields](../metadata/rule-fields.md)**. Optional **Category** is metadata-only for now; the V2 card does not group rows by it. Optional **Fix Message**, **Action Label**, and **Action URL** fields render guidance and navigation on failed checks. Examples: [Action links and Fix Message](action-links.md).
 
 ## 5. Result Meanings
 
@@ -102,24 +103,33 @@ Severity applies **only** to `FAIL` results.
 
 ## 6. Formula Rules
 
-Use Formula when the result is expressible with Salesforce formula syntax on the current or parent record.
+Use Formula when the result is expressible with Salesforce formula syntax on the current record or
+its parent relationships. Start with the [Formula example](../checks/formula-example.md); use the
+[Formula reference](../checks/formula-reference.md) for the complete contract.
 
 - `null` formula result (for example, `Parent.Field` with no parent) → **Unable To Evaluate**, not Fail.
 - Only explicit `false` fails the check.
 
-Billing City required:
+Use this one example as the model for a meaningful Formula Rule. It combines three business
+requirements and traverses two parent levels. The Account passes when it has a contact channel, has
+a billing country, and its revenue is at least 10% of the top-level portfolio Account's revenue.
 
 ```text
-PassConditionFormula__c: NOT(ISBLANK(BillingCity))
-FailureMessage__c: {!record.Name} is missing Billing City.
+EvaluationType__c: FORMULA
+PassConditionFormula__c: AND(
+  OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website))),
+  NOT(ISBLANK(BillingCountry)),
+  AnnualRevenue >= Parent.Parent.AnnualRevenue * 0.10
+)
+DisplayFoundFormula__c: AnnualRevenue
+DisplayExpectedFormula__c: Parent.Parent.AnnualRevenue * 0.10
+FormulaResultType__c: NUMBER
+FailureMessage__c: {!record.Name} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.
 ```
 
-Phone or Website required:
-
-```text
-PassConditionFormula__c: OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website)))
-FailureMessage__c: {!record.Name} needs either a Phone or Website.
-```
+If either parent relationship or a required revenue value is unavailable, the Rule cannot reach a
+reliable conclusion and returns **Unable to Evaluate**. Use a shallower path when the object model
+does not guarantee two Account parents.
 
 ### Formula operands can be formula or roll-up fields
 
@@ -138,13 +148,9 @@ By default a Formula check shows only a **Passes when** line — the pass/fail f
 
 > **Found and Expected are not compared to each other.** The engine evaluates each independently and displays them. `PassConditionFormula__c` performs the actual comparison (`FieldA = FieldB`, `Total >= 50000`, …) and is the only thing that determines pass/fail. If you put a formula in Found/Expected, it does **not** affect the result — it only changes what the row displays. There is no separate "formula comparison operator" setting: the comparison lives inside `PassConditionFormula__c`.
 
-```text
-PassConditionFormula__c:      BLANKVALUE(Debit_Total__c, 0) = BLANKVALUE(Credit_Total__c, 0)
-DisplayFoundFormula__c:    BLANKVALUE(Debit_Total__c, 0)
-DisplayExpectedFormula__c: BLANKVALUE(Credit_Total__c, 0)
-```
-
-On a failing row this renders **Found "100"** / **Expected "75"** instead of echoing the formula.
+In the example above, a failing row displays the Account's revenue as **Found** and 10% of the
+grandparent Account's revenue as **Expected**, while the complete Boolean formula remains the only
+pass/fail decision.
 
 > [!CAUTION]
 > **Keep Found/Expected consistent with Pass Condition.** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassConditionFormula__c` compares A to B, use A for `DisplayFoundFormula__c` and B for `DisplayExpectedFormula__c`. Otherwise a row can **pass while Found ≠ Expected** or fail while the values look equal. A safe habit: copy each side of the comparison in `PassConditionFormula__c` verbatim into the matching display formula.
@@ -170,7 +176,9 @@ So "compare SOQL to a formula" and "compare SOQL to a fixed value" are existing 
 
 ## 7. Query Rules
 
-Use Query when one SOQL result is the primary value.
+Use Query when one SOQL result is the primary value. Start with the
+[Query example](../checks/query-example.md); use the [Query reference](../checks/query-reference.md)
+for result modes and edge cases.
 
 At least one Contact:
 
@@ -201,7 +209,10 @@ ExpectedRecordFormula__c: AnnualRevenue * 0.1
 
 ## 8. Compare Two Queries Rules
 
-Use when both sides come from SOQL.
+Use when both sides come from SOQL. Start with the
+[Compare two queries example](../checks/compare-two-queries-example.md); use the
+[Compare two queries reference](../checks/compare-two-queries-reference.md) for the complete
+contract.
 
 - `ONE_RESULT` + single-value operators for single values.
 - `COMPARE_AS_LISTS` + `LISTS_OVERLAP`, `LISTS_CONTAIN_ALL`, or `LISTS_MATCH_EXACTLY` for lists (**case-insensitive** list matching; `CONTAINS` / `DOES_NOT_CONTAIN` on single-value text are **case-sensitive**).
@@ -218,19 +229,20 @@ ComparisonOperator__c: Equals
 ## 9. Apex Rules
 
 Use Apex when metadata cannot express the Rule safely. See the
-[Apex check guide](../apex/plugin-reference.md), the
+[Apex reference](../apex/apex-reference.md), the
 [Apex examples](https://github.com/gkolan/RecordHealthCheck-Examples/tree/main/packs/apex-advanced-checks),
-and the [`RecordHealthCheckRule` interface](../apex/plugin-contract.md).
+and the [Apex example](../apex/apex-example.md).
 
-**Shipped example classes:** `AccountHasRecentActivityCheck`, `AccountOpenOpportunityHealthCheck`.
-Deploy every custom class before referencing it in **Apex Class**.
+**Examples-repository classes:** `AccountHasRecentActivityCheck` and
+`AccountOpenOpportunityHealthCheck`. Install their pack before referencing either class in
+**Apex Class**.
 
 | Setup label | API name | Role |
 | ----------- | -------- | ---- |
 | Apex Class | `ApexClass__c` | Class implementing `RecordHealthCheckRule` |
 | Apex Parameters (JSON) | `ApexParametersJson__c` | Optional tuning map passed as `context.parameters` |
 
-For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-checkmethod__c--apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
+For AI-assisted drafting, see [LLM Configuration Guide: Apex](llm-configuration.md#54-apex-evaluationtype__c--apex) and [recent-activity Apex pattern](llm-configuration.md#106-recent-taskevent-activity-apex-multi-object).
 
 ## 10. Applicability and Dependencies
 
@@ -312,9 +324,9 @@ Contact Finance to reconcile.
 | Stale results after metadata edit | Component not reloaded | Refresh the record page. |
 | Stale results after inline edit | No auto-rerun on record save | Click **Rerun** or refresh the page. |
 | Prerequisite skipped | 25-check cap | Lower the prerequisite's Evaluation Order so it runs within the first 25, or reduce active Rules. |
-| Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Stay within `MAX_RECORDS_PER_CALL` (200) and `MAX_EVALUATIONS_PER_CALL` (15); prefer `runSet` with a focused Check Set; see [Programmatic API and Flow](../apex/programmatic-api.md). |
+| Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Stay within `MAX_RECORDS_PER_CALL` (200) and `MAX_EVALUATIONS_PER_CALL` (15); prefer `runSet` with a focused Check Set; see [Apex API](../apex/public-api.md) or [Flow actions](../flow/actions.md). |
 | Check passes in UI but fails from custom automation | Different running user (FLS) | Automation runs as the integration or invoking user: verify field access. |
-| Expected a lifecycle event but none arrived | Publishing setting is off, the Rule ran from the record page, or the transaction rolled back | Enable **Publish Run Event** or **Publish Result Event**; run from Apex or Flow, not the card; confirm the transaction committed; see [Lifecycle events](../reference/lifecycle-events.md). |
+| Expected a lifecycle event but none arrived | Publishing is off, the run was automatic page load, or the transaction rolled back | Enable **Publish Run Event** or **Publish Result Event**; use explicit Run/Rerun, Apex, or Flow; confirm the transaction committed; see [Platform events](../reference/lifecycle-events.md). |
 
 For reason codes, see [Reason codes](../reference/reason-codes.md).
 
@@ -350,27 +362,28 @@ Before activating a Check Set:
 ## 15. Runtime and Integration
 
 **Salesforce components:** Custom Metadata → Apex evaluation classes → Lightning Web Component.
-Automation uses the public `RecordHealthCheck` Apex class or `RecordHealthCheckFlowAction`.
+Automation uses the public `RecordHealthCheck` Apex class or the separate Rule and Check Set Flow actions.
 
 **Runtime flow (record page):**
 
-1. LWC calls `getCheckDefinitions(configName, recordId, runId)` (not cacheable).
+1. LWC calls `getCheckDefinitions(checkSetDeveloperName, recordId, runId)` (not cacheable).
 2. Apex loads active Check Set, validates object, returns ordered Rule definitions.
 3. LWC orchestrates runs (dependencies, concurrency, display modes, run token).
 4. Apex evaluates each Rule (applicability, dependencies, evaluator routing).
-5. LWC renders results and summaries. **No lifecycle events** on this path.
+5. LWC renders results and summaries. Automatic runs publish nothing; explicit Run and Rerun
+   actions publish opted-in Rule events and one opted-in Set completion event.
 
 **Programmatic flow (Apex / Flow):**
 
-1. Caller invokes `RecordHealthCheck.run`, `runSet`, or Flow **Run Record Health Check**.
+1. Caller invokes `RecordHealthCheck.runRule`, `runSet`, Flow **Run Record Health Check Rule**, or Flow **Run Record Health Check Set**.
 2. The public Apex class enforces call limits and returns `RecordHealthCheckResult` or
-   `RecordHealthCheckSetResult` (`contractVersion` `0.1`).
-3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` emits Publish After Commit events (source `FACADE`). See [Programmatic API and Flow](../apex/programmatic-api.md) and [Lifecycle events](../reference/lifecycle-events.md).
+   `RecordHealthCheckSetResult` (`contractVersion` `1.0`).
+3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` emits Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). See [Apex API](../apex/public-api.md), [Flow actions](../flow/actions.md), and [Platform events](../reference/lifecycle-events.md).
 
 **Boundaries:**
 
 - Record-page results live in component state for the session; nothing is persisted from the card.
-- Optional lifecycle platform events report deliberate Apex and Flow runs without including record
+- Optional lifecycle platform events report deliberate LWC, Apex, and Flow runs without including record
   IDs, queries, messages, or field values.
 - Read-only evaluation: no record mutations from checks.
 - Formula checks require API v63.0+ (FormulaEval). Package source API version is 66.0.

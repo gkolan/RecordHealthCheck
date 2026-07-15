@@ -3,10 +3,10 @@
     <fullName>DisplayExpectedText__c</fullName>
     <label>Display: Expected Text</label>
     <description
-  >Optional and display only. Plain text (not a formula) that overrides the auto-generated Expected line on a multi-row ("Every record passes") query check. Supports the count tokens {!failCount} and {!totalCount} plus {!FieldName} record tokens. Example: every contact has an email.</description>
+  >Optional and display only. Plain text (not a formula) that overrides the auto-generated Expected line on a multi-row ("Every record passes") query check. Supports {!rhcResult.failedRecordCount} and {!rhcResult.totalRecordCount} plus {!record.FieldName} tokens. Example: every contact has an email.</description>
     <type>Text</type>
     <length>255</length>
     <inlineHelpText
-  >Display only. Plain text (not a formula) for the "Expected" line on an "Every record passes" check. Tokens: {!failCount}, {!totalCount}, {!FieldName}. Example: every contact has an email.</inlineHelpText>
+  >Display only. Plain text (not a formula) for the "Expected" line on an "Every record passes" check. Tokens: {!rhcResult.failedRecordCount}, {!rhcResult.totalRecordCount}, {!record.FieldName}.</inlineHelpText>
     <required>false</required>
 </CustomField>
