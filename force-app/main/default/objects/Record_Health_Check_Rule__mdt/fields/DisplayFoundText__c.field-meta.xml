@@ -3,10 +3,10 @@
     <fullName>DisplayFoundText__c</fullName>
     <label>Display: Found Text</label>
     <description
-  >Optional and display only. Plain text (not a formula) that overrides the auto-generated "N of M records did not pass" Found line on a multi-row ("Every record passes") query check. Supports the count tokens {!failCount} and {!totalCount} plus {!FieldName} record tokens. Example: {!failCount} of {!totalCount} contacts missing email.</description>
+  >Optional and display only. Plain text (not a formula) that overrides the auto-generated "N of M records did not pass" Found line on a multi-row ("Every record passes") query check. Supports {!rhcResult.failedRecordCount} and {!rhcResult.totalRecordCount} plus {!record.FieldName} tokens. Example: {!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount} contacts missing email.</description>
     <type>Text</type>
     <length>255</length>
     <inlineHelpText
-  >Display only. Plain text (not a formula) for the "Found" line on an "Every record passes" check. Tokens: {!failCount}, {!totalCount}, {!FieldName}. Example: {!failCount} of {!totalCount} contacts missing email.</inlineHelpText>
+  >Display only. Plain text (not a formula) for the "Found" line on an "Every record passes" check. Tokens: {!rhcResult.failedRecordCount}, {!rhcResult.totalRecordCount}, {!record.FieldName}.</inlineHelpText>
     <required>false</required>
 </CustomField>

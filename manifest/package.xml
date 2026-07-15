@@ -1,47 +1,203 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!-- Record Health Check — core (engine, schema, LWC, permissions). Deploy before any Check Set package. -->
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
-        <members>*</members>
-        <name>ApexClass</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexTestSuite</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexTrigger</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>LightningComponentBundle</name>
-    </types>
-    <!-- Custom metadata types -->
-    <types>
-        <members>*</members>
+        <members>Record_Health_Check_Rule__mdt</members>
+        <members>Record_Health_Check_Set__mdt</members>
+        <members>Record_Health_Check_Log__e</members>
+        <members>Record_Health_Check_Rule_Result__e</members>
+        <members>Record_Health_Check_Set_Run__e</members>
         <name>CustomObject</name>
     </types>
     <types>
-        <members>*</members>
+        <members>Record_Health_Check_Set__mdt.ObjectApiName__c</members>
+        <members>Record_Health_Check_Set__mdt.CardTitle__c</members>
+        <members>Record_Health_Check_Set__mdt.CardSubtitle__c</members>
+        <members>Record_Health_Check_Set__mdt.IsActive__c</members>
+        <members>Record_Health_Check_Set__mdt.CardRunMode__c</members>
+        <members>Record_Health_Check_Set__mdt.StopOnSystemError__c</members>
+        <members>Record_Health_Check_Set__mdt.CardRevealMode__c</members>
+        <members>Record_Health_Check_Set__mdt.PassedChecksDisplay__c</members>
+        <members>Record_Health_Check_Set__mdt.PublishRunEvent__c</members>
+        <members>Record_Health_Check_Set__mdt.SkippedChecksDisplay__c</members>
+        <members>Record_Health_Check_Set__mdt.ShowDiagnostics__c</members>
+        <members>Record_Health_Check_Set__mdt.FoundExpectedDisplay__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Record_Health_Check_Set__c</members>
+        <members>Record_Health_Check_Rule__mdt.CheckTitle__c</members>
+        <members>Record_Health_Check_Rule__mdt.CheckDescription__c</members>
+        <members>Record_Health_Check_Rule__mdt.Category__c</members>
+        <members>Record_Health_Check_Rule__mdt.IsActive__c</members>
+        <members>Record_Health_Check_Rule__mdt.EvaluationOrder__c</members>
+        <members>Record_Health_Check_Rule__mdt.FailureSeverity__c</members>
+        <members>Record_Health_Check_Rule__mdt.PrerequisiteRule__c</members>
+        <members>Record_Health_Check_Rule__mdt.EvaluationType__c</members>
+        <members>Record_Health_Check_Rule__mdt.ApexClass__c</members>
+        <members>Record_Health_Check_Rule__mdt.ApexParametersJson__c</members>
+        <members>Record_Health_Check_Rule__mdt.ApplicabilityMode__c</members>
+        <members>Record_Health_Check_Rule__mdt.ApplicabilityFormula__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.ApplicabilityCountOperator__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.ApplicabilityCountThreshold__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.ApplicabilityCountQuery__c</members>
+        <members>Record_Health_Check_Rule__mdt.PassConditionFormula__c</members>
+        <members>Record_Health_Check_Rule__mdt.PublishResultEvent__c</members>
+        <members>Record_Health_Check_Rule__mdt.FindInListFormula__c</members>
+        <members>Record_Health_Check_Rule__mdt.SourceQuery__c</members>
+        <members>Record_Health_Check_Rule__mdt.ComparisonQuery__c</members>
+        <members>Record_Health_Check_Rule__mdt.SourceQueryField__c</members>
+        <members>Record_Health_Check_Rule__mdt.ComparisonQueryField__c</members>
+        <members>Record_Health_Check_Rule__mdt.ComparisonOperator__c</members>
+        <members>Record_Health_Check_Rule__mdt.ExpectedFixedValue__c</members>
+        <members>Record_Health_Check_Rule__mdt.ExpectedValueSource__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.ExpectedRecordFormula__c</members>
+        <members>Record_Health_Check_Rule__mdt.EmptyValueHandling__c</members>
+        <members>Record_Health_Check_Rule__mdt.NoRowsResult__c</members>
+        <members>Record_Health_Check_Rule__mdt.QueryResultHandling__c</members>
+        <members>Record_Health_Check_Rule__mdt.MaxQueryRows__c</members>
+        <members>Record_Health_Check_Rule__mdt.FailureMessage__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.UnableToEvaluateMessage__c</members>
+        <members>Record_Health_Check_Rule__mdt.ActionLabel__c</members>
+        <members>Record_Health_Check_Rule__mdt.ActionUrl__c</members>
+        <members>Record_Health_Check_Rule__mdt.FixMessage__c</members>
+        <members>Record_Health_Check_Rule__mdt.DisplayFoundFormula__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.DisplayExpectedFormula__c</members>
+        <members>Record_Health_Check_Rule__mdt.FormulaResultType__c</members>
+        <members>Record_Health_Check_Rule__mdt.DisplayFoundText__c</members>
+        <members>Record_Health_Check_Rule__mdt.DisplayExpectedText__c</members>
+        <members>Record_Health_Check_Log__e.CheckSetDeveloperName__c</members>
+        <members>Record_Health_Check_Log__e.Code__c</members>
+        <members>Record_Health_Check_Log__e.ContractVersion__c</members>
+        <members>Record_Health_Check_Log__e.CoreVersion__c</members>
+        <members>Record_Health_Check_Log__e.EventId__c</members>
+        <members>Record_Health_Check_Log__e.ExceptionType__c</members>
+        <members>Record_Health_Check_Log__e.Level__c</members>
+        <members>Record_Health_Check_Log__e.Message__c</members>
+        <members>Record_Health_Check_Log__e.OccurredAt__c</members>
+        <members>Record_Health_Check_Log__e.RecordId__c</members>
+        <members>Record_Health_Check_Log__e.RuleDeveloperName__c</members>
+        <members>Record_Health_Check_Log__e.RunId__c</members>
+        <members>Record_Health_Check_Log__e.StackTrace__c</members>
+        <members>Record_Health_Check_Log__e.UserId__c</members>
+        <members
+    >Record_Health_Check_Rule_Result__e.CheckSetDeveloperName__c</members>
+        <members
+    >Record_Health_Check_Rule_Result__e.ContainsRestrictedDetail__c</members>
+        <members>Record_Health_Check_Rule_Result__e.ContractVersion__c</members>
+        <members>Record_Health_Check_Rule_Result__e.CoreVersion__c</members>
+        <members>Record_Health_Check_Rule_Result__e.EventId__c</members>
+        <members>Record_Health_Check_Rule_Result__e.OccurredAt__c</members>
+        <members>Record_Health_Check_Rule_Result__e.RecordId__c</members>
+        <members>Record_Health_Check_Rule_Result__e.ReasonCode__c</members>
+        <members
+    >Record_Health_Check_Rule_Result__e.RuleDeveloperName__c</members>
+        <members>Record_Health_Check_Rule_Result__e.RunId__c</members>
+        <members>Record_Health_Check_Rule_Result__e.Severity__c</members>
+        <members>Record_Health_Check_Rule_Result__e.Source__c</members>
+        <members>Record_Health_Check_Rule_Result__e.Status__c</members>
+        <members
+    >Record_Health_Check_Set_Run__e.CheckSetDeveloperName__c</members>
+        <members>Record_Health_Check_Set_Run__e.ContractVersion__c</members>
+        <members>Record_Health_Check_Set_Run__e.CoreVersion__c</members>
+        <members>Record_Health_Check_Set_Run__e.EligibleRuleCount__c</members>
+        <members>Record_Health_Check_Set_Run__e.EvaluatedRuleCount__c</members>
+        <members>Record_Health_Check_Set_Run__e.EventId__c</members>
+        <members>Record_Health_Check_Set_Run__e.FailedCount__c</members>
+        <members>Record_Health_Check_Set_Run__e.OccurredAt__c</members>
+        <members>Record_Health_Check_Set_Run__e.PassedCount__c</members>
+        <members>Record_Health_Check_Set_Run__e.Phase__c</members>
+        <members>Record_Health_Check_Set_Run__e.RecordId__c</members>
+        <members>Record_Health_Check_Set_Run__e.RunId__c</members>
+        <members>Record_Health_Check_Set_Run__e.SkippedCount__c</members>
+        <members>Record_Health_Check_Set_Run__e.Source__c</members>
+        <members>Record_Health_Check_Set_Run__e.SystemErrorCount__c</members>
+        <members>Record_Health_Check_Set_Run__e.UnableCount__c</members>
         <name>CustomField</name>
     </types>
-    <!-- Sample Check Sets and Rules — or deploy manifest/package-core.xml plus manifest/package-<CheckSet>.xml -->
     <types>
-        <members>*</members>
-        <name>CustomMetadata</name>
+        <members>RecordHealthCheck</members>
+        <members>RecordHealthCheckAccess</members>
+        <members>RecordHealthCheckApexEvaluator</members>
+        <members>RecordHealthCheckAdminDetail</members>
+        <members>RecordHealthCheckComparisonEngine</members>
+        <members>RecordHealthCheckConfigService</members>
+        <members>RecordHealthCheckConfigValidator</members>
+        <members>RecordHealthCheckConstants</members>
+        <members>RecordHealthCheckContext</members>
+        <members>RecordHealthCheckController</members>
+        <members>RecordHealthCheckDefinition</members>
+        <members>RecordHealthCheckDefinitionResponse</members>
+        <members>RecordHealthCheckDescribeCache</members>
+        <members>RecordHealthCheckCompareQueriesEvaluator</members>
+        <members>RecordHealthCheckEngine</members>
+        <members>RecordHealthCheckEvaluatorException</members>
+        <members>RecordHealthCheckFormulaEvaluator</members>
+        <members>RecordHealthCheckLifecyclePublisher</members>
+        <members>RecordHealthCheckLogger</members>
+        <members>RecordHealthCheckMergeContext</members>
+        <members>RecordHealthCheckMetadataValidator</members>
+        <members>RecordHealthCheckValueSource</members>
+        <members>RecordHealthCheckResult</members>
+        <members>RecordHealthCheckReasonCodes</members>
+        <members>RecordHealthCheckRunContext</members>
+        <members>RecordHealthCheckRunRuleFlowAction</members>
+        <members>RecordHealthCheckRunSetFlowAction</members>
+        <members>RecordHealthCheckRule</members>
+        <members>RecordHealthCheckRuleValidator</members>
+        <members>RecordHealthCheckSetAvailability</members>
+        <members>RecordHealthCheckSetPicklist</members>
+        <members>RecordHealthCheckSoqlEvaluator</members>
+        <members>RecordHealthCheckSoqlTemplate</members>
+        <members>RecordHealthCheckSetResult</members>
+        <members>RecordHealthCheckTemplateService</members>
+        <members>RecordHealthCheckToken</members>
+        <members>RecordHealthCheckTokenIssue</members>
+        <members>RecordHealthCheckTokenRegistry</members>
+        <members>RecordHealthCheckValueResolver</members>
+        <members>RecordHealthCheckApiTest</members>
+        <members>RecordHealthCheckConfigServiceTest</members>
+        <members>RecordHealthCheckControllerTest</members>
+        <members>RecordHealthCheckCoverageTest</members>
+        <members>RecordHealthCheckCoverageThresholdTest</members>
+        <members>RecordHealthCheckDescribeCacheTest</members>
+        <members>RecordHealthCheckEngineTest</members>
+        <members>RecordHealthCheckLifecyclePublisherTest</members>
+        <members>RecordHealthCheckLoggerTest</members>
+        <members>RecordHealthCheckMetadataValidatorTest</members>
+        <members>RecordHealthCheckSecurityAndOpsTest</members>
+        <members>RecordHealthCheckSetPicklistTest</members>
+        <members>RecordHealthCheckValueSourceTest</members>
+        <members>RecordHealthCheckSoqlTemplateTest</members>
+        <members>RecordHealthCheckTemplateServiceTest</members>
+        <members>RecordHealthCheckTestDataFactory</members>
+        <members>RecordHealthCheckValueResolverTest</members>
+        <name>ApexClass</name>
     </types>
     <types>
-        <members>*</members>
-        <name>Layout</name>
+        <members>recordHealthCheck</members>
+        <name>LightningComponentBundle</name>
     </types>
-    <!-- Record Health Check User / Admin -->
     <types>
-        <members>*</members>
+        <members>Record_Health_Check_Configure</members>
+        <members>Record_Health_Check_View_Details</members>
+        <name>CustomPermission</name>
+    </types>
+    <types>
+        <members>Record_Health_Check_Admin</members>
+        <members>Record_Health_Check_User</members>
         <name>PermissionSet</name>
     </types>
     <types>
-        <members>*</members>
-        <name>CustomPermission</name>
+        <members
+    >Record_Health_Check_Rule__mdt-Record Health Check Rule Layout</members>
+        <members
+    >Record_Health_Check_Set__mdt-Record Health Check Set Layout</members>
+        <name>Layout</name>
     </types>
     <version>66.0</version>
 </Package>

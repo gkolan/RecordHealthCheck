@@ -17,6 +17,6 @@
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >Required - pick how the check works, then fill only the matching section. "Verify with a formula" = true/false formula on the record. "Verify with a query" = one SOQL query compared to an expected value. "Compare two queries" = compare two SOQL results. "Verify with Apex" = your Apex class.</inlineHelpText>
+  >Required. Choose Formula for record fields, Query for related or aggregate data, Compare two queries for two result sets, or Apex for logic the other options cannot express.</inlineHelpText>
     <required>false</required>
 </CustomField>

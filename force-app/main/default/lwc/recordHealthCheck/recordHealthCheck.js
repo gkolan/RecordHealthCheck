@@ -51,15 +51,15 @@ export default class RecordHealthCheck extends LightningElement {
    * Selects the custom visual treatment owned by Record Health Check. The org
    * theme still determines which SLDS runtime Lightning base components use.
    */
-  @api designSystem = "SLDS 2";
+  @api designSystem = "SLDS 1";
 
   get themeClass() {
     const normalizedVersion = String(
-      this.designSystem || "SLDS 2"
+      this.designSystem || "SLDS 1"
     ).toUpperCase();
-    return normalizedVersion === "SLDS 1"
-      ? "rhc-theme rhc-theme--slds1"
-      : "rhc-theme rhc-theme--slds2";
+    return normalizedVersion === "SLDS 2"
+      ? "rhc-theme rhc-theme--slds2"
+      : "rhc-theme rhc-theme--slds1";
   }
 
   @api
@@ -362,7 +362,7 @@ export default class RecordHealthCheck extends LightningElement {
 
     try {
       const response = await getCheckDefinitions({
-        configName: requestedCheckSetName,
+        checkSetDeveloperName: requestedCheckSetName,
         recordId: requestedRecordId,
         runId
       });
@@ -422,7 +422,7 @@ export default class RecordHealthCheck extends LightningElement {
         label: def.label,
         description: def.description,
         priority: def.priority,
-        dependsOnCheckDeveloperName: def.dependsOnCheckDeveloperName || null,
+        dependsOnRuleDeveloperName: def.dependsOnRuleDeveloperName || null,
         uiState: "PENDING",
         result: null
       }));
@@ -432,7 +432,7 @@ export default class RecordHealthCheck extends LightningElement {
       this.componentErrorCode = null;
 
       if (this.triggerMode === "Automatic") {
-        this._runner.run(true);
+        this._runner.run(true, "RUN_ON_LOAD");
       }
     } catch (err) {
       if (loadToken !== this._loadToken || !this._connected) return;
@@ -786,7 +786,7 @@ export default class RecordHealthCheck extends LightningElement {
     // previous run should collapse back to the placement default rather than
     // linger open over rows whose values are being recomputed.
     this._expandedNames = {};
-    this._runner.run(false);
+    this._runner.run(false, "USER_INITIATED");
   }
 
   get summaryStats() {
@@ -862,7 +862,7 @@ export default class RecordHealthCheck extends LightningElement {
       runId: this._runner.runId,
       userId: USER_ID,
       recordId: this.recordId,
-      configName: this.checkSetName,
+      checkSetDeveloperName: this.checkSetName,
       generatedAt: new Date().toISOString(),
       checks: this.checks.map((c) => {
         const r = c.result || {};
@@ -925,14 +925,15 @@ export default class RecordHealthCheck extends LightningElement {
 
   _logRunDiagnostics() {
     const diag = this._buildRunDiagnostics();
-    const configLabel = diag.configName || "(unset configName)";
+    const configLabel =
+      diag.checkSetDeveloperName || "(unset checkSetDeveloperName)";
     console.group(
       `[RHC] Health Check run ${diag.runId} | ${configLabel} | record ${diag.recordId}`
     );
     console.log(this._formatRunSummary(diag.checks));
     console.log({
       runId: diag.runId,
-      checkSet: diag.configName,
+      checkSet: diag.checkSetDeveloperName,
       recordId: diag.recordId,
       userId: diag.userId,
       generatedAt: diag.generatedAt

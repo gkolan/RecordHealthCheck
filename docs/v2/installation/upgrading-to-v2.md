@@ -6,19 +6,23 @@ V2 is a breaking metadata-contract release. Test the upgrade in a sandbox or scr
 
 1. Export all `Record_Health_Check_Set__mdt` and `Record_Health_Check_Rule__mdt` records and retain the deployed v1.x source or package artifact.
 2. Record the current application version, permission assignments, Account record-page activation, and any Apex or Flow integrations.
-3. Search custom Apex, Flow, scripts, and CI configuration for the old field names in [`field-migration-before-after.md`](../../../releases/v2/field-migration-before-after.md).
+3. Search custom Apex, Flow, scripts, and CI configuration for the old field names in [`field-migration-before-after.md`](../reference/field-migration-before-after.md).
 4. Back up any custom metadata values that exceed 255 characters where the V2 target field is Text.
 5. Validate the change in a non-production org with the same features and permissions as production.
 
 ## Breaking contract changes
 
-- Every field rename is listed in [`field-migration-before-after.md`](../../../releases/v2/field-migration-before-after.md). V2 does not read v1.x field API names.
+- Every field rename is listed in [`field-migration-before-after.md`](../reference/field-migration-before-after.md). V2 does not read v1.x field API names.
 - Category values use the V2 vocabulary, and Severity `Error` is now `Critical`.
 - `MaxQueryRows__c` defaults to `200`, `EmptyValueHandling__c` to `AS_NO_MATCH`, and `EvaluationOrder__c` to `100`.
 - Values moving from Long Text Area to Text are limited to 255 characters; review them before deployment.
 - Apex identifiers using “comparator” or “scalar” were renamed to operator/single-value wording. `VALID_COMPARATORS`, `DUAL_QUERY_COMPARATORS`, and `VALID_APPLICABILITY_COMPARATORS` are now the corresponding `...OPERATORS` properties. `scalarFromRow` and `scalarList` are now `singleValueFromRow` and `singleValueList`.
 - Reason code `INVALID_COMPARATOR` is now `INVALID_OPERATOR`.
-- The public synchronous response contract is pre-1.0 (`0.1`) on `RecordHealthCheckResult` / `RecordHealthCheckSetResult` and grows additively. Lifecycle event contract `1.0` is opt-in and Publish After Commit. See [Programmatic API and Flow](../apex/programmatic-api.md) and [Lifecycle events](../reference/lifecycle-events.md).
+- The public synchronous response contract is stable at `1.0` on `RecordHealthCheckResult` /
+  `RecordHealthCheckSetResult` and grows additively. The independent lifecycle event contract is
+  also `1.0`, is opt-in, and
+  Publish After Commit. See [Apex API](../apex/public-api.md), [Flow actions](../flow/actions.md), and
+  [Platform events](../reference/lifecycle-events.md).
 
 ## Upgrade procedure
 
@@ -39,8 +43,7 @@ npm run prettier:verify
 npm run lint
 npm run check:namespaced-tokens
 npm test
-sf project deploy start --manifest manifest/package-core.xml --test-level RunLocalTests --target-org <validation-org> --wait 30
-sf project deploy start --manifest manifest/package-Example_Account_360_Health_Check.xml --target-org <validation-org> --wait 30
+sf project deploy start --manifest manifest/package.xml --test-level RunLocalTests --target-org <validation-org> --wait 30
 sf apex run --file scripts/apex/validateMetadata.apex --target-org <validation-org>
 ```
 
@@ -57,3 +60,10 @@ Rollback is a restore operation, not a dual-read mode. If a release gate fails:
 5. Preserve failed V2 deployment, validation, and subscriber logs for root-cause analysis.
 
 Do not run the V2 destructive changes in production until the backup has been restore-tested and the release owner has approved the rollback evidence.
+
+## Next steps
+
+- [Getting started](getting-started.md) — verify the V2 installation and first Rule
+- [Metadata reference](../metadata/index.md) — review current field APIs and values
+- [Lifecycle events](../reference/lifecycle-events.md) — validate opt-in publication and subscribers
+- [Reason codes](../reference/reason-codes.md) — update downstream status handling

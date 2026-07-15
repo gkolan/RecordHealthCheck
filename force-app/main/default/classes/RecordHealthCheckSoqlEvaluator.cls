@@ -8,6 +8,13 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
 
   private RecordHealthCheckFormulaEvaluator formulaEvaluator = new RecordHealthCheckFormulaEvaluator();
 
+  public RecordHealthCheckSoqlEvaluator withRunContext(
+    RecordHealthCheckRunContext value
+  ) {
+    formulaEvaluator.withRunContext(value);
+    return this;
+  }
+
   // ─── Public entry point ───────────────────────────────────────────────────
 
   public RecordHealthCheckResult evaluate(
@@ -17,7 +24,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   ) {
     Long startMs = System.currentTimeMillis();
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.checkDeveloperName = rule.DeveloperName;
+    result.ruleDeveloperName = rule.DeveloperName;
     result.label = rule.CheckTitle__c;
     result.priority = rule.EvaluationOrder__c;
     result.evaluatorType = 'QUERY';

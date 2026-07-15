@@ -16,7 +16,7 @@ Show Diagnostics does **not** save history and does **not** write any records: i
 
 Step 2 grants the **`Record_Health_Check_View_Details`** custom permission. That permission unlocks advanced details; the Check Set's **Show Diagnostics** flag decides when troubleshooting output appears on the card and in the console.
 
-### Permission Sets: which one unlocks troubleshooting detail?
+### Permission sets: Which one unlocks troubleshooting detail?
 
 | API name | Setup label | Troubleshooting detail? | comparison diagnostic details (`*Detail`)? |
 | -------- | ----------- | ------------------------------------ | -------------------------------- |

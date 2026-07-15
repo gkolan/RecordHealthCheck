@@ -14,7 +14,7 @@ export const VALID_RESULT_STATUSES = new Set([
 /** Client-synthesized result when the server never evaluated the check. */
 export function synthesizeResult(check, status, reasonCode, message) {
   return {
-    checkDeveloperName: check.developerName,
+    ruleDeveloperName: check.developerName,
     label: check.label,
     status,
     reasonCode,
@@ -49,8 +49,8 @@ export function normalizeResult(result, check) {
 export function detectDependencyCycles(checks) {
   const depMap = {};
   for (const check of checks) {
-    if (check.dependsOnCheckDeveloperName) {
-      depMap[check.developerName] = check.dependsOnCheckDeveloperName;
+    if (check.dependsOnRuleDeveloperName) {
+      depMap[check.developerName] = check.dependsOnRuleDeveloperName;
     }
   }
   const cycleMembers = new Set();

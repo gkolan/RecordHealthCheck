@@ -1,4 +1,4 @@
-# Getting Started
+# Getting started
 
 Use this when you are ready to create your first Rule and connect it to a real record page.
 
@@ -43,11 +43,10 @@ After deployment, assign Permission Sets so users can run the component (see Ste
 
 From the **RecordHealthCheck** (Core) repository root:
 
-**Recommended install** — framework plus the one hero Check Set that proves the card works:
+**Recommended install** — the production-safe Core framework:
 
 ```bash
-sf project deploy start --manifest manifest/package-core.xml
-sf project deploy start --manifest manifest/package-Example_Account_360_Health_Check.xml
+sf project deploy start --manifest manifest/package.xml
 ```
 
 Optional scenario packs (data quality, relationships, industry readiness, and more) are **not** part of Core. They live in
@@ -61,9 +60,7 @@ Single-rule copy/paste patterns (formulas, SOQL, Apex walkthroughs) are in the E
 
 ### Option B: Change set or DevOps Center
 
-Deploy only the components named in `manifest/package-core.xml`, followed by the components in
-`manifest/package-Example_Account_360_Health_Check.xml`. Do not include other example Check Sets
-from the Core working tree. Install optional packs from
+Deploy only the components named in `manifest/package.xml`. Install optional packs from
 [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples) using its
 [install guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md).
 
@@ -71,11 +68,10 @@ from the Core working tree. Install optional packs from
 
 - The **recordHealthCheck** Lightning component
 - Custom Metadata Types for Check Sets and Rules
-- The hero Check Set **`Example_Account_360_Health_Check`** (when you deployed its manifest)
 - Two Permission Sets (assign in Step 1b)
 - Any optional packs you later install from **RecordHealthCheck-Examples**
 
-### Step 1b: Assign Permission Sets
+### Step 1b: Assign permission sets
 
 Users need Apex access to run the component. Assign the least-privilege Permission Set that matches what they need:
 
@@ -97,34 +93,28 @@ The Permission Set named `Record_Health_Check_User` grants Apex class access to 
 1. Open **Setup → Lightning App Builder**.
 2. Edit an **Account** record page (or whichever object matches your Check Set).
 3. Drag **recordHealthCheck** onto the page.
-4. In the component properties on the right, choose **Check Set**. The picker lists active Check Sets for the record page's object by Developer Name. For example, choose:
-
-   ```text
-   Example_Account_360_Health_Check
-   ```
-
-   That is the hero Check Set shipped with Core. After you install an optional pack from
-   [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples), its Check Set
-   Developer Name appears in the same picker.
+4. In the component properties on the right, choose **Check Set**. The picker lists active Check
+   Sets for the record page's object by Developer Name. Select one you created or installed from
+   [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples).
 
    If the list is empty, no active Check Set targets this object yet. Create or activate one under **Setup → Custom Metadata Types → Record Health Check Set**.
 
-5. _(Optional)_ Set **Design System** to **SLDS 2** (default) or **SLDS 1** to match the page's visual style. This changes only the card, not your org theme — see [Design System](../guides/design-system.md).
+5. _(Optional)_ Keep **Design System** set to **SLDS 1** (default), or choose **SLDS 2** when the page uses the Cosmos theme. This changes only the card, not your org theme — see [Design System](../guides/design-system.md).
 6. **Save** and **Activate** the page. Assign the page to the right app and profiles if prompted.
 
 The component only works on **record pages** because it needs the current record’s Id.
 
-## Step 3: Verify with the Core Hero Check Set
+## Step 3: Verify with your Check Set
 
 1. Open any Account on the page you edited.
 2. If the Check Set **When Checks Run** (`CardRunMode__c`) is **Run automatically when the page opens**, checks run after the page loads. If it is **When the user clicks Run** (`RUN_ON_REQUEST`), click **Run** on the card.
-3. If the component is configured correctly, you will see a health check card with checks and pass/fail results. When a Rule **fails**, look beneath the failure message for **Found** / **Expected** labelled chips (Query and Compare Two Queries checks) that show what the record produced versus what the rule required. Use **Found/Expected Display** on the Check Set to control whether passing checks also show values (see [Check Set fields](../metadata/check-set.md#foundexpected-display-comparisondisplay__c)). If you do not see the card at all, see [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
+3. If the component is configured correctly, you will see a health check card with checks and pass/fail results. When a Rule **fails**, look beneath the failure message for **Found** / **Expected** labelled chips (Query and Compare Two Queries checks) that show what the record produced versus what the rule required. Use **Found/Expected Display** on the Check Set to control whether passing checks also show values (see [Check Set fields](../metadata/check-set.md#foundexpected-display-foundexpecteddisplay__c)). If you do not see the card at all, see [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
 
-**To view the sample configuration in Setup**
+**To view the configuration in Setup**
 
 1. **Setup → Custom Metadata Types**
 2. Next to **Record Health Check Set**, click **Manage Records**
-3. Open `Example_Account_360_Health_Check`
+3. Open the Check Set selected in App Builder.
 4. Next to **Record Health Check Rule**, click **Manage Records** to see its Rules
 
 ## Step 4: Create your first Rule
@@ -169,11 +159,16 @@ Use the [Review Checklist](../guides/configuration-guide.md#14-review-checklist)
 
 You do not need the record-page card to evaluate health checks:
 
-- **One Rule (Apex):** `RecordHealthCheck.run('My_Check_Set', 'My_Rule', recordId)`
+- **One Rule (Apex):** `RecordHealthCheck.runRule('My_Rule', recordId)`
 - **Whole Check Set (Apex):** `RecordHealthCheck.runSet('My_Check_Set', recordId)`
-- **Flow:** packaged action **Run Record Health Check** (`RecordHealthCheckFlowAction`). Leave Rule API Name blank to run the Check Set.
+- **Flow Rule:** packaged action **Run Record Health Check Rule**.
+- **Flow Set:** packaged action **Run Record Health Check Set**.
 
-Calls are capped (`MAX_RECORDS_PER_CALL = 200`, `MAX_EVALUATIONS_PER_CALL = 15`). Opt-in lifecycle events can publish after façade/Flow runs; the Lightning card never publishes. Details: [Programmatic API and Flow](../apex/programmatic-api.md) and [Lifecycle events](../reference/lifecycle-events.md).
+Calls are capped (`MAX_RECORDS_PER_CALL = 200`, `MAX_EVALUATIONS_PER_CALL = 15`). Opt-in lifecycle
+events can publish after deliberate Apex, Flow, and explicit Lightning Run/Rerun actions; automatic
+page-load runs never publish. See [Apex API](../apex/public-api.md),
+[Flow actions](../flow/actions.md), [Lightning component runs](../lwc/runs-and-events.md), and
+[Platform events](../reference/lifecycle-events.md).
 
 ## Next steps
 
@@ -184,7 +179,9 @@ Calls are capped (`MAX_RECORDS_PER_CALL = 200`, `MAX_EVALUATIONS_PER_CALL = 15`)
 | Copy a single-rule pattern | [Pattern library](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/index.md) |
 | Draft checks with AI | [LLM Configuration Guide](../guides/llm-configuration.md) |
 | Understand every field | [Configuration Guide: field reference](../guides/configuration-guide.md#3-check-set-fields) |
-| Call from Apex or Flow | [Programmatic API and Flow](../apex/programmatic-api.md) |
+| Call from Apex | [Apex API](../apex/public-api.md) |
+| Call from Flow | [Flow actions](../flow/actions.md) |
+| Understand card publication | [Lightning component runs](../lwc/runs-and-events.md) |
 | Subscribe to results | [Lifecycle events](../reference/lifecycle-events.md) |
 | Reason codes | [Reason codes](../reference/reason-codes.md) |
 | Review runtime contract | [Design Specification](../reference/record-health-check-design-spec.md) |

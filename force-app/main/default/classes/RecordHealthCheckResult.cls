@@ -4,7 +4,7 @@
  */
 
 public class RecordHealthCheckResult {
-  public static final String CONTRACT_VERSION = '0.1';
+  public static final String CONTRACT_VERSION = '1.0';
 
   @AuraEnabled
   public String contractVersion = CONTRACT_VERSION;
@@ -18,13 +18,16 @@ public class RecordHealthCheckResult {
   public static final String PASSES_WHEN_LABEL = 'Passes when';
 
   @AuraEnabled
-  public String checkDeveloperName;
+  public String ruleDeveloperName;
+  // Server-side only (not @AuraEnabled): the record this result was evaluated
+  // against; stamped onto the lifecycle and diagnostics platform events when set.
+  public Id recordId;
   @AuraEnabled
   public String label;
   @AuraEnabled
   public String status; // PASS, FAIL, UNABLE_TO_EVALUATE, SKIPPED, ERROR
   @AuraEnabled
-  public String severity; // Error, Warning, Info — only when status == FAIL
+  public String severity; // CRITICAL, WARNING, INFO — only when status == FAIL
   @AuraEnabled
   public String message;
   @AuraEnabled

@@ -193,6 +193,8 @@ private class RecordHealthCheckSecurityAndOpsTest {
 
   @isTest
   static void sharedValidatorCoversObjectsPluginsAndJson() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     System.assert(
       RecordHealthCheckConfigValidator.isValidObjectApiName('Account')
     );

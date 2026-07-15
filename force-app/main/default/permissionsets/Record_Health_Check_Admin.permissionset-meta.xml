@@ -29,7 +29,11 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>RecordHealthCheckFlowAction</apexClass>
+        <apexClass>RecordHealthCheckRunRuleFlowAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckRunSetFlowAction</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <objectPermissions>

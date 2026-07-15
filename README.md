@@ -38,8 +38,8 @@ Because it runs at read time rather than save time, it can evaluate across relat
 
 ## Install
 
-Install into a **sandbox** first. For V2, deploy Core and the Hero through their two manifests so
-optional Examples content is not included.
+Install into a **sandbox** first. Core has one production manifest and contains no example Check
+Sets, Rules, or example Apex implementations.
 
 > [!IMPORTANT]
 > **Upgrading to V2:** V2 is a breaking metadata-contract release with no dual-read support for v1.x field names. Back up custom metadata and follow the [V2 upgrade and rollback guide](docs/v2/installation/upgrading-to-v2.md) before deploying.
@@ -49,20 +49,18 @@ optional Examples content is not included.
 ```bash
 git clone https://github.com/gkolan/RecordHealthCheck.git
 cd RecordHealthCheck
-sf project deploy start --manifest manifest/package-core.xml
-sf project deploy start --manifest manifest/package-Example_Account_360_Health_Check.xml
+sf project deploy start --manifest manifest/package.xml
 sf org assign permset --name Record_Health_Check_User
 ```
 
-**Option 2 — Change set or DevOps Center.** Deploy the components named by
-`manifest/package-core.xml`, followed by `manifest/package-Example_Account_360_Health_Check.xml`.
-Do not deploy every non-Hero Custom Metadata record from the Core source tree.
+**Option 2 — Change set or DevOps Center.** Deploy only the components named by
+`manifest/package.xml`.
 
 ### After installing
 
-Assign the **`Record_Health_Check_User`** permission set, add the **recordHealthCheck** component to a
-Lightning record page, and choose `Example_Account_360_Health_Check` in App Builder. This Hero Check
-Set is the only example owned by Core. Install every other example from
+Assign the **`Record_Health_Check_User`** permission set, install or create a Check Set, add the
+**recordHealthCheck** component to a Lightning record page, and select that Check Set in App
+Builder. Ready-made Check Sets live in
 [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples).
 
 Full walkthrough: [First 10 Minutes](docs/v2/start/first-10-minutes.md)
@@ -73,26 +71,25 @@ Full walkthrough: [First 10 Minutes](docs/v2/start/first-10-minutes.md)
 - Custom Metadata configuration
 - Formula, SOQL, compare-two-SOQL, and Apex checks
 - Guided remediation: optional "Fix it" deep links and fix instructions on failing checks
-- Per-placement visual treatment: SLDS 2 (default) or SLDS 1, set on the App Builder card — see [Design System](docs/v2/guides/design-system.md)
-- One Hero Account Check Set for the first working card
+- Per-placement visual treatment: SLDS 1 (default) or SLDS 2, set on the App Builder card — see [Design System](docs/v2/guides/design-system.md)
 - User and Admin Permission Sets
 
 ## Documentation
 
-Current docs are under [`docs/v2/`](docs/v2/). Historical v1.x pages are under [`docs/v1/`](docs/v1/). Open only the page you need.
+Current documentation is under [`docs/v2/`](docs/v2/). For V1 migrations, start with [Upgrading to V2](docs/v2/installation/upgrading-to-v2.md).
 
 - Learn the concepts: [Admin Quick Start](docs/v2/installation/admin-quick-start.md)
 - Create your first Rule: [Getting Started](docs/v2/installation/getting-started.md#step-4-create-your-first-rule)
 - Install an example pack: [Examples install guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)
 - Add a "Fix it" link: [Action Links and Fix Instructions](docs/v2/guides/action-links.md)
-- Full field reference: [Configuration Guide](docs/v2/guides/configuration-guide.md) or [Apex plugin reference](docs/v2/apex/plugin-reference.md)
+- Full field reference: [Configuration Guide](docs/v2/guides/configuration-guide.md) or [Apex reference](docs/v2/apex/apex-reference.md)
 
 ## Example Library
 
 Reusable scenarios, Rule patterns, and example Apex classes live in
 [**RecordHealthCheck-Examples**](https://github.com/gkolan/RecordHealthCheck-Examples). Core ships
-one Hero Check Set (`Example_Account_360_Health_Check`). This is an intentional V2 change: V1
-bundled examples with Core; V2 installs optional packs independently afterward. See the
+no example metadata. V1 bundled examples with Core; V2 installs optional packs independently after
+Core. See the
 [Core vs Examples boundary](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/core-and-examples-boundary.md).
 
 - [Install packs (Setup · Git/CLI · Local DX)](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)

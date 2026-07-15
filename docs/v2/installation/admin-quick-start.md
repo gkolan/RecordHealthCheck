@@ -1,4 +1,4 @@
-# Admin Quick Start
+# Admin quick start
 
 Use this after [First 10 Minutes](../start/first-10-minutes.md), once the card is visible.
 
@@ -15,7 +15,8 @@ It does not stop users from saving. Use validation rules when a user must be blo
 - **Pass:** the record meets the Rule.
 - **Fail:** the Rule found something that needs attention.
 - **Skipped:** the Rule did not apply to this record right now, or it was waiting for another Rule to pass first.
-- **Error:** the Rule did not run because of setup, permissions, SOQL, formula, or code trouble.
+- **Unable to evaluate:** setup, access, or available data prevented a reliable conclusion.
+- **System error:** an unexpected evaluator or platform problem occurred.
 - **Applicability:** a condition that decides whether a Rule runs. Example: only check Partner requirements on Partner Accounts.
 - **Formula-based check:** a check that looks at fields on the current record, or parent fields Salesforce formula syntax can reach.
 - **Query-based check:** a check that looks for related records with SOQL, such as Contacts, Opportunities, Cases, Tasks, or Events.
@@ -41,18 +42,18 @@ How it appears to users:
 - **Pass:** the Account has recent activity.
 - **Fail:** the Account has no completed Task or logged Event inside the configured look-back window.
 - **Skipped:** the Rule did not apply because of its setup conditions.
-- **Error:** the activity check did not run; review setup or troubleshooting details.
+- **Unable to evaluate:** access, setup, or available data prevented a conclusion.
+- **System error:** an unexpected evaluator or platform problem occurred; review troubleshooting details.
 
-The Core Hero uses `AccountHasRecentActivityCheck`. For smaller formula, query, comparison, and
-custom Apex patterns, use
-[RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples). Core does not
-own those optional examples in V2.
+Core includes no example metadata or Apex implementations. Formula, query, comparison, and custom
+Apex patterns live in
+[RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples).
 
 ## First troubleshooting checks
 
 - **Component shows no checks:** confirm the component's **Check Set** selection is active and
-  targets the record page object. For the Core first run, select
-  `Example_Account_360_Health_Check` on an Account page.
+  targets the record page object. Install a pack from the Examples repository or create a Check Set
+  before configuring the component.
 - **Check Set is not found:** confirm the Check Set metadata was deployed and is active.
 - **Rule is skipped:** review **Applies To**, dependencies, and whether the record meets the applicability condition.
 - **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!record.Id}` when it filters records for the open record.
@@ -62,4 +63,8 @@ own those optional examples in V2.
 
 For deeper fixes, use [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
 
-Next: [Getting Started](getting-started.md), then create your first Rule.
+## Next steps
+
+- [Getting started](getting-started.md) — create your first Rule
+- [Configuration guide](../guides/configuration-guide.md) — configure every evaluation type
+- [Reason codes](../reference/reason-codes.md) — diagnose unable and system-error outcomes

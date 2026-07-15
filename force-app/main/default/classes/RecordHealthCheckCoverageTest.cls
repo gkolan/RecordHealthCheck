@@ -31,7 +31,7 @@ private class RecordHealthCheckCoverageTest {
     definition.label = 'Definition Label';
     definition.description = 'Definition Description';
     definition.priority = 1;
-    definition.dependsOnCheckDeveloperName = 'Prereq';
+    definition.dependsOnRuleDeveloperName = 'Prereq';
 
     RecordHealthCheckDefinitionResponse response = new RecordHealthCheckDefinitionResponse();
     response.displayTitle = 'Title';
@@ -51,10 +51,10 @@ private class RecordHealthCheckCoverageTest {
     context.objectApiName = 'Account';
     context.record = accountRecord;
     context.parameters = new Map<String, Object>{ 'mode' => 'PASS' };
-    context.checkDeveloperName = 'Definition_Key';
+    context.ruleDeveloperName = 'Definition_Key';
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.checkDeveloperName = definition.developerName;
+    result.ruleDeveloperName = definition.developerName;
     result.label = definition.label;
     result.status = 'PASS';
     result.severity = 'Info';
@@ -340,29 +340,23 @@ private class RecordHealthCheckCoverageTest {
   @IsTest
   static void metadataValidatorCoversInvalidInMemoryMetadata() {
     RecordHealthCheckMetadataValidator validator = new RecordHealthCheckMetadataValidator();
-    Id setAId = [
-      SELECT Id
-      FROM Record_Health_Check_Set__mdt
-      WHERE DeveloperName = 'Account_Data_Quality'
-      LIMIT 1
-    ]
-    .Id;
-    Id setBId = [
-      SELECT Id
-      FROM Record_Health_Check_Set__mdt
-      WHERE DeveloperName = 'Account_Query_Coverage'
-      LIMIT 1
-    ]
-    .Id;
+    Id setAId = Id.valueOf('m00000000000001');
+    Id setBId = Id.valueOf('m00000000000002');
 
     List<Record_Health_Check_Set__mdt> checkSets = new List<Record_Health_Check_Set__mdt>{
       new Record_Health_Check_Set__mdt(
-        DeveloperName = 'Set_A',
+        DeveloperName = String.valueOf(setAId),
         MasterLabel = 'Set A',
         ObjectApiName__c = '',
         CardTitle__c = '',
         PassedChecksDisplay__c = 'Maybe',
         SkippedChecksDisplay__c = 'Sometimes'
+      ),
+      new Record_Health_Check_Set__mdt(
+        DeveloperName = String.valueOf(setBId),
+        MasterLabel = 'Set B',
+        ObjectApiName__c = 'Account',
+        CardTitle__c = 'Set B'
       )
     };
 
@@ -1680,8 +1674,10 @@ private class RecordHealthCheckCoverageTest {
     );
   }
 
+  /* Example Apex plug-ins are exercised in RecordHealthCheck-Examples. Core
+   * coverage must not compile against or depend on those optional classes. */
   @IsTest
-  static void apexDispatcherAndExampleRuleCoverPluginBranches() {
+  static void apexDispatcherCoversCorePluginBranches() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckApexEvaluator evaluator = new RecordHealthCheckApexEvaluator();
 
@@ -1709,18 +1705,9 @@ private class RecordHealthCheckCoverageTest {
       ),
       'APEX_CLASS_NOT_FOUND'
     );
-    assertReason(
-      evaluator.evaluate(
-        apexRule('A_Null_Record', 'AccountHasRecentActivityCheck', null),
-        null,
-        accountRecord
-      ),
-      'APEX_EVALUATOR_ERROR'
-    );
-
     Record_Health_Check_Rule__mdt finalizeRule = apexRule(
       'A_Finalize',
-      'AccountHasRecentActivityCheck',
+      'CoreTestPlugin',
       null
     );
     RecordHealthCheckResult fallback = new RecordHealthCheckResult();
@@ -1776,126 +1763,6 @@ private class RecordHealthCheckCoverageTest {
       missingExpectedResult.detailMessage.contains('result.expectedValue'),
       missingExpectedResult.detailMessage
     );
-    assertReason(
-      evaluator.evaluate(
-        apexRule(
-          'A_Bad_Params',
-          'AccountHasRecentActivityCheck',
-          '["not-object"]'
-        ),
-        accountRecord.Id,
-        accountRecord
-      ),
-      'INVALID_APEX_PARAMETERS'
-    );
-    assertReason(
-      evaluator.evaluate(
-        apexRule('A_Bad_Json', 'AccountHasRecentActivityCheck', '{"daysBack":'),
-        accountRecord.Id,
-        accountRecord
-      ),
-      'INVALID_APEX_PARAMETERS'
-    );
-
-    // The shared @testSetup seeds a completed Task on the account, so remove all
-    // activity here to make the no-recent-activity FAIL path deterministic and
-    // independent of the factory and org automation. The PASS path below
-    // re-adds a completed Task via createCompletedTask.
-    delete [SELECT Id FROM Task WHERE WhatId = :accountRecord.Id];
-    delete [SELECT Id FROM Event WHERE WhatId = :accountRecord.Id];
-
-    RecordHealthCheckResult failResult = evaluator.evaluate(
-      apexRule('A_Fail', 'AccountHasRecentActivityCheck', '{"daysBack":90}'),
-      accountRecord.Id,
-      accountRecord
-    );
-    assertStatus(failResult, 'FAIL');
-    System.assertEquals('WARNING', failResult.severity);
-    System.assertEquals(
-      'Apex failure for ' + accountRecord.Name,
-      failResult.message
-    );
-
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = accountRecord.Id;
-    context.parameters = new Map<String, Object>{ 'daysBack' => '90' };
-    assertStatus(new AccountHasRecentActivityCheck().evaluate(context), 'FAIL');
-
-    RecordHealthCheckTestDataFactory.createCompletedTask(accountRecord.Id);
-    assertStatus(new AccountHasRecentActivityCheck().evaluate(context), 'PASS');
-    assertStatus(
-      evaluator.evaluate(
-        apexRule('A_Pass', 'AccountHasRecentActivityCheck', '{"daysBack":90}'),
-        accountRecord.Id,
-        accountRecord
-      ),
-      'PASS'
-    );
-
-    context.parameters = new Map<String, Object>{ 'daysBack' => 'invalid' };
-    assertStatus(new AccountHasRecentActivityCheck().evaluate(context), 'PASS');
-  }
-
-  @IsTest
-  static void exampleApexRuleCoversOpenOpportunityHealth() {
-    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
-
-    // The @testSetup seeds an open "Coverage Opportunity" with a null NextStep and
-    // a null (read-only) LastActivityDate, which AccountOpenOpportunityHealthCheck
-    // also flags as unhealthy on run dates where its CloseDate lands outside the
-    // current quarter. Make every pre-seeded open Opp healthy so this test isolates
-    // the single unhealthy Opp it creates below (a NextStep alone clears the flag;
-    // the in-quarter CloseDate keeps it healthy regardless of the run date).
-    Date inQuarter = AccountOpenOpportunityHealthCheck.getQuarterStart(
-        Date.today()
-      )
-      .addDays(15);
-    List<Opportunity> seededOpenOpps = [
-      SELECT Id
-      FROM Opportunity
-      WHERE AccountId = :accountRecord.Id AND IsClosed = FALSE
-    ];
-    for (Opportunity seeded : seededOpenOpps) {
-      seeded.NextStep = 'Seeded follow up';
-      seeded.CloseDate = inQuarter;
-    }
-    update seededOpenOpps;
-
-    Opportunity unhealthyOpp = RecordHealthCheckTestDataFactory.createOpportunity(
-      accountRecord.Id,
-      'Unhealthy Opp',
-      1000
-    );
-    // LastActivityDate is a read-only system field (derived from activities) and cannot be
-    // assigned in Apex. A freshly created Opportunity already has LastActivityDate == null
-    // which AccountOpenOpportunityHealthCheck.isUnhealthy treats as stale — so a null NextStep
-    // plus an out-of-quarter CloseDate is sufficient to make this Opp unhealthy.
-    unhealthyOpp.NextStep = null;
-    unhealthyOpp.CloseDate = Date.today().addDays(120);
-    update unhealthyOpp;
-
-    RecordHealthCheckContext oppContext = new RecordHealthCheckContext();
-    oppContext.recordId = accountRecord.Id;
-    oppContext.parameters = new Map<String, Object>{ 'staleDays' => 30 };
-    RecordHealthCheckResult oppFail = new AccountOpenOpportunityHealthCheck()
-      .evaluate(oppContext);
-    assertStatus(oppFail, 'FAIL');
-    System.assertEquals('1 unhealthy', oppFail.actualValue);
-
-    unhealthyOpp.NextStep = 'Follow up';
-    update unhealthyOpp;
-    assertStatus(
-      new AccountOpenOpportunityHealthCheck().evaluate(oppContext),
-      'PASS'
-    );
-
-    Date quarterStart = AccountOpenOpportunityHealthCheck.getQuarterStart(
-      Date.today()
-    );
-    System.assertEquals(
-      Date.newInstance(Date.today().year(), quarterStart.month(), 1),
-      quarterStart
-    );
   }
 
   // Evaluating every check of all packaged Check Sets in a single transaction
@@ -1903,15 +1770,17 @@ private class RecordHealthCheckCoverageTest {
   // Production runs each Check Set in its own request, so the sweep is split
   // across several @IsTest methods (separate transactions) grouped to stay
   // under the limit while still exercising every packaged check.
-  private static void sweepPackagedConfigs(List<String> configNames) {
+  private static void sweepPackagedConfigs(
+    List<String> checkSetDeveloperNames
+  ) {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Map<String, RecordHealthCheckDefinitionResponse> responsesByConfig = new Map<String, RecordHealthCheckDefinitionResponse>();
-    for (String configName : configNames) {
+    for (String checkSetDeveloperName : checkSetDeveloperNames) {
       try {
         responsesByConfig.put(
-          configName,
+          checkSetDeveloperName,
           RecordHealthCheckController.getCheckDefinitions(
-            configName,
+            checkSetDeveloperName,
             accountRecord.Id,
             'cov-run'
           )
@@ -1920,7 +1789,7 @@ private class RecordHealthCheckCoverageTest {
         System.assert(
           false,
           'Packaged config failed to load: ' +
-            configName +
+            checkSetDeveloperName +
             ' ' +
             ex.getMessage()
         );
@@ -1931,18 +1800,19 @@ private class RecordHealthCheckCoverageTest {
       !responsesByConfig.isEmpty(),
       'Expected packaged definition responses.'
     );
-    for (String configName : responsesByConfig.keySet()) {
+    for (String checkSetDeveloperName : responsesByConfig.keySet()) {
       for (
         RecordHealthCheckDefinition definition : responsesByConfig.get(
-            configName
+            checkSetDeveloperName
           )
           .checks
       ) {
         RecordHealthCheckResult result = RecordHealthCheckController.evaluateCheck(
-          configName,
+          checkSetDeveloperName,
           definition.developerName,
           accountRecord.Id,
-          'cov-run'
+          'cov-run',
+          RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
         );
         System.assertNotEquals(null, result.status);
       }
@@ -1951,6 +1821,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverPackagedMetadataPaths() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     sweepPackagedConfigs(
       new List<String>{
         'Account_Query_Coverage',
@@ -1962,6 +1834,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverPackagedMetadataPathsGroupTwo() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     sweepPackagedConfigs(
       new List<String>{
         'Account_Everyday_Use_Cases',
@@ -1972,6 +1846,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverPackagedMetadataPathsGroupThree() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     sweepPackagedConfigs(
       new List<String>{ 'Account_Compare_Queries', 'Account_Advanced_Checks' }
     );
@@ -1979,6 +1855,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverErrorAndBoundaryPaths() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
@@ -2053,7 +1931,8 @@ private class RecordHealthCheckCoverageTest {
         'Account_Data_Quality',
         'Account_DQ_BillingCity',
         accountRecord.Id,
-        'cov-run'
+        'cov-run',
+        RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
       );
       assertReason(boundaryResult, 'APEX_EVALUATOR_ERROR');
     } finally {
@@ -2064,6 +1943,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void mergeTokensResolveForNonFormulaCheckMessages() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     // {!record.FieldName} merge tokens in UnableToEvaluateMessage__c and FailureMessage__c
     // must resolve for non-Formula check types too. The packaged Query check
     // Account_QC_ERB_UnableToEvaluate carries
@@ -2076,7 +1957,8 @@ private class RecordHealthCheckCoverageTest {
       'Account_Query_Coverage',
       'Account_QC_ERB_UnableToEvaluate',
       accountRecord.Id,
-      'merge-token-run'
+      'merge-token-run',
+      RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
     );
     Test.stopTest();
 
@@ -2825,6 +2707,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void isolatedResultAndRoutingHelpersCoverDefensiveBranches() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     Account accountRecord = [
       SELECT Id, Name, BillingCity, BillingState, Description, AnnualRevenue
       FROM Account
@@ -3385,6 +3269,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void configServiceCoversRemainingValidationBranches() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -3507,13 +3393,7 @@ private class RecordHealthCheckCoverageTest {
   @IsTest
   static void metadataValidatorCoversRemainingValidationBranches() {
     RecordHealthCheckMetadataValidator validator = new RecordHealthCheckMetadataValidator();
-    Id setId = [
-      SELECT Id
-      FROM Record_Health_Check_Set__mdt
-      WHERE DeveloperName = 'Account_Data_Quality'
-      LIMIT 1
-    ]
-    .Id;
+    Id setId = Id.valueOf('m00000000000003');
     List<Record_Health_Check_Rule__mdt> rules = new List<Record_Health_Check_Rule__mdt>();
 
     for (Integer i = 0; i < 26; i++) {
@@ -3609,6 +3489,8 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndSoqlCoverRemainingDefensiveBranches() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 

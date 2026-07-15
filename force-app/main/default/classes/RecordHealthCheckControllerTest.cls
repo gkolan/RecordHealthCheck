@@ -12,6 +12,8 @@ private class RecordHealthCheckControllerTest {
 
   @isTest
   static void getCheckDefinitionsReturnsDefinitionResponse() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
     Test.startTest();
@@ -56,7 +58,8 @@ private class RecordHealthCheckControllerTest {
       'Account_Data_Quality',
       'Missing_Rule',
       accountRecord.Id,
-      'test-run-3'
+      'test-run-3',
+      RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
     );
 
     System.assertEquals('UNABLE_TO_EVALUATE', result.status);
@@ -64,7 +67,58 @@ private class RecordHealthCheckControllerTest {
   }
 
   @isTest
+  static void lwcPublicationRequiresUserInitiationAndMetadataOptIn() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>{
+      'Missing_Rule'
+    };
+    RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
+    Integer beforeDml = Limits.getDmlStatements();
+
+    RecordHealthCheckController.evaluateCheck(
+      'Account_Data_Quality',
+      'Missing_Rule',
+      accountRecord.Id,
+      'automatic-run',
+      RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
+    );
+    System.assertEquals(
+      beforeDml,
+      Limits.getDmlStatements(),
+      'Automatic LWC evaluation must never publish.'
+    );
+
+    RecordHealthCheckResult result = RecordHealthCheckController.evaluateCheck(
+      'Account_Data_Quality',
+      'Missing_Rule',
+      accountRecord.Id,
+      'user-run',
+      RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
+    );
+    System.assertEquals(
+      beforeDml + 1,
+      Limits.getDmlStatements(),
+      'An opted-in user-initiated Rule must publish once.'
+    );
+
+    RecordHealthCheckController.completeRun(
+      'Account_Data_Quality',
+      'user-run',
+      new List<RecordHealthCheckResult>{ result },
+      RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED,
+      accountRecord.Id
+    );
+    System.assertEquals(
+      beforeDml + 2,
+      Limits.getDmlStatements(),
+      'An opted-in user-initiated Set must publish once at completion.'
+    );
+  }
+
+  @isTest
   static void getCheckSetAvailabilityForRecordReflectsObjectScopedMetadata() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+      return;
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
     Test.startTest();

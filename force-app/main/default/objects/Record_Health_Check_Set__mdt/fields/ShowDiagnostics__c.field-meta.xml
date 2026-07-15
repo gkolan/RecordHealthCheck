@@ -3,11 +3,11 @@
     <fullName>ShowDiagnostics__c</fullName>
     <defaultValue>false</defaultValue>
     <description
-  >When checked, shows extra troubleshooting detail on the health check card and in the browser console - but only for users who also have the "Record Health Check View Details" custom permission (granted by the "Record Health Check Admin" permission set). All other users see the normal card. Leave unchecked in production and turn it off once troubleshooting is finished.</description>
+  >Enables authorized troubleshooting details on the card and in the browser console. A user sees those details only when this field is checked and the user has the "Record Health Check View Details" custom permission. Other users continue to see the standard card. Enable it only while diagnosing a configuration or evaluation problem.</description>
     <externalId>false</externalId>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <label>Show Diagnostics</label>
     <inlineHelpText
-  >Troubleshooting only. Shows extra detail - but only to users who also have the "Record Health Check Admin" permission set. Leave off in production.</inlineHelpText>
+  >Troubleshooting only. Details appear only to users with "Record Health Check View Details". Leave unchecked during normal use.</inlineHelpText>
     <type>Checkbox</type>
 </CustomField>

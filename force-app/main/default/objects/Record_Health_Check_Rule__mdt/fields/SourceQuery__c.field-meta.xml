@@ -3,11 +3,11 @@
     <fullName>SourceQuery__c</fullName>
     <label>Source Query</label>
     <description
-  >The primary SOQL query that fetches what you are checking. Required when "Evaluation Type" is "Verify with a query" or "Compare two queries". Use merge tokens like {!Id} or {!AccountNumber} to insert values from the current record, and COUNT() for "how many" checks. Leave blank only for the list-membership operators "List contains any" / "List contains none", which read the record value from "Value to find in the list (formula)" and the list from "Comparison Query".</description>
+  >The primary SOQL query that fetches what you are checking. Required when "Evaluation Type" is "Verify with a query" or "Compare two queries". Use merge tokens like {!record.Id} or {!record.AccountNumber} to insert values from the current record, and COUNT() for "how many" checks. Leave blank only for the list-membership operators "List contains any" / "List contains none", which read the record value from "Value to find in the list (formula)" and the list from "Comparison Query".</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>5</visibleLines>
         <inlineHelpText
-  >Required for "Verify with a query" and "Compare two queries". SOQL returning the data to check; insert record values with {!Id}, {!FieldApiName}. Use COUNT() for "how many" checks.</inlineHelpText>
+  >Required for "Verify with a query" and "Compare two queries". SOQL returning the data to check; insert record values with {!record.Id}, {!record.FieldApiName}. Use COUNT() for "how many" checks.</inlineHelpText>
     <required>false</required>
 </CustomField>

@@ -1,4 +1,4 @@
-# Design System (SLDS 2 / SLDS 1)
+# Design system (SLDS 2 / SLDS 1)
 
 The Record Health Check card can render in two visual treatments. You choose the
 one you want on the record page in the **Lightning App Builder** — it is a
@@ -16,18 +16,21 @@ Lightning App Builder. In its properties, set **Design System**:
 
 | Value      | When to use it                                                                                       |
 | ---------- | ---------------------------------------------------------------------------------------------------- |
-| **SLDS 2** | Default. Designed for the Salesforce **Cosmos** theme — the current Lightning look.                  |
-| **SLDS 1** | Preserves the **legacy** SLDS styling. Use it where the surrounding page still uses the older theme. |
+| **SLDS 1** | Default while SLDS 2 adoption is still new. Use it where the surrounding page uses the established Lightning styling. |
+| **SLDS 2** | Choose this for pages using the Salesforce **Cosmos** theme and its newer Lightning look.                         |
 
-If you do nothing, the card uses **SLDS 2**.
+If you do nothing, the card uses **SLDS 1**. Existing placements can opt into
+SLDS 2 individually when their pages adopt the Cosmos theme.
 
 ## What it changes
 
 The choice swaps a self-contained theming layer on the card only — card
 background, borders, radius, shadow, header, and text all read from theme
 variables that switch with the setting. Your checks, results, messages, and
-"Fix it" links behave identically in both treatments; only the visual styling
-differs.
+action links behave identically in both treatments; only the visual styling
+differs. The component uses the App Builder attribute `designSystem` for this
+choice. Both treatments keep the same behavior, semantic structure, keyboard
+interaction, and accessible labels.
 
 ## Why per-placement, not org-wide
 

@@ -198,7 +198,7 @@ public with sharing class RecordHealthCheckConstants {
     }
   }
 
-  // ─── LWC wire contract (v2 CMDT → legacy DTO strings) ──────────────────────
+  // ─── LWC wire contract ──────────────────────────────────────────────────────
   // Check Set picklists store v2 API values; the LWC still compares against the
   // original Automatic/Manual, Show/Hide, etc. strings. Map at the Apex boundary.
 

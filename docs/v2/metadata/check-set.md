@@ -1,102 +1,269 @@
 # Check Set fields (`Record_Health_Check_Set__mdt`)
 
-Parent metadata record for one health-check card on a record page. The Lightning component points at a Check Set through the **Check Set** App Builder property (`checkSetName` in the LWC, sent to Apex as `configName`).
-
 > [!NOTE]
-> This reference is the source of truth for Check Set fields. Setup labels and stored picklist values match shipped Custom Metadata. Guides and examples link here rather than restating these values.
+> **In one line**
+>
+> Look up any Check Set field by Setup label or API name and see exactly how to configure it.
+>
+> **Reference**
+>
+> - Every field below is sourced from shipped Custom Metadata.
+> - Text-field examples show one Account readiness card; Allowed values are sufficient for checkboxes and picklists.
+> - Installation guides provide complete setup paths.
 
-Walkthroughs: [Configuration Guide](../guides/configuration-guide.md). Diagnostics: [Show Diagnostics](../guides/show-diagnostics.md). Upgrade notes: [Upgrading to V2](../installation/upgrading-to-v2.md).
+## Field index
 
-Stored picklist values are `UPPER_SNAKE_CASE`. Apex maps a few Check Set modes to legacy LWC DTO strings (`Automatic` / `Manual`, `Show` / `Hide`, and so on) at the wire boundary; author metadata with the API values below.
+| Setup label | API name | Group |
+| --- | --- | --- |
+| [Developer Name](#developer-name-developername) | `DeveloperName` | Identity and execution |
+| [Label](#label-masterlabel) | `MasterLabel` | Identity and execution |
+| [Object](#object-objectapiname__c) | `ObjectApiName__c` | Identity and execution |
+| [Active](#active-isactive__c) | `IsActive__c` | Identity and execution |
+| [Card Title](#card-title-cardtitle__c) | `CardTitle__c` | Card text |
+| [Card Subtitle](#card-subtitle-cardsubtitle__c) | `CardSubtitle__c` | Card text |
+| [When Checks Run](#when-checks-run-cardrunmode__c) | `CardRunMode__c` | Run behavior |
+| [Reveal Mode](#reveal-mode-cardrevealmode__c) | `CardRevealMode__c` | Run behavior |
+| [Stop after a system error](#stop-after-a-system-error-stoponsystemerror__c) | `StopOnSystemError__c` | Run behavior |
+| [Found/Expected Display](#foundexpected-display-foundexpecteddisplay__c) | `FoundExpectedDisplay__c` | Result display |
+| [Passed Checks](#passed-checks-passedchecksdisplay__c) | `PassedChecksDisplay__c` | Result display |
+| [Skipped Checks](#skipped-checks-skippedchecksdisplay__c) | `SkippedChecksDisplay__c` | Result display |
+| [Show Diagnostics](#show-diagnostics-showdiagnostics__c) | `ShowDiagnostics__c` | Troubleshooting |
+| [Publish Run Event](#publish-run-event-publishrunevent__c) | `PublishRunEvent__c` | Lifecycle events |
 
-## Field reference
+## 1. Identity and execution
 
-### 1. Basics
+### Developer Name (`DeveloperName`)
 
-| Setup label | API name | Type | Required | Description |
-| ----------- | -------- | ---- | -------- | ----------- |
-| Developer Name | `DeveloperName` | Text | Yes | API key selected by the Lightning component **Check Set** property. Stable link between the page and metadata. |
-| Label | Master Label | Text | Yes | Name shown in Setup record lists. Not shown to end users on the card. |
-| Object | `ObjectApiName__c` | Text | Yes | Object API name (for example, `Account`). Must match the record page object. Blank or invalid value causes `INVALID_CONFIG` at definition load. |
-| Active | `IsActive__c` | Checkbox | No | When unchecked, the Check Set does not load. Defaults to checked. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Developer Name** |
+| API name | `DeveloperName` |
+| Type | Text |
+| Capacity | 40 characters |
+| Always required | Yes |
+| Default | No default |
+| Used when | Every Check Set; Lightning, Apex, Flow, and events use this stable name. |
+| Description | Stable API identifier for the Custom Metadata record. |
+| Help text | Used by the Lightning component, Apex, Flow, and lifecycle events. |
+| Allowed values | Any value valid for the field type |
+| Example | `Account_Readiness` |
 
-### 2. Card Text
+### Label (`MasterLabel`)
 
-| Setup label | API name | Type | Required | Description |
-| ----------- | -------- | ---- | -------- | ----------- |
-| Card Title | `CardTitle__c` | Text | Yes | Card header title (for example, `Account Data Quality`). Required in Custom Metadata and by the deploy-time validator. If a blank value somehow reaches runtime, the card falls back to the Check Set label, then developer name. |
-| Card Subtitle | `CardSubtitle__c` | Text | No | Optional one-line subtitle under the title. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Label** |
+| API name | `MasterLabel` |
+| Type | Text |
+| Capacity | 80 characters |
+| Always required | Yes |
+| Default | No default |
+| Used when | Every Check Set; identifies the Custom Metadata record in Setup. |
+| Description | Setup list label for the Custom Metadata record. |
+| Help text | This is separate from the Card Title shown to users. |
+| Allowed values | Any value valid for the field type |
+| Example | `Account readiness` |
 
-### 3. Run Behavior
+### Object (`ObjectApiName__c`)
 
-| Setup label | API name | Type | Required | Description |
-| ----------- | -------- | ---- | -------- | ----------- |
-| When Checks Run | `CardRunMode__c` | Picklist | No | Default `RUN_ON_REQUEST`. See [picklist values](#when-checks-run-cardrunmode__c). |
-| Stop after a system error | `StopOnSystemError__c` | Checkbox | No | Stops remaining checks after the first `ERROR` status and runs checks sequentially (one Apex call at a time). Does **not** stop on `FAIL`, `SKIPPED`, or `UNABLE_TO_EVALUATE`. Off by default. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Object** |
+| API name | `ObjectApiName__c` |
+| Type | Text |
+| Capacity | 80 characters |
+| Always required | Yes |
+| Default | No default |
+| Used when | Every Check Set; must match the object of the Lightning record page and evaluated record. |
+| Description | <p>The API name of the object this Check Set runs on. Required. It must exactly match the object of the record page where you place the component, or the component shows nothing.</p><p>Example: Account, Opportunity, or a custom object like `SBQQ__Quote__c`.</p> |
+| Help text | <p>Required. The object's API name, e.g. Account or Opportunity. Must match the record page exactly, or the component shows nothing.</p> |
+| Allowed values | Any value valid for the field type |
+| Example | `Account` |
 
-### 4. Result Display
+### Active (`IsActive__c`)
 
-| Setup label | API name | Type | Required | Description |
-| ----------- | -------- | ---- | -------- | ----------- |
-| Reveal Mode | `CardRevealMode__c` | Picklist | No | Default `ONE_BY_ONE`. Cosmetic only — same checks, order, and outcomes either way. See [picklist values](#reveal-mode-cardrevealmode__c). |
-| Found/Expected Display | `FoundExpectedDisplay__c` | Picklist | No | Default `ON_DEMAND`. Controls when **Found** / **Expected** values appear. See [picklist values](#foundexpected-display-foundexpecteddisplay__c). |
-| Passed Checks | `PassedChecksDisplay__c` | Picklist | No | Default `SHOW_EACH_CHECK`. See [picklist values](#passed-and-skipped-checks). |
-| Skipped Checks | `SkippedChecksDisplay__c` | Picklist | No | Default `SHOW_EACH_CHECK`. Same options as Passed Checks for `SKIPPED` rows. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Active** |
+| API name | `IsActive__c` |
+| Type | Checkbox |
+| Capacity | Checkbox |
+| Always required | No |
+| Default | **Checked** — `true` |
+| Used when | Every Check Set; uncheck to disable the entire Set. |
+| Description | <p>When checked, this Check Set is live. When unchecked, the entire Check Set is disabled without deleting metadata - no checks load or run, and the component shows a "Health Check Unavailable" message.</p> |
+| Help text | <p>Checked = the Check Set is live. Uncheck to disable the whole set without deleting it (users see "Health Check Unavailable").</p> |
+| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
 
-### 5. Troubleshooting
 
-| Setup label | API name | Type | Required | Description |
-| ----------- | -------- | ---- | -------- | ----------- |
-| Show Diagnostics | `ShowDiagnostics__c` | Checkbox | No | When checked **and** the viewer has **`Record_Health_Check_View_Details`** (from permission set `Record_Health_Check_Admin`), shows extra troubleshooting detail on the card and in the browser console. Walkthrough: [Show Diagnostics](../guides/show-diagnostics.md). |
+## 2. Card text
 
-### 6. Lifecycle Events
+### Card Title (`CardTitle__c`)
 
-| Setup label | API name | Type | Required | Description |
-| ----------- | -------- | ---- | -------- | ----------- |
-| Publish Run Event | `PublishRunEvent__c` | Checkbox | No | Publishes a Check Set Run event after a deliberately initiated run completes. Page-load runs never publish. Off by default. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Card Title** |
+| API name | `CardTitle__c` |
+| Type | Text |
+| Capacity | 255 characters |
+| Always required | Yes |
+| Default | No default |
+| Used when | Every Check Set; displayed at the top of the card. |
+| Description | <p>The title shown at the top of the health check card on the record page. Required. Example: "Account Data Quality".</p> |
+| Help text | Required. The big title at the top of the card, e.g. "Account Data Quality". |
+| Allowed values | Any value valid for the field type |
+| Example | `Account readiness` |
 
-### Framework limits (not fields)
+### Card Subtitle (`CardSubtitle__c`)
 
-- **25 active Rules maximum** per run (lowest **Evaluation Order** first, then `DeveloperName`). When Rules are omitted, the header badge shows **First 25 of N shown**.
-- **Metadata reload:** `getCheckDefinitions` and `getCheckSetAvailabilityForRecord` are not cacheable. Reload the page (or reconnect the component) to pick up metadata edits.
-- **Concurrency:** up to **5** in-flight `evaluateCheck` calls when **Stop after a system error** is unchecked; sequential when it is checked.
-- **Dependencies outside the cap:** if a prerequisite Rule is among the omitted Rules, dependents are skipped with reason `DEPENDENCY_NOT_IN_RUN` (LWC only).
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Card Subtitle** |
+| API name | `CardSubtitle__c` |
+| Type | Text |
+| Capacity | 255 characters |
+| Always required | No |
+| Default | No default |
+| Used when | Optional for every Check Set; displayed below Card Title. |
+| Description | <p>Optional one-line text shown under the "Card Title" to explain what the card checks. Keep it to a sentence or two.</p> |
+| Help text | Optional. A short line under the "Card Title" explaining what the card checks. |
+| Allowed values | Any value valid for the field type |
+| Example | `Review data quality before the weekly pipeline meeting.` |
 
-## Picklist values
+
+## 3. Run behavior
 
 ### When Checks Run (`CardRunMode__c`)
 
-| Value (API) | Setup label | Behavior |
-| ----------- | ----------- | -------- |
-| `RUN_ON_LOAD` | When the page opens | Checks run when the page loads (after a short deferral). |
-| `RUN_ON_REQUEST` | When the user clicks Run | **Default.** User clicks **Run**. Use for expensive checks. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **When Checks Run** |
+| API name | `CardRunMode__c` |
+| Type | Picklist |
+| Capacity | Restricted picklist |
+| Always required | No |
+| Default | **When the user clicks Run** — `RUN_ON_REQUEST` |
+| Used when | Every Check Set; controls automatic page-load versus user-requested runs. |
+| Description | <p>Decides whether checks run on their own when the page opens, or only after the user clicks Run.</p><ul><li>"When the page opens" runs them automatically on load.</li><li>"When the user clicks Run" shows a Run button and runs nothing until it is clicked - choose this for checks that are slow or should run on demand.</li></ul><p>Defaults to "When the user clicks Run".</p> |
+| Help text | <ul><li>"When the page opens" = checks run automatically on load.</li><li>"When the user clicks Run" (default) = a Run button appears; nothing runs until clicked.</li></ul><p>Use the latter for heavy checks.</p> |
+| Allowed values | **When the page opens** — `RUN_ON_LOAD`<br>**When the user clicks Run** — `RUN_ON_REQUEST` |
 
 ### Reveal Mode (`CardRevealMode__c`)
 
-| Value (API) | Setup label | Behavior |
-| ----------- | ----------- | -------- |
-| `ALL_AT_ONCE` | All at once | Every eligible check is listed on load as a pending row, then fills in in place. |
-| `ONE_BY_ONE` | One by one | **Default.** No check rows on load; each eligible check appears as the ordered run reaches it. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Reveal Mode** |
+| API name | `CardRevealMode__c` |
+| Type | Picklist |
+| Capacity | Restricted picklist |
+| Always required | No |
+| Default | **One by one** — `ONE_BY_ONE` |
+| Used when | Every Check Set; controls when eligible rows become visible. |
+| Description | <p>Cosmetic only - same checks, same order, same outcomes either way, and it does not change when checks run (that is "When Checks Run").</p><ul><li>"All at once" lists every eligible check on load (pending), then fills in each result in place.</li><li>"One by one" shows no rows until the run starts, then adds each check as it is reached.</li></ul><p>Defaults to "One by one".</p> |
+| Help text | <p>Cosmetic only. "All at once" = every check listed on load, then results fill in.</p><p>"One by one" (default) = checks appear as the run reaches them. Doesn't change when checks run.</p> |
+| Allowed values | **All at once** — `ALL_AT_ONCE`<br>**One by one** — `ONE_BY_ONE` |
+
+### Stop after a system error (`StopOnSystemError__c`)
+
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Stop after a system error** |
+| API name | `StopOnSystemError__c` |
+| Type | Checkbox |
+| Capacity | Checkbox |
+| Always required | No |
+| Default | **Unchecked** — `false` |
+| Used when | Optional for every Check Set; affects unexpected system errors, not `FAIL` or `SKIPPED`. |
+| Description | <p>When checked, the run stops as soon as a check hits an unexpected system error. It does NOT stop for normal Fail or Skipped results - those let the remaining checks keep running.</p><p>Leave unchecked so a single system error does not hide the results of the other checks.</p> |
+| Help text | <p>Checked = stop the whole run on an unexpected system error. Does not stop on a normal Fail or Skip.</p><p>Off by default.</p> |
+| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+
+
+## 4. Result display
 
 ### Found/Expected Display (`FoundExpectedDisplay__c`)
 
-| Value (API) | Setup label | Behavior |
-| ----------- | ----------- | -------- |
-| `ON_DEMAND` | On demand | **Default.** Failed checks show **Found** / **Expected** inline. Passing checks can be expanded when values are available. |
-| `FAILURES_ONLY` | Failed checks only | **Found** / **Expected** inline on failed checks only. |
-| `ALL_ROWS` | Every check | **Found** / **Expected** inline on every check that captured values. |
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Found/Expected Display** |
+| API name | `FoundExpectedDisplay__c` |
+| Type | Picklist |
+| Capacity | Restricted picklist |
+| Always required | No |
+| Default | **On demand** — `ON_DEMAND` |
+| Used when | Every Check Set; controls when available Found and Expected values appear. |
+| Description | <p>Controls when users see the Found and Expected values for each check in this Check Set.</p><ul><li>"On demand" lets users expand a check to see its values, and failed checks also show their values inline.</li><li>"Failed checks only" shows values only on failed checks, keeping passing checks compact.</li><li>"Every check" shows values inline on every check where values are available.</li></ul><p>Defaults to "On demand".</p> |
+| Help text | <p>When Found/Expected values show.</p><ul><li>"On demand" (default) = expand to see; failed checks show inline.</li><li>"Failed checks only" = only on failures.</li><li>"Every check" = inline everywhere available.</li></ul> |
+| Allowed values | **On demand** — `ON_DEMAND`<br>**Failed checks only** — `FAILURES_ONLY`<br>**Every check** — `ALL_ROWS` |
 
-### Passed and Skipped Checks
+### Passed Checks (`PassedChecksDisplay__c`)
 
-Fields: `PassedChecksDisplay__c`, `SkippedChecksDisplay__c`
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Passed Checks** |
+| API name | `PassedChecksDisplay__c` |
+| Type | Picklist |
+| Capacity | Restricted picklist |
+| Always required | No |
+| Default | **Show each check** — `SHOW_EACH_CHECK` |
+| Used when | Every Check Set; controls whether passing rows or only their count appear. |
+| Description | <p>Controls how checks that Pass appear.</p><ul><li>"Show each check" lists every passed check.</li><li>"Show count only" removes passed checks from the list; their count still appears in the summary bar at the bottom of the card.</li></ul><p>Defaults to "Show each check".</p> |
+| Help text | <p>How passing checks appear.</p><ul><li>"Show each check" (default) = list them all.</li><li>"Show count only" = hide from the list; the count still shows in the summary bar.</li></ul> |
+| Allowed values | **Show each check** — `SHOW_EACH_CHECK`<br>**Show count only** — `SHOW_COUNT_ONLY` |
 
-| Value (API) | Setup label | Behavior |
-| ----------- | ----------- | -------- |
-| `SHOW_EACH_CHECK` | Show each check | **Default.** Checks stay in the list. |
-| `SHOW_COUNT_ONLY` | Show count only | Rows are hidden; the summary bar pill still shows the count (hover for rule labels). |
+### Skipped Checks (`SkippedChecksDisplay__c`)
 
-## See also
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Skipped Checks** |
+| API name | `SkippedChecksDisplay__c` |
+| Type | Picklist |
+| Capacity | Restricted picklist |
+| Always required | No |
+| Default | **Show each check** — `SHOW_EACH_CHECK` |
+| Used when | Every Check Set; controls whether skipped rows or only their count appear. |
+| Description | <p>Controls how checks that were not run appear. This includes checks that do not apply to the record and checks whose prerequisite did not pass.</p><ul><li>"Show each check" lists every skipped check.</li><li>"Show count only" removes skipped checks from the list; their count still appears in the summary bar at the bottom of the card.</li></ul><p>Defaults to "Show each check".</p> |
+| Help text | <p>How checks that were not run appear.</p><ul><li>"Show each check" (default) lists them.</li><li>"Show count only" hides the rows while keeping the summary count.</li></ul> |
+| Allowed values | **Show each check** — `SHOW_EACH_CHECK`<br>**Show count only** — `SHOW_COUNT_ONLY` |
+
+
+## 5. Troubleshooting
+
+### Show Diagnostics (`ShowDiagnostics__c`)
+
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Show Diagnostics** |
+| API name | `ShowDiagnostics__c` |
+| Type | Checkbox |
+| Capacity | Checkbox |
+| Always required | No |
+| Default | **Unchecked** — `false` |
+| Used when | Optional for every Check Set; detail also requires the View Details custom permission. |
+| Description | <p>Enables authorized troubleshooting details on the card and in the browser console. A user sees those details only when this field is checked and the user has the "Record Health Check View Details" custom permission.</p><p>Other users continue to see the standard card. Enable it only while diagnosing a configuration or evaluation problem.</p> |
+| Help text | <p>Troubleshooting only. Details appear only to users with "Record Health Check View Details".</p><p>Leave unchecked during normal use.</p> |
+| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+
+
+## 6. Lifecycle events
+
+### Publish Run Event (`PublishRunEvent__c`)
+
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Publish Run Event** |
+| API name | `PublishRunEvent__c` |
+| Type | Checkbox |
+| Capacity | Checkbox |
+| Always required | No |
+| Default | **Unchecked** — `false` |
+| Used when | Optional for every Check Set; affects deliberate runs only and defaults off. |
+| Description | <p>Publishes a Check Set Run event after a deliberately initiated run completes. Page-load runs never publish.</p> |
+| Help text | <p>Publish a completion event for deliberate API, Flow, scheduled, batch, or user-requested runs. Page-load runs never publish.</p> |
+| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+
+## Related
 
 - [Rule fields](rule-fields.md)
-- [Configuration Guide](../guides/configuration-guide.md)
-- [Design Specification](../reference/record-health-check-design-spec.md)
+- [Getting started](../installation/getting-started.md)
+- [Configuration guide](../guides/configuration-guide.md)

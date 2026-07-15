@@ -10,7 +10,7 @@ You need the [Salesforce CLI](https://developer.salesforce.com/tools/salesforcec
 | ------- | -------------- |
 | Prerequisites | CLI and Node tooling |
 | Update CLI and tooling | `sf update`, plugins, Node |
-| Deploy | Core, Hero manifest, and optional packs from the Examples repository |
+| Deploy | Core from this repository; optional packs from the Examples repository |
 | Test and lint | Jest, ESLint, Prettier |
 | Regenerate docs | Design-spec split and manifests |
 
@@ -154,36 +154,27 @@ sf org open --target-org rhc-scratch
 
 ## Deploy
 
-### Core plus Hero (recommended)
+### Core (recommended)
 
-Deploy the framework first, then the one Core Hero:
+Deploy the production-safe Core manifest:
 
 ```bash
 sf project deploy start \
-  --manifest manifest/package-core.xml \
+  --manifest manifest/package.xml \
   --target-org mySandbox \
   --wait 30
 
-sf project deploy start \
-  --manifest manifest/package-Example_Account_360_Health_Check.xml \
-  --target-org mySandbox \
-  --wait 30
 ```
 
 ### Add an optional example pack
 
-Deploy Core, then the hero Check Set. Add scenario packs from
+Deploy Core, then add scenario packs from
 [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples) — not from Core manifests.
 
 ```bash
 # From the RecordHealthCheck (Core) repo
 sf project deploy start \
-  --manifest manifest/package-core.xml \
-  --target-org mySandbox \
-  --wait 30
-
-sf project deploy start \
-  --manifest manifest/package-Example_Account_360_Health_Check.xml \
+  --manifest manifest/package.xml \
   --target-org mySandbox \
   --wait 30
 
@@ -199,8 +190,8 @@ and [Examples install guide](https://github.com/gkolan/RecordHealthCheck-Example
 
 ### Source directory
 
-Do not use `--source-dir force-app` for a V2 Core release until the transitional non-Hero metadata
-has been removed from this repository. Use the Core and Hero manifests above.
+For repeatable release deployment, use `manifest/package.xml`. It is the explicit allowlist for
+Core and excludes integration fixtures.
 ### Deploy with tests (release gate)
 
 Same command used in `.github/workflows/salesforce-validate.yml`:
@@ -324,7 +315,7 @@ npm run prettier:verify
 # Lint LWC JavaScript
 npm run lint
 
-# LWC unit tests (59 tests)
+# LWC unit tests
 npm test
 
 # LWC tests with coverage thresholds
@@ -374,9 +365,7 @@ sf org display --target-org mySandbox
 
 | File | Purpose |
 | ---- | ------- |
-| `manifest/package.xml` | Internal full-tree validation only while transitional non-Hero metadata remains |
-| `manifest/package-core.xml` | Engine, schema, LWC, permissions only (generated) |
-| `manifest/package-Example_Account_360_Health_Check.xml` | The single Core Hero Check Set and its Rules |
+| `manifest/package.xml` | Production Core: engine, schema, LWC, permissions, and self-contained tests |
 
 Every other Check Set manifest belongs in
 [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples).

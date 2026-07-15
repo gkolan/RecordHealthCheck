@@ -141,19 +141,8 @@ public with sharing class RecordHealthCheckValueResolver {
         );
       }
     }
-    // Normalize both sides through coerceDateTime before comparing, so a Date on one
-    // side and a Datetime on the other still match (a String.valueOf equality would
-    // never match, e.g. 2024-01-15 vs midnight).
-    if (primary instanceof Date || comparison instanceof Date) {
-      try {
-        return coerceDateTime(primary) == coerceDateTime(comparison);
-      } catch (Exception ex) {
-        throw new ResolverException(
-          'INCOMPATIBLE_COMPARISON_TYPES',
-          'Date comparison value could not be parsed.'
-        );
-      }
-    }
+    // Apex boxes Date values through the Datetime branch above, which also
+    // normalizes Date/Datetime pairs before comparison.
     // Coerce both sides to Id before comparison, so a 15-char and an 18-char form of
     // the same Id match (String.valueOf would often compare them as unequal).
     if (primary instanceof Id || comparison instanceof Id) {

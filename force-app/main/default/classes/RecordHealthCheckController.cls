@@ -24,9 +24,13 @@ public with sharing class RecordHealthCheckController {
     if (recordId == null) {
       return new RecordHealthCheckSetAvailability();
     }
-    return configService.getCheckSetAvailabilityForObject(
-      RecordHealthCheckDescribeCache.objectApiName(recordId)
-    );
+    try {
+      return configService.getCheckSetAvailabilityForObject(
+        RecordHealthCheckDescribeCache.objectApiName(recordId)
+      );
+    } finally {
+      RecordHealthCheckLogger.flush();
+    }
   }
 
   /**
@@ -40,27 +44,33 @@ public with sharing class RecordHealthCheckController {
    */
   @AuraEnabled
   public static RecordHealthCheckDefinitionResponse getCheckDefinitions(
-    String configName,
+    String checkSetDeveloperName,
     Id recordId,
     String runId
   ) {
     // Normalize at the controller boundary (the engine also normalizes in evaluate).
-    configName = RecordHealthCheckLogger.normalizeIdentifier(configName, 80);
+    checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+      checkSetDeveloperName,
+      80
+    );
     runId = RecordHealthCheckLogger.normalizeIdentifier(runId, 120);
-    if (String.isBlank(configName)) {
+    if (String.isBlank(checkSetDeveloperName)) {
       throw buildAuraException(
         'CONFIG_NOT_FOUND',
         'No Check Set is selected for this Record Health Check component.'
       );
     }
     try {
-      return configService.getDefinitionResponse(configName, recordId);
+      return configService.getDefinitionResponse(
+        checkSetDeveloperName,
+        recordId
+      );
     } catch (RecordHealthCheckConfigService.ConfigException ex) {
       // Expected, admin-facing condition (e.g. CONFIG_NOT_FOUND) — log at DEBUG.
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.DEBUG,
         runId,
-        configName,
+        checkSetDeveloperName,
         recordId,
         null,
         'CONFIG_EXCEPTION',
@@ -72,7 +82,7 @@ public with sharing class RecordHealthCheckController {
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.ERROR,
         runId,
-        configName,
+        checkSetDeveloperName,
         recordId,
         null,
         'CONFIG_UNEXPECTED',
@@ -89,6 +99,10 @@ public with sharing class RecordHealthCheckController {
         'LOAD_FAILED',
         'An unexpected error occurred loading the health check configuration.'
       );
+    } finally {
+      // Publish the buffered CONFIG_UNEXPECTED error before LOAD_FAILED unwinds —
+      // PublishImmediately survives the rollback the thrown exception triggers.
+      RecordHealthCheckLogger.flush();
     }
   }
 
@@ -96,43 +110,112 @@ public with sharing class RecordHealthCheckController {
    * Evaluates a single check and returns exactly one RecordHealthCheckResult.
    * Catchable failures are normalized by RecordHealthCheckEngine
    * and surfaced as status = ERROR with a safe message.
-   * configName is validated server-side to confirm the rule belongs to the
+   * checkSetDeveloperName is validated server-side to confirm the rule belongs to the
    * named Check Set, preventing direct invocation of arbitrary rules.
    */
   @AuraEnabled
   public static RecordHealthCheckResult evaluateCheck(
-    String configName,
-    String checkDeveloperName,
+    String checkSetDeveloperName,
+    String ruleDeveloperName,
     Id recordId,
-    String runId
+    String runId,
+    String source
   ) {
-    configName = RecordHealthCheckLogger.normalizeIdentifier(configName, 80);
-    checkDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
-      checkDeveloperName,
+    checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+      checkSetDeveloperName,
+      80
+    );
+    ruleDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+      ruleDeveloperName,
       80
     );
     runId = RecordHealthCheckLogger.normalizeIdentifier(runId, 120);
+    String effectiveSource = normalizeLwcSource(source);
     try {
-      return engine.evaluate(configName, checkDeveloperName, recordId, runId);
+      RecordHealthCheckResult result = engine.evaluate(
+        checkSetDeveloperName,
+        ruleDeveloperName,
+        recordId,
+        runId,
+        effectiveSource
+      );
+      result.runId = runId;
+      result.recordId = recordId;
+      RecordHealthCheckLifecyclePublisher.publishRuleResults(
+        checkSetDeveloperName,
+        runId,
+        new List<RecordHealthCheckResult>{ result },
+        effectiveSource
+      );
+      return result;
     } catch (Exception ex) {
       // Engine promises never to throw, but guard the boundary regardless
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.ERROR,
         runId,
-        configName,
+        checkSetDeveloperName,
         recordId,
-        checkDeveloperName,
+        ruleDeveloperName,
         'CONTROLLER_BOUNDARY_ERROR',
         null,
         ex
       );
       RecordHealthCheckResult errorResult = new RecordHealthCheckResult();
-      errorResult.checkDeveloperName = checkDeveloperName;
+      errorResult.ruleDeveloperName = ruleDeveloperName;
+      errorResult.recordId = recordId;
       errorResult.status = 'ERROR';
       errorResult.reasonCode = 'APEX_EVALUATOR_ERROR';
       errorResult.message = 'An unexpected error occurred. Contact your administrator.';
       return errorResult;
+    } finally {
+      RecordHealthCheckLogger.flush();
     }
+  }
+
+  /** Publishes the one aggregate event after a user-initiated client run finishes. */
+  @AuraEnabled
+  public static void completeRun(
+    String checkSetDeveloperName,
+    String runId,
+    List<RecordHealthCheckResult> results,
+    String source,
+    Id recordId
+  ) {
+    try {
+      String effectiveSource = normalizeLwcSource(source);
+      if (
+        effectiveSource !=
+        RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED ||
+        results == null
+      ) {
+        return;
+      }
+      RecordHealthCheckSetResult response = new RecordHealthCheckSetResult();
+      response.checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+        checkSetDeveloperName,
+        80
+      );
+      response.recordId = recordId;
+      response.runId = RecordHealthCheckLogger.normalizeIdentifier(runId, 120);
+      for (RecordHealthCheckResult result : results) {
+        if (result != null)
+          response.add(result);
+      }
+      response.finish();
+      RecordHealthCheckLifecyclePublisher.publishCompletedSet(
+        response,
+        effectiveSource
+      );
+    } finally {
+      RecordHealthCheckLogger.flush();
+    }
+  }
+
+  /** The browser may request only the two LWC modes; unknown values fail closed. */
+  private static String normalizeLwcSource(String source) {
+    return source == RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
+      ? RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
+      : RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD;
   }
 
   // ─── Helper ───────────────────────────────────────────────────────────────

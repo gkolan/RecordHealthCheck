@@ -17,6 +17,6 @@
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText
-  >What "no records" means for this check (no default - you must choose). Example: a query for open high-priority cases returning nothing usually means healthy -&gt; "Pass". Required when "How To Read Query Results" is "Any/Every record passes" or "Compare as lists".</inlineHelpText>
+  >Required for multi-row and list checks. Choose the business meaning of no matching records: Pass, Fail, Skip, or Unable to evaluate.</inlineHelpText>
     <required>false</required>
 </CustomField>

@@ -7,8 +7,8 @@
  * One-line entry point to run a SINGLE Record Health Check from anywhere
  * Apex triggers, batch/queueable, scheduled jobs, anonymous Apex, other classes
  * or tests. This is the simplest adoption surface: no LWC, no record page.
- * RecordHealthCheckResult r = RecordHealthCheck.run(
- * 'Example_Account_360_Health_Check', 'Example_Owner_Is_Active', accountId);
+ * RecordHealthCheckResult r = RecordHealthCheck.runRule(
+ * 'Example_Owner_Is_Active', accountId);
  * if (r.status == 'FAIL') { ... }
  * Like the LWC path, the call is correlated by a generated `runId` and every
  * `[RHC]` log line is attributed to the actual running user.
@@ -25,116 +25,153 @@ public with sharing class RecordHealthCheck {
    * Normalizes catchable evaluation failures as result statuses. Apex governor
    * limit exceptions remain uncatchable, as they are for every Apex API.
    */
-  public static RecordHealthCheckResult run(
-    String configName,
-    String checkDeveloperName,
+  public static RecordHealthCheckResult runRule(
+    String ruleDeveloperName,
     Id recordId
   ) {
-    return run(configName, checkDeveloperName, recordId, null);
+    return runRule(ruleDeveloperName, recordId, null);
   }
 
   /** Evaluate one Rule for each record, preserving input order. */
-  public static List<RecordHealthCheckResult> run(
-    String configName,
-    String checkDeveloperName,
+  public static List<RecordHealthCheckResult> runRule(
+    String ruleDeveloperName,
     List<Id> recordIds
   ) {
     validateRecordCount(recordIds);
     validateEvaluationCount(recordIds.size());
     List<RecordHealthCheckResult> responses = new List<RecordHealthCheckResult>();
+    String checkSetDeveloperName = findCheckSetDeveloperName(ruleDeveloperName);
     deferPublication = true;
     try {
       for (Id recordId : recordIds) {
-        responses.add(run(configName, checkDeveloperName, recordId));
+        responses.add(
+          runResolved(
+            checkSetDeveloperName,
+            ruleDeveloperName,
+            recordId,
+            null,
+            RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
+          )
+        );
       }
     } finally {
       deferPublication = false;
+      RecordHealthCheckLogger.flush();
     }
     RecordHealthCheckLifecyclePublisher.publishRuleResults(
-      configName,
+      checkSetDeveloperName,
       null,
       responses,
-      RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
     );
     return responses;
   }
 
   /** Evaluate every active Rule in a Check Set for one record. */
   public static RecordHealthCheckSetResult runSet(
-    String configName,
+    String checkSetDeveloperName,
     Id recordId
   ) {
-    return runSet(configName, recordId, null);
+    return runSet(checkSetDeveloperName, recordId, null);
   }
 
   public static RecordHealthCheckSetResult runSet(
-    String configName,
+    String checkSetDeveloperName,
     Id recordId,
     String runId
   ) {
+    return runSet(
+      checkSetDeveloperName,
+      recordId,
+      runId,
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
+    );
+  }
+
+  public static RecordHealthCheckSetResult runSet(
+    String checkSetDeveloperName,
+    Id recordId,
+    String runId,
+    String source
+  ) {
+    try {
+      return runSetResolved(checkSetDeveloperName, recordId, runId, source);
+    } finally {
+      if (!deferPublication) {
+        RecordHealthCheckLogger.flush();
+      }
+    }
+  }
+
+  private static RecordHealthCheckSetResult runSetResolved(
+    String checkSetDeveloperName,
+    Id recordId,
+    String runId,
+    String source
+  ) {
     String effectiveRunId = String.isBlank(runId) ? newRunId() : runId;
     RecordHealthCheckDefinitionResponse definitions = new RecordHealthCheckConfigService()
-      .getDefinitionResponse(configName, recordId);
+      .getDefinitionResponse(checkSetDeveloperName, recordId);
     validateEvaluationCount(definitions.checks.size());
     RecordHealthCheckSetResult response = new RecordHealthCheckSetResult();
-    response.checkSetDeveloperName = configName;
+    response.checkSetDeveloperName = checkSetDeveloperName;
     response.recordId = recordId;
     response.runId = effectiveRunId;
     for (RecordHealthCheckDefinition definition : definitions.checks) {
       RecordHealthCheckResult result = engine.evaluate(
-        configName,
+        checkSetDeveloperName,
         definition.developerName,
         recordId,
-        effectiveRunId
+        effectiveRunId,
+        source
       );
       result.runId = effectiveRunId;
+      result.recordId = recordId;
       response.add(result);
     }
     response.finish();
     if (!deferPublication) {
       RecordHealthCheckLifecyclePublisher.publishRuleResults(
-        configName,
+        checkSetDeveloperName,
         effectiveRunId,
         response.results,
-        RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+        source
       );
-      RecordHealthCheckLifecyclePublisher.publishCompletedSet(
-        response,
-        RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
-      );
+      RecordHealthCheckLifecyclePublisher.publishCompletedSet(response, source);
     }
     return response;
   }
 
   /** Evaluate a Check Set for each record, preserving input order. */
   public static List<RecordHealthCheckSetResult> runSet(
-    String configName,
+    String checkSetDeveloperName,
     List<Id> recordIds
   ) {
     validateRecordCount(recordIds);
     if (recordIds.isEmpty())
       return new List<RecordHealthCheckSetResult>();
     RecordHealthCheckDefinitionResponse definitions = new RecordHealthCheckConfigService()
-      .getDefinitionResponse(configName, recordIds[0]);
+      .getDefinitionResponse(checkSetDeveloperName, recordIds[0]);
     validateEvaluationCount(recordIds.size() * definitions.checks.size());
     List<RecordHealthCheckSetResult> responses = new List<RecordHealthCheckSetResult>();
     deferPublication = true;
     try {
       for (Id recordId : recordIds)
-        responses.add(runSet(configName, recordId));
+        responses.add(runSet(checkSetDeveloperName, recordId));
     } finally {
       deferPublication = false;
+      RecordHealthCheckLogger.flush();
     }
     for (RecordHealthCheckSetResult response : responses) {
       RecordHealthCheckLifecyclePublisher.publishRuleResults(
-        configName,
+        checkSetDeveloperName,
         response.runId,
         response.results,
-        RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+        RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
       );
       RecordHealthCheckLifecyclePublisher.publishCompletedSet(
         response,
-        RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+        RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
       );
     }
     return responses;
@@ -166,57 +203,99 @@ public with sharing class RecordHealthCheck {
    * Full control: supply your own correlation `runId` (e.g. a ticket number or a
    * batch job id) so this run's log lines group with related work.
    */
-  public static RecordHealthCheckResult run(
-    String configName,
-    String checkDeveloperName,
+  public static RecordHealthCheckResult runRule(
+    String ruleDeveloperName,
     Id recordId,
     String runId
   ) {
-    String effectiveRunId = String.isBlank(runId) ? newRunId() : runId;
-
-    RecordHealthCheckLogger.log(
-      RecordHealthCheckLogger.Level.INFO,
-      effectiveRunId,
-      configName,
+    return runRule(
+      ruleDeveloperName,
       recordId,
-      checkDeveloperName,
-      'RUN_INVOKED',
-      new Map<String, Object>{ 'via' => 'RecordHealthCheck.run' },
-      null
+      runId,
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
     );
+  }
 
-    RecordHealthCheckResult result = engine.evaluate(
-      configName,
-      checkDeveloperName,
+  public static RecordHealthCheckResult runRule(
+    String ruleDeveloperName,
+    Id recordId,
+    String runId,
+    String source
+  ) {
+    return runResolved(
+      findCheckSetDeveloperName(ruleDeveloperName),
+      ruleDeveloperName,
       recordId,
-      effectiveRunId
+      runId,
+      source
     );
-    result.runId = effectiveRunId;
+  }
 
-    RecordHealthCheckLogger.log(
-      RecordHealthCheckLogger.Level.INFO,
-      effectiveRunId,
-      configName,
-      recordId,
-      checkDeveloperName,
-      'RUN_COMPLETE',
-      new Map<String, Object>{
-        'status' => result.status,
-        'reasonCode' => result.reasonCode,
-        'durationMs' => result.durationMs
-      },
-      null
-    );
+  private static RecordHealthCheckResult runResolved(
+    String checkSetDeveloperName,
+    String ruleDeveloperName,
+    Id recordId,
+    String runId,
+    String source
+  ) {
+    try {
+      String effectiveRunId = String.isBlank(runId) ? newRunId() : runId;
 
-    if (!deferPublication) {
-      RecordHealthCheckLifecyclePublisher.publishRuleResults(
-        configName,
+      RecordHealthCheckLogger.log(
+        RecordHealthCheckLogger.Level.INFO,
         effectiveRunId,
-        new List<RecordHealthCheckResult>{ result },
-        RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+        checkSetDeveloperName,
+        recordId,
+        ruleDeveloperName,
+        'RUN_INVOKED',
+        new Map<String, Object>{ 'via' => 'RecordHealthCheck.runRule' },
+        null
       );
+
+      RecordHealthCheckResult result = engine.evaluate(
+        checkSetDeveloperName,
+        ruleDeveloperName,
+        recordId,
+        effectiveRunId,
+        source
+      );
+      result.runId = effectiveRunId;
+      result.recordId = recordId;
+
+      RecordHealthCheckLogger.log(
+        RecordHealthCheckLogger.Level.INFO,
+        effectiveRunId,
+        checkSetDeveloperName,
+        recordId,
+        ruleDeveloperName,
+        'RUN_COMPLETE',
+        new Map<String, Object>{
+          'status' => result.status,
+          'reasonCode' => result.reasonCode,
+          'durationMs' => result.durationMs
+        },
+        null
+      );
+
+      if (!deferPublication) {
+        RecordHealthCheckLifecyclePublisher.publishRuleResults(
+          checkSetDeveloperName,
+          effectiveRunId,
+          new List<RecordHealthCheckResult>{ result },
+          source
+        );
+      }
+      return result;
+    } finally {
+      if (!deferPublication) {
+        RecordHealthCheckLogger.flush();
+      }
     }
-    return result;
+  }
+
+  private static String findCheckSetDeveloperName(String ruleDeveloperName) {
+    return new RecordHealthCheckConfigService()
+      .findCheckSetDeveloperName(ruleDeveloperName);
   }
 
   // Correlation id for runs that don't supply one. Unique enough to group a

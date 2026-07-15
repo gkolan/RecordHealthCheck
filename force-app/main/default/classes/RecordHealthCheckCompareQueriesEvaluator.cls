@@ -16,6 +16,13 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   // Delegate token binding and query execution to the existing SOQL evaluator
   private RecordHealthCheckSoqlEvaluator soqlEvaluator = new RecordHealthCheckSoqlEvaluator();
 
+  public RecordHealthCheckCompareQueriesEvaluator withRunContext(
+    RecordHealthCheckRunContext value
+  ) {
+    soqlEvaluator.withRunContext(value);
+    return this;
+  }
+
   // ─── Public entry point ───────────────────────────────────────────────────
 
   public RecordHealthCheckResult evaluate(
@@ -25,7 +32,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   ) {
     Long startMs = System.currentTimeMillis();
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.checkDeveloperName = rule.DeveloperName;
+    result.ruleDeveloperName = rule.DeveloperName;
     result.label = rule.CheckTitle__c;
     result.priority = rule.EvaluationOrder__c;
     result.evaluatorType = 'COMPARE_TWO_QUERIES';

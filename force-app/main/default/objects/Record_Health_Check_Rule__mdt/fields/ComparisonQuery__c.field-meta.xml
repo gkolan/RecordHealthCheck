@@ -3,7 +3,7 @@
     <fullName>ComparisonQuery__c</fullName>
     <label>Comparison Query</label>
     <description
-  >The second SOQL query. Used when "Expected Value Comes From" is "Comparison query", for a "Compare two queries" check, or as the list source for the "List contains any" / "List contains none" operators. Supports merge tokens like {!Id} and {!FieldApiName}. Read a specific column from it with "Comparison Query Field".</description>
+  >The second SOQL query. Used when "Expected Value Comes From" is "Comparison query", for a "Compare two queries" check, or as the list source for the "List contains any" / "List contains none" operators. Supports merge tokens like {!record.Id} and {!record.FieldApiName}. Read a specific column from it with "Comparison Query Field".</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>5</visibleLines>

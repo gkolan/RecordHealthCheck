@@ -2,7 +2,7 @@
 private class RecordHealthCheckLifecyclePublisherTest {
   private static RecordHealthCheckResult result(String name, String status) {
     RecordHealthCheckResult response = new RecordHealthCheckResult();
-    response.checkDeveloperName = name;
+    response.ruleDeveloperName = name;
     response.status = status;
     response.runId = 'run-test';
     return response;
@@ -56,11 +56,11 @@ private class RecordHealthCheckLifecyclePublisherTest {
       response.checkSetDeveloperName,
       response.runId,
       response.results,
-      RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
     );
     RecordHealthCheckLifecyclePublisher.publishCompletedSet(
       response,
-      RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
     );
     System.assertEquals(
       'PASS',
@@ -82,21 +82,42 @@ private class RecordHealthCheckLifecyclePublisherTest {
     Integer beforeDml = Limits.getDmlStatements();
     RecordHealthCheckLifecyclePublisher.publishCompletedSet(
       setResponse(),
-      RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
     );
     RecordHealthCheckLifecyclePublisher.publishRuleResults(
       'Account_Data_Quality',
       'run-test',
       setResponse().results,
-      RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
     );
     RecordHealthCheckLifecyclePublisher.subscriberContextOverride = true;
     RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
     RecordHealthCheckLifecyclePublisher.publishCompletedSet(
       setResponse(),
-      RecordHealthCheckLifecyclePublisher.SOURCE_FACADE
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
     );
     System.assertEquals(beforeDml, Limits.getDmlStatements());
+  }
+
+  @isTest
+  static void unknownAndNullSourcesFailClosed() {
+    RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
+    Integer beforeDml = Limits.getDmlStatements();
+
+    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
+      setResponse(),
+      null
+    );
+    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
+      setResponse(),
+      'MISSPELLED_SOURCE'
+    );
+
+    System.assertEquals(
+      beforeDml,
+      Limits.getDmlStatements(),
+      'Only explicitly allowlisted deliberate sources may publish.'
+    );
   }
 
   @isTest
@@ -116,7 +137,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
           RuleDeveloperName__c = 'Chunk_Rule',
           Status__c = 'PASS',
           OccurredAt__c = System.now(),
-          Source__c = 'FACADE',
+          Source__c = 'APEX_API',
           CoreVersion__c = '2.0.0'
         )
       );
@@ -144,7 +165,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
         RuleDeveloperName__c = 'Partial_Rule',
         Status__c = 'PASS',
         OccurredAt__c = System.now(),
-        Source__c = 'FACADE',
+        Source__c = 'APEX_API',
         CoreVersion__c = '2.0.0'
       ),
       new Record_Health_Check_Rule_Result__e(
@@ -154,7 +175,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
         RuleDeveloperName__c = 'Partial_Rule',
         Status__c = 'PASS',
         OccurredAt__c = System.now(),
-        Source__c = 'FACADE',
+        Source__c = 'APEX_API',
         CoreVersion__c = '2.0.0'
       )
     };

@@ -20,11 +20,11 @@ private class RecordHealthCheckMetadataValidatorTest {
   @isTest
   static void validateAsJsonReturnsSerializedIssues() {
     Test.startTest();
-    String json = RecordHealthCheckMetadataValidator.validateAsJson();
+    String jsonText = RecordHealthCheckMetadataValidator.validateAsJson();
     Test.stopTest();
 
-    System.assertNotEquals(null, json, 'validateAsJson should return JSON');
-    Object parsed = JSON.deserializeUntyped(json);
+    System.assertNotEquals(null, jsonText, 'validateAsJson should return JSON');
+    Object parsed = JSON.deserializeUntyped(jsonText);
     System.assert(
       parsed instanceof List<Object>,
       'validateAsJson should serialize a list of validation issues'

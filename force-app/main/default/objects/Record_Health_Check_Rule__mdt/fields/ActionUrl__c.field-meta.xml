@@ -3,11 +3,11 @@
     <fullName>ActionUrl__c</fullName>
     <label>Action URL</label>
     <description
-  >Optional. The URL for the read-only remediation link labeled by "Action Label". Use it for docs, playbooks, or Salesforce deep links; it never updates records automatically. Supports {!FieldName} merge tokens, including relationship paths such as {!Owner.ManagerId}, resolved against the record before the link is shown. Both "Action Label" and "Action URL" must be set for the link to appear.</description>
+  >Optional destination displayed as an action link when this Rule fails. Link to a Salesforce record, edit or create page, related list, report, Knowledge article, or HTTPS playbook. Current-record merge tokens are resolved before display and may traverse relationships, for example {!record.Id} or {!record.Owner.ManagerId}. Blank, unsafe, or overlong resolved URLs are hidden. Action Label is optional and defaults to "Fix this".</description>
     <type>LongTextArea</type>
     <length>32768</length>
     <visibleLines>3</visibleLines>
     <inlineHelpText
-  >Optional. Where the remediation link goes - docs or a Salesforce page, e.g. /lightning/r/Report/00O.../view?fv0={!Id}. Read-only; may use {!FieldName} tokens. Set "Action Label" too.</inlineHelpText>
+  >Optional failure-action destination. Use a same-org path or HTTPS URL; {!record.FieldName} merge tokens are supported. Action Label is optional.</inlineHelpText>
     <required>false</required>
 </CustomField>

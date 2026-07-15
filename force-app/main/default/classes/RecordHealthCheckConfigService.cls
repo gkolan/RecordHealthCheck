@@ -47,6 +47,27 @@ public with sharing class RecordHealthCheckConfigService {
 
   // ─── Public API ───────────────────────────────────────────────────────────
 
+  /** Finds the parent Check Set for a Rule API name. */
+  public String findCheckSetDeveloperName(String ruleDeveloperName) {
+    ruleDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+      ruleDeveloperName,
+      80
+    );
+    if (String.isBlank(ruleDeveloperName)) {
+      return null;
+    }
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced before rule evaluation.
+    List<Record_Health_Check_Rule__mdt> rules = [
+      SELECT Record_Health_Check_Set__r.DeveloperName
+      FROM Record_Health_Check_Rule__mdt
+      WHERE DeveloperName = :ruleDeveloperName
+      LIMIT 1
+    ];
+    return rules.isEmpty()
+      ? null
+      : rules[0].Record_Health_Check_Set__r.DeveloperName;
+  }
+
   /**
    * Reports whether any Check Sets target the given object API name.
    * Used when the LWC has no Check Set selected, so the setup banner can say
@@ -94,13 +115,16 @@ public with sharing class RecordHealthCheckConfigService {
    * Returns a fully populated RecordHealthCheckDefinitionResponse on success.
    */
   public RecordHealthCheckDefinitionResponse getDefinitionResponse(
-    String configName,
+    String checkSetDeveloperName,
     Id recordId
   ) {
     // Normalize at the service boundary so whitespace/blank is rejected before SOQL;
     // blank → CONFIG_NOT_FOUND.
-    configName = RecordHealthCheckLogger.normalizeIdentifier(configName, 80);
-    if (String.isBlank(configName)) {
+    checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+      checkSetDeveloperName,
+      80
+    );
+    if (String.isBlank(checkSetDeveloperName)) {
       throw new ConfigException(
         'No Check Set is selected for this Record Health Check component.',
         RC_CONFIG_NOT_FOUND
@@ -132,19 +156,19 @@ public with sharing class RecordHealthCheckConfigService {
         StopOnSystemError__c,
         ShowDiagnostics__c
       FROM Record_Health_Check_Set__mdt
-      WHERE DeveloperName = :configName
+      WHERE DeveloperName = :checkSetDeveloperName
       LIMIT 1
     ];
 
     if (checkSets.isEmpty()) {
       throw new ConfigException(
-        'Check Set "' + configName + '" was not found.',
+        'Check Set "' + checkSetDeveloperName + '" was not found.',
         RC_CONFIG_NOT_FOUND
       );
     }
 
     Record_Health_Check_Set__mdt checkSet = checkSets[0];
-    validateCheckSetForDefinition(checkSet, configName, recordId);
+    validateCheckSetForDefinition(checkSet, checkSetDeveloperName, recordId);
 
     // Load active rules — only the fields needed to build RecordHealthCheckDefinition.
     // Full evaluation fields are fetched per-rule at evaluation time via loadRule().
@@ -159,19 +183,19 @@ public with sharing class RecordHealthCheckConfigService {
         PrerequisiteRule__c
       FROM Record_Health_Check_Rule__mdt
       WHERE
-        Record_Health_Check_Set__r.DeveloperName = :configName
+        Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
         AND IsActive__c = TRUE
       ORDER BY EvaluationOrder__c ASC NULLS LAST, DeveloperName ASC
     ];
 
-    validateActiveRulesForDefinition(allRules, configName);
+    validateActiveRulesForDefinition(allRules, checkSetDeveloperName);
 
     Integer totalAvailable = allRules.size();
     Boolean checksOmitted = totalAvailable > FRAMEWORK_MAX_CHECKS;
     List<Record_Health_Check_Rule__mdt> rulesForRun = selectRulesForRun(
       allRules
     );
-    Integer inactiveRuleCount = countInactiveRules(configName);
+    Integer inactiveRuleCount = countInactiveRules(checkSetDeveloperName);
 
     // Build response
     RecordHealthCheckDefinitionResponse response = new RecordHealthCheckDefinitionResponse();
@@ -211,20 +235,7 @@ public with sharing class RecordHealthCheckConfigService {
     // Emit WARN when active rules exceed FRAMEWORK_MAX_CHECKS, so truncation is
     // visible server-side and not only in the LWC "First 25 of N shown" badge.
     if (checksOmitted) {
-      RecordHealthCheckLogger.log(
-        RecordHealthCheckLogger.Level.WARN,
-        null,
-        configName,
-        recordId,
-        null,
-        'CHECK_LIMIT_EXCEEDED',
-        new Map<String, Object>{
-          'totalAvailable' => totalAvailable,
-          'maxPerRun' => FRAMEWORK_MAX_CHECKS,
-          'omitted' => totalAvailable - FRAMEWORK_MAX_CHECKS
-        },
-        null
-      );
+      logCheckLimitExceeded(checkSetDeveloperName, recordId, totalAvailable);
     }
 
     response.checks = new List<RecordHealthCheckDefinition>();
@@ -235,7 +246,7 @@ public with sharing class RecordHealthCheckConfigService {
       def.label = rule.CheckTitle__c;
       def.description = rule.CheckDescription__c;
       def.priority = rule.EvaluationOrder__c;
-      def.dependsOnCheckDeveloperName = String.isNotBlank(
+      def.dependsOnRuleDeveloperName = String.isNotBlank(
           rule.PrerequisiteRule__c
         )
         ? rule.PrerequisiteRule__c.trim()
@@ -247,14 +258,36 @@ public with sharing class RecordHealthCheckConfigService {
   }
 
   @TestVisible
+  private void logCheckLimitExceeded(
+    String checkSetDeveloperName,
+    Id recordId,
+    Integer totalAvailable
+  ) {
+    RecordHealthCheckLogger.log(
+      RecordHealthCheckLogger.Level.WARN,
+      null,
+      checkSetDeveloperName,
+      recordId,
+      null,
+      'CHECK_LIMIT_EXCEEDED',
+      new Map<String, Object>{
+        'totalAvailable' => totalAvailable,
+        'maxPerRun' => FRAMEWORK_MAX_CHECKS,
+        'omitted' => totalAvailable - FRAMEWORK_MAX_CHECKS
+      },
+      null
+    );
+  }
+
+  @TestVisible
   private void validateCheckSetForDefinition(
     Record_Health_Check_Set__mdt checkSet,
-    String configName,
+    String checkSetDeveloperName,
     Id recordId
   ) {
     if (checkSet.IsActive__c == false) {
       throw new ConfigException(
-        'Check Set "' + configName + '" is inactive.',
+        'Check Set "' + checkSetDeveloperName + '" is inactive.',
         RC_CONFIG_INACTIVE
       );
     }
@@ -264,7 +297,9 @@ public with sharing class RecordHealthCheckConfigService {
       // missing Check Set — classify it as INVALID_CONFIG for consistency with the
       // Blank object name is INVALID_CONFIG, not CONFIG_NOT_FOUND.
       throw new ConfigException(
-        'Check Set "' + configName + '" is missing its Record Object API Name.',
+        'Check Set "' +
+          checkSetDeveloperName +
+          '" is missing its Record Object API Name.',
         RC_INVALID_CONFIG
       );
     }
@@ -277,7 +312,7 @@ public with sharing class RecordHealthCheckConfigService {
         'Record Object API Name "' +
           checkSet.ObjectApiName__c +
           '" on Check Set "' +
-          configName +
+          checkSetDeveloperName +
           '" is not valid.',
         RC_INVALID_CONFIG
       );
@@ -289,7 +324,7 @@ public with sharing class RecordHealthCheckConfigService {
     if (!recordObjectType.equalsIgnoreCase(checkSet.ObjectApiName__c)) {
       throw new ConfigException(
         'Check Set "' +
-          configName +
+          checkSetDeveloperName +
           '" is for "' +
           checkSet.ObjectApiName__c +
           '", but this page is for "' +
@@ -347,28 +382,32 @@ public with sharing class RecordHealthCheckConfigService {
   @TestVisible
   private void validateActiveRulesForDefinition(
     List<Record_Health_Check_Rule__mdt> rules,
-    String configName
+    String checkSetDeveloperName
   ) {
     if (rules.isEmpty()) {
-      Integer inactiveCount = countInactiveRules(configName);
+      Integer inactiveCount = countInactiveRules(checkSetDeveloperName);
       String detail = inactiveCount > 0
         ? ' (' + inactiveCount + ' inactive)'
         : '';
       throw new ConfigException(
-        'Check Set "' + configName + '" has no active checks' + detail + '.',
+        'Check Set "' +
+          checkSetDeveloperName +
+          '" has no active checks' +
+          detail +
+          '.',
         RC_NO_ACTIVE_CHECKS
       );
     }
   }
 
   /** Inactive Rules on the Check Set — omitted from the run, useful for admin UX. */
-  private Integer countInactiveRules(String configName) {
+  private Integer countInactiveRules(String checkSetDeveloperName) {
     // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
     return [
       SELECT COUNT()
       FROM Record_Health_Check_Rule__mdt
       WHERE
-        Record_Health_Check_Set__r.DeveloperName = :configName
+        Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
         AND IsActive__c = FALSE
     ];
   }
@@ -456,11 +495,10 @@ public with sharing class RecordHealthCheckConfigService {
       return validateQueryRule(rule);
     } else if (rule.EvaluationType__c == 'APEX') {
       return validateApexRule(rule);
-    } else if (rule.EvaluationType__c == 'COMPARE_TWO_QUERIES') {
-      return validateCompareQueriesRule(rule);
     }
-
-    return null;
+    // Baseline validation above rejects unknown types, so the only remaining
+    // supported type is COMPARE_TWO_QUERIES.
+    return validateCompareQueriesRule(rule);
   }
 
   /**
@@ -468,10 +506,10 @@ public with sharing class RecordHealthCheckConfigService {
    * Returns null when the rule is missing, inactive, or belongs to a different set.
    */
   public Record_Health_Check_Rule__mdt loadRule(
-    String checkDeveloperName,
-    String configName
+    String ruleDeveloperName,
+    String checkSetDeveloperName
   ) {
-    return loadRule(checkDeveloperName, configName, true);
+    return loadRule(ruleDeveloperName, checkSetDeveloperName, true);
   }
 
   /**
@@ -480,8 +518,8 @@ public with sharing class RecordHealthCheckConfigService {
    * RULE_NOT_FOUND.
    */
   public Record_Health_Check_Rule__mdt loadRule(
-    String checkDeveloperName,
-    String configName,
+    String ruleDeveloperName,
+    String checkSetDeveloperName,
     Boolean requireActive
   ) {
     // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before rule evaluation.
@@ -537,8 +575,8 @@ public with sharing class RecordHealthCheckConfigService {
         Record_Health_Check_Set__r.ShowDiagnostics__c
       FROM Record_Health_Check_Rule__mdt
       WHERE
-        DeveloperName = :checkDeveloperName
-        AND Record_Health_Check_Set__r.DeveloperName = :configName
+        DeveloperName = :ruleDeveloperName
+        AND Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
       LIMIT 1
     ];
     if (rules.isEmpty()) {
@@ -951,7 +989,7 @@ public with sharing class RecordHealthCheckConfigService {
     String detail
   ) {
     RecordHealthCheckResult r = new RecordHealthCheckResult();
-    r.checkDeveloperName = rule.DeveloperName;
+    r.ruleDeveloperName = rule.DeveloperName;
     r.label = rule.CheckTitle__c;
     r.status = 'UNABLE_TO_EVALUATE';
     r.reasonCode = reasonCode;
