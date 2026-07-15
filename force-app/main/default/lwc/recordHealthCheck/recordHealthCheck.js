@@ -4,6 +4,8 @@
  */
 
 import { LightningElement, api, track } from "lwc";
+import slds1Styles from "./recordHealthCheckSlds1.css";
+import slds2Styles from "./recordHealthCheckSlds2.css";
 import USER_ID from "@salesforce/user/Id";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
 import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
@@ -11,7 +13,7 @@ import { parseAuraError } from "./healthCheckModel";
 import { annotateCheck, buildSummaryStats } from "./healthCheckPresentation";
 import { HealthCheckRunner } from "./healthCheckRunner";
 
-// Columns shown in the run-diagnostics table. Provenance stays in the nested
+// Columns shown in the run-diagnostics table. Value-source detail stays in the nested
 // group below — those strings are long and read better one check at a time.
 const RHC_DIAG_TABLE_COLUMNS = [
   "check",
@@ -41,7 +43,24 @@ const SETUP_ERROR_CODES = new Set([
 ]);
 
 export default class RecordHealthCheck extends LightningElement {
+  static stylesheets = [slds1Styles, slds2Styles];
+
   _checkSetName;
+
+  /**
+   * Selects the custom visual treatment owned by Record Health Check. The org
+   * theme still determines which SLDS runtime Lightning base components use.
+   */
+  @api designSystem = "SLDS 1";
+
+  get themeClass() {
+    const normalizedVersion = String(
+      this.designSystem || "SLDS 1"
+    ).toUpperCase();
+    return normalizedVersion === "SLDS 2"
+      ? "rhc-theme rhc-theme--slds2"
+      : "rhc-theme rhc-theme--slds1";
+  }
 
   @api
   get checkSetName() {
@@ -84,7 +103,7 @@ export default class RecordHealthCheck extends LightningElement {
   @track skippedDisplayMode;
   @track comparisonDisplay = "OnDemand";
   @track stopOnFirstError;
-  @track debugMode = false;
+  @track showDiagnostics = false;
   @track totalCheckCount = 0;
   @track totalAvailableCheckCount = 0;
   @track inactiveRuleCount = 0;
@@ -343,7 +362,7 @@ export default class RecordHealthCheck extends LightningElement {
 
     try {
       const response = await getCheckDefinitions({
-        configName: requestedCheckSetName,
+        checkSetDeveloperName: requestedCheckSetName,
         recordId: requestedRecordId,
         runId
       });
@@ -385,7 +404,7 @@ export default class RecordHealthCheck extends LightningElement {
         ? response.comparisonDisplay
         : "OnDemand";
       this.stopOnFirstError = response.stopOnFirstError;
-      this.debugMode = response.debugMode === true;
+      this.showDiagnostics = response.showDiagnostics === true;
       this.totalCheckCount = response.checks.length;
       this.totalAvailableCheckCount =
         typeof response.totalAvailableCheckCount === "number"
@@ -403,7 +422,7 @@ export default class RecordHealthCheck extends LightningElement {
         label: def.label,
         description: def.description,
         priority: def.priority,
-        dependsOnCheckDeveloperName: def.dependsOnCheckDeveloperName || null,
+        dependsOnRuleDeveloperName: def.dependsOnRuleDeveloperName || null,
         uiState: "PENDING",
         result: null
       }));
@@ -413,7 +432,7 @@ export default class RecordHealthCheck extends LightningElement {
       this.componentErrorCode = null;
 
       if (this.triggerMode === "Automatic") {
-        this._runner.run(true);
+        this._runner.run(true, "RUN_ON_LOAD");
       }
     } catch (err) {
       if (loadToken !== this._loadToken || !this._connected) return;
@@ -569,7 +588,7 @@ export default class RecordHealthCheck extends LightningElement {
     return filtered.map((c) =>
       annotateCheck(
         c,
-        this.debugMode,
+        this.showDiagnostics,
         this.comparisonDisplay,
         this._isRowExpanded(c.developerName)
       )
@@ -767,7 +786,7 @@ export default class RecordHealthCheck extends LightningElement {
     // previous run should collapse back to the placement default rather than
     // linger open over rows whose values are being recomputed.
     this._expandedNames = {};
-    this._runner.run(false);
+    this._runner.run(false, "USER_INITIATED");
   }
 
   get summaryStats() {
@@ -800,7 +819,12 @@ export default class RecordHealthCheck extends LightningElement {
     );
   }
 
+  // Diagnostics is an authorized troubleshooting overlay: when active it auto-
+  // expands every check, overriding count-only display, so an admin can see the
+  // rows a count-only summary hides. showDiagnostics is already gated server-side
+  // (Set flag AND the diagnostics permission), so normal users are unaffected.
   _isHiddenSkipped(check) {
+    if (this.showDiagnostics) return false;
     return this._isSkipped(check) && this.skippedDisplayMode === "Hide";
   }
 
@@ -814,6 +838,7 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   _isHiddenSuccess(check) {
+    if (this.showDiagnostics) return false; // auto-expand under diagnostics
     return this._isSuccess(check) && this.successDisplayMode === "Hide";
   }
 
@@ -828,8 +853,8 @@ export default class RecordHealthCheck extends LightningElement {
     return keys;
   }
 
-  get showDebugConsoleHint() {
-    return this.debugMode && this.runComplete;
+  get showDiagnosticsConsoleHint() {
+    return this.showDiagnostics && this.runComplete;
   }
 
   _buildRunDiagnostics() {
@@ -837,7 +862,7 @@ export default class RecordHealthCheck extends LightningElement {
       runId: this._runner.runId,
       userId: USER_ID,
       recordId: this.recordId,
-      configName: this.checkSetName,
+      checkSetDeveloperName: this.checkSetName,
       generatedAt: new Date().toISOString(),
       checks: this.checks.map((c) => {
         const r = c.result || {};
@@ -900,14 +925,15 @@ export default class RecordHealthCheck extends LightningElement {
 
   _logRunDiagnostics() {
     const diag = this._buildRunDiagnostics();
-    const configLabel = diag.configName || "(unset configName)";
+    const configLabel =
+      diag.checkSetDeveloperName || "(unset checkSetDeveloperName)";
     console.group(
       `[RHC] Health Check run ${diag.runId} | ${configLabel} | record ${diag.recordId}`
     );
     console.log(this._formatRunSummary(diag.checks));
     console.log({
       runId: diag.runId,
-      checkSet: diag.configName,
+      checkSet: diag.checkSetDeveloperName,
       recordId: diag.recordId,
       userId: diag.userId,
       generatedAt: diag.generatedAt

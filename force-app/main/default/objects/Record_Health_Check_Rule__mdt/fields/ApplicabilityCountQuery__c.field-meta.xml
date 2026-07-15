@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApplicabilityCountQuery__c</fullName>
+    <label>Applies When (Count Query)</label>
+    <description
+  >A COUNT() SOQL query used only to decide whether this check applies - it is not part of the pass/fail logic. Required when "Applies To" is "When a count query matches". Its returned count is compared using "Count Must Be" and "Count Value"; the check runs only when that comparison is true, otherwise it is Skipped. Supports merge tokens such as {!record.Id}. Leave blank for any other "Applies To" choice.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>5</visibleLines>
+        <inlineHelpText
+  >Required when "Applies To" = "When a count query matches". A COUNT() query, e.g. SELECT COUNT() FROM Contract WHERE AccountId = {!record.Id} AND Status = 'Active'. Compared using "Count Must Be" and "Count Value".</inlineHelpText>
+    <required>false</required>
+</CustomField>

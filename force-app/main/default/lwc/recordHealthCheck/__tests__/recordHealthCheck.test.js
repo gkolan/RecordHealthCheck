@@ -8,11 +8,13 @@ import RecordHealthCheck from "c/recordHealthCheck";
 import {
   annotateCheck,
   buildSummaryStats,
-  splitMessageLines
+  splitMessageLines,
+  safeActionUrl
 } from "../healthCheckPresentation";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
 import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
 import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
+import completeRun from "@salesforce/apex/RecordHealthCheckController.completeRun";
 
 // The LWC jest transformer rewrites `import foo from '@salesforce/apex/...'`
 // to `require('@salesforce/apex/...').default`, so the factory must return
@@ -29,6 +31,11 @@ jest.mock(
 );
 jest.mock(
   "@salesforce/apex/RecordHealthCheckController.evaluateCheck",
+  () => ({ default: jest.fn() }),
+  { virtual: true }
+);
+jest.mock(
+  "@salesforce/apex/RecordHealthCheckController.completeRun",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
@@ -60,6 +67,7 @@ async function clickRun(element) {
 
 beforeEach(() => {
   jest.useFakeTimers();
+  completeRun.mockResolvedValue();
   getCheckSetAvailabilityForRecord.mockResolvedValue({
     hasActive: true,
     hasInactive: false
@@ -71,7 +79,7 @@ afterEach(() => {
 });
 
 const PASS_RESULT = (developerName) => ({
-  checkDeveloperName: developerName,
+  ruleDeveloperName: developerName,
   label: developerName,
   status: "PASS",
   severity: null,
@@ -81,7 +89,7 @@ const PASS_RESULT = (developerName) => ({
 });
 
 const FAIL_RESULT = (developerName) => ({
-  checkDeveloperName: developerName,
+  ruleDeveloperName: developerName,
   label: developerName,
   status: "FAIL",
   severity: "Error",
@@ -91,7 +99,7 @@ const FAIL_RESULT = (developerName) => ({
 });
 
 const ERROR_RESULT = (developerName) => ({
-  checkDeveloperName: developerName,
+  ruleDeveloperName: developerName,
   label: developerName,
   status: "ERROR",
   reasonCode: "APEX_EVALUATOR_ERROR",
@@ -101,7 +109,7 @@ const ERROR_RESULT = (developerName) => ({
 });
 
 const SKIPPED_RESULT = (developerName) => ({
-  checkDeveloperName: developerName,
+  ruleDeveloperName: developerName,
   label: developerName,
   status: "SKIPPED",
   reasonCode: "APPLICABILITY_NOT_MET",
@@ -126,14 +134,14 @@ const makeDefinitions = (overrides = {}) => ({
       label: "Check A",
       description: "First check",
       priority: 1,
-      dependsOnCheckDeveloperName: null
+      dependsOnRuleDeveloperName: null
     },
     {
       developerName: "Check_B",
       label: "Check B",
       description: "Second check",
       priority: 2,
-      dependsOnCheckDeveloperName: null
+      dependsOnRuleDeveloperName: null
     }
   ],
   ...overrides
@@ -145,6 +153,45 @@ function createComponent() {
   el.recordId = "001000000000001AAA";
   return el;
 }
+
+describe("c-record-health-check — design theme", () => {
+  let element;
+
+  afterEach(() => {
+    if (element?.isConnected) {
+      document.body.removeChild(element);
+    }
+  });
+
+  it("defaults to the SLDS 1 visual treatment", () => {
+    element = createComponent();
+    document.body.appendChild(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-theme--slds1")
+    ).not.toBeNull();
+  });
+
+  it("supports the SLDS 2 visual treatment", () => {
+    element = createComponent();
+    element.designSystem = "SLDS 2";
+    document.body.appendChild(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-theme--slds2")
+    ).not.toBeNull();
+  });
+
+  it("falls back to SLDS 1 for an unsupported value", () => {
+    element = createComponent();
+    element.designSystem = "unsupported";
+    document.body.appendChild(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-theme--slds1")
+    ).not.toBeNull();
+  });
+});
 
 describe("c-record-health-check — load and error states", () => {
   let element;
@@ -254,6 +301,10 @@ describe("c-record-health-check — load and error states", () => {
     await appendAndLoad(element);
 
     expect(evaluateCheck).toHaveBeenCalled();
+    expect(evaluateCheck).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "RUN_ON_LOAD" })
+    );
+    expect(completeRun).not.toHaveBeenCalled();
   });
 
   it("shows first-25 badge when checksOmittedByLimit is true", async () => {
@@ -280,14 +331,14 @@ describe("c-record-health-check — load and error states", () => {
             label: "A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           },
           {
             developerName: "Dup",
             label: "B",
             description: "",
             priority: 2,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           }
         ]
       })
@@ -309,7 +360,7 @@ describe("c-record-health-check — load and error states", () => {
             label: "Nameless",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           }
         ]
       })
@@ -326,7 +377,7 @@ describe("c-record-health-check — load and error states", () => {
       label: `Check ${i}`,
       description: "",
       priority: i,
-      dependsOnCheckDeveloperName: null
+      dependsOnRuleDeveloperName: null
     }));
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
@@ -471,6 +522,13 @@ describe("c-record-health-check — run orchestration", () => {
     await clickRun(element);
 
     expect(evaluateCheck).toHaveBeenCalledTimes(2);
+    expect(evaluateCheck).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "USER_INITIATED" })
+    );
+    expect(completeRun).toHaveBeenCalledTimes(1);
+    expect(completeRun).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "USER_INITIATED" })
+    );
   });
 
   it("threads a correlation runId into both Apex calls", async () => {
@@ -496,9 +554,9 @@ describe("c-record-health-check — run orchestration", () => {
     expect(runRunId).not.toBe(defArgs.runId);
   });
 
-  it("shows per-row debug meta when debug mode is on", async () => {
+  it("shows per-row diagnostics meta when showDiagnostics is on", async () => {
     getCheckDefinitions.mockResolvedValue(
-      makeDefinitions({ triggerMode: "Automatic", debugMode: true })
+      makeDefinitions({ triggerMode: "Automatic", showDiagnostics: true })
     );
     evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
     await appendAndLoad(element);
@@ -513,12 +571,12 @@ describe("c-record-health-check — run orchestration", () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         triggerMode: "Automatic",
-        debugMode: true,
+        showDiagnostics: true,
         checks: [makeDefinitions().checks[0]]
       })
     );
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "UNABLE_TO_EVALUATE",
       reasonCode: "INVALID_FORMULA",
@@ -695,8 +753,8 @@ describe("c-record-health-check — run orchestration", () => {
     );
     const dA = deferred();
     const dB = deferred();
-    evaluateCheck.mockImplementation(({ checkDeveloperName }) => {
-      return checkDeveloperName === "Check_A" ? dA.promise : dB.promise;
+    evaluateCheck.mockImplementation(({ ruleDeveloperName }) => {
+      return ruleDeveloperName === "Check_A" ? dA.promise : dB.promise;
     });
 
     await appendAndLoad(element);
@@ -741,7 +799,7 @@ describe("c-record-health-check — run orchestration", () => {
             label: "Check A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           }
         ],
         totalAvailableCheckCount: 1
@@ -812,6 +870,20 @@ describe("c-record-health-check — success display modes", () => {
     expect(pill.getAttribute("data-tooltip")).toContain("Check A");
     expect(pill.getAttribute("data-tooltip")).toContain("Check B");
   });
+
+  it("shows hidden passed rows when showDiagnostics authorizes the overlay", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ successDisplayMode: "Hide", showDiagnostics: true })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    await appendAndLoad(element);
+
+    await clickRun(element);
+
+    // Diagnostics overrides count-only: every passed row is expanded (§2.11).
+    const rows = element.shadowRoot.querySelectorAll(".rhc-row--pass");
+    expect(rows).toHaveLength(2);
+  });
 });
 
 describe("c-record-health-check — skipped display modes", () => {
@@ -869,6 +941,20 @@ describe("c-record-health-check — skipped display modes", () => {
     expect(pill.getAttribute("data-tooltip")).toContain("Check A");
     expect(pill.getAttribute("data-tooltip")).toContain("Check B");
   });
+
+  it("shows hidden skipped rows when showDiagnostics authorizes the overlay", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ skippedDisplayMode: "Hide", showDiagnostics: true })
+    );
+    evaluateCheck.mockResolvedValue(SKIPPED_RESULT("Check_A"));
+    await appendAndLoad(element);
+
+    await clickRun(element);
+
+    // Diagnostics overrides count-only: every skipped row is expanded (§2.11).
+    const rows = element.shadowRoot.querySelectorAll(".rhc-row--skipped");
+    expect(rows).toHaveLength(2);
+  });
 });
 
 describe("c-record-health-check — dependency gating", () => {
@@ -894,14 +980,14 @@ describe("c-record-health-check — dependency gating", () => {
             label: "Check A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           },
           {
             developerName: "Check_B",
             label: "Check B",
             description: "",
             priority: 2,
-            dependsOnCheckDeveloperName: "Check_MISSING"
+            dependsOnRuleDeveloperName: "Check_MISSING"
           }
         ]
       })
@@ -914,7 +1000,7 @@ describe("c-record-health-check — dependency gating", () => {
     // Check_B has a dep not in this run — evaluateCheck only called for Check_A
     expect(evaluateCheck).toHaveBeenCalledTimes(1);
     expect(evaluateCheck).toHaveBeenCalledWith(
-      expect.objectContaining({ checkDeveloperName: "Check_A" })
+      expect.objectContaining({ ruleDeveloperName: "Check_A" })
     );
   });
 
@@ -927,14 +1013,14 @@ describe("c-record-health-check — dependency gating", () => {
             label: "Check A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           },
           {
             developerName: "Check_B",
             label: "Check B",
             description: "",
             priority: 2,
-            dependsOnCheckDeveloperName: "Check_A"
+            dependsOnRuleDeveloperName: "Check_A"
           }
         ]
       })
@@ -947,7 +1033,7 @@ describe("c-record-health-check — dependency gating", () => {
 
     expect(evaluateCheck).toHaveBeenCalledTimes(1);
     expect(evaluateCheck).not.toHaveBeenCalledWith(
-      expect.objectContaining({ checkDeveloperName: "Check_B" })
+      expect.objectContaining({ ruleDeveloperName: "Check_B" })
     );
   });
 
@@ -960,14 +1046,14 @@ describe("c-record-health-check — dependency gating", () => {
             label: "Check A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           },
           {
             developerName: "Check_B",
             label: "Check B",
             description: "",
             priority: 2,
-            dependsOnCheckDeveloperName: "Check_A"
+            dependsOnRuleDeveloperName: "Check_A"
           }
         ]
       })
@@ -992,14 +1078,14 @@ describe("c-record-health-check — dependency gating", () => {
             label: "Check A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: "Check_B"
+            dependsOnRuleDeveloperName: "Check_B"
           },
           {
             developerName: "Check_B",
             label: "Check B",
             description: "",
             priority: 2,
-            dependsOnCheckDeveloperName: "Check_A"
+            dependsOnRuleDeveloperName: "Check_A"
           }
         ]
       })
@@ -1043,14 +1129,14 @@ describe("c-record-health-check — stopOnFirstError", () => {
             label: "Check A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           },
           {
             developerName: "Check_B",
             label: "Check B",
             description: "",
             priority: 2,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           }
         ]
       })
@@ -1063,7 +1149,7 @@ describe("c-record-health-check — stopOnFirstError", () => {
 
     expect(evaluateCheck).toHaveBeenCalledTimes(1);
     expect(evaluateCheck).toHaveBeenCalledWith(
-      expect.objectContaining({ checkDeveloperName: "Check_A" })
+      expect.objectContaining({ ruleDeveloperName: "Check_A" })
     );
     const btn = element.shadowRoot.querySelector(".rhc-action-button");
     expect(btn).not.toBeNull(); // re-run button visible = runComplete
@@ -1199,7 +1285,7 @@ describe("c-record-health-check — reactive recordId reload", () => {
       label: `Check ${i}`,
       description: "",
       priority: i,
-      dependsOnCheckDeveloperName: null
+      dependsOnRuleDeveloperName: null
     }));
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ triggerMode: "Automatic", checks })
@@ -1210,13 +1296,13 @@ describe("c-record-health-check — reactive recordId reload", () => {
     let active = 0;
     let peak = 0;
     const pendingA = [];
-    evaluateCheck.mockImplementation(({ recordId, checkDeveloperName }) => {
+    evaluateCheck.mockImplementation(({ recordId, ruleDeveloperName }) => {
       active++;
       peak = Math.max(peak, active);
       const call = deferred();
       const settle = () => {
         active--;
-        call.resolve(PASS_RESULT(checkDeveloperName));
+        call.resolve(PASS_RESULT(ruleDeveloperName));
       };
       if (recordId === RECORD_A) {
         // Hold A's calls open so they keep occupying slots during the swap.
@@ -1280,7 +1366,7 @@ describe("c-record-health-check — reactive recordId reload", () => {
             label: "Check A",
             description: "",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           }
         ],
         totalAvailableCheckCount: 1
@@ -1378,7 +1464,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     await flushPromises();
     await flushPromises();
 
-    expect(getCheckDefinitions.mock.calls[1][0].configName).toBe(
+    expect(getCheckDefinitions.mock.calls[1][0].checkSetDeveloperName).toBe(
       "Account_Advanced_Checks"
     );
     expect(element.shadowRoot.textContent).toContain("Second set");
@@ -1432,7 +1518,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       label: `Check ${i}`,
       description: "",
       priority: i,
-      dependsOnCheckDeveloperName: null
+      dependsOnRuleDeveloperName: null
     }));
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ triggerMode: "Automatic", checks })
@@ -1440,13 +1526,13 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     let active = 0;
     let peak = 0;
     const pending = [];
-    evaluateCheck.mockImplementation(({ checkDeveloperName }) => {
+    evaluateCheck.mockImplementation(({ ruleDeveloperName }) => {
       active++;
       peak = Math.max(peak, active);
       const call = deferred();
       pending.push(() => {
         active--;
-        call.resolve(PASS_RESULT(checkDeveloperName));
+        call.resolve(PASS_RESULT(ruleDeveloperName));
       });
       return call.promise;
     });
@@ -1565,20 +1651,20 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
             label: "Has tooltip",
             description: "A description",
             priority: 1,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           },
           {
             developerName: "No_Desc",
             label: "No tooltip",
             description: "",
             priority: 2,
-            dependsOnCheckDeveloperName: null
+            dependsOnRuleDeveloperName: null
           }
         ]
       })
     );
-    evaluateCheck.mockImplementation(({ checkDeveloperName }) =>
-      Promise.resolve(PASS_RESULT(checkDeveloperName))
+    evaluateCheck.mockImplementation(({ ruleDeveloperName }) =>
+      Promise.resolve(PASS_RESULT(ruleDeveloperName))
     );
     await appendAndLoad(element);
     await clickRun(element);
@@ -1588,7 +1674,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     expect(rows[1].getAttribute("tabindex")).toBe("-1");
   });
 
-  it("logs a console summary and provenance group when debug mode completes a run", async () => {
+  it("logs a console summary and diagnostics group when showDiagnostics completes a run", async () => {
     const group = jest.spyOn(console, "group").mockImplementation(() => {});
     const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const table = jest.spyOn(console, "table").mockImplementation(() => {});
@@ -1597,7 +1683,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       .mockImplementation(() => {});
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
-        debugMode: true,
+        showDiagnostics: true,
         checks: [makeDefinitions().checks[0]]
       })
     );
@@ -1649,7 +1735,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     groupEnd.mockRestore();
   });
 
-  it("does not log an empty provenance group when debug details are absent", async () => {
+  it("does not log an empty diagnostics group when diagnostic details are absent", async () => {
     const group = jest.spyOn(console, "group").mockImplementation(() => {});
     const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const table = jest.spyOn(console, "table").mockImplementation(() => {});
@@ -1658,7 +1744,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       .mockImplementation(() => {});
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
-        debugMode: true,
+        showDiagnostics: true,
         checks: [makeDefinitions().checks[0]]
       })
     );
@@ -1693,7 +1779,7 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
   });
 
   const FAIL_NO_SEVERITY = (developerName) => ({
-    checkDeveloperName: developerName,
+    ruleDeveloperName: developerName,
     label: developerName,
     status: "FAIL",
     severity: null,
@@ -1894,7 +1980,7 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
       })
     );
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "PASS",
       priority: 1,
@@ -1946,7 +2032,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(a.showExpandedExpected).toBe(true);
   });
 
-  it("OnDemand: a failing row shows values inline without card provenance", () => {
+  it("OnDemand: a failing row shows values inline without card diagnostic details", () => {
     const collapsed = annotateCheck(
       resolved(failWithValuesAndProvenance),
       false,
@@ -1975,7 +2061,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(open.showExpandedActual).toBe(false);
   });
 
-  it("keeps card provenance out of the view model when expanding values", () => {
+  it("keeps card diagnostic details out of the view model when expanding values", () => {
     const a = annotateCheck(resolved(passWithValues), false, "OnDemand", true);
     expect(a.showExpandedActual).toBe(true);
     expect(a.showActualDetail).toBeUndefined();
@@ -1994,7 +2080,7 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(a.detailExpanded).toBe(false);
   });
 
-  it("AllRows: a passing row shows Found/Expected inline, no caret when there is no provenance", () => {
+  it("AllRows: a passing row shows Found/Expected inline, no caret when there are no diagnostic details", () => {
     const a = annotateCheck(resolved(passWithValues), false, "AllRows", false);
     expect(a.showInlineComparison).toBe(true);
     expect(a.showActual).toBe(true);
@@ -2120,7 +2206,7 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
   });
 
   const PASS_WITH_VALUES = {
-    checkDeveloperName: "Check_A",
+    ruleDeveloperName: "Check_A",
     label: "Check_A",
     status: "PASS",
     priority: 1,
@@ -2168,7 +2254,7 @@ describe("c-record-health-check — comparison disclosure (integration)", () => 
   it("renders the Fix-it link, instructions, and divider on a failing row", async () => {
     getCheckDefinitions.mockResolvedValue(onePassCheck());
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "FAIL",
       severity: "Warning",
@@ -2404,7 +2490,7 @@ describe("c-record-health-check — multi-line messages", () => {
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "FAIL",
       severity: "Error",
@@ -2427,7 +2513,7 @@ describe("c-record-health-check — multi-line messages", () => {
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "FAIL",
       severity: "Error",
@@ -2454,7 +2540,7 @@ describe("c-record-health-check — multi-line messages", () => {
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "UNABLE_TO_EVALUATE",
       reasonCode: "INVALID_FORMULA",
@@ -2477,7 +2563,7 @@ describe("c-record-health-check — multi-line messages", () => {
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "FAIL",
       severity: "Error",
@@ -2499,7 +2585,7 @@ describe("c-record-health-check — multi-line messages", () => {
       makeDefinitions({ checks: [makeDefinitions().checks[0]] })
     );
     evaluateCheck.mockResolvedValue({
-      checkDeveloperName: "Check_A",
+      ruleDeveloperName: "Check_A",
       label: "Check_A",
       status: "FAIL",
       severity: "Error",
@@ -2515,5 +2601,84 @@ describe("c-record-health-check — multi-line messages", () => {
     // Lines joined with ". " — no raw newline, no empty run from the blank line.
     expect(label).toContain("Out of balance. Contact Finance.");
     expect(label).not.toContain("\n");
+  });
+});
+
+describe("safeActionUrl — client-side scheme guard (HI-3)", () => {
+  // Assemble dangerous schemes with a variable operand so ESLint flags neither
+  // a literal script URL (no-script-url) nor a useless concat (no-useless-concat),
+  // while the runtime value under test stays exactly "javascript:"/"vbscript:".
+  const colon = ":";
+  const jsScheme = "javascript" + colon;
+  const vbScheme = "vbscript" + colon;
+
+  it("accepts an in-app absolute path", () => {
+    expect(safeActionUrl("/lightning/r/Report/00O/view?fv0=001")).toBe(
+      "/lightning/r/Report/00O/view?fv0=001"
+    );
+  });
+
+  it("accepts an https URL regardless of case", () => {
+    expect(safeActionUrl("https://example.com/x")).toBe(
+      "https://example.com/x"
+    );
+    expect(safeActionUrl("HTTPS://example.com/x")).toBe(
+      "HTTPS://example.com/x"
+    );
+  });
+
+  it("trims surrounding whitespace before deciding", () => {
+    expect(safeActionUrl("  /path  ")).toBe("/path");
+  });
+
+  it("rejects dangerous and non-allowlisted schemes", () => {
+    for (const bad of [
+      jsScheme + "alert(1)",
+      jsScheme.toUpperCase() + "alert(1)",
+      "  " + jsScheme + "alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "http://example.com/x",
+      "mailto:a@b.com",
+      "//evil.example.com/x",
+      vbScheme + "msgbox(1)",
+      "relative/path"
+    ]) {
+      expect(safeActionUrl(bad)).toBeNull();
+    }
+  });
+
+  it("rejects empty and non-string input", () => {
+    expect(safeActionUrl("")).toBeNull();
+    expect(safeActionUrl("   ")).toBeNull();
+    expect(safeActionUrl(null)).toBeNull();
+    expect(safeActionUrl(undefined)).toBeNull();
+    expect(safeActionUrl(42)).toBeNull();
+  });
+
+  it("annotateCheck drops a javascript: link but keeps the instructions", () => {
+    const resolved = (result) => ({
+      uiState: "RESOLVED",
+      label: "L",
+      description: null,
+      result
+    });
+    const a = annotateCheck(
+      resolved({
+        status: "FAIL",
+        severity: "Warning",
+        message: "Contacts missing email.",
+        actionUrl: jsScheme + "alert(document.cookie)",
+        actionLabel: "Fix this",
+        fixInstructions: "Open the filtered report for this account."
+      }),
+      false,
+      "OnDemand",
+      false
+    );
+    expect(a.actionUrl).toBeNull();
+    expect(a.showAction).toBe(false);
+    // The instructions survive independently so the user isn't left stranded.
+    expect(a.showFixInstructions).toBe(true);
+    expect(a.showActionBlock).toBe(true);
   });
 });

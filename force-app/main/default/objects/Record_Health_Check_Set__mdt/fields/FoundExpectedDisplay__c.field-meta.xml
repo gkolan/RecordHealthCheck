@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FoundExpectedDisplay__c</fullName>
+    <label>Found/Expected Display</label>
+    <description
+  >Controls when users see the Found and Expected values for each check in this Check Set. "On demand" lets users expand a check to see its values, and failed checks also show their values inline. "Failed checks only" shows values only on failed checks, keeping passing checks compact. "Every check" shows values inline on every check where values are available. Defaults to "On demand".</description>
+    <inlineHelpText
+  >When Found/Expected values show. "On demand" (default) = expand to see; failed checks show inline. "Failed checks only" = only on failures. "Every check" = inline everywhere available.</inlineHelpText>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>ON_DEMAND</fullName><default
+        >true</default></value><value><fullName>FAILURES_ONLY</fullName><default
+        >false</default></value><value><fullName>ALL_ROWS</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+</CustomField>

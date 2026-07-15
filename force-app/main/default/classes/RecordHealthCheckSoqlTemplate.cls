@@ -10,7 +10,7 @@
  * ONLY at the outermost (depth-0) level, validates a single outer SELECT, injects
  * WITH USER_MODE in the correct place, and enforces an effective outer row cap.
  * Previously this logic was duplicated (and subtly different) across
- * RecordHealthCheckSoqlEvaluator, RecordHealthCheckDualSoqlEvaluator, and the
+ * RecordHealthCheckSoqlEvaluator, RecordHealthCheckCompareQueriesEvaluator, and the
  * engine's applicability path, using substring/regex scans that ignored
  * parentheses. That allowed several real defects this class fixes
  * an ORDER BY / GROUP BY / LIMIT inside a child subquery becoming the
@@ -40,7 +40,7 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   private static final Pattern PATTERN_COUNT_EMPTY = Pattern.compile(
     '(?i)\\bSELECT\\s+COUNT\\(\\s*\\)'
   );
-  private static final Pattern PATTERN_SCALAR_COUNT = Pattern.compile(
+  private static final Pattern PATTERN_SINGLE_VALUE_COUNT = Pattern.compile(
     '(?i)\\bSELECT\\s+COUNT\\s*\\(\\s*(?:Id)?\\s*\\)' +
     '(?:\\s+[A-Za-z_][A-Za-z0-9_]*)?\\s+FROM\\b'
   );
@@ -227,8 +227,8 @@ public with sharing class RecordHealthCheckSoqlTemplate {
       firstDepth0Match(masked, PATTERN_GROUP_BY) >= 0;
   }
 
-  /** True only for a single scalar outer COUNT()/COUNT(Id) query without GROUP BY. */
-  public static Boolean isScalarCountQuery(String soql) {
+  /** True only for a single single-value outer COUNT()/COUNT(Id) query without GROUP BY. */
+  public static Boolean isSingleCountQuery(String soql) {
     if (String.isBlank(soql)) {
       return false;
     }
@@ -236,7 +236,7 @@ public with sharing class RecordHealthCheckSoqlTemplate {
     if (firstDepth0Match(masked, PATTERN_GROUP_BY) >= 0) {
       return false;
     }
-    return firstDepth0Match(masked, PATTERN_SCALAR_COUNT) >= 0;
+    return firstDepth0Match(masked, PATTERN_SINGLE_VALUE_COUNT) >= 0;
   }
 
   // ─── Internal building blocks ───────────────────────────────────────────────

@@ -35,7 +35,7 @@ git pull
 npm ci
 npm run prettier:verify
 npm run lint
-npm test                    # 106 Jest tests
+npm test                    # LWC Jest unit tests
 npm run test:unit:coverage  # coverage thresholds enforced
 ```
 
@@ -93,14 +93,14 @@ Or, to write richer notes interactively, omit `--notes` and `gh` opens an editor
 1. On the repo's **Releases** page, confirm `vX.Y.Z` is listed and the notes look right.
 2. Test the tagged Deploy URL in a sandbox by appending the tag as `ref`:
    ```
-   https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=vX.Y.Z
+   https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=vX.Y.Z
    ```
    The README's default button installs `main`; this URL pins the exact release.
 
 ## Step 7: Announce
 
 Point people at the release page:
-`https://github.com/gkolan/recordHealthCheck/releases/tag/vX.Y.Z`.
+`https://github.com/gkolan/RecordHealthCheck/releases/tag/vX.Y.Z`.
 Non-technical teammates keep using the one-click Deploy button in the
 [README](README.md), which always installs the latest `main`.
 
@@ -109,7 +109,7 @@ Non-technical teammates keep using the one-click Deploy button in the
 A release is just a tag, so rollback is "install the previous tag":
 
 ```
-https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=vPREVIOUS
+https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=vPREVIOUS
 ```
 
 Because the component is **advisory** (it never blocks saves or writes records),

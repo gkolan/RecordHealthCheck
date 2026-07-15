@@ -10,6 +10,6 @@ public with sharing class RecordHealthCheckContext {
   public Id recordId;
   public String objectApiName;
   public SObject record;
-  public Map<String, Object> parameters; // parsed from ApexSettingsJson__c; empty map when blank
-  public String checkDeveloperName;
+  public Map<String, Object> parameters; // parsed from ApexParametersJson__c; empty map when blank
+  public String ruleDeveloperName;
 }

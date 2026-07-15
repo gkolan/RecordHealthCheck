@@ -5,11 +5,11 @@
 
 /**
  * Shared value extraction, coercion, and comparison for the SOQL evaluators.
- * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckDualSoqlEvaluator
- * previously carried their own copies of scalar/list extraction, QueryException
+ * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckCompareQueriesEvaluator
+ * previously carried their own copies of single-value/list extraction, QueryException
  * classification, type coercion, equality, and ordered comparison — and the copies
  * had drifted (notably Date/DateTime coercion). Centralizing them here
- * guarantees single-query and dual-query checks behave identically.
+ * guarantees single-query and compare-queries checks behave identically.
  * Apex boxes Date values through the Datetime branch when they are held as Object
  * so temporal comparisons consistently use Datetime semantics after the numeric
  * comparison attempt.
@@ -31,7 +31,7 @@ public with sharing class RecordHealthCheckValueResolver {
    * (e.g. "Account.Name") — a null intermediate relationship yields null rather
    * than throwing. A missing field surfaces as INVALID_SOQL_TEMPLATE.
    */
-  public static Object scalarFromRow(SObject row, String fieldName) {
+  public static Object singleValueFromRow(SObject row, String fieldName) {
     if (row instanceof AggregateResult) {
       AggregateResult ar = (AggregateResult) row;
       return String.isBlank(fieldName) ? ar.get('expr0') : ar.get(fieldName);
@@ -53,17 +53,20 @@ public with sharing class RecordHealthCheckValueResolver {
   }
 
   /** Resolves a list of raw values, one per row. */
-  public static List<Object> scalarList(List<SObject> rows, String fieldName) {
+  public static List<Object> singleValueList(
+    List<SObject> rows,
+    String fieldName
+  ) {
     List<Object> values = new List<Object>();
     for (SObject row : rows) {
-      values.add(scalarFromRow(row, fieldName));
+      values.add(singleValueFromRow(row, fieldName));
     }
     return values;
   }
 
   /**
    * Resolves a list of string values, one per row. Null is included as '' so list
-   * comparators can distinguish [A, null, B] from [A, B] rather than silently
+   * operators can distinguish [A, null, B] from [A, B] rather than silently
    * collapsing them.
    */
   public static List<String> stringList(List<SObject> rows, String fieldName) {
@@ -75,7 +78,7 @@ public with sharing class RecordHealthCheckValueResolver {
     }
     List<String> values = new List<String>();
     for (SObject row : rows) {
-      Object val = scalarFromRow(row, fieldName);
+      Object val = singleValueFromRow(row, fieldName);
       values.add(val != null ? String.valueOf(val) : '');
     }
     return values;
@@ -138,19 +141,8 @@ public with sharing class RecordHealthCheckValueResolver {
         );
       }
     }
-    // Normalize both sides through coerceDateTime before comparing, so a Date on one
-    // side and a Datetime on the other still match (a String.valueOf equality would
-    // never match, e.g. 2024-01-15 vs midnight).
-    if (primary instanceof Date || comparison instanceof Date) {
-      try {
-        return coerceDateTime(primary) == coerceDateTime(comparison);
-      } catch (Exception ex) {
-        throw new ResolverException(
-          'INCOMPATIBLE_COMPARISON_TYPES',
-          'Date comparison value could not be parsed.'
-        );
-      }
-    }
+    // Apex boxes Date values through the Datetime branch above, which also
+    // normalizes Date/Datetime pairs before comparison.
     // Coerce both sides to Id before comparison, so a 15-char and an 18-char form of
     // the same Id match (String.valueOf would often compare them as unequal).
     if (primary instanceof Id || comparison instanceof Id) {
@@ -167,34 +159,34 @@ public with sharing class RecordHealthCheckValueResolver {
   // ─── Ordered comparison ─────────────────────────────────────────────────────
 
   /**
-   * Applies an ordered comparator (GreaterThan/…/LessThanOrEqual) by trying typed
+   * Applies an ordered operator (GreaterThan/…/LessThanOrEqual) by trying typed
    * ladders in order of specificity: Decimal → DateTime. Throws
    * INCOMPATIBLE_COMPARISON_TYPES rather than ever falling back to lexicographic
    * string order.
    */
   public static Boolean applyOrdered(
-    String comparator,
+    String operator,
     Object primary,
     Object comparison
   ) {
     try {
       Decimal p = Decimal.valueOf(String.valueOf(primary));
       Decimal c = Decimal.valueOf(String.valueOf(comparison));
-      return orderedDecimal(comparator, p, c);
+      return orderedDecimal(operator, p, c);
     } catch (ResolverException re) {
       throw re;
     } catch (Exception numEx) {
       try {
         return orderedDateTime(
-          comparator,
+          operator,
           coerceDateTime(primary),
           coerceDateTime(comparison)
         );
       } catch (Exception dtEx) {
         throw new ResolverException(
           'INCOMPATIBLE_COMPARISON_TYPES',
-          'Comparator "' +
-            comparator +
+          'Comparison operator "' +
+            operator +
             '" requires comparable numeric, Date, or DateTime values.'
         );
       }
@@ -202,42 +194,38 @@ public with sharing class RecordHealthCheckValueResolver {
   }
 
   @TestVisible
-  private static Boolean orderedDecimal(
-    String comparator,
-    Decimal p,
-    Decimal c
-  ) {
-    if (comparator == 'GreaterThan')
+  private static Boolean orderedDecimal(String operator, Decimal p, Decimal c) {
+    if (operator == 'GREATER_THAN')
       return p > c;
-    if (comparator == 'GreaterThanOrEqual')
+    if (operator == 'GREATER_THAN_OR_EQUAL')
       return p >= c;
-    if (comparator == 'LessThan')
+    if (operator == 'LESS_THAN')
       return p < c;
-    if (comparator == 'LessThanOrEqual')
+    if (operator == 'LESS_THAN_OR_EQUAL')
       return p <= c;
     throw new ResolverException(
-      'INVALID_COMPARATOR',
-      'Comparator "' + comparator + '" is not an ordered comparator.'
+      'INVALID_OPERATOR',
+      'Comparison operator "' + operator + '" is not an ordered operator.'
     );
   }
 
   @TestVisible
   private static Boolean orderedDateTime(
-    String comparator,
+    String operator,
     Datetime p,
     Datetime c
   ) {
-    if (comparator == 'GreaterThan')
+    if (operator == 'GREATER_THAN')
       return p > c;
-    if (comparator == 'GreaterThanOrEqual')
+    if (operator == 'GREATER_THAN_OR_EQUAL')
       return p >= c;
-    if (comparator == 'LessThan')
+    if (operator == 'LESS_THAN')
       return p < c;
-    if (comparator == 'LessThanOrEqual')
+    if (operator == 'LESS_THAN_OR_EQUAL')
       return p <= c;
     throw new ResolverException(
-      'INVALID_COMPARATOR',
-      'Comparator "' + comparator + '" is not an ordered comparator.'
+      'INVALID_OPERATOR',
+      'Comparison operator "' + operator + '" is not an ordered operator.'
     );
   }
 

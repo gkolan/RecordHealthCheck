@@ -6,13 +6,14 @@
 public with sharing class RecordHealthCheckSoqlEvaluator {
   private static final Integer DEFAULT_MAX_ROWS = 2000;
 
-  // Compiled once per transaction — Pattern.compile() is expensive; never call it inline
-  @TestVisible
-  private static final Pattern PATTERN_TOKEN = Pattern.compile(
-    '\\{!([A-Za-z0-9_\\.]+)\\}'
-  );
-
   private RecordHealthCheckFormulaEvaluator formulaEvaluator = new RecordHealthCheckFormulaEvaluator();
+
+  public RecordHealthCheckSoqlEvaluator withRunContext(
+    RecordHealthCheckRunContext value
+  ) {
+    formulaEvaluator.withRunContext(value);
+    return this;
+  }
 
   // ─── Public entry point ───────────────────────────────────────────────────
 
@@ -23,10 +24,10 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   ) {
     Long startMs = System.currentTimeMillis();
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.checkDeveloperName = rule.DeveloperName;
-    result.label = rule.CheckName__c;
-    result.priority = rule.RunOrder__c;
-    result.evaluatorType = 'Query';
+    result.ruleDeveloperName = rule.DeveloperName;
+    result.label = rule.CheckTitle__c;
+    result.priority = rule.EvaluationOrder__c;
+    result.evaluatorType = 'QUERY';
 
     try {
       result = doEvaluate(rule, recordId, record, result);
@@ -68,27 +69,27 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     SObject record,
     RecordHealthCheckResult result
   ) {
-    Boolean isListComparator =
-      rule.Operator__c == 'ListContainsAny' ||
-      rule.Operator__c == 'ListDoesNotContainAny';
-    Boolean isUnaryComparator =
-      rule.Operator__c == 'IsBlank' ||
-      rule.Operator__c == 'IsNotBlank';
-    Integer maxRows = rule.MaxRows__c != null
-      ? (Integer) rule.MaxRows__c
+    Boolean isListOperator =
+      rule.ComparisonOperator__c == 'LIST_CONTAINS_ANY' ||
+      rule.ComparisonOperator__c == 'LIST_CONTAINS_NONE';
+    Boolean isUnaryOperator =
+      rule.ComparisonOperator__c == 'IS_BLANK' ||
+      rule.ComparisonOperator__c == 'IS_NOT_BLANK';
+    Integer maxRows = rule.MaxQueryRows__c != null
+      ? (Integer) rule.MaxQueryRows__c
       : DEFAULT_MAX_ROWS;
 
     // ── Resolve primary value / list ──────────────────────────────────────
     Object primaryValue = null;
     List<Object> primaryList = null;
 
-    if (isListComparator) {
-      // Tier 6: primary side comes from ValueToTest__c (scalar).
+    if (isListOperator) {
+      // Tier 6: primary side comes from FindInListFormula__c (single-value).
       try {
-        primaryValue = formulaEvaluator.resolveScalar(
-          rule.ValueToTest__c,
+        primaryValue = formulaEvaluator.resolveFormulaSingleValue(
+          rule.FindInListFormula__c,
           record,
-          rule.ScalarFormulaReturnType__c
+          rule.FormulaResultType__c
         );
       } catch (RecordHealthCheckFormulaEvaluator.FormulaEvaluationException fex) {
         throw new RecordHealthCheckEvaluatorException(
@@ -97,11 +98,11 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         );
       }
     } else {
-      // Tiers 3–5, 8: primary side from DataQuery__c
-      String soql = bindTokens(rule.DataQuery__c, record);
+      // Tiers 3–5, 8: primary side from SourceQuery__c
+      String soql = bindTokens(rule.SourceQuery__c, record);
       List<SObject> rows = runQuery(soql, maxRows);
 
-      if (rule.WhenMultipleRows__c == 'OneResult') {
+      if (rule.QueryResultHandling__c == 'ONE_RESULT') {
         if (rows.isEmpty()) {
           // Aggregate COUNT() always returns 1 row (with count=0), so this branch
           // is only reached by non-aggregate queries with no matching rows.
@@ -113,11 +114,11 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
             'OneResult check returned ' + rows.size() + ' rows.'
           );
         } else {
-          primaryValue = resolveScalarFromRow(rows[0], rule.FieldToRead__c);
+          primaryValue = readQueryFieldValue(rows[0], rule.SourceQueryField__c);
         }
       } else {
         // AnyRowPasses, AllRowsPass, CompareAsLists
-        primaryList = resolveFieldList(rows, rule.FieldToRead__c);
+        primaryList = resolveFieldList(rows, rule.SourceQueryField__c);
       }
     }
 
@@ -125,24 +126,27 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     Object comparisonValue = null;
     List<Object> comparisonList = null;
     // distinguishes a null comparison that came from a comparison
-    // query returning zero rows (→ WhenZeroRows__c) from one where the field was
-    // simply null on a present row (→ null-value, handled by WhenValueIsEmpty__c).
+    // query returning zero rows (→ NoRowsResult__c) from one where the field was
+    // simply null on a present row (→ null-value, handled by EmptyValueHandling__c).
     Boolean comparisonQueryWasEmpty = false;
 
-    if (!isUnaryComparator) {
-      if (isListComparator) {
+    if (!isUnaryOperator) {
+      if (isListOperator) {
         // Comparison side: query result list
-        String compSoql = bindTokens(rule.CompareToQuery__c, record);
+        String compSoql = bindTokens(rule.ComparisonQuery__c, record);
         List<SObject> compRows = runQuery(compSoql, maxRows);
-        comparisonList = resolveFieldList(compRows, rule.CompareToField__c);
-      } else if (rule.CompareAgainst__c == 'FixedValue') {
-        comparisonValue = rule.FixedValue__c;
-      } else if (rule.CompareAgainst__c == 'RecordFormula') {
+        comparisonList = resolveFieldList(
+          compRows,
+          rule.ComparisonQueryField__c
+        );
+      } else if (rule.ExpectedValueSource__c == 'FIXED_VALUE') {
+        comparisonValue = rule.ExpectedFixedValue__c;
+      } else if (rule.ExpectedValueSource__c == 'RECORD_FORMULA') {
         try {
-          comparisonValue = formulaEvaluator.resolveScalar(
-            rule.RecordFormulaValue__c,
+          comparisonValue = formulaEvaluator.resolveFormulaSingleValue(
+            rule.ExpectedRecordFormula__c,
             record,
-            rule.ScalarFormulaReturnType__c
+            rule.FormulaResultType__c
           );
         } catch (RecordHealthCheckFormulaEvaluator.FormulaEvaluationException fex) {
           throw new RecordHealthCheckEvaluatorException(
@@ -150,55 +154,55 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
             fex.getMessage()
           );
         }
-      } else if (rule.CompareAgainst__c == 'AnotherQuery') {
-        String compSoql = bindTokens(rule.CompareToQuery__c, record);
+      } else if (rule.ExpectedValueSource__c == 'COMPARISON_QUERY') {
+        String compSoql = bindTokens(rule.ComparisonQuery__c, record);
         List<SObject> compRows = runQuery(compSoql, maxRows);
         if (compRows.isEmpty()) {
           comparisonValue = null;
           comparisonQueryWasEmpty = true;
         } else if (compRows.size() == 1) {
-          comparisonValue = resolveScalarFromRow(
+          comparisonValue = readQueryFieldValue(
             compRows[0],
-            rule.CompareToField__c
+            rule.ComparisonQueryField__c
           );
         } else {
           throw new RecordHealthCheckEvaluatorException(
             'MULTIPLE_ROWS_RETURNED',
             'Comparison Query returned ' +
               compRows.size() +
-              ' rows for a scalar comparison. ' +
+              ' rows for a single-value comparison. ' +
               'Add a LIMIT 1 clause or use AnyRowPasses/AllRowsPass mode.'
           );
         }
       }
     }
 
-    // ── Apply comparator ──────────────────────────────────────────────────
+    // ── Apply operator ──────────────────────────────────────────────────
     Boolean passed;
 
-    if (isListComparator) {
-      passed = RecordHealthCheckComparatorEngine.applyListComparator(
-        rule.Operator__c,
+    if (isListOperator) {
+      passed = RecordHealthCheckComparisonEngine.applyListComparison(
+        rule.ComparisonOperator__c,
         primaryValue,
         comparisonList,
         rule
       );
     } else if (primaryList != null) {
       // Multi-row primary (AnyRowPasses / AllRowsPass / CompareAsLists)
-      passed = RecordHealthCheckComparatorEngine.applyMultiRowComparator(
+      passed = RecordHealthCheckComparisonEngine.applyMultiRecordComparison(
         rule,
         primaryList,
         comparisonValue,
         comparisonList
       );
-    } else if (isUnaryComparator) {
-      passed = RecordHealthCheckComparatorEngine.applyUnaryComparator(
-        rule.Operator__c,
+    } else if (isUnaryOperator) {
+      passed = RecordHealthCheckComparisonEngine.applyUnaryComparison(
+        rule.ComparisonOperator__c,
         primaryValue
       );
     } else {
-      passed = RecordHealthCheckComparatorEngine.applySingleComparator(
-        rule.Operator__c,
+      passed = RecordHealthCheckComparisonEngine.applySingleComparison(
+        rule.ComparisonOperator__c,
         primaryValue,
         comparisonValue,
         rule
@@ -206,14 +210,14 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
 
     if (passed == null) {
-      // an indeterminate comparator result has two distinct
+      // an indeterminate operator result has two distinct
       // causes that must NOT be treated alike. A genuine zero-rows result is
-      // governed by WhenZeroRows__c; a present-but-null value is governed by the
-      // null behavior (WhenValueIsEmpty__c) and resolves to SKIPPED — routing it
-      // through WhenZeroRows__c made "null value + WhenZeroRows=Fail" wrongly FAIL.
+      // governed by NoRowsResult__c; a present-but-null value is governed by the
+      // empty-value handling (EmptyValueHandling__c) and resolves to SKIPPED — routing it
+      // through NoRowsResult__c made "null value + WhenZeroRows=Fail" wrongly FAIL.
       Boolean zeroRows;
-      if (isListComparator) {
-        // List comparator's comparison side is a query; the primary is a scalar.
+      if (isListOperator) {
+        // List operator's comparison side is a query; the primary is a single-value.
         // Indeterminate is zero-rows only when that query returned no rows.
         zeroRows = (comparisonList == null || comparisonList.isEmpty());
       } else if (primaryList != null) {
@@ -221,7 +225,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         // resolved to null means every row's value was null-skipped.
         zeroRows = primaryList.isEmpty();
       } else {
-        // OneResult / single scalar: an empty PRIMARY result was already routed
+        // OneResult / single single-value: an empty PRIMARY result was already routed
         // above, so the only zero-rows cause left is an empty comparison query.
         zeroRows = comparisonQueryWasEmpty;
       }
@@ -232,76 +236,76 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
 
     // Capture what the record produced vs what the rule required so the UI can
     // show the comparison on a non-passing row.
-    if (primaryList != null && rule.WhenMultipleRows__c == 'AllRowsPass') {
+    if (primaryList != null && rule.QueryResultHandling__c == 'ALL_ROWS_PASS') {
       // "Every row must pass" over many rows: a raw value dump does not scale, so
       // summarize as a count ("1 of 5 Contacts did not pass"). An admin can
       // override the phrasing per rule for friendlier wording.
       Integer totalRows = primaryList.size();
-      Integer failingRows = RecordHealthCheckComparatorEngine.countFailingRows(
+      Integer failingRows = RecordHealthCheckComparisonEngine.countFailingRows(
         rule,
         primaryList,
         comparisonValue
       );
-      result.actualValue = String.isNotBlank(rule.FoundSummaryOverride__c)
+      result.actualValue = String.isNotBlank(rule.DisplayFoundText__c)
         ? resolveSummaryTemplate(
-            rule.FoundSummaryOverride__c,
+            rule.DisplayFoundText__c,
             failingRows,
             totalRows,
             record
           )
         : deriveFoundSummary(rule, failingRows, totalRows);
-      result.expectedValue = String.isNotBlank(rule.ExpectedSummaryOverride__c)
+      result.expectedValue = String.isNotBlank(rule.DisplayExpectedText__c)
         ? resolveSummaryTemplate(
-            rule.ExpectedSummaryOverride__c,
+            rule.DisplayExpectedText__c,
             failingRows,
             totalRows,
             record
           )
-        : RecordHealthCheckComparatorEngine.describeExpected(
-            rule.Operator__c,
+        : RecordHealthCheckComparisonEngine.describeExpected(
+            rule.ComparisonOperator__c,
             comparisonValue
           );
     } else {
       result.actualValue = primaryList != null
-        ? RecordHealthCheckComparatorEngine.formatList(primaryList)
-        : RecordHealthCheckComparatorEngine.formatValue(primaryValue);
-      if (isListComparator) {
-        result.expectedValue = RecordHealthCheckComparatorEngine.describeExpectedList(
-          rule.Operator__c,
+        ? RecordHealthCheckComparisonEngine.formatList(primaryList)
+        : RecordHealthCheckComparisonEngine.formatValue(primaryValue);
+      if (isListOperator) {
+        result.expectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
+          rule.ComparisonOperator__c,
           comparisonList
         );
       } else {
-        result.expectedValue = RecordHealthCheckComparatorEngine.describeExpected(
-          rule.Operator__c,
+        result.expectedValue = RecordHealthCheckComparisonEngine.describeExpected(
+          rule.ComparisonOperator__c,
           comparisonValue
         );
       }
     }
 
-    // Provenance — where each side came from and its raw value/row count, so an
+    // Value source — where each side came from and its raw value/row count, so an
     // entitled viewer can tell a true value from an empty/coerced one.
-    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       describePrimarySource(rule),
       primaryList != null
-        ? RecordHealthCheckProvenance.rowCount(primaryList.size())
+        ? RecordHealthCheckValueSource.rowCount(primaryList.size())
         : rawLabel(primaryValue),
       null
     );
-    if (isUnaryComparator) {
-      // A unary comparator has no comparison value or source, so the "source" of
-      // the requirement is the comparator itself. Labeling it 'Comparator' (not
+    if (isUnaryOperator) {
+      // A unary operator has no comparison value or source, so the "source" of
+      // the requirement is the operator itself. Labeling it 'Operator' (not
       // 'Expected requirement') avoids the row reading "Expected Expected …" once
       // the UI prefixes it with the "Expected" caption.
-      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
-        'Comparator',
+      result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
+        'Comparison operator',
         result.expectedValue,
         null
       );
     } else {
-      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
         describeComparisonSource(rule),
-        isListComparator
-          ? RecordHealthCheckProvenance.rowCount(
+        isListOperator
+          ? RecordHealthCheckValueSource.rowCount(
               comparisonList == null ? 0 : comparisonList.size()
             )
           : rawLabel(comparisonValue),
@@ -313,10 +317,13 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       result.status = 'PASS';
     } else {
       result.status = 'FAIL';
-      result.severity = rule.Severity__c;
+      result.severity = rule.FailureSeverity__c;
       result.message = formulaEvaluator.resolveMergeFields(
-        rule.MessageWhenFailed__c,
-        record
+        rule.FailureMessage__c,
+        record,
+        rule,
+        result,
+        true
       );
     }
     return result;
@@ -325,7 +332,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   // ─── Token binding ──────────────────────────────────────────
 
   /**
-   * Replaces {!FieldName} tokens with the record's field values.
+   * Replaces {!record.FieldName} tokens with the record's field values.
    * Values are returned as a Map so Database.query can use them as bind vars.
    * Since Apex dynamic SOQL only supports real bind variables in code scope
    * we inject field values directly — but we use String.escapeSingleQuotes
@@ -344,12 +351,18 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     // so field names like IsDeleted or Last_Update__c are not false-positives.
     validateNoDisallowedKeywords(soqlTemplate);
 
-    Matcher m = PATTERN_TOKEN.matcher(soqlTemplate);
+    RecordHealthCheckTemplateService.assertValid(
+      soqlTemplate,
+      RecordHealthCheckTemplateService.SURFACE_SOQL
+    );
+    List<RecordHealthCheckToken> tokens = RecordHealthCheckTemplateService.parse(
+      soqlTemplate
+    );
     String bound = '';
     Integer lastEnd = 0;
 
-    while (m.find()) {
-      String fieldPath = m.group(1);
+    for (RecordHealthCheckToken token : tokens) {
+      String fieldPath = token.propertyPath;
 
       Object fieldValue;
       try {
@@ -361,16 +374,17 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         );
       }
 
-      // A token can appear quoted ('{!Field}') AND unquoted ({!Field}) in the same
+      // A token can appear quoted ('{!record.Field}') AND unquoted ({!record.Field}) in the same
       // template, so resolve both quoting contexts independently. For most types the
       // two replacements are identical; only a multi-select picklist differs — its
       // unquoted form expands to an INCLUDES list while its quoted form keeps the
       // raw 'A;B;C' value.
       Boolean quotedToken =
-        m.start() > 0 &&
-        m.end() < soqlTemplate.length() &&
-        soqlTemplate.substring(m.start() - 1, m.start()) == '\'' &&
-        soqlTemplate.substring(m.end(), m.end() + 1) == '\'';
+        token.startIndex > 0 &&
+        token.endIndex < soqlTemplate.length() &&
+        soqlTemplate.substring(token.startIndex - 1, token.startIndex) ==
+        '\'' &&
+        soqlTemplate.substring(token.endIndex, token.endIndex + 1) == '\'';
 
       // Safe substitution — each Apex type maps to the correct SOQL literal format.
       String unquotedReplacement;
@@ -415,7 +429,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         quotedReplacement = quotedStr;
         if (isMultiSelectPicklist(record, fieldPath) && rawStr.contains(';')) {
           // Multi-select picklist in UNQUOTED context
-          // Template: WHERE Regions__c INCLUDES {!Regions__c}
+          // Template: WHERE Regions__c INCLUDES {!record.Regions__c}
           // Value: 'North;South'
           // Result: WHERE Regions__c INCLUDES ('North', 'South')
           // Each semicolon-delimited value is individually quoted and comma-joined.
@@ -429,16 +443,18 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       }
 
       // Build from original matcher spans so inserted field values are never scanned
-      // for later {!token} text. Quoted tokens consume their outer quotes because
+      // for later {!record.token} text. Quoted tokens consume their outer quotes because
       // Date/Time/numeric/null replacements must stay unquoted.
       if (quotedToken) {
         bound +=
-          soqlTemplate.substring(lastEnd, m.start() - 1) + quotedReplacement;
-        lastEnd = m.end() + 1;
+          soqlTemplate.substring(lastEnd, token.startIndex - 1) +
+          quotedReplacement;
+        lastEnd = token.endIndex + 1;
       } else {
         bound +=
-          soqlTemplate.substring(lastEnd, m.start()) + unquotedReplacement;
-        lastEnd = m.end();
+          soqlTemplate.substring(lastEnd, token.startIndex) +
+          unquotedReplacement;
+        lastEnd = token.endIndex;
       }
     }
 
@@ -504,9 +520,9 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   // ─── Value resolution helpers ─────────────────────────────────────────────
 
   @TestVisible
-  private Object resolveScalarFromRow(SObject row, String fieldName) {
+  private Object readQueryFieldValue(SObject row, String fieldName) {
     try {
-      return RecordHealthCheckValueResolver.scalarFromRow(row, fieldName);
+      return RecordHealthCheckValueResolver.singleValueFromRow(row, fieldName);
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       throw new RecordHealthCheckEvaluatorException(
         ex.reasonCode,
@@ -518,7 +534,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   @TestVisible
   private List<Object> resolveFieldList(List<SObject> rows, String fieldName) {
     try {
-      return RecordHealthCheckValueResolver.scalarList(rows, fieldName);
+      return RecordHealthCheckValueResolver.singleValueList(rows, fieldName);
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       throw new RecordHealthCheckEvaluatorException(
         ex.reasonCode,
@@ -536,26 +552,29 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     List<Object> primaryList
   ) {
     // case: "Found 0" is ambiguous. Record that the value came from
-    // an empty result set (not a real zero) so the provenance note reads e.g.
+    // an empty result set (not a real zero) so the value source note reads e.g.
     // "Contacts → 0 rows (query returned no matching rows)".
-    result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       describePrimarySource(rule),
-      RecordHealthCheckProvenance.rowCount(
+      RecordHealthCheckValueSource.rowCount(
         primaryList != null ? primaryList.size() : 0
       ),
       'query returned no matching rows'
     );
 
-    String behavior = rule.WhenZeroRows__c;
-    if (behavior == 'Pass') {
+    String behavior = rule.NoRowsResult__c;
+    if (behavior == 'PASS' || behavior == 'Pass') {
       result.status = 'PASS';
-    } else if (behavior == 'Fail') {
+    } else if (behavior == 'FAIL' || behavior == 'Fail') {
       result.status = 'FAIL';
-      result.severity = rule.Severity__c;
-      result.message = String.isNotBlank(rule.MessageWhenFailed__c)
-        ? rule.MessageWhenFailed__c
+      result.severity = rule.FailureSeverity__c;
+      result.message = String.isNotBlank(rule.FailureMessage__c)
+        ? rule.FailureMessage__c
         : 'No matching records found.';
-    } else if (behavior == 'UnableToEvaluate') {
+    } else if (
+      behavior == 'UNABLE_TO_EVALUATE' ||
+      behavior == 'UnableToEvaluate'
+    ) {
       result.status = 'UNABLE_TO_EVALUATE';
       result.reasonCode = 'NO_ROWS_RETURNED';
       result.message = safeCannotEvaluateMessage(rule);
@@ -569,11 +588,11 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   }
 
   /**
-   * result for a present-but-null value the comparator could not
-   * decide. Reaching this point means the null behavior (WhenValueIsEmpty__c)
-   * resolved to Skip — Pass/Fail/MissingMeansNoMatch all yield a determinate
+   * result for a present-but-null value the operator could not
+   * decide. Reaching this point means the empty-value handling (EmptyValueHandling__c)
+   * resolved to Skip — Pass/Fail/Treat as not matching (AS_NO_MATCH) all yield a determinate
    * boolean earlier — so the check is reported as SKIPPED. This is deliberately
-   * NOT governed by WhenZeroRows__c, which applies only to empty result sets.
+   * NOT governed by NoRowsResult__c, which applies only to empty result sets.
    */
   @TestVisible
   private RecordHealthCheckResult buildNullIndeterminateResult(
@@ -586,10 +605,10 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     return result;
   }
 
-  // ─── Provenance helpers ───────────────────────────────────────────────────
+  // ─── Value source helpers ───────────────────────────────────────────────────
 
   // Names the source of the primary/"Found" value: the field read, or the
-  // scalar under test, or a generic query-result label when neither is set.
+  // single-value under test, or a generic query-result label when neither is set.
   // Derived Found summary for an "every record must pass" check when the admin
   // authored no override: "1 of 5 Contacts did not pass".
   private String deriveFoundSummary(
@@ -605,28 +624,28 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       ' did not pass';
   }
 
-  // Resolves an admin-authored summary template: the count tokens {!failCount} /
-  // {!totalCount} first (they are computed, not record fields), then ordinary
-  // {!FieldName} record tokens via the shared merge-field resolver.
+  // Resolves an admin-authored summary through the shared V2 token context.
   private String resolveSummaryTemplate(
     String template,
     Integer failing,
     Integer total,
     SObject record
   ) {
-    String withCounts = template
-      .replace('{!failCount}', String.valueOf(failing))
-      .replace('{!totalCount}', String.valueOf(total));
-    return formulaEvaluator.resolveMergeFields(withCounts, record);
+    RecordHealthCheckMergeContext context = new RecordHealthCheckMergeContext()
+      .withRecord(record)
+      .withResult(new RecordHealthCheckResult(), true);
+    context.failedRecordCount = failing;
+    context.totalRecordCount = total;
+    return RecordHealthCheckTemplateService.resolveDisplay(template, context);
   }
 
   // Best-effort object label from the query's FROM clause, pluralized; falls back
   // to a generic noun when the object cannot be parsed.
   private String pluralizeObject(Record_Health_Check_Rule__mdt rule) {
     String objectName;
-    if (String.isNotBlank(rule.DataQuery__c)) {
+    if (String.isNotBlank(rule.SourceQuery__c)) {
       Matcher m = Pattern.compile('(?is)\\bFROM\\s+([A-Za-z0-9_]+)')
-        .matcher(rule.DataQuery__c);
+        .matcher(rule.SourceQuery__c);
       if (m.find()) {
         objectName = m.group(1);
       }
@@ -651,10 +670,10 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   }
 
   private String describePrimarySource(Record_Health_Check_Rule__mdt rule) {
-    if (String.isNotBlank(rule.FieldToRead__c)) {
-      return rule.FieldToRead__c;
+    if (String.isNotBlank(rule.SourceQueryField__c)) {
+      return rule.SourceQueryField__c;
     }
-    if (String.isNotBlank(rule.ValueToTest__c)) {
+    if (String.isNotBlank(rule.FindInListFormula__c)) {
       return 'Value under test';
     }
     return 'Query result';
@@ -662,24 +681,24 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
 
   // Names the source of the "Expected" operand.
   private String describeComparisonSource(Record_Health_Check_Rule__mdt rule) {
-    if (rule.CompareAgainst__c == 'FixedValue') {
+    if (rule.ExpectedValueSource__c == 'FIXED_VALUE') {
       return 'Fixed value';
     }
-    if (rule.CompareAgainst__c == 'RecordFormula') {
+    if (rule.ExpectedValueSource__c == 'RECORD_FORMULA') {
       return 'Formula on this record';
     }
-    if (rule.CompareAgainst__c == 'AnotherQuery') {
-      return String.isNotBlank(rule.CompareToField__c)
-        ? 'Comparison query (' + rule.CompareToField__c + ')'
+    if (rule.ExpectedValueSource__c == 'COMPARISON_QUERY') {
+      return String.isNotBlank(rule.ComparisonQueryField__c)
+        ? 'Comparison query (' + rule.ComparisonQueryField__c + ')'
         : 'Comparison query';
     }
-    if (String.isNotBlank(rule.CompareToField__c)) {
-      return rule.CompareToField__c;
+    if (String.isNotBlank(rule.ComparisonQueryField__c)) {
+      return rule.ComparisonQueryField__c;
     }
     return 'Comparison';
   }
 
-  // Raw scalar label that renders null explicitly rather than as an empty string.
+  // Raw single-value label that renders null explicitly rather than as an empty string.
   private String rawLabel(Object value) {
     return value == null ? 'null' : String.valueOf(value);
   }
@@ -773,8 +792,8 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
 
   @TestVisible
   private String safeCannotEvaluateMessage(Record_Health_Check_Rule__mdt rule) {
-    return String.isNotBlank(rule.MessageWhenCannotRun__c)
-      ? rule.MessageWhenCannotRun__c
+    return String.isNotBlank(rule.UnableToEvaluateMessage__c)
+      ? rule.UnableToEvaluateMessage__c
       : 'This check could not be evaluated. Contact your administrator.';
   }
 }

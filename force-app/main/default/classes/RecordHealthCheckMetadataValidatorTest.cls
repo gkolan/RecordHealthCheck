@@ -15,6 +15,22 @@ private class RecordHealthCheckMetadataValidatorTest {
     System.assertNotEquals(null, issues);
   }
 
+  // validateAsJson() is the Apex/CI entry point (no longer @AuraEnabled, HI-2).
+  // It must still return well-formed JSON for setup tooling and CI.
+  @isTest
+  static void validateAsJsonReturnsSerializedIssues() {
+    Test.startTest();
+    String jsonText = RecordHealthCheckMetadataValidator.validateAsJson();
+    Test.stopTest();
+
+    System.assertNotEquals(null, jsonText, 'validateAsJson should return JSON');
+    Object parsed = JSON.deserializeUntyped(jsonText);
+    System.assert(
+      parsed instanceof List<Object>,
+      'validateAsJson should serialize a list of validation issues'
+    );
+  }
+
   // Guards the shipped examples: every active packaged Check Set and Rule must
   // validate clean. If this fails, an example rule has drifted out of spec and
   // would surface a runtime error to an admin who copied it. The failure
@@ -71,12 +87,12 @@ private class RecordHealthCheckMetadataValidatorTest {
     Record_Health_Check_Set__mdt checkSet = new Record_Health_Check_Set__mdt(
       DeveloperName = 'Bad_Comparison_Display',
       ObjectApiName__c = 'Account',
-      PanelHeading__c = 'Bad Comparison Display',
-      PassedChecksDisplay__c = 'Show',
-      SkippedChecksDisplay__c = 'Show',
-      RunChecksWhen__c = 'Manual',
-      RowAppearance__c = 'AllAtOnce',
-      ComparisonDisplay__c = 'Bogus'
+      CardTitle__c = 'Bad Comparison Display',
+      PassedChecksDisplay__c = 'SHOW_EACH_CHECK',
+      SkippedChecksDisplay__c = 'SHOW_EACH_CHECK',
+      CardRunMode__c = 'RUN_ON_REQUEST',
+      CardRevealMode__c = 'ALL_AT_ONCE',
+      FoundExpectedDisplay__c = 'Bogus'
     );
 
     List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = new RecordHealthCheckMetadataValidator()
@@ -89,7 +105,7 @@ private class RecordHealthCheckMetadataValidatorTest {
     for (RecordHealthCheckMetadataValidator.ValidationIssue issue : issues) {
       if (
         issue.componentName == 'Bad_Comparison_Display' &&
-        issue.fieldName == 'ComparisonDisplay__c' &&
+        issue.fieldName == 'FoundExpectedDisplay__c' &&
         issue.reasonCode == 'INVALID_CONFIG' &&
         issue.message.contains('Bogus')
       ) {
@@ -99,7 +115,7 @@ private class RecordHealthCheckMetadataValidatorTest {
 
     System.assert(
       found,
-      'Metadata validation should reject invalid ComparisonDisplay__c values.'
+      'Metadata validation should reject invalid FoundExpectedDisplay__c values.'
     );
   }
 }

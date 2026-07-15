@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FixMessage__c</fullName>
+    <label>Fix Message</label>
+    <description
+  >Optional next-step guidance displayed in the detail for a failed check. Tell the user what to review or change, using language that is specific to the failed requirement. Pair it with an Action URL when a useful page, record, report, or playbook can take the user directly to that next step.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>3</visibleLines>
+    <inlineHelpText
+  >Optional guidance shown after a failure. Give the user a specific next step, such as "Review open Opportunities and their Amount values."</inlineHelpText>
+    <required>false</required>
+</CustomField>

@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ComparisonOperator__c</fullName>
+    <label>Comparison Operator</label>
+    <description
+  >How the value from the "Source Query" is compared to the expected value. Required for "Verify with a query" and "Compare two queries"; not used for "Verify with a formula". No default, so you must choose one. "Is empty" and "Is not empty" need nothing to compare against. The list operators split into two groups: (1) "List contains any" and "List contains none" work with "Verify with a query" and "How To Read Query Results" set to "Compare as lists" - the record value comes from "Value to find in the list (formula)" and the list comes from "Comparison Query"; (2) "Lists overlap", "Lists contain all", and "Lists match exactly" work only with "Compare two queries" and "How To Read Query Results" set to "Compare as lists" - both lists come from the two queries.</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>EQUALS</fullName><default
+        >false</default></value><value><fullName>NOT_EQUALS</fullName><default
+        >false</default></value><value><fullName>GREATER_THAN</fullName><default
+        >false</default></value><value><fullName
+        >GREATER_THAN_OR_EQUAL</fullName><default>false</default></value><value
+      ><fullName>LESS_THAN</fullName><default>false</default></value><value
+      ><fullName>LESS_THAN_OR_EQUAL</fullName><default
+        >false</default></value><value><fullName>CONTAINS</fullName><default
+        >false</default></value><value><fullName
+        >DOES_NOT_CONTAIN</fullName><default>false</default></value><value
+      ><fullName>IS_BLANK</fullName><default>false</default></value><value
+      ><fullName>IS_NOT_BLANK</fullName><default>false</default></value><value
+      ><fullName>LIST_CONTAINS_ANY</fullName><default
+        >false</default></value><value><fullName
+        >LIST_CONTAINS_NONE</fullName><default>false</default></value><value
+      ><fullName>LISTS_OVERLAP</fullName><default>false</default></value><value
+      ><fullName>LISTS_CONTAIN_ALL</fullName><default
+        >false</default></value><value><fullName
+        >LISTS_MATCH_EXACTLY</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >Required for query checks. Choose how Found is compared with Expected. Empty operators need no Expected value; list operators require "Compare as lists".</inlineHelpText>
+    <required>false</required>
+</CustomField>

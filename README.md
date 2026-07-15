@@ -1,11 +1,10 @@
 # Record Health Check
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![CI](https://github.com/gkolan/recordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/recordHealthCheck/actions/workflows/ci.yml)
+[![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
 [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-66.0-00A1E0.svg)](sfdx-project.json)
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main)
 
-Record Health Check is a metadata-driven framework for running data-quality checks against a Salesforce record, right on its **record page**. It is **advisory** and read-only, so it never blocks a save and never writes a field. You define **Check Sets** and **Rules** in Custom Metadata; the framework evaluates the open record, and the card shows each result as **Pass**, **Fail**, **Skipped**, or **Unable to Check** — with a failing check flagged by severity as **Error**, **Warning**, or **Info**.
+Record Health Check is a metadata-driven framework for running data-quality checks against a Salesforce record, right on its **record page**. It is **advisory** and read-only, so it never blocks a save and never writes a field. You define **Check Sets** and **Rules** in Custom Metadata; the framework evaluates the open record, and the card shows each result as **Pass**, **Fail**, **Skipped**, or **Unable to Check** — with a failing check flagged by severity as **Critical**, **Warning**, or **Info**.
 
 Because it runs at read time rather than save time, it can evaluate across related records, compare aggregates, and surface data that predates your rules. It does not stop a save — use validation rules, Flow, or Apex triggers when the requirement is to block one. A failing check can also offer an optional read-only **"Fix it" link** and fix instructions.
 
@@ -28,7 +27,7 @@ Because it runs at read time rather than save time, it can evaluate across relat
       <p>Checks are grouped into a <b>check set</b> per object. This example is an Account, but the same card drops onto any object's record page.</p>
       <!-- Video walkthrough: replace the line below with
            <p><sub>▶ <a href="https://youtu.be/YOUR_VIDEO_ID">Watch the two-minute walkthrough</a></sub></p> -->
-      <p><sub>▶ <a href="https://github.com/gkolan/recordHealthCheck/blob/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See it in motion (animated GIF)</a></sub></p>
+      <p><sub>▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/docs/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See it in motion (animated GIF)</a></sub></p>
     </td>
     <td width="42%" valign="top">
       <img src="docs/assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
@@ -39,31 +38,32 @@ Because it runs at read time rather than save time, it can evaluate across relat
 
 ## Install
 
-Install into a **sandbox** first. Pick whichever path fits you — all three deploy the same `force-app` source.
+Install into a **sandbox** first. Core has one production manifest and contains no example Check
+Sets, Rules, or example Apex implementations.
 
 > [!IMPORTANT]
-> **Upgrading to v1.2.0 from an earlier release:** v1.2.0 removes the old Lightning component properties `configName` and `comparisonDisclosure`. Before deploying the upgrade to an org that already has Record Health Check on record pages, open those pages in Lightning App Builder, remove or reconfigure the old component placement, and save it with the current **Check Set** picker. After deployment, verify the selected Check Set still matches the page object.
+> **Upgrading to V2:** V2 is a breaking metadata-contract release with no dual-read support for v1.x field names. Back up custom metadata and follow the [V2 upgrade and rollback guide](docs/v2/installation/upgrading-to-v2.md) before deploying.
 
-v1.2.0 also moves comparison provenance to **browser-console diagnostics only** (F12, for admins with `Record_Health_Check_View_Details`), replaces the removed `Record_Health_Check_Debug` permission with `Record_Health_Check_View_Details`, and selects the Check Set from a metadata-backed **dropdown** in App Builder instead of free text.
-
-**Option 1 — Deploy button (no command line).** Click **[Deploy to Salesforce](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=recordHealthCheck&ref=main)**, log in to your sandbox, and click Deploy.
-
-**Option 2 — Salesforce CLI.**
+**Option 1 — Salesforce CLI.**
 
 ```bash
-git clone https://github.com/gkolan/recordHealthCheck.git
-cd recordHealthCheck
-sf project deploy start --source-dir force-app
+git clone https://github.com/gkolan/RecordHealthCheck.git
+cd RecordHealthCheck
+sf project deploy start --manifest manifest/package.xml
 sf org assign permset --name Record_Health_Check_User
 ```
 
-**Option 3 — Change set or DevOps Center.** Deploy the `force-app` folder through a change set, DevOps Center, or your deployment tool of choice.
+**Option 2 — Change set or DevOps Center.** Deploy only the components named by
+`manifest/package.xml`.
 
 ### After installing
 
-Assign the **`Record_Health_Check_User`** permission set, add the **recordHealthCheck** component to a Lightning record page, and choose a **Check Set** in App Builder. Use `Example_Account_360_Health_Check` for the card shown above, or `Account_Data_Quality` for a lighter set of four Account-field checks.
+Assign the **`Record_Health_Check_User`** permission set, install or create a Check Set, add the
+**recordHealthCheck** component to a Lightning record page, and select that Check Set in App
+Builder. Ready-made Check Sets live in
+[RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples).
 
-Full walkthrough: [First 10 Minutes](docs/start/first-10-minutes.md)
+Full walkthrough: [First 10 Minutes](docs/v2/start/first-10-minutes.md)
 
 ## What You Get
 
@@ -71,28 +71,32 @@ Full walkthrough: [First 10 Minutes](docs/start/first-10-minutes.md)
 - Custom Metadata configuration
 - Formula, SOQL, compare-two-SOQL, and Apex checks
 - Guided remediation: optional "Fix it" deep links and fix instructions on failing checks
-- Sample Account Check Sets for learning
+- Per-placement visual treatment: SLDS 1 (default) or SLDS 2, set on the App Builder card — see [Design System](docs/v2/guides/design-system.md)
 - User and Admin Permission Sets
 
 ## Documentation
 
-Open only the page you need.
+Current documentation is under [`docs/v2/`](docs/v2/). For V1 migrations, start with [Upgrading to V2](docs/v2/installation/upgrading-to-v2.md).
 
-- Learn the concepts: [Admin Quick Start](docs/installation/admin-quick-start.md)
-- Create your first Rule: [Getting Started](docs/installation/getting-started.md#step-4-create-your-first-rule)
-- Copy an example: [Examples catalog](docs/examples/index.md)
-- Add a "Fix it" link: [Action Links and Fix Instructions](docs/guides/action-links.md)
-- Full field reference: [Configuration Guide](docs/guides/configuration-guide.md) or [Apex plugin reference](docs/apex/plugin-reference.md)
+- Learn the concepts: [Admin Quick Start](docs/v2/installation/admin-quick-start.md)
+- Create your first Rule: [Getting Started](docs/v2/installation/getting-started.md#step-4-create-your-first-rule)
+- Install an example pack: [Examples install guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)
+- Add a "Fix it" link: [Action Links and Fix Instructions](docs/v2/guides/action-links.md)
+- Full field reference: [Configuration Guide](docs/v2/guides/configuration-guide.md) or [Apex reference](docs/v2/apex/apex-reference.md)
 
 ## Example Library
 
-Start with one example. Use the full library when you need another pattern:
+Reusable scenarios, Rule patterns, and example Apex classes live in
+[**RecordHealthCheck-Examples**](https://github.com/gkolan/RecordHealthCheck-Examples). Core ships
+no example metadata. V1 bundled examples with Core; V2 installs optional packs independently after
+Core. See the
+[Core vs Examples boundary](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/core-and-examples-boundary.md).
 
-- [Formula examples](docs/examples/index.md#formula)
-- [SOQL single-query examples](docs/examples/index.md#soql-single-query)
-- [SOQL compare-two-queries examples](docs/examples/index.md#soql-compare-two-queries)
-- [Apex examples](docs/examples/index.md#apex)
-- [Sample Check Set packages](docs/examples/index.md#sample-check-set-packages)
+- [Install packs (Setup · Git/CLI · Local DX)](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)
+- [Pack catalog by outcome](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/catalog/by-outcome.md)
+- [Pattern library](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/index.md)
+- [Authoring guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/authoring-guide.md)
+- [Pack index](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/examples-index.md)
 
 ## Local Checks
 

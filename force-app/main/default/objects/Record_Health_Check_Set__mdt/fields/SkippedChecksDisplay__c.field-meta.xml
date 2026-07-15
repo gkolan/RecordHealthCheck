@@ -1,27 +1,20 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>SkippedChecksDisplay__c</fullName>
     <label>Skipped Checks</label>
     <description
-  >Controls what happens to checks that are SKIPPED (they did not apply to this record). Show each check keeps them listed. Hide checks, show count only removes the skipped checks from the list; their count still appears in the summary bar at the bottom of the card.</description>
+  >Controls how checks that were not run appear. This includes checks that do not apply to the record and checks whose prerequisite did not pass. "Show each check" lists every skipped check. "Show count only" removes skipped checks from the list; their count still appears in the summary bar at the bottom of the card. Defaults to "Show each check".</description>
     <inlineHelpText
-  >Show each check = list every skipped check. Hide checks, show count only = remove skipped checks from the list; the count still shows in the summary bar.</inlineHelpText>
-    <required>true</required>
+  >How checks that were not run appear. "Show each check" (default) lists them. "Show count only" hides the rows while keeping the summary count.</inlineHelpText>
+    <required>false</required>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value>
-                <fullName>Show</fullName>
-                <default>true</default>
-                <label>Show each check</label>
-            </value>
-            <value>
-                <fullName>Hide</fullName>
-                <default>false</default>
-                <label>Hide checks, show count only</label>
-            </value>
-        </valueSetDefinition>
+            <value><fullName>SHOW_EACH_CHECK</fullName><default
+        >true</default></value><value><fullName
+        >SHOW_COUNT_ONLY</fullName><default
+        >false</default></value></valueSetDefinition>
     </valueSet>
 </CustomField>

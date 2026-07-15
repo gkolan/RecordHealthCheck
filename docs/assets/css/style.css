@@ -462,9 +462,30 @@
 .content blockquote p:last-child { margin-bottom: 0; }
 .content hr { border: none; border-top: 1px solid var(--hairline); margin: 34px 0; }
 .content img { max-width: 100%; height: auto; border-radius: var(--r-md); border: 1px solid var(--hairline); }
-.content table { width: 100%; border: 1px solid var(--hairline); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow-sm); margin: 0 0 22px; }
+.content table { display: block; width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--hairline); border-radius: var(--r-md); box-shadow: var(--shadow-sm); margin: 0 0 22px; }
 .content thead th { background: var(--surface); color: var(--ink); font-weight: 600; }
 .content th, .content td { padding: 10px 14px; border-bottom: 1px solid var(--hairline-2); text-align: left; vertical-align: top; }
+.content table:has(thead tr > th:nth-child(3):last-child) { table-layout: fixed; }
+.content table:has(thead tr > th:nth-child(3):last-child) th:nth-child(1),
+.content table:has(thead tr > th:nth-child(3):last-child) td:nth-child(1) { width: 25%; }
+.content table:has(thead tr > th:nth-child(3):last-child) th:nth-child(2),
+.content table:has(thead tr > th:nth-child(3):last-child) td:nth-child(2) { width: 25%; }
+.content table:has(thead tr > th:nth-child(3):last-child) th:nth-child(3),
+.content table:has(thead tr > th:nth-child(3):last-child) td:nth-child(3) { width: 50%; max-width: 50%; }
+.content table:has(thead tr > th:nth-child(4):last-child),
+.content table:has(thead tr > th:nth-child(5):last-child),
+.content table:has(thead tr > th:nth-child(6):last-child) { table-layout: fixed; }
+.content table:has(thead tr > th:nth-child(4):last-child) th:last-child,
+.content table:has(thead tr > th:nth-child(4):last-child) td:last-child { width: 40%; max-width: 40%; }
+.content table:has(thead tr > th:nth-child(5):last-child) th:last-child,
+.content table:has(thead tr > th:nth-child(5):last-child) td:last-child { width: 35%; max-width: 35%; }
+.content table:has(thead tr > th:nth-child(6):last-child) th:last-child,
+.content table:has(thead tr > th:nth-child(6):last-child) td:last-child { width: 30%; max-width: 30%; }
+.content td:first-child:has(> code:only-child) { width: 1%; white-space: nowrap; }
+.content th code, .content td code { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
+.content td p:last-child, .content td ul:last-child, .content td ol:last-child { margin-bottom: 0; }
+.content td pre.table-code { margin: 0; padding: 10px 12px; border-radius: var(--r-sm); box-shadow: none; }
+.content td pre.table-code code { white-space: pre; }
 .content tbody tr:last-child td { border-bottom: none; }
 .content pre { background: var(--navy); color: #cdd9e8; border-radius: var(--r-lg); padding: 18px 20px; overflow-x: auto; margin: 0 0 22px; box-shadow: var(--shadow-md); }
 .content pre code { font-family: var(--mono); font-size: 13.5px; line-height: 1.7; background: none; color: inherit; border: none; padding: 0; border-radius: 0; }

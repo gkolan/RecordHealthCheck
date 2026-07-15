@@ -4,6 +4,7 @@
  */
 
 import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
+import completeRun from "@salesforce/apex/RecordHealthCheckController.completeRun";
 import {
   synthesizeResult,
   normalizeResult,
@@ -57,7 +58,7 @@ export class HealthCheckRunner {
     this._resetEvaluationPool();
   }
 
-  run(reuseRunId = false) {
+  run(reuseRunId = false, source = "USER_INITIATED") {
     if (this._runInProgress) return;
     this._runInProgress = true;
     if (!reuseRunId || !this._runId) {
@@ -68,6 +69,7 @@ export class HealthCheckRunner {
     this.host.runComplete = false;
     this._resultBuffer = {};
     this._stopped = false;
+    this._source = source === "USER_INITIATED" ? source : "RUN_ON_LOAD";
     this._resetEvaluationPool();
 
     // Reset all rows to PENDING and clear previous results
@@ -95,7 +97,7 @@ export class HealthCheckRunner {
     for (const name of cycleNames) {
       const check = checkMap[name];
       if (check) {
-        const prereqName = check.dependsOnCheckDeveloperName || name;
+        const prereqName = check.dependsOnRuleDeveloperName || name;
         this._resultBuffer[name] = synthesizeResult(
           check,
           "UNABLE_TO_EVALUATE",
@@ -181,8 +183,8 @@ export class HealthCheckRunner {
     if (this._stopped || token !== this._runToken) return;
 
     // Client-side dependency gate before calling Apex.
-    if (check.dependsOnCheckDeveloperName) {
-      const dependencyCheck = checkMap[check.dependsOnCheckDeveloperName];
+    if (check.dependsOnRuleDeveloperName) {
+      const dependencyCheck = checkMap[check.dependsOnRuleDeveloperName];
       if (!dependencyCheck) {
         // Dependency was not included in this run (e.g. excluded by the framework cap).
         // Skip with a clear reason rather than silently falling through.
@@ -190,23 +192,22 @@ export class HealthCheckRunner {
           check,
           "SKIPPED",
           "DEPENDENCY_NOT_IN_RUN",
-          `Skipped because "${check.dependsOnCheckDeveloperName}" was not included in this run.`
+          `Skipped because "${check.dependsOnRuleDeveloperName}" was not included in this run.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
         return;
       }
-      if (!taskMap[check.dependsOnCheckDeveloperName]) {
+      if (!taskMap[check.dependsOnRuleDeveloperName]) {
         runCheck(dependencyCheck);
       }
-      await taskMap[check.dependsOnCheckDeveloperName];
+      await taskMap[check.dependsOnRuleDeveloperName];
       if (this._stopped || token !== this._runToken) return;
-      const prereqResult =
-        this._resultBuffer[check.dependsOnCheckDeveloperName];
+      const prereqResult = this._resultBuffer[check.dependsOnRuleDeveloperName];
       if (!prereqResult || prereqResult.status !== "PASS") {
         const prereqLabel =
           (dependencyCheck && dependencyCheck.label) ||
-          check.dependsOnCheckDeveloperName;
+          check.dependsOnRuleDeveloperName;
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
@@ -236,10 +237,11 @@ export class HealthCheckRunner {
     let result;
     try {
       result = await evaluateCheck({
-        configName: this.host.checkSetName,
-        checkDeveloperName: check.developerName,
+        checkSetDeveloperName: this.host.checkSetName,
+        ruleDeveloperName: check.developerName,
         recordId: this.host.recordId,
-        runId: this._runId
+        runId: this._runId,
+        source: this._source
       });
     } catch {
       result = synthesizeResult(
@@ -312,7 +314,18 @@ export class HealthCheckRunner {
       this.host.runComplete = true;
       this.host.hasCompletedRunOnce = true;
       this._runInProgress = false;
-      if (this.host.debugMode) {
+      if (this._source === "USER_INITIATED") {
+        completeRun({
+          checkSetDeveloperName: this.host.checkSetName,
+          runId: this._runId,
+          results: this.host.checks.map((c) => c.result),
+          source: this._source,
+          recordId: this.host.recordId
+        }).catch(() => {
+          // Lifecycle publication is best effort and never changes UI results.
+        });
+      }
+      if (this.host.showDiagnostics) {
         this.host._logRunDiagnostics();
       }
     }

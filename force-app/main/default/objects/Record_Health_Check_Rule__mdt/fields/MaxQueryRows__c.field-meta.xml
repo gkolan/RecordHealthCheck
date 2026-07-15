@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MaxQueryRows__c</fullName>
+    <label>Max Query Rows (1-2000)</label>
+    <description
+  >The maximum number of rows this check's query may return, from 1 to 2000. Defaults to 200. It is a safety cap - raise it deliberately only when a check genuinely needs to read more rows.</description>
+    <type>Number</type>
+    <precision>4</precision>
+    <scale>0</scale>
+        <inlineHelpText
+  >Row cap for this check's query, 1-2000 (default 200). Raise only when the check must read more rows.</inlineHelpText>
+    <required>false</required>
+    <unique>false</unique>
+<defaultValue>200</defaultValue></CustomField>

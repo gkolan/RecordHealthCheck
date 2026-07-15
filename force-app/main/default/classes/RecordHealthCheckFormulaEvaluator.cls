@@ -4,11 +4,14 @@
  */
 
 public with sharing class RecordHealthCheckFormulaEvaluator {
-  // Compiled once per transaction
-  private static final Pattern PATTERN_TOKEN = Pattern.compile(
-    '\\{!([A-Za-z0-9_\\.]+)\\}'
-  );
+  private RecordHealthCheckRunContext runContext;
 
+  public RecordHealthCheckFormulaEvaluator withRunContext(
+    RecordHealthCheckRunContext value
+  ) {
+    runContext = value;
+    return this;
+  }
   // Track FormulaEval calls for the whole Apex transaction to avoid hitting
   // Salesforce's 100-call platform limit, which is itself transaction-wide
   // and uncatchable. This static accumulates for the life of the transaction and
@@ -26,7 +29,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   // evaluateFormulaAnyType probes up to 8 return types and every failed
   // attempt consumes a real, platform-counted FormulaEval call. When a caller
   // loops evaluate() over many records in one transaction (Flow, batch, anonymous
-  // Apex), re-probing the same scalar formula per record multiplies that cost and
+  // Apex), re-probing the same single-value formula per record multiplies that cost and
   // can exhaust the 100-call budget. Caching the return type that first resolved a
   // given formula (keyed by SObject type + expression) lets the second and later
   // records resolve in a single call. Transaction-scoped, like formulaEvalCallCount.
@@ -34,11 +37,11 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   private static Map<String, formulaeval.FormulaReturnType> resolvedReturnTypeByFormula = new Map<String, formulaeval.FormulaReturnType>();
 
   /**
-   * Evaluates a Formula check (CheckMethod__c = Formula).
+   * Evaluates a Formula check (EvaluationType__c = Formula).
    * Also used internally by the SOQL evaluator for
-   * RunWhenFormula__c evaluation
-   * RecordFormulaValue__c (comparison-side resolution, Tier 5/8)
-   * ValueToTest__c as primary scalar (Tier 6, ListContainsAny/ListDoesNotContainAny)
+   * ApplicabilityFormula__c evaluation
+   * ExpectedRecordFormula__c (comparison-side resolution, Tier 5/8)
+   * FindInListFormula__c as primary single-value (Tier 6, ListContainsAny/ListDoesNotContainAny)
    */
   public RecordHealthCheckResult evaluate(
     Record_Health_Check_Rule__mdt rule,
@@ -47,16 +50,16 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   ) {
     Long startMs = System.currentTimeMillis();
     RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.checkDeveloperName = rule.DeveloperName;
-    result.label = rule.CheckName__c;
-    result.priority = rule.RunOrder__c;
-    result.evaluatorType = 'Formula';
+    result.ruleDeveloperName = rule.DeveloperName;
+    result.label = rule.CheckTitle__c;
+    result.priority = rule.EvaluationOrder__c;
+    result.evaluatorType = 'FORMULA';
 
     try {
       // FLS / accessibility check on fields referenced in the formula
       // FormulaEval will surface an exception if a field is inaccessible;
       // we catch that below and map it to FIELD_NOT_ACCESSIBLE.
-      Object evalResult = evaluateFormula(rule.PassFailFormula__c, record);
+      Object evalResult = evaluateFormula(rule.PassConditionFormula__c, record);
       result = applyEvaluationResult(rule, record, result, evalResult);
     } catch (Exception ex) {
       result = applyEvaluationException(rule, result, ex);
@@ -109,15 +112,21 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       // separable record value vs operand — the condition lives inside the
       // expression — so we echo the formula as the pass/fail condition under a
       // "Passes when" key (e.g. Passes when ISBLANK(BillingCity)). When the admin
-      // has declared explicit Found/Expected scalar formulas, those resolved
+      // has declared explicit Found/Expected single-value formulas, those resolved
       // values replace the echo so a balance check can show readable numbers.
       applyFoundExpectedValues(rule, record, result);
       if (passed) {
         result.status = 'PASS';
       } else {
         result.status = 'FAIL';
-        result.severity = rule.Severity__c;
-        result.message = resolveMergeFields(rule.MessageWhenFailed__c, record);
+        result.severity = rule.FailureSeverity__c;
+        result.message = resolveMergeFields(
+          rule.FailureMessage__c,
+          record,
+          rule,
+          result,
+          true
+        );
       }
     } else {
       // Non-boolean result — invalid formula for a Formula check
@@ -132,13 +141,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   /**
    * Sets a Formula check's Found (actualValue) and Expected (expectedValue)
    * display values.
-   * Found: only when FoundValueFormula__c is populated — resolved as a scalar
+   * Found: only when DisplayFoundFormula__c is populated — resolved as a single-value
    * and formatted like Query checks. Blank leaves actualValue null (no Found
    * chip), matching the original behavior.
-   * Expected: the resolved ExpectedValueFormula__c scalar when populated
-   * otherwise the quoted PassFailFormula__c text (original behavior).
+   * Expected: the resolved DisplayExpectedFormula__c single-value when populated
+   * otherwise the quoted PassConditionFormula__c text (original behavior).
    * Display is purely additive: pass/fail has already been decided by the
-   * boolean PassFailFormula__c. A scalar formula that fails to resolve (non-scalar
+   * boolean PassConditionFormula__c. A single-value formula that fails to resolve (non-single-value
    * result, null traversal, FormulaEval budget) must never change the row's
    * status, so each resolution is isolated and falls back to the default.
    */
@@ -148,17 +157,17 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     SObject record,
     RecordHealthCheckResult result
   ) {
-    if (String.isNotBlank(rule.FoundValueFormula__c)) {
-      Object found = resolveScalarForDisplay(
-        rule.FoundValueFormula__c,
+    if (String.isNotBlank(rule.DisplayFoundFormula__c)) {
+      Object found = resolveSingleValueForDisplay(
+        rule.DisplayFoundFormula__c,
         record,
-        rule.ScalarFormulaReturnType__c
+        rule.FormulaResultType__c
       );
       if (found != ABSENT) {
-        result.actualValue = RecordHealthCheckComparatorEngine.formatValue(
+        result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
           found
         );
-        result.actualProvenance = new RecordHealthCheckProvenance.Detail(
+        result.actualValueSource = new RecordHealthCheckValueSource.Detail(
           'Found formula',
           found == null ? 'null' : String.valueOf(found),
           null
@@ -166,17 +175,17 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       }
     }
 
-    if (String.isNotBlank(rule.ExpectedValueFormula__c)) {
-      Object expected = resolveScalarForDisplay(
-        rule.ExpectedValueFormula__c,
+    if (String.isNotBlank(rule.DisplayExpectedFormula__c)) {
+      Object expected = resolveSingleValueForDisplay(
+        rule.DisplayExpectedFormula__c,
         record,
-        rule.ScalarFormulaReturnType__c
+        rule.FormulaResultType__c
       );
       if (expected != ABSENT) {
-        result.expectedValue = RecordHealthCheckComparatorEngine.formatValue(
+        result.expectedValue = RecordHealthCheckComparisonEngine.formatValue(
           expected
         );
-        result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+        result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
           'Expected formula',
           expected == null ? 'null' : String.valueOf(expected),
           null
@@ -188,14 +197,14 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     // No explicit Expected formula (or it could not resolve): echo the boolean
     // condition so the row still shows what was required. This is a pass/fail
     // *condition*, not a comparison value, so it carries its own key ("Passes
-    // when") and is shown unquoted — quoting it like a scalar (Expected
+    // when") and is shown unquoted — quoting it like a single-value (Expected
     // "ISBLANK(City)") framed the formula as an expected value and misread.
     if (result.expectedValue == null) {
-      result.expectedValue = rule.PassFailFormula__c;
+      result.expectedValue = rule.PassConditionFormula__c;
       result.expectedValueLabel = RecordHealthCheckResult.PASSES_WHEN_LABEL;
-      result.expectedProvenance = new RecordHealthCheckProvenance.Detail(
+      result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
         'Pass/Fail condition',
-        rule.PassFailFormula__c,
+        rule.PassConditionFormula__c,
         null
       );
     }
@@ -207,17 +216,21 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   private static final Object ABSENT = new Map<String, Object>();
 
   /**
-   * Resolves a display-only scalar formula, returning ABSENT (not throwing) when
+   * Resolves a display-only single-value formula, returning ABSENT (not throwing) when
    * it cannot be evaluated, so a bad Found/Expected formula degrades to the
    * default display instead of failing the check.
    */
-  private Object resolveScalarForDisplay(
+  private Object resolveSingleValueForDisplay(
     String formulaExpression,
     SObject record,
     String declaredReturnType
   ) {
     try {
-      return resolveScalar(formulaExpression, record, declaredReturnType);
+      return resolveFormulaSingleValue(
+        formulaExpression,
+        record,
+        declaredReturnType
+      );
     } catch (Exception ex) {
       return ABSENT;
     }
@@ -248,7 +261,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       // preserve the typed reason (e.g. FORMULA_EVAL_LIMIT) instead of
       // re-deriving it from the message, which would collapse it to
       // INVALID_FORMULA and hide the real cause from the admin. Mirrors the
-      // resolveScalar path, which already preserves the typed reason code.
+      // resolveFormulaSingleValue path, which already preserves the typed reason code.
       reasonCodeOut[0] = fex.reasonCode;
       return null;
     } catch (Exception ex) {
@@ -258,25 +271,28 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   }
 
   /**
-   * Resolves a formula expression to a scalar value for use as the primary
+   * Resolves a formula expression to a single-value value for use as the primary
    * operand in Tier 6 (ListContainsAny / ListDoesNotContainAny) checks
    * or as the comparison value in Tier 5/8 checks.
    * Returns null if the formula resolves to null (blank parent traversal etc.).
    * Throws RecordHealthCheckFormulaException if the formula cannot be evaluated.
    */
-  public Object resolveScalar(String formulaExpression, SObject record) {
-    return resolveScalar(formulaExpression, record, null);
+  public Object resolveFormulaSingleValue(
+    String formulaExpression,
+    SObject record
+  ) {
+    return resolveFormulaSingleValue(formulaExpression, record, null);
   }
 
   /**
    * overload accepting the admin-declared return type (the
-   * ScalarFormulaReturnType__c picklist value). When non-blank and not 'Auto'
+   * FormulaResultType__c picklist value). When non-blank and not 'AUTO'
    * the formula is evaluated once with that type instead of probing up to eight
    * saving FormulaEval calls in bulk/Flow loops. An unrecognized or mis-declared
    * type degrades gracefully to the full probe, so a wrong declaration never
    * fails a check that would otherwise resolve.
    */
-  public Object resolveScalar(
+  public Object resolveFormulaSingleValue(
     String formulaExpression,
     SObject record,
     String declaredReturnType
@@ -298,8 +314,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   }
 
   /**
-   * Maps the ScalarFormulaReturnType__c picklist value to a FormulaReturnType
-   * or null for 'Auto'/blank/unrecognized (caller probes all types).
+   * Maps the FormulaResultType__c picklist value to a FormulaReturnType
+   * or null for 'AUTO'/blank/unrecognized (caller probes all types).
    */
   @TestVisible
   private formulaeval.FormulaReturnType mapDeclaredReturnType(
@@ -309,23 +325,23 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       return null;
     }
     switch on declaredReturnType {
-      when 'Boolean' {
+      when 'BOOLEAN' {
         return formulaeval.FormulaReturnType.BOOLEAN;
       }
-      when 'Number' {
+      when 'NUMBER' {
         return formulaeval.FormulaReturnType.DECIMAL;
       }
-      when 'Date' {
+      when 'DATE' {
         return formulaeval.FormulaReturnType.DATE;
       }
-      when 'DateTime' {
+      when 'DATETIME' {
         return formulaeval.FormulaReturnType.DATETIME;
       }
-      when 'Text' {
+      when 'TEXT' {
         return formulaeval.FormulaReturnType.STRING;
       }
       when else {
-        // 'Auto' and any unrecognized value fall back to full probing.
+        // 'AUTO' and any unrecognized value fall back to full probing.
         return null;
       }
     }
@@ -376,7 +392,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Attempts to evaluate a formula as any supported return type, trying each
-   * in order until one succeeds. Used by resolveScalar where the type is unknown.
+   * in order until one succeeds. Used by resolveFormulaSingleValue where the type is unknown.
    */
   private Object evaluateFormulaAnyType(
     String formulaExpression,
@@ -391,7 +407,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     formulaeval.FormulaReturnType declaredType
   ) {
     // try a preferred return type before probing — first the
-    // admin-declared type (ScalarFormulaReturnType__c), else the type that
+    // admin-declared type (FormulaResultType__c), else the type that
     // already resolved this formula in this transaction. Either way a single
     // call replaces the up-to-eight-call probe for repeated evaluations
     // (bulk/Flow loops). A preferred type can still fail for a particular record
@@ -461,67 +477,61 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   }
 
   /**
-   * Resolves {!FieldName} merge tokens in a message string using the record's
+   * Resolves {!record.FieldName} merge tokens in a message string using the record's
    * field values. Unresolvable tokens are replaced with an empty string.
    * A bad token never causes the result to change status.
    */
   public String resolveMergeFields(String template, SObject record) {
-    if (String.isBlank(template) || record == null) {
-      return template;
-    }
-    String resolved = '';
-    Integer lastEnd = 0;
-    Matcher m = PATTERN_TOKEN.matcher(template);
-    while (m.find()) {
-      String fieldPath = m.group(1);
-      String value = '';
-      try {
-        Object raw = resolveFieldPath(record, fieldPath);
-        if (raw != null) {
-          value = String.valueOf(raw);
-          if (value == 'null')
-            value = '';
-        }
-      } catch (Exception ex) {
-        value = '';
-      }
-      resolved += template.substring(lastEnd, m.start()) + value;
-      lastEnd = m.end();
-    }
-    return resolved + template.substring(lastEnd);
+    return RecordHealthCheckTemplateService.resolveDisplay(
+      template,
+      new RecordHealthCheckMergeContext().withRecord(record).withRun(runContext)
+    );
+  }
+
+  public String resolveMergeFields(
+    String template,
+    SObject record,
+    Record_Health_Check_Rule__mdt rule,
+    RecordHealthCheckResult result,
+    Boolean resultFinalized
+  ) {
+    return RecordHealthCheckTemplateService.resolveDisplay(
+      template,
+      new RecordHealthCheckMergeContext()
+        .withRecord(record)
+        .withRule(rule)
+        .withResult(result, resultFinalized)
+        .withRun(runContext)
+    );
   }
 
   /**
    * Like resolveMergeFields, but URL-encodes each substituted value so a token
-   * such as {!Name} (which may contain spaces or reserved characters) is safe to
+   * such as {!record.Name} (which may contain spaces or reserved characters) is safe to
    * drop into a URL query string. The surrounding URL template is left untouched;
    * only the resolved token values are encoded. Used for remediation deep links.
    */
   public String resolveUrlMergeFields(String template, SObject record) {
-    if (String.isBlank(template) || record == null) {
-      return template;
-    }
-    String resolved = '';
-    Integer lastEnd = 0;
-    Matcher m = PATTERN_TOKEN.matcher(template);
-    while (m.find()) {
-      String fieldPath = m.group(1);
-      String value = '';
-      try {
-        Object raw = resolveFieldPath(record, fieldPath);
-        if (raw != null) {
-          String asString = String.valueOf(raw);
-          if (asString != 'null') {
-            value = EncodingUtil.urlEncode(asString, 'UTF-8');
-          }
-        }
-      } catch (Exception ex) {
-        value = '';
-      }
-      resolved += template.substring(lastEnd, m.start()) + value;
-      lastEnd = m.end();
-    }
-    return resolved + template.substring(lastEnd);
+    return RecordHealthCheckTemplateService.resolveUrl(
+      template,
+      new RecordHealthCheckMergeContext().withRecord(record).withRun(runContext)
+    );
+  }
+
+  public String resolveUrlMergeFields(
+    String template,
+    SObject record,
+    Record_Health_Check_Rule__mdt rule,
+    RecordHealthCheckResult result
+  ) {
+    return RecordHealthCheckTemplateService.resolveUrl(
+      template,
+      new RecordHealthCheckMergeContext()
+        .withRecord(record)
+        .withRule(rule)
+        .withResult(result, true)
+        .withRun(runContext)
+    );
   }
 
   @TestVisible
@@ -542,12 +552,12 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   @TestVisible
   private String safeCannotEvaluateMessage(Record_Health_Check_Rule__mdt rule) {
-    return String.isNotBlank(rule.MessageWhenCannotRun__c)
-      ? rule.MessageWhenCannotRun__c
+    return String.isNotBlank(rule.UnableToEvaluateMessage__c)
+      ? rule.UnableToEvaluateMessage__c
       : 'This check could not be evaluated. Contact your administrator.';
   }
 
-  // ─── Exception for scalar resolution failures ─────────────────────────────
+  // ─── Exception for single-value resolution failures ─────────────────────────────
 
   public class FormulaEvaluationException extends Exception {
     public String reasonCode;

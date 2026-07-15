@@ -5,7 +5,7 @@
 
 /**
  * Shared rule-validation decision tree for Record Health Check.
- * The per-type query/dual/applicability/formula/apex/MaxRows/null-empty validation
+ * The per-type query/compare-queries/applicability/formula/apex/MaxRows/empty-value validation
  * lives here once. Producers emit neutral Findings in a single canonical order
  * (= ConfigService's first-fail order). Each caller maps FindingCode to its own
  * output contract
@@ -27,13 +27,13 @@
 public with sharing class RecordHealthCheckRuleValidator {
   // Valid-value sets are owned by RecordHealthCheckConstants so this validator and its two
   // callers can never drift. Local aliases keep the producers below readable.
-  private static final Set<String> VALID_COMPARATORS = RecordHealthCheckConstants.VALID_COMPARATORS;
-  private static final Set<String> DUAL_QUERY_COMPARATORS = RecordHealthCheckConstants.DUAL_QUERY_COMPARATORS;
+  private static final Set<String> VALID_OPERATORS = RecordHealthCheckConstants.VALID_OPERATORS;
+  private static final Set<String> DUAL_QUERY_OPERATORS = RecordHealthCheckConstants.DUAL_QUERY_OPERATORS;
   private static final Set<String> VALID_COMPARISON_VALUE_SOURCES = RecordHealthCheckConstants.VALID_COMPARISON_VALUE_SOURCES;
   private static final Set<String> VALID_MULTIPLE_RECORDS_HANDLING = RecordHealthCheckConstants.VALID_MULTIPLE_RECORDS_HANDLING;
   private static final Set<String> VALID_NULL_BEHAVIORS = RecordHealthCheckConstants.VALID_NULL_BEHAVIORS;
   private static final Set<String> VALID_EMPTY_BEHAVIORS = RecordHealthCheckConstants.VALID_EMPTY_BEHAVIORS;
-  private static final Set<String> VALID_APPLICABILITY_COMPARATORS = RecordHealthCheckConstants.VALID_APPLICABILITY_COMPARATORS;
+  private static final Set<String> VALID_APPLICABILITY_OPERATORS = RecordHealthCheckConstants.VALID_APPLICABILITY_OPERATORS;
   private static final Integer FRAMEWORK_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
 
   // ─── Finding model ────────────────────────────────────────────────────────
@@ -47,9 +47,9 @@ public with sharing class RecordHealthCheckRuleValidator {
     // Applicability gate
     APPLICABILITY_FORMULA_MISSING,
     APPLICABILITY_SOQL_MISSING,
-    APPLICABILITY_SOQL_NOT_SCALAR,
-    APPLICABILITY_COMPARATOR_MISSING,
-    APPLICABILITY_COMPARATOR_INVALID,
+    APPLICABILITY_SOQL_NOT_SINGLE_VALUE,
+    APPLICABILITY_OPERATOR_MISSING,
+    APPLICABILITY_OPERATOR_INVALID,
     APPLICABILITY_THRESHOLD_MISSING,
     // Formula
     FORMULA_MISSING,
@@ -59,9 +59,9 @@ public with sharing class RecordHealthCheckRuleValidator {
     LIST_COMPARE_FIELD_MISSING,
     PRIMARY_QUERY_MISSING,
     PRIMARY_QUERY_FIELD_MISSING,
-    DUAL_COMPARATOR_ON_SINGLE,
-    COMPARATOR_INVALID,
-    COMPARATOR_MISSING,
+    DUAL_OPERATOR_ON_SINGLE,
+    OPERATOR_INVALID,
+    OPERATOR_MISSING,
     MULTI_ROWS_MISSING,
     MULTI_ROWS_INVALID,
     COMPARE_AS_LISTS_ON_SINGLE,
@@ -71,17 +71,17 @@ public with sharing class RecordHealthCheckRuleValidator {
     RECORD_FORMULA_MISSING,
     ANOTHER_QUERY_MISSING,
     ANOTHER_QUERY_FIELD_MISSING,
-    // CompareTwoQueries (dual)
+    // Compare two queries
     DUAL_PRIMARY_QUERY_MISSING,
     DUAL_COMPARE_QUERY_MISSING,
     DUAL_PRIMARY_FIELD_MISSING,
     DUAL_COMPARE_FIELD_MISSING,
-    DUAL_COMPARATOR_MISSING,
-    DUAL_COMPARATOR_INVALID,
+    DUAL_OPERATOR_MISSING,
+    DUAL_OPERATOR_INVALID,
     DUAL_MULTI_ROWS_MISSING,
     DUAL_MULTI_ROWS_INVALID,
-    DUAL_LIST_MODE_NEEDS_LIST_COMPARATOR,
-    DUAL_ONE_RESULT_NO_LIST_COMPARATOR,
+    DUAL_LIST_MODE_NEEDS_LIST_OPERATOR,
+    DUAL_ONE_RESULT_NO_LIST_OPERATOR,
     // Apex
     APEX_CLASS_MISSING,
     APEX_CLASS_INVALID,
@@ -113,14 +113,14 @@ public with sharing class RecordHealthCheckRuleValidator {
     return new Finding(code, offendingValue);
   }
 
-  // ─── Shared comparator predicates ─────────────────────────────────────────
+  // ─── Shared operator predicates ─────────────────────────────────────────
 
-  public static Boolean isListComparator(String operator) {
-    return operator == 'ListContainsAny' || operator == 'ListDoesNotContainAny';
+  public static Boolean isListOperator(String operator) {
+    return operator == 'LIST_CONTAINS_ANY' || operator == 'LIST_CONTAINS_NONE';
   }
 
-  public static Boolean isUnaryComparator(String operator) {
-    return operator == 'IsBlank' || operator == 'IsNotBlank';
+  public static Boolean isUnaryOperator(String operator) {
+    return operator == 'IS_BLANK' || operator == 'IS_NOT_BLANK';
   }
 
   public static Boolean isMaxRowsInvalid(Decimal maxRows) {
@@ -134,39 +134,44 @@ public with sharing class RecordHealthCheckRuleValidator {
 
   /**
    * Sub-field validation for the Applicability Mode gate
-   * Formula → RunWhenFormula__c required
-   * SOQL → RunWhenCountQuery__c required + scalar COUNT, CountOperator__c a recognized
-   * count comparator, CountThreshold__c present.
+   * Formula → ApplicabilityFormula__c required
+   * SOQL → ApplicabilityCountQuery__c required + single-value COUNT, ApplicabilityCountOperator__c a recognized
+   * count operator, ApplicabilityCountThreshold__c present.
    * Findings are emitted in ConfigService's historical order.
    */
   public static List<Finding> applicabilityFindings(
     Record_Health_Check_Rule__mdt rule
   ) {
     List<Finding> out = new List<Finding>();
-    if (rule.RunThisCheckWhen__c == 'Formula') {
-      if (String.isBlank(rule.RunWhenFormula__c)) {
+    if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
+      if (String.isBlank(rule.ApplicabilityFormula__c)) {
         out.add(f(FindingCode.APPLICABILITY_FORMULA_MISSING));
       }
-    } else if (rule.RunThisCheckWhen__c == 'SOQL') {
-      if (String.isBlank(rule.RunWhenCountQuery__c)) {
+    } else if (rule.ApplicabilityMode__c == 'WHEN_COUNT_QUERY_MATCHES') {
+      if (String.isBlank(rule.ApplicabilityCountQuery__c)) {
         out.add(f(FindingCode.APPLICABILITY_SOQL_MISSING));
       } else if (
-        !RecordHealthCheckSoqlTemplate.isScalarCountQuery(
-          rule.RunWhenCountQuery__c
+        !RecordHealthCheckSoqlTemplate.isSingleCountQuery(
+          rule.ApplicabilityCountQuery__c
         )
       ) {
-        out.add(f(FindingCode.APPLICABILITY_SOQL_NOT_SCALAR));
+        out.add(f(FindingCode.APPLICABILITY_SOQL_NOT_SINGLE_VALUE));
       }
-      if (String.isBlank(rule.CountOperator__c)) {
-        out.add(f(FindingCode.APPLICABILITY_COMPARATOR_MISSING));
+      if (String.isBlank(rule.ApplicabilityCountOperator__c)) {
+        out.add(f(FindingCode.APPLICABILITY_OPERATOR_MISSING));
       } else if (
-        !VALID_APPLICABILITY_COMPARATORS.contains(rule.CountOperator__c)
+        !VALID_APPLICABILITY_OPERATORS.contains(
+          rule.ApplicabilityCountOperator__c
+        )
       ) {
         out.add(
-          f(FindingCode.APPLICABILITY_COMPARATOR_INVALID, rule.CountOperator__c)
+          f(
+            FindingCode.APPLICABILITY_OPERATOR_INVALID,
+            rule.ApplicabilityCountOperator__c
+          )
         );
       }
-      if (rule.CountThreshold__c == null) {
+      if (rule.ApplicabilityCountThreshold__c == null) {
         out.add(f(FindingCode.APPLICABILITY_THRESHOLD_MISSING));
       }
     }
@@ -179,7 +184,7 @@ public with sharing class RecordHealthCheckRuleValidator {
     Record_Health_Check_Rule__mdt rule
   ) {
     List<Finding> out = new List<Finding>();
-    if (String.isBlank(rule.PassFailFormula__c)) {
+    if (String.isBlank(rule.PassConditionFormula__c)) {
       out.add(f(FindingCode.FORMULA_MISSING));
     }
     return out;
@@ -195,7 +200,7 @@ public with sharing class RecordHealthCheckRuleValidator {
       out.add(f(FindingCode.APEX_CLASS_INVALID));
     }
     if (
-      !RecordHealthCheckConfigValidator.isJsonObject(rule.ApexSettingsJson__c)
+      !RecordHealthCheckConfigValidator.isJsonObject(rule.ApexParametersJson__c)
     ) {
       out.add(f(FindingCode.APEX_PARAMS_INVALID));
     }
@@ -213,88 +218,92 @@ public with sharing class RecordHealthCheckRuleValidator {
     Record_Health_Check_Rule__mdt rule
   ) {
     List<Finding> out = new List<Finding>();
-    Boolean isList = isListComparator(rule.Operator__c);
-    Boolean isUnary = isUnaryComparator(rule.Operator__c);
+    Boolean isList = isListOperator(rule.ComparisonOperator__c);
+    Boolean isUnary = isUnaryOperator(rule.ComparisonOperator__c);
 
-    // Primary value source: ValueToTest__c for list comparators, else DataQuery__c.
+    // Primary value source: FindInListFormula__c for list operators, else SourceQuery__c.
     if (isList) {
-      if (String.isBlank(rule.ValueToTest__c)) {
+      if (String.isBlank(rule.FindInListFormula__c)) {
         out.add(f(FindingCode.LIST_VALUE_TO_TEST_MISSING));
       }
-      if (String.isBlank(rule.CompareToQuery__c)) {
+      if (String.isBlank(rule.ComparisonQuery__c)) {
         out.add(f(FindingCode.LIST_COMPARE_QUERY_MISSING));
       }
-      if (String.isBlank(rule.CompareToField__c)) {
+      if (String.isBlank(rule.ComparisonQueryField__c)) {
         out.add(f(FindingCode.LIST_COMPARE_FIELD_MISSING));
       }
     } else {
-      if (String.isBlank(rule.DataQuery__c)) {
+      if (String.isBlank(rule.SourceQuery__c)) {
         out.add(f(FindingCode.PRIMARY_QUERY_MISSING));
       }
       if (
-        String.isNotBlank(rule.DataQuery__c) &&
-        String.isBlank(rule.FieldToRead__c) &&
-        !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.DataQuery__c)
+        String.isNotBlank(rule.SourceQuery__c) &&
+        String.isBlank(rule.SourceQueryField__c) &&
+        !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.SourceQuery__c)
       ) {
         out.add(f(FindingCode.PRIMARY_QUERY_FIELD_MISSING));
       }
     }
 
-    // Comparator — at most one finding (mutually exclusive by value).
-    if (String.isBlank(rule.Operator__c)) {
-      out.add(f(FindingCode.COMPARATOR_MISSING));
-    } else if (DUAL_QUERY_COMPARATORS.contains(rule.Operator__c)) {
-      out.add(f(FindingCode.DUAL_COMPARATOR_ON_SINGLE, rule.Operator__c));
-    } else if (!VALID_COMPARATORS.contains(rule.Operator__c)) {
-      out.add(f(FindingCode.COMPARATOR_INVALID, rule.Operator__c));
+    // Operator — at most one finding (mutually exclusive by value).
+    if (String.isBlank(rule.ComparisonOperator__c)) {
+      out.add(f(FindingCode.OPERATOR_MISSING));
+    } else if (DUAL_QUERY_OPERATORS.contains(rule.ComparisonOperator__c)) {
+      out.add(
+        f(FindingCode.DUAL_OPERATOR_ON_SINGLE, rule.ComparisonOperator__c)
+      );
+    } else if (!VALID_OPERATORS.contains(rule.ComparisonOperator__c)) {
+      out.add(f(FindingCode.OPERATOR_INVALID, rule.ComparisonOperator__c));
     }
 
     // Query result interpretation — at most one finding.
-    if (String.isBlank(rule.WhenMultipleRows__c)) {
+    if (String.isBlank(rule.QueryResultHandling__c)) {
       out.add(f(FindingCode.MULTI_ROWS_MISSING));
     } else if (
-      !VALID_MULTIPLE_RECORDS_HANDLING.contains(rule.WhenMultipleRows__c)
+      !VALID_MULTIPLE_RECORDS_HANDLING.contains(rule.QueryResultHandling__c)
     ) {
-      out.add(f(FindingCode.MULTI_ROWS_INVALID, rule.WhenMultipleRows__c));
-    } else if (rule.WhenMultipleRows__c == 'CompareAsLists' && !isList) {
+      out.add(f(FindingCode.MULTI_ROWS_INVALID, rule.QueryResultHandling__c));
+    } else if (rule.QueryResultHandling__c == 'COMPARE_AS_LISTS' && !isList) {
       out.add(f(FindingCode.COMPARE_AS_LISTS_ON_SINGLE));
     }
 
-    // Expected value source — required unless IsBlank/IsNotBlank or a list comparator.
+    // Expected value source — required unless IsBlank/IsNotBlank or a list operator.
     Boolean needsSource = !isUnary && !isList;
-    if (needsSource && String.isBlank(rule.CompareAgainst__c)) {
+    if (needsSource && String.isBlank(rule.ExpectedValueSource__c)) {
       out.add(f(FindingCode.COMPARE_AGAINST_MISSING));
     } else if (
       needsSource &&
-      !VALID_COMPARISON_VALUE_SOURCES.contains(rule.CompareAgainst__c)
+      !VALID_COMPARISON_VALUE_SOURCES.contains(rule.ExpectedValueSource__c)
     ) {
-      out.add(f(FindingCode.COMPARE_AGAINST_INVALID, rule.CompareAgainst__c));
+      out.add(
+        f(FindingCode.COMPARE_AGAINST_INVALID, rule.ExpectedValueSource__c)
+      );
     }
 
     // Source-specific required fields.
     if (
-      rule.CompareAgainst__c == 'FixedValue' &&
-      String.isBlank(rule.FixedValue__c)
+      rule.ExpectedValueSource__c == 'FIXED_VALUE' &&
+      String.isBlank(rule.ExpectedFixedValue__c)
     ) {
       out.add(f(FindingCode.FIXED_VALUE_MISSING));
     }
     if (
-      rule.CompareAgainst__c == 'RecordFormula' &&
-      String.isBlank(rule.RecordFormulaValue__c)
+      rule.ExpectedValueSource__c == 'RECORD_FORMULA' &&
+      String.isBlank(rule.ExpectedRecordFormula__c)
     ) {
       out.add(f(FindingCode.RECORD_FORMULA_MISSING));
     }
     if (
-      rule.CompareAgainst__c == 'AnotherQuery' &&
-      String.isBlank(rule.CompareToQuery__c)
+      rule.ExpectedValueSource__c == 'COMPARISON_QUERY' &&
+      String.isBlank(rule.ComparisonQuery__c)
     ) {
       out.add(f(FindingCode.ANOTHER_QUERY_MISSING));
     }
     if (
-      rule.CompareAgainst__c == 'AnotherQuery' &&
-      String.isNotBlank(rule.CompareToQuery__c) &&
-      String.isBlank(rule.CompareToField__c) &&
-      !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.CompareToQuery__c)
+      rule.ExpectedValueSource__c == 'COMPARISON_QUERY' &&
+      String.isNotBlank(rule.ComparisonQuery__c) &&
+      String.isBlank(rule.ComparisonQueryField__c) &&
+      !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.ComparisonQuery__c)
     ) {
       out.add(f(FindingCode.ANOTHER_QUERY_FIELD_MISSING));
     }
@@ -306,63 +315,65 @@ public with sharing class RecordHealthCheckRuleValidator {
    * CompareTwoQueries checks, in ConfigService's first-fail order. MaxRows and null/empty are
    * composed by callers, not included here.
    */
-  public static List<Finding> dualFindings(Record_Health_Check_Rule__mdt rule) {
+  public static List<Finding> compareQueriesFindings(
+    Record_Health_Check_Rule__mdt rule
+  ) {
     List<Finding> out = new List<Finding>();
 
-    if (String.isBlank(rule.DataQuery__c)) {
+    if (String.isBlank(rule.SourceQuery__c)) {
       out.add(f(FindingCode.DUAL_PRIMARY_QUERY_MISSING));
     }
-    if (String.isBlank(rule.CompareToQuery__c)) {
+    if (String.isBlank(rule.ComparisonQuery__c)) {
       out.add(f(FindingCode.DUAL_COMPARE_QUERY_MISSING));
     }
     if (
-      String.isNotBlank(rule.DataQuery__c) &&
-      String.isBlank(rule.FieldToRead__c) &&
-      !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.DataQuery__c)
+      String.isNotBlank(rule.SourceQuery__c) &&
+      String.isBlank(rule.SourceQueryField__c) &&
+      !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.SourceQuery__c)
     ) {
       out.add(f(FindingCode.DUAL_PRIMARY_FIELD_MISSING));
     }
     if (
-      String.isNotBlank(rule.CompareToQuery__c) &&
-      String.isBlank(rule.CompareToField__c) &&
-      !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.CompareToQuery__c)
+      String.isNotBlank(rule.ComparisonQuery__c) &&
+      String.isBlank(rule.ComparisonQueryField__c) &&
+      !RecordHealthCheckSoqlTemplate.isAggregateQuery(rule.ComparisonQuery__c)
     ) {
       out.add(f(FindingCode.DUAL_COMPARE_FIELD_MISSING));
     }
 
-    // Comparator — at most one finding.
-    if (String.isBlank(rule.Operator__c)) {
-      out.add(f(FindingCode.DUAL_COMPARATOR_MISSING));
-    } else if (!VALID_COMPARATORS.contains(rule.Operator__c)) {
-      out.add(f(FindingCode.DUAL_COMPARATOR_INVALID, rule.Operator__c));
+    // Operator — at most one finding.
+    if (String.isBlank(rule.ComparisonOperator__c)) {
+      out.add(f(FindingCode.DUAL_OPERATOR_MISSING));
+    } else if (!VALID_OPERATORS.contains(rule.ComparisonOperator__c)) {
+      out.add(f(FindingCode.DUAL_OPERATOR_INVALID, rule.ComparisonOperator__c));
     }
 
     // Query result interpretation — only OneResult / CompareAsLists are valid.
-    if (String.isBlank(rule.WhenMultipleRows__c)) {
+    if (String.isBlank(rule.QueryResultHandling__c)) {
       out.add(f(FindingCode.DUAL_MULTI_ROWS_MISSING));
     } else if (
-      rule.WhenMultipleRows__c != 'OneResult' &&
-      rule.WhenMultipleRows__c != 'CompareAsLists'
+      rule.QueryResultHandling__c != 'ONE_RESULT' &&
+      rule.QueryResultHandling__c != 'COMPARE_AS_LISTS'
     ) {
       out.add(f(FindingCode.DUAL_MULTI_ROWS_INVALID));
     }
 
-    // Tier 9 (CompareAsLists) needs a list comparator; Tier 7 (OneResult) must not use one.
+    // Tier 9 (CompareAsLists) needs a list operator; Tier 7 (OneResult) must not use one.
     // The isNotBlank(Operator) guards mirror MetadataValidator so a blank operator yields only
-    // DUAL_COMPARATOR_MISSING; they are no-ops for the first-fail caller.
+    // DUAL_OPERATOR_MISSING; they are no-ops for the first-fail caller.
     if (
-      rule.WhenMultipleRows__c == 'CompareAsLists' &&
-      String.isNotBlank(rule.Operator__c) &&
-      !DUAL_QUERY_COMPARATORS.contains(rule.Operator__c)
+      rule.QueryResultHandling__c == 'COMPARE_AS_LISTS' &&
+      String.isNotBlank(rule.ComparisonOperator__c) &&
+      !DUAL_QUERY_OPERATORS.contains(rule.ComparisonOperator__c)
     ) {
-      out.add(f(FindingCode.DUAL_LIST_MODE_NEEDS_LIST_COMPARATOR));
+      out.add(f(FindingCode.DUAL_LIST_MODE_NEEDS_LIST_OPERATOR));
     }
     if (
-      rule.WhenMultipleRows__c == 'OneResult' &&
-      String.isNotBlank(rule.Operator__c) &&
-      DUAL_QUERY_COMPARATORS.contains(rule.Operator__c)
+      rule.QueryResultHandling__c == 'ONE_RESULT' &&
+      String.isNotBlank(rule.ComparisonOperator__c) &&
+      DUAL_QUERY_OPERATORS.contains(rule.ComparisonOperator__c)
     ) {
-      out.add(f(FindingCode.DUAL_ONE_RESULT_NO_LIST_COMPARATOR));
+      out.add(f(FindingCode.DUAL_ONE_RESULT_NO_LIST_OPERATOR));
     }
 
     return out;
@@ -374,7 +385,7 @@ public with sharing class RecordHealthCheckRuleValidator {
     Record_Health_Check_Rule__mdt rule
   ) {
     List<Finding> out = new List<Finding>();
-    if (isMaxRowsInvalid(rule.MaxRows__c)) {
+    if (isMaxRowsInvalid(rule.MaxQueryRows__c)) {
       out.add(f(FindingCode.MAX_ROWS_INVALID));
     }
     return out;
@@ -385,16 +396,16 @@ public with sharing class RecordHealthCheckRuleValidator {
   ) {
     List<Finding> out = new List<Finding>();
     if (
-      String.isNotBlank(rule.WhenValueIsEmpty__c) &&
-      !VALID_NULL_BEHAVIORS.contains(rule.WhenValueIsEmpty__c)
+      String.isNotBlank(rule.EmptyValueHandling__c) &&
+      !VALID_NULL_BEHAVIORS.contains(rule.EmptyValueHandling__c)
     ) {
-      out.add(f(FindingCode.NULL_BEHAVIOR_INVALID, rule.WhenValueIsEmpty__c));
+      out.add(f(FindingCode.NULL_BEHAVIOR_INVALID, rule.EmptyValueHandling__c));
     }
     if (
-      String.isNotBlank(rule.WhenZeroRows__c) &&
-      !VALID_EMPTY_BEHAVIORS.contains(rule.WhenZeroRows__c)
+      String.isNotBlank(rule.NoRowsResult__c) &&
+      !VALID_EMPTY_BEHAVIORS.contains(rule.NoRowsResult__c)
     ) {
-      out.add(f(FindingCode.EMPTY_BEHAVIOR_INVALID, rule.WhenZeroRows__c));
+      out.add(f(FindingCode.EMPTY_BEHAVIOR_INVALID, rule.NoRowsResult__c));
     }
     return out;
   }

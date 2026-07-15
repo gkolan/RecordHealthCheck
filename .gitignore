@@ -8,6 +8,7 @@
 .localdevserver/
 deploy-options.json
 .claude/
+/CLAUDE.md
 .playwright-mcp/
 
 # LWC VSCode autocomplete
@@ -22,6 +23,14 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Temporary reports and test output (curated release evidence belongs in releases/*/audits or reports)
+reports/tmp/
+releases/**/reports/tmp/
+test-results/
+playwright-report/
+*.junit.xml
+*.tap
 
 # Dependency directories
 node_modules/
@@ -43,9 +52,12 @@ $RECYCLE.BIN/
 
 # Local environment variables
 .env
+.env.*
+!.env.example
 
 # Internal / local-only files — kept on your machine, never published.
 # Remove an entry below if you decide you DO want it in the public repo.
+/releases/
 .backups/
 tasks/
 slides_build/
@@ -67,6 +79,7 @@ docs/audits/
 
 # Point-in-time review write-ups; they cite local-only docs/spec/ and bugs/ notes
 docs/review/
+docs/reviews/
 
 # Maintainer execution plans and deferred-feature archives (local only)
 docs/enhancements/
@@ -93,7 +106,16 @@ docs/_templates/
 
 # Maintainer doc-generation / authoring tooling (one-off Python scripts).
 # Local helper scripts — kept local, not published with the project.
-scripts/
+scripts/*
+# Release-gate scripts used by package.json and CI are public and tracked.
+!scripts/release/
+!scripts/release/**
+# Exception: the metadata validator is a release-gate dependency referenced by
+# .github/workflows/salesforce-validate.yml and the V2 upgrade docs, so it must
+# be tracked. Everything else under scripts/ stays local.
+!scripts/apex/
+scripts/apex/*
+!scripts/apex/validateMetadata.apex
 
 # Internal planning / roadmap docs — kept local, not published with the project.
 docs/spec/
@@ -110,3 +132,16 @@ bugs/
 **/__pycache__/
 **/.venv/
 **/venv/
+
+# Local recycle bin — superseded material kept on disk but never tracked
+recycle-bin/
+
+# Examples library lives in its own repository (RecordHealthCheck-Examples).
+# A local checkout may sit here for convenience but must never be tracked in core (§3.1 boundary).
+/RecordHealthCheck-Examples/
+
+# Legacy GitHub Wiki source; public guidance is maintained under docs/v2/.
+/wiki/
+
+# Personal, portable scratch-org setup kit — never tracked; meant to be movable out of the repo.
+/scratch-org-setup/

@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>PassConditionFormula__c</fullName>
+    <label>Pass Condition</label>
+    <description
+  >A Salesforce formula that returns true (pass) or false (fail), evaluated against the current record. Required when "Evaluation Type" is "Verify with a formula"; not used by any other Evaluation Type. Formula syntax only. Example: NOT(ISBLANK(BillingCity)). For list-membership checks use "Value to find in the list (formula)" instead.</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>5</visibleLines>
+        <inlineHelpText
+  >Required for "Verify with a formula". Return true (pass) or false (fail), e.g. NOT(ISBLANK(BillingCity)). Not used for query or Apex checks.</inlineHelpText>
+    <required>false</required>
+</CustomField>

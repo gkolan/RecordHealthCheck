@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ComparisonQueryField__c</fullName>
+    <label>Comparison Query Field</label>
+    <description
+  >The API name of the field to read from the "Comparison Query" result. Needed when that query returns field values rather than a COUNT() aggregate. Leave blank for COUNT()/aggregate queries.</description>
+    <type>Text</type>
+    <length>255</length>
+        <inlineHelpText
+  >Which column from the "Comparison Query" to read, e.g. Country_Code__c. Leave blank for COUNT()/aggregate queries.</inlineHelpText>
+    <required>false</required>
+    <unique>false</unique>
+    <externalId>false</externalId>
+</CustomField>

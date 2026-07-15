@@ -4,7 +4,7 @@
  */
 
 /**
- * Single logging facade for the Record Health Check framework.
+ * Single logging API for the Record Health Check framework.
  * EVERY framework log line flows through this class. The engine, controller, and
  * evaluators never call System.debug directly — they call this logger — so the
  * destination ("sink") can be changed in exactly one place. To adopt Nebula
@@ -33,15 +33,43 @@ public with sharing class RecordHealthCheckLogger {
 
   private static final String PREFIX = '[RHC]';
 
+  // ─── Durable ERROR sink (platform event) ────────────────────────────────────
+  // System.debug is ephemeral and usually off in production, so a check that
+  // errors would otherwise leave no trace. ERROR lines are ALSO buffered as
+  // Record_Health_Check_Log__e events and published once at the transaction
+  // boundary via flush() — the counterpart to Nebula's saveLog(). Core only
+  // emits the versioned event; the extension package owns persistence, retention,
+  // and reporting. Buffering (not per-line publish) keeps a 200-record bulk run
+  // that errors on every record to one chunked publish, well under DML limits.
+  @TestVisible
+  private static final String LOG_CONTRACT_VERSION = '1.0';
+  private static final Integer PUBLISH_CHUNK_SIZE = 100;
+  private static final Integer MESSAGE_MAX = 4000;
+  private static final Integer STACK_MAX = 32000;
+
+  // Default ON: durable error capture must not require opt-in (opt-out only).
+  @TestVisible
+  private static Boolean publishErrorEvents = true;
+  // Loop guard: a subscriber processing a log event sets this so its own ERROR
+  // logging cannot republish onto the same bus.
+  @TestVisible
+  private static Boolean inSubscriberContext = false;
+  // Transaction-scoped buffer of ERROR events awaiting flush().
+  private static final List<Record_Health_Check_Log__e> PENDING_EVENTS = new List<Record_Health_Check_Log__e>();
+
   // Correlation keys carried for the life of one evaluate()/load call so that
   // individual log statements stay terse.
   private final String runId;
-  private final String configName;
+  private final String checkSetDeveloperName;
   private final String recordId;
 
-  public RecordHealthCheckLogger(String runId, String configName, Id recordId) {
+  public RecordHealthCheckLogger(
+    String runId,
+    String checkSetDeveloperName,
+    Id recordId
+  ) {
     this.runId = sanitize(String.isBlank(runId) ? 'no-run-id' : runId, 120);
-    this.configName = sanitize(configName, 120);
+    this.checkSetDeveloperName = sanitize(checkSetDeveloperName, 120);
     this.recordId = recordId == null ? null : String.valueOf(recordId);
   }
 
@@ -77,14 +105,14 @@ public with sharing class RecordHealthCheckLogger {
   public static void log(
     Level lvl,
     String runId,
-    String configName,
+    String checkSetDeveloperName,
     Id recordId,
     String checkName,
     String event,
     Map<String, Object> fields,
     Exception ex
   ) {
-    new RecordHealthCheckLogger(runId, configName, recordId)
+    new RecordHealthCheckLogger(runId, checkSetDeveloperName, recordId)
       .emit(lvl, checkName, event, fields, ex);
   }
 
@@ -118,11 +146,159 @@ public with sharing class RecordHealthCheckLogger {
         System.debug(LoggingLevel.FINE, line);
       }
     }
+
+    captureErrorEvent(lvl, checkName, event, fields, ex);
+  }
+
+  // ─── Durable ERROR sink ──────────────────────────────────────────────────────
+
+  /**
+   * Buffers an ERROR line as a Record_Health_Check_Log__e event. No-op for
+   * non-ERROR levels, when the feature is switched off, or inside a subscriber
+   * context (loop guard). RecordId__c and the check context are included so a
+   * failing evaluator is reproducible; field values (actual/expected) are
+   * deliberately NOT carried — those stay in Debug Mode's admin detail.
+   */
+  private void captureErrorEvent(
+    Level lvl,
+    String checkName,
+    String event,
+    Map<String, Object> fields,
+    Exception ex
+  ) {
+    if (lvl != Level.ERROR || !publishErrorEvents || inSubscriberContext) {
+      return;
+    }
+    PENDING_EVENTS.add(
+      new Record_Health_Check_Log__e(
+        ContractVersion__c = LOG_CONTRACT_VERSION,
+        EventId__c = newEventId(event),
+        RunId__c = runId,
+        OccurredAt__c = System.now(),
+        CoreVersion__c = RecordHealthCheckLifecyclePublisher.CORE_VERSION,
+        Level__c = lvl.name(),
+        Code__c = sanitize(event, 120),
+        CheckSetDeveloperName__c = checkSetDeveloperName,
+        RuleDeveloperName__c = sanitize(checkName, 120),
+        RecordId__c = recordId,
+        ExceptionType__c = ex == null ? null : sanitize(ex.getTypeName(), 120),
+        Message__c = buildMessage(fields, ex),
+        StackTrace__c = ex == null
+          ? null
+          : sanitize(ex.getStackTraceString(), STACK_MAX),
+        UserId__c = UserInfo.getUserId()
+      )
+    );
+  }
+
+  /** Prefers the exception message; otherwise a compact, sorted field summary. */
+  private String buildMessage(Map<String, Object> fields, Exception ex) {
+    if (ex != null) {
+      return sanitize(ex.getMessage(), MESSAGE_MAX);
+    }
+    if (fields == null || fields.isEmpty()) {
+      return null;
+    }
+    List<String> keys = new List<String>(fields.keySet());
+    keys.sort();
+    List<String> parts = new List<String>();
+    for (String k : keys) {
+      parts.add(
+        sanitize(k, 80) + '=' + sanitize(String.valueOf(fields.get(k)), 500)
+      );
+    }
+    return sanitize(String.join(parts, ' '), MESSAGE_MAX);
+  }
+
+  private String newEventId(String code) {
+    return runId.left(50) +
+      '-' +
+      sanitize(code, 20) +
+      '-' +
+      String.valueOf(Math.abs(Crypto.getRandomInteger()));
+  }
+
+  /**
+   * Publishes buffered ERROR events (chunked) and clears the buffer. Call once at
+   * every transaction boundary — the controller @AuraEnabled methods, the public
+   * RecordHealthCheck API, and Flow invocables. Best-effort and exception-safe:
+   * a publish failure is logged and swallowed so durable logging can never
+   * disrupt the health check result.
+   */
+  public static void flush() {
+    if (PENDING_EVENTS.isEmpty()) {
+      return;
+    }
+    List<Record_Health_Check_Log__e> toPublish = PENDING_EVENTS.clone();
+    PENDING_EVENTS.clear();
+    try {
+      for (
+        Integer start = 0; start < toPublish.size(); start += PUBLISH_CHUNK_SIZE
+      ) {
+        Integer finish = Math.min(start + PUBLISH_CHUNK_SIZE, toPublish.size());
+        List<Record_Health_Check_Log__e> chunk = new List<Record_Health_Check_Log__e>();
+        for (Integer i = start; i < finish; i++) {
+          chunk.add(toPublish[i]);
+        }
+        inspectPublish(EventBus.publish(chunk));
+      }
+    } catch (Exception ex) {
+      System.debug(
+        LoggingLevel.WARN,
+        PREFIX +
+          ' WARN LOG_EVENT_FLUSH_FAILED | ' +
+          ex.getTypeName() +
+          ': ' +
+          ex.getMessage()
+      );
+    }
+  }
+
+  /**
+   * Subscribers processing Record_Health_Check_Log__e MUST call this first so an
+   * error raised while handling a log event does not republish onto the same bus.
+   */
+  public static void enterSubscriberContext() {
+    inSubscriberContext = true;
+  }
+
+  private static void inspectPublish(List<Database.SaveResult> results) {
+    if (results == null) {
+      return;
+    }
+    for (Database.SaveResult sr : results) {
+      if (sr.isSuccess()) {
+        continue;
+      }
+      System.debug(
+        LoggingLevel.WARN,
+        PREFIX +
+          ' WARN LOG_EVENT_PUBLISH_FAILED | errors=' +
+          sr.getErrors().size()
+      );
+    }
+  }
+
+  @TestVisible
+  private static Integer pendingEventCount() {
+    return PENDING_EVENTS.size();
+  }
+
+  @TestVisible
+  private static List<Record_Health_Check_Log__e> pendingEventsForTest() {
+    return PENDING_EVENTS;
+  }
+
+  @TestVisible
+  private static void resetLogSinkForTest() {
+    PENDING_EVENTS.clear();
+    publishErrorEvents = true;
+    inSubscriberContext = false;
   }
 
   /**
    * Renders one structured, greppable line
-   * [RHC] WARN METADATA_INVALID | runId=.. user=.. config=.. check=.. <fields>
+   * [RHC] WARN METADATA_INVALID | runId=.. user=.. checkSet=.. rule=.. <fields>
    * Fields are sorted by key so output is deterministic regardless of map order.
    */
   private String render(
@@ -135,11 +311,11 @@ public with sharing class RecordHealthCheckLogger {
     List<String> parts = new List<String>();
     parts.add('runId=' + runId);
     parts.add('user=' + UserInfo.getUserId());
-    if (String.isNotBlank(configName)) {
-      parts.add('config=' + configName);
+    if (String.isNotBlank(checkSetDeveloperName)) {
+      parts.add('checkSet=' + checkSetDeveloperName);
     }
     if (String.isNotBlank(checkName)) {
-      parts.add('check=' + sanitize(checkName, 120));
+      parts.add('rule=' + sanitize(checkName, 120));
     }
     if (recordId != null) {
       parts.add('record=' + recordId);

@@ -4,6 +4,12 @@
  */
 
 public class RecordHealthCheckResult {
+  public static final String CONTRACT_VERSION = '1.0';
+
+  @AuraEnabled
+  public String contractVersion = CONTRACT_VERSION;
+  @AuraEnabled
+  public String runId;
   // The expectedValueLabel a Formula check uses when it echoes its raw pass/fail
   // condition instead of a business comparison value. This "Passes when" line is
   // a technical explanation, so the engine gates it (and the raw expectedValue it
@@ -12,39 +18,44 @@ public class RecordHealthCheckResult {
   public static final String PASSES_WHEN_LABEL = 'Passes when';
 
   @AuraEnabled
-  public String checkDeveloperName;
+  public String ruleDeveloperName;
+  // Server-side only (not @AuraEnabled): the record this result was evaluated
+  // against; stamped onto the lifecycle and diagnostics platform events when set.
+  public Id recordId;
   @AuraEnabled
   public String label;
   @AuraEnabled
   public String status; // PASS, FAIL, UNABLE_TO_EVALUATE, SKIPPED, ERROR
   @AuraEnabled
-  public String severity; // Error, Warning, Info — only when status == FAIL
+  public String severity; // CRITICAL, WARNING, INFO — only when status == FAIL
   @AuraEnabled
   public String message;
   @AuraEnabled
   public String actualValue; // what the record/query produced — populated on a determinate PASS/FAIL
   @AuraEnabled
-  public String expectedValue; // the comparator + comparison operand the value was tested against
+  public String expectedValue; // the operator + comparison operand the value was tested against
   @AuraEnabled
   public String expectedValueLabel; // overrides the UI's default "Expected" key when set — e.g. "Passes when" for a Formula check echoing its pass/fail condition rather than a comparison value
   @AuraEnabled
-  public String actualValueDetail; // provenance note for the Found side — gated by Record_Health_Check_View_Details
+  public String actualValueDetail; // value-source note for the Found side — gated by Record_Health_Check_View_Details
   @AuraEnabled
-  public String expectedValueDetail; // provenance note for the Expected side — gated by the same permission
-  // Structured provenance the evaluators populate; the engine renders these into
+  public String expectedValueDetail; // value-source note for the Expected side — gated by the same permission
+  // Structured value source the evaluators populate; the engine renders these into
   // the two *Detail strings above and gates them by permission. Intentionally not
   // @AuraEnabled — the public contract is the rendered strings, not this shape.
-  public RecordHealthCheckProvenance.Detail actualProvenance;
-  public RecordHealthCheckProvenance.Detail expectedProvenance;
+  public RecordHealthCheckValueSource.Detail actualValueSource;
+  public RecordHealthCheckValueSource.Detail expectedValueSource;
   public String detailMessage; // intentionally not @AuraEnabled — raw exception text, internal only
   @AuraEnabled
-  public String adminDetailMessage; // populated from detailMessage when DebugMode__c is on
+  public String adminDetailMessage; // populated from detailMessage when ShowDiagnostics__c is on
   @AuraEnabled
-  public String actionLabel; // label for the read-only remediation link — from PrimaryActionLabel__c, shown only on FAIL
+  public RecordHealthCheckAdminDetail adminDetail; // null unless authorized diagnostics is active
   @AuraEnabled
-  public String actionUrl; // resolved + sanitized remediation deep link — from PrimaryActionUrl__c with {!FieldName} tokens bound
+  public String actionLabel; // label for the read-only remediation link — from ActionLabel__c, shown only on FAIL
   @AuraEnabled
-  public String fixInstructions; // optional guidance shown beside the remediation link — from FixInstructions__c
+  public String actionUrl; // resolved + sanitized remediation deep link — from ActionUrl__c with {!record.FieldName} tokens bound
+  @AuraEnabled
+  public String fixInstructions; // optional guidance shown beside the remediation link — from FixMessage__c
   @AuraEnabled
   public String reasonCode;
   @AuraEnabled

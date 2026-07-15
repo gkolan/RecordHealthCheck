@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>QueryResultHandling__c</fullName>
+    <label>How To Read Query Results</label>
+    <description
+  >Tells the engine how to read the "Source Query" result. Required for "Verify with a query" and "Compare two queries". "One row or aggregate" expects a single row or an aggregate such as COUNT() or SUM(). "Any record passes" passes if at least one returned record passes. "Every record passes" passes only if all returned records pass. "Compare as lists" treats results as lists - required for every list operator (both the "List contains any/none" membership checks and the "Lists overlap / contain all / match exactly" comparisons). Defaults to "One row or aggregate".</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>ONE_RESULT</fullName><default
+        >true</default></value><value><fullName
+        >ANY_ROW_PASSES</fullName><default>false</default></value><value
+      ><fullName>ALL_ROWS_PASS</fullName><default>false</default></value><value
+      ><fullName>COMPARE_AS_LISTS</fullName><default
+        >false</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >How to read the query result. "One row or aggregate" = one row, COUNT(), or SUM(). "Any record passes" = one passing record is enough. "Every record passes" = all must pass. "Compare as lists" = required for every list operator.</inlineHelpText>
+    <required>false</required>
+</CustomField>

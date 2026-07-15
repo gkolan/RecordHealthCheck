@@ -2,7 +2,7 @@
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>Record Health Check Admin</label>
     <description
-  >Configure Record Health Check, run the validator, and view Advanced-tier result details (Passes when, provenance, and troubleshooting output). For administrators maintaining Check Sets and Rules.</description>
+  >Configure Record Health Check, run the validator, and view Advanced-tier result details (Passes when, diagnostic details, and troubleshooting output). For administrators maintaining Check Sets and Rules.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <customPermissions>
         <enabled>true</enabled>
@@ -28,4 +28,30 @@
         <apexClass>RecordHealthCheckSetPicklist</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckRunRuleFlowAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckRunSetFlowAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Record_Health_Check_Set_Run__e</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Record_Health_Check_Rule_Result__e</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
 </PermissionSet>

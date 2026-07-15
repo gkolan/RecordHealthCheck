@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EmptyValueHandling__c</fullName>
+    <label>If Field Value Is Empty</label>
+    <description
+  >How to handle an empty field value while comparing query results. Applies to "Verify with a query" and "Compare two queries"; ignored for "Verify with a formula", "Verify with Apex", and pure aggregate queries. "Ignore the record" leaves records with an empty value out of the comparison. "Treat as blank" compares the empty value as blank text. "Treat as not matching" makes an empty value always fail the comparison. Defaults to "Treat as not matching", so an empty value does not silently pass a data-quality check.</description>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>SKIP_RECORD</fullName><default
+        >false</default></value><value><fullName>AS_BLANK</fullName><default
+        >false</default></value><value><fullName>AS_NO_MATCH</fullName><default
+        >true</default></value></valueSetDefinition>
+    </valueSet>
+        <inlineHelpText
+  >How empty field values are compared. "Ignore the record" = leave them out. "Treat as blank" = compare as blank text. "Treat as not matching" (default) = an empty value fails the comparison.</inlineHelpText>
+    <required>false</required>
+</CustomField>

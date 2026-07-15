@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ComparisonQuery__c</fullName>
+    <label>Comparison Query</label>
+    <description
+  >The second SOQL query. Used when "Expected Value Comes From" is "Comparison query", for a "Compare two queries" check, or as the list source for the "List contains any" / "List contains none" operators. Supports merge tokens like {!record.Id} and {!record.FieldApiName}. Read a specific column from it with "Comparison Query Field".</description>
+    <type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>5</visibleLines>
+        <inlineHelpText
+  >The second SOQL query - for "Comparison query" comparisons, "Compare two queries" checks, or the list for "List contains any"/"List contains none".</inlineHelpText>
+    <required>false</required>
+</CustomField>

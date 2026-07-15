@@ -30,7 +30,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>RunOrder__c</field>
+                <field>EvaluationOrder__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -47,23 +47,23 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>CheckName__c</field>
+                <field>CheckTitle__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Tooltip__c</field>
+                <field>CheckDescription__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>MessageWhenFailed__c</field>
+                <field>FailureMessage__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>PrimaryActionLabel__c</field>
+                <field>ActionLabel__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>FixInstructions__c</field>
+                <field>FixMessage__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
@@ -73,15 +73,15 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>Severity__c</field>
+                <field>FailureSeverity__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>MessageWhenCannotRun__c</field>
+                <field>UnableToEvaluateMessage__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>PrimaryActionUrl__c</field>
+                <field>ActionUrl__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -94,7 +94,7 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>CheckMethod__c</field>
+                <field>EvaluationType__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns />
@@ -108,21 +108,21 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>PassFailFormula__c</field>
+                <field>PassConditionFormula__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>FoundValueFormula__c</field>
+                <field>DisplayFoundFormula__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>ScalarFormulaReturnType__c</field>
+                <field>FormulaResultType__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>ExpectedValueFormula__c</field>
+                <field>DisplayExpectedFormula__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -135,25 +135,25 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>DataQuery__c</field>
+                <field>SourceQuery__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>FieldToRead__c</field>
+                <field>SourceQueryField__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>ValueToTest__c</field>
+                <field>FindInListFormula__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>CompareToQuery__c</field>
+                <field>ComparisonQuery__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>CompareToField__c</field>
+                <field>ComparisonQueryField__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -166,21 +166,21 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Operator__c</field>
+                <field>ComparisonOperator__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>FixedValue__c</field>
+                <field>ExpectedFixedValue__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>CompareAgainst__c</field>
+                <field>ExpectedValueSource__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>RecordFormulaValue__c</field>
+                <field>ExpectedRecordFormula__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -193,21 +193,21 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>WhenMultipleRows__c</field>
+                <field>QueryResultHandling__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>WhenZeroRows__c</field>
+                <field>NoRowsResult__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>WhenValueIsEmpty__c</field>
+                <field>EmptyValueHandling__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>MaxRows__c</field>
+                <field>MaxQueryRows__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -220,13 +220,13 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>FoundSummaryOverride__c</field>
+                <field>DisplayFoundText__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>ExpectedSummaryOverride__c</field>
+                <field>DisplayExpectedText__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -239,29 +239,29 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>RunThisCheckWhen__c</field>
+                <field>ApplicabilityMode__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>RunWhenFormula__c</field>
+                <field>ApplicabilityFormula__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>CountOperator__c</field>
+                <field>ApplicabilityCountOperator__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>RequiresCheck__c</field>
+                <field>PrerequisiteRule__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>RunWhenCountQuery__c</field>
+                <field>ApplicabilityCountQuery__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>CountThreshold__c</field>
+                <field>ApplicabilityCountThreshold__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
@@ -280,9 +280,21 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>ApexSettingsJson__c</field>
+                <field>ApexParametersJson__c</field>
             </layoutItems>
         </layoutColumns>
+        <style>TwoColumnsLeftToRight</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>8. Lifecycle Events</label>
+        <layoutColumns>
+            <layoutItems><behavior>Edit</behavior><field
+        >PublishResultEvent__c</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns />
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>
 </Layout>

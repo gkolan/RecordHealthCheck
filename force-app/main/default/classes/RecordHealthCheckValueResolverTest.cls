@@ -14,16 +14,16 @@ private class RecordHealthCheckValueResolverTest {
   // ─── Extraction ────────────────────────────────────────────────────────────
 
   @isTest
-  static void scalarFromRowReadsSimpleField() {
+  static void singleValueFromRowReadsSimpleField() {
     Account a = new Account(Name = 'Acme');
     System.assertEquals(
       'Acme',
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Name')
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Name')
     );
   }
 
   @isTest
-  static void scalarFromRowTraversesRelationshipPath() {
+  static void singleValueFromRowTraversesRelationshipPath() {
     // Build a nested SObject in memory via JSON so getSObject('Parent') resolves.
     Account a = (Account) JSON.deserialize(
       '{"attributes":{"type":"Account"},"Name":"Child","Parent":{"attributes":{"type":"Account"},"Name":"ParentCo"}}',
@@ -31,24 +31,24 @@ private class RecordHealthCheckValueResolverTest {
     );
     System.assertEquals(
       'ParentCo',
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Parent.Name')
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Parent.Name')
     );
   }
 
   @isTest
-  static void scalarFromRowNullRelationshipYieldsNull() {
+  static void singleValueFromRowNullRelationshipYieldsNull() {
     Account a = new Account(Name = 'Child');
     System.assertEquals(
       null,
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Parent.Name')
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Parent.Name')
     );
   }
 
   @isTest
-  static void scalarFromRowMissingFieldThrowsInvalidTemplate() {
+  static void singleValueFromRowMissingFieldThrowsInvalidTemplate() {
     Account a = new Account(Name = 'Acme');
     try {
-      RecordHealthCheckValueResolver.scalarFromRow(a, 'Not_A_Field__c');
+      RecordHealthCheckValueResolver.singleValueFromRow(a, 'Not_A_Field__c');
       System.assert(false, 'Expected ResolverException.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
@@ -130,11 +130,11 @@ private class RecordHealthCheckValueResolverTest {
   static void orderedNumeric() {
     System.assertEquals(
       true,
-      RecordHealthCheckValueResolver.applyOrdered('GreaterThan', 5, 3)
+      RecordHealthCheckValueResolver.applyOrdered('GREATER_THAN', 5, 3)
     );
     System.assertEquals(
       true,
-      RecordHealthCheckValueResolver.applyOrdered('LessThanOrEqual', 3, 3)
+      RecordHealthCheckValueResolver.applyOrdered('LESS_THAN_OR_EQUAL', 3, 3)
     );
   }
 
@@ -145,11 +145,15 @@ private class RecordHealthCheckValueResolverTest {
     Date later = Date.newInstance(2026, 6, 19);
     System.assertEquals(
       true,
-      RecordHealthCheckValueResolver.applyOrdered('LessThan', earlier, later)
+      RecordHealthCheckValueResolver.applyOrdered('LESS_THAN', earlier, later)
     );
     System.assertEquals(
       false,
-      RecordHealthCheckValueResolver.applyOrdered('GreaterThan', earlier, later)
+      RecordHealthCheckValueResolver.applyOrdered(
+        'GREATER_THAN',
+        earlier,
+        later
+      )
     );
   }
 
@@ -159,7 +163,7 @@ private class RecordHealthCheckValueResolverTest {
     Datetime later = Datetime.newInstanceGmt(2026, 1, 1, 10, 0, 0);
     System.assertEquals(
       true,
-      RecordHealthCheckValueResolver.applyOrdered('LessThan', earlier, later)
+      RecordHealthCheckValueResolver.applyOrdered('LESS_THAN', earlier, later)
     );
   }
 
@@ -167,7 +171,7 @@ private class RecordHealthCheckValueResolverTest {
   static void orderedIncompatibleTypesThrows() {
     try {
       RecordHealthCheckValueResolver.applyOrdered(
-        'GreaterThan',
+        'GREATER_THAN',
         'not-a-number',
         'also-not'
       );
@@ -236,32 +240,28 @@ private class RecordHealthCheckValueResolverTest {
     assertIncompatibleEquality(earlierDate, 'not-a-date');
 
     for (
-      String comparator : new List<String>{
-        'GreaterThan',
-        'GreaterThanOrEqual',
-        'LessThan',
-        'LessThanOrEqual'
+      String operator : new List<String>{
+        'GREATER_THAN',
+        'GREATER_THAN_OR_EQUAL',
+        'LESS_THAN',
+        'LESS_THAN_OR_EQUAL'
       }
     ) {
-      RecordHealthCheckValueResolver.orderedDecimal(comparator, 2, 1);
-      RecordHealthCheckValueResolver.orderedDateTime(
-        comparator,
-        later,
-        earlier
-      );
+      RecordHealthCheckValueResolver.orderedDecimal(operator, 2, 1);
+      RecordHealthCheckValueResolver.orderedDateTime(operator, later, earlier);
     }
 
-    assertInvalidOrderedComparator('Decimal');
-    assertInvalidOrderedComparator('DateTime');
+    assertInvalidOrderedOperator('Decimal');
+    assertInvalidOrderedOperator('DATETIME');
     System.assertEquals(
       earlierGmt,
       RecordHealthCheckValueResolver.coerceDateTime('2026-01-01T00:00:00Z')
     );
     try {
       RecordHealthCheckValueResolver.applyOrdered('Nope', 1, 1);
-      System.assert(false, 'Expected an invalid ordered comparator.');
+      System.assert(false, 'Expected an invalid ordered operator.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
   }
 
@@ -274,11 +274,11 @@ private class RecordHealthCheckValueResolverTest {
     }
   }
 
-  private static void assertInvalidOrderedComparator(String valueType) {
+  private static void assertInvalidOrderedOperator(String valueType) {
     try {
       if (valueType == 'Decimal') {
         RecordHealthCheckValueResolver.orderedDecimal('Nope', 1, 1);
-      } else if (valueType == 'DateTime') {
+      } else if (valueType == 'DATETIME') {
         RecordHealthCheckValueResolver.orderedDateTime(
           'Nope',
           System.now(),
@@ -291,9 +291,9 @@ private class RecordHealthCheckValueResolverTest {
           System.now()
         );
       }
-      System.assert(false, 'Expected an invalid comparator.');
+      System.assert(false, 'Expected an invalid operator.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_COMPARATOR', ex.reasonCode);
+      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
     }
   }
 

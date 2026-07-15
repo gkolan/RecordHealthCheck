@@ -1,0 +1,13 @@
+.rhc-theme--slds1 {
+  --rhc-theme-card-background: var(--slds-g-color-neutral-base-100, #ffffff);
+  --rhc-theme-card-border: var(--slds-g-color-border-base-2, #c9c7c5);
+  --rhc-theme-card-radius: var(--slds-g-radius-border-2, 0.25rem);
+  --rhc-theme-card-shadow: var(
+    --slds-g-shadow-2,
+    0 2px 6px 0 rgba(0, 0, 0, 0.16)
+  );
+  --rhc-theme-header-background: var(--slds-g-color-neutral-base-99, #fafafa);
+  --rhc-theme-row-hover: var(--slds-g-color-neutral-base-97, #f5f5f5);
+  --rhc-theme-text: var(--slds-g-color-neutral-base-10, #181818);
+  --rhc-theme-text-weak: var(--slds-g-color-neutral-base-40, #706e6b);
+}

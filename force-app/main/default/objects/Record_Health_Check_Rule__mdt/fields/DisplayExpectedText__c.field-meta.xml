@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DisplayExpectedText__c</fullName>
+    <label>Display: Expected Text</label>
+    <description
+  >Optional and display only. Plain text (not a formula) that overrides the auto-generated Expected line on a multi-row ("Every record passes") query check. Supports {!rhcResult.failedRecordCount} and {!rhcResult.totalRecordCount} plus {!record.FieldName} tokens. Example: every contact has an email.</description>
+    <type>Text</type>
+    <length>255</length>
+    <inlineHelpText
+  >Display only. Plain text (not a formula) for the "Expected" line on an "Every record passes" check. Tokens: {!rhcResult.failedRecordCount}, {!rhcResult.totalRecordCount}, {!record.FieldName}.</inlineHelpText>
+    <required>false</required>
+</CustomField>

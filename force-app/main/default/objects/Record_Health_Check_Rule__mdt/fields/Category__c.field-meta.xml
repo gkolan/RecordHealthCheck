@@ -1,77 +1,26 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8' ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Category__c</fullName>
     <label>Category</label>
     <description
-  >Optional grouping label for longer health panels. Leave blank to group this check as Uncategorized.</description>
+  >Optional classification for the business outcome protected by this Rule, such as Completeness, Readiness, Risk, or Compliance. Use it to make metadata easier to find, report on, and reuse. The V2 card does not currently group checks by Category. This choice does not change evaluation, severity, order, or the result shown to users.</description>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value>
-                <fullName>Data Quality</fullName>
-                <default>false</default>
-                <label>Data Quality</label>
-            </value>
-            <value>
-                <fullName>Compliance</fullName>
-                <default>false</default>
-                <label>Compliance</label>
-            </value>
-            <value>
-                <fullName>Sales Readiness</fullName>
-                <default>false</default>
-                <label>Sales Readiness</label>
-            </value>
-            <value>
-                <fullName>Support Readiness</fullName>
-                <default>false</default>
-                <label>Support Readiness</label>
-            </value>
-            <value>
-                <fullName>Renewal Risk</fullName>
-                <default>false</default>
-                <label>Renewal Risk</label>
-            </value>
-            <value>
-                <fullName>AI Readiness</fullName>
-                <default>false</default>
-                <label>AI Readiness</label>
-            </value>
-            <value>
-                <fullName>Integration Readiness</fullName>
-                <default>false</default>
-                <label>Integration Readiness</label>
-            </value>
-            <value>
-                <fullName>Completeness</fullName>
-                <default>false</default>
-                <label>Required Field Completeness</label>
-            </value>
-            <value>
-                <fullName>Activity</fullName>
-                <default>false</default>
-                <label>Recent Activity</label>
-            </value>
-            <value>
-                <fullName>Relationship Coverage</fullName>
-                <default>false</default>
-                <label>Related Record Coverage</label>
-            </value>
-            <value>
-                <fullName>Pipeline</fullName>
-                <default>false</default>
-                <label>Sales Pipeline</label>
-            </value>
-            <value>
-                <fullName>Data Freshness</fullName>
-                <default>false</default>
-                <label>Recent or Current Data</label>
-            </value>
-        </valueSetDefinition>
+            <value><fullName>COMPLETENESS</fullName><default
+        >false</default></value><value><fullName>CONSISTENCY</fullName><default
+        >false</default></value><value><fullName>TIMELINESS</fullName><default
+        >false</default></value><value><fullName>ELIGIBILITY</fullName><default
+        >false</default></value><value><fullName>READINESS</fullName><default
+        >false</default></value><value><fullName>RISK</fullName><default
+        >false</default></value><value><fullName>COMPLIANCE</fullName><default
+        >false</default></value><value><fullName
+        >RELATIONSHIP_COVERAGE</fullName><default
+        >false</default></value></valueSetDefinition>
     </valueSet>
     <inlineHelpText
-  >Optional. Groups related checks for scanning, e.g. Required Field Completeness, Compliance, Sales Pipeline, or AI Readiness. Blank shows as Uncategorized.</inlineHelpText>
+  >Optional business-outcome classification. The V2 card does not currently group checks by this value, and it does not affect the result.</inlineHelpText>
     <required>false</required>
 </CustomField>
