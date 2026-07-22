@@ -27,8 +27,8 @@ data that existed before the Rules were created, without writing to the record.
 <table>
   <tr>
     <td width="48%" valign="top">
-      <p><b>One view of record readiness</b></p>
-      <p>This Account health check brings signals from the Account and its related records into the place where the user is already working.</p>
+      <p><b>A clear answer on the record page</b></p>
+      <p><b>Example: Account 360 Health Check.</b> This Check Set brings signals from the Account's Contacts, Opportunities, Cases, Contracts, and Activities into the place where the user is already working. When a Rule needs attention, a <b>Fix it</b> link can open a report already filtered to this Account.</p>
       <ul>
         <li><b>Scan the outcome.</b> The footer summarizes Passed, Failed, Warning, Info, and Skipped Rules.</li>
         <li><b>Focus attention.</b> Passed Rules stay compact, while failed Rules show their severity and guidance.</li>
@@ -43,7 +43,6 @@ data that existed before the Rules were created, without writing to the record.
     </td>
     <td width="52%" valign="top">
       <img src="assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
-      <p align="center"><sub><b>Example: Account 360 Health Check.</b> One Check Set reads across the Account's Contacts, Opportunities, Cases, Contracts, and Activities. A Fix it link opens a report already filtered to this Account.</sub></p>
     </td>
   </tr>
 </table>
