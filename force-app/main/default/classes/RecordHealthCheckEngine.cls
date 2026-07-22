@@ -607,7 +607,7 @@ public with sharing class RecordHealthCheckEngine {
   // A Formula check with no display formulas echoes its raw pass/fail condition
   // as a "Passes when" line on the Expected side. That is a technical explanation
   // (formula text, field API names), not business evidence, so it is Advanced-tier
-  // only: without Record_Health_Check_View_Details the line is cleared and the
+  // only: without Record_Health_Check_View_Diagnostics the line is cleared and the
   // business user sees the failure message (plus any display-formula Found/Expected
   // chips, which stay ungated). Only the raw-condition echo is gated — an Expected
   // value produced by DisplayExpectedFormula__c carries no expectedValueLabel and is
@@ -627,9 +627,9 @@ public with sharing class RecordHealthCheckEngine {
   }
 
   // Renders the structured value source the evaluators captured into the two
-  // public *Detail strings, then gates them on Record_Health_Check_View_Details.
+  // public *Detail strings, then gates them on Record_Health_Check_View_Diagnostics.
   // Unlike debug detail, value source is not tied to ShowDiagnostics__c. When the user
-  // lacks Record_Health_Check_View_Details the *Detail strings stay null.
+  // lacks Record_Health_Check_View_Diagnostics the *Detail strings stay null.
   @TestVisible
   private RecordHealthCheckResult applyValueSourceDetail(
     RecordHealthCheckResult result

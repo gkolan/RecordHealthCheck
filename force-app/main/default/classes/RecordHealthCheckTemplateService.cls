@@ -1,4 +1,4 @@
-/** Shared parser, validator, discovery, and resolver for V2 merge tokens. */
+/** Shared parser, validator, discovery, and resolver for namespaced merge tokens. */
 public class RecordHealthCheckTemplateService {
   public static final String SURFACE_DISPLAY = 'DISPLAY';
   public static final String SURFACE_URL = 'URL';
@@ -63,7 +63,7 @@ public class RecordHealthCheckTemplateService {
           issue(
             'LEGACY_FLAT_TOKEN',
             token.expression,
-            'Flat merge tokens are not supported in V2. Use {!record.' +
+            'Flat merge tokens are not supported. Use {!record.' +
               token.expression.substring(2, token.expression.length() - 1) +
               '}.'
           )

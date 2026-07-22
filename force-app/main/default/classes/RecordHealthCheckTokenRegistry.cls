@@ -1,4 +1,4 @@
-/** The complete allowlist for product-qualified V2 framework tokens. */
+/** The complete allowlist for product-qualified Framework tokens. */
 public class RecordHealthCheckTokenRegistry {
   public static final Set<String> NAMESPACES = new Set<String>{
     'record',

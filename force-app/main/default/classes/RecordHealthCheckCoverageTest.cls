@@ -1674,8 +1674,8 @@ private class RecordHealthCheckCoverageTest {
     );
   }
 
-  /* Example Apex plug-ins are exercised in RecordHealthCheck-Examples. Core
-   * coverage must not compile against or depend on those optional classes. */
+  /* Example Apex plug-ins are exercised through integration fixtures. Core
+   * coverage must not compile against or depend on those fixture classes. */
   @IsTest
   static void apexDispatcherCoversCorePluginBranches() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();

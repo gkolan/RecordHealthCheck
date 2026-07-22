@@ -109,12 +109,12 @@ private class RecordHealthCheckLoggerTest {
     System.assertEquals(
       'Account_Compliance_Audit',
       evt.CheckSetDeveloperName__c,
-      'Check Set context is V2 contract name.'
+      'Check Set context is the canonical contract name.'
     );
     System.assertEquals(
       'Owner_Is_Active',
       evt.RuleDeveloperName__c,
-      'Rule context is V2 contract name.'
+      'Rule context is the canonical contract name.'
     );
     System.assertEquals(
       'UNHANDLED_EXCEPTION',

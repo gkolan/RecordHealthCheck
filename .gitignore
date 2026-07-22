@@ -24,8 +24,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Temporary reports and test output (curated release evidence belongs in releases/*/audits or reports)
-reports/tmp/
+# Generated and local-only reports
+/reports/
 releases/**/reports/tmp/
 test-results/
 playwright-report/
@@ -57,6 +57,8 @@ $RECYCLE.BIN/
 
 # Internal / local-only files — kept on your machine, never published.
 # Remove an entry below if you decide you DO want it in the public repo.
+/docs/development/
+/spec/
 /releases/
 .backups/
 tasks/
@@ -136,12 +138,14 @@ bugs/
 # Local recycle bin — superseded material kept on disk but never tracked
 recycle-bin/
 
-# Examples library lives in its own repository (RecordHealthCheck-Examples).
-# A local checkout may sit here for convenience but must never be tracked in core (§3.1 boundary).
-/RecordHealthCheck-Examples/
-
-# Legacy GitHub Wiki source; public guidance is maintained under docs/v2/.
+# Legacy GitHub Wiki source; public guidance is maintained under docs/.
 /wiki/
 
 # Personal, portable scratch-org setup kit — never tracked; meant to be movable out of the repo.
 /scratch-org-setup/
+
+# Jekyll/GitHub Pages scaffold for docs/ — kept locally, not maintaining a published static site.
+docs/_config.yml
+docs/index.html
+docs/_layouts/
+docs/assets/css/style.css
