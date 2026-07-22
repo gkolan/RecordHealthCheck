@@ -1,16 +1,14 @@
-# Apex reference
+# Reference: Apex
 
 > [!NOTE]
-> **On this page**
->
-> Write a plugin class: read the record, parse JSON parameters, and return a result.
+> On this page, learn the complete Apex plugin contract for receiving Framework context, reading Salesforce data, validating JSON parameters, and returning a trustworthy `RecordHealthCheckResult`.
 >
 > **Reference**
 >
 > - This page is the source of truth for Apex plugin behavior; guides and examples link here
 >   rather than restating it.
-> - For an end-to-end example, use [Recent Account activity](01-recent-activity.md). To call the engine without
->   writing a plugin, use the [Apex API](../../integration/apex-api/public-api.md) or [Flow actions](../../integration/flow-actions.md).
+> - For an end-to-end example, use [Recent Account activity](../examples/apex/01-recent-activity.md). To call the engine without
+>   writing a plugin, use the [Apex API](../reference/reference-apex-api.md) or [Flow actions](../integration/flow-actions.md).
 
 ## Interface
 
@@ -20,7 +18,7 @@ public interface RecordHealthCheckRule {
 }
 ```
 
-Source: [`RecordHealthCheckRule.cls`](../../../force-app/main/default/classes/RecordHealthCheckRule.cls)
+Source: [`RecordHealthCheckRule.cls`](../../force-app/main/default/classes/RecordHealthCheckRule.cls)
 
 ## How the engine calls your class
 
@@ -188,7 +186,7 @@ On the Rule record in Custom Metadata:
 
 | Setup label | API name | Example |
 | ----------- | -------- | ------- |
-| Apex Parameters (JSON) | [`ApexParametersJson__c`](../../metadata/fields-rule.md#apex-parameters-json-apexparametersjson__c) | `{"daysBack": 90, "minScore": 80}` |
+| Apex Parameters (JSON) | [`ApexParametersJson__c`](../metadata/fields-rule.md#apex-parameters-json-apexparametersjson__c) | `{"daysBack": 90, "minScore": 80}` |
 
 The evaluator parses this **before** calling the plugin and passes it as `context.parameters` (`Map<String, Object>`). When the field is blank, `context.parameters` is an **empty map** (not null).
 
@@ -360,13 +358,13 @@ result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
 );
 ```
 
-See [Design spec 9 comparison display](../../reference/record-health-check-design-spec.md#comparison-display-contract).
+See the [Rule field reference](../metadata/fields-rule.md) for comparison display fields and behavior.
 
 ### Diagnostic detail (optional)
 
 When the check can explain where a value came from, populate `actualValueSource` /
 `expectedValueSource` with `RecordHealthCheckValueSource.Detail`. These never render on the card.
-See [Show Diagnostics](../../guides/show-diagnostics.md#what-you-see-in-the-browser-console) for who
+See [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md#what-you-see-in-the-browser-console) for who
 can see them and when.
 
 ```apex
@@ -417,7 +415,7 @@ Any other string → evaluator converts to `ERROR` / `APEX_EVALUATOR_ERROR`.
 
 ## 7. Canonical basic example
 
-Use the complete [Recent Account activity example](01-recent-activity.md).
+Use the complete [Recent Account activity example](../examples/apex/01-recent-activity.md).
 It is intentionally the one complete example shared by these plugin pages: it shows a
 `public with sharing` implementation, user-mode aggregate SOQL, two independently overridable JSON
 parameters, safe defaults, `PASS`/`FAIL`, and required Found/Expected values. Keeping the complete
@@ -444,10 +442,10 @@ class in one place prevents the short contract and detailed reference from drift
 
 ## Related
 
-- [Recent Account activity](01-recent-activity.md): end-to-end starting point
+- [Recent Account activity](../examples/apex/01-recent-activity.md): end-to-end starting point
 - [Recent activity](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/01-recent-activity.md): multiple objects plus JSON parameters
 - [Opportunity health](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/02-open-opportunity-health.md): a child-record loop with Found/Expected
 - [Strategic readiness](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/03-strategic-readiness.md): a scoring pattern with JSON parameters
 - [Examples pattern library index](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/README.md)
-- [Configure with AI](../../guides/llm-configuration.md#45-class-sketch-apex-only): prompt template for a class sketch
-- [Configuration guide: Apex Rules](../../guides/configuration-guide.md#9-apex-rules): Setup fields
+- [Draft configuration with AI](../guides/draft-configuration-with-ai.md#45-class-sketch-apex-only): prompt template for a class sketch
+- [Configuration guide: Apex Rules](../guides/configure-check-sets-and-rules.md#9-apex-rules): Setup fields

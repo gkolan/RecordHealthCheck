@@ -1,13 +1,11 @@
 # 02 · Open Pipeline Is Ready for Coaching
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to find open Opportunities that are stale, missing a Next Step, and outside the current quarter at the same time.
+> On this page, build an Apex Rule that flags only an open Opportunity carrying all three coaching risks, stale activity, no Next Step, and a Close Date outside the current quarter.
 >
 > **Setup reference**
 >
-> Use the [Apex reference](reference.md) for the complete setup fields and behavior.
+> Use the [Apex reference](../../reference/reference-apex.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -86,7 +84,7 @@ After deploying the class:
 
 Record Health Check parses the JSON and supplies it as `context.parameters`. The class accepts
 `staleDays` from `1` through `3650`; a missing or invalid value uses 30. See
-[Parameter parsing patterns](reference.md#4-apex-parameters-json-apexparametersjson__c)
+[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
 for validation and type-conversion guidance.
 
 ## Step 2: Create the Apex class
@@ -104,7 +102,7 @@ are true.
  */
 
 /**
- * Example RecordHealthCheckRule — flags open Opportunities that are simultaneously
+ * Example RecordHealthCheckRule: flags open Opportunities that are simultaneously
  * stale, missing Next Step, and have a Close Date outside the current quarter. Administrators can change this through
  * {"staleDays": 30}
  */
@@ -224,7 +222,7 @@ Do not return `SKIP` from the class to represent applicability; configure **Appl
 Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](reference.md#6-returning-recordhealthcheckresult).
+[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
 
 
 ## Step 3: Configure the Rule
@@ -290,19 +288,20 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+Count-query applicability and the Apex result become these Framework outcomes and card values:
 
-- **Skip:** Accounts with no open Opportunities are skipped.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | Zero unhealthy open Opportunities passes. |
+| **`FAIL`** | One or more Opportunities has all three warning signs, so the card shows Needs attention with Critical severity. |
+| **`SKIPPED`** | An Account with no open Opportunities is skipped by the applicability count query before the Apex class runs. |
+| **Found** | Found shows the unhealthy Opportunity count, such as `0 unhealthy`. |
+| **Expected** | Expected shows that the unhealthy Opportunity count must be `0`. |
 
-- **Pass:** Zero unhealthy Opportunities passes (Found can show `0 unhealthy` when expanded).
-
-- **Needs attention:** One or more unhealthy Opportunities show Critical with the unhealthy count.
-
-- **Blank values:** `LastActivityDate = null` counts as stale, a blank `NextStep` counts as missing, and a null `CloseDate` counts as outside the quarter.
-
-- **Decision rule:** A row that fails only one or two conditions remains healthy because the test uses AND logic.
-
-- **Direct Apex call:** The applicability count query creates the card's Skip before the class runs. Calling the class directly with no open Opportunities returns Pass.
+`LastActivityDate = null` counts as stale, blank `NextStep` counts as missing, and null `CloseDate`
+counts as outside the quarter. An Opportunity remains healthy when it has only one or two warning
+signs because the class combines all three conditions with AND logic. Calling the class directly
+with no open Opportunities returns `PASS`; only Framework applicability creates `SKIPPED`.
 
 ## Security and access
 
@@ -361,4 +360,4 @@ than skip.
 ## Related
 
 - [← Prev: Recent activity](01-recent-activity.md) · [Next: Strategic readiness score →](03-strategic-readiness.md)
-- [Browse the pattern library](../README.md)
+- [Browse Apex examples](README.md)

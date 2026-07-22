@@ -1,13 +1,11 @@
 # 04 · Stalled Approval Identifies Inactive Approvers
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to find and name inactive users assigned to pending approval steps, including what users see when the approval data is unavailable.
+> On this page, build a defensive Apex Rule that identifies inactive users on pending approval steps, names the people blocking progress, and returns a safe outcome when approval data is unavailable.
 >
 > **Setup reference**
 >
-> Use the [Apex reference](reference.md) for the complete setup fields and behavior.
+> Use the [Apex reference](../../reference/reference-apex.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -93,7 +91,7 @@ After deploying the class:
 Record Health Check parses the JSON and supplies the named settings as `context.parameters`.
 Blank settings use the class defaults, an empty status list uses `Requested`, and `maxNames` accepts
 `1`–`25` with a default of 5. See
-[Parameter parsing patterns](reference.md#4-apex-parameters-json-apexparametersjson__c)
+[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
 for validation and type-conversion guidance.
 
 ## Implementation summary
@@ -120,13 +118,13 @@ This is the complete class deployed by the pack. Comments explain the Record Hea
  */
 
 /**
- * Example RecordHealthCheckRule — flags pending approval steps whose assigned
+ * Example RecordHealthCheckRule: flags pending approval steps whose assigned
  * user is inactive, and names the offending user(s) in the failure message.
  * Built for Salesforce Advanced Approvals (managed package "sbaa"), but every
  * object and field API name is read dynamically and may be overridden through
  * ApexParametersJson__c. Because nothing references the managed package at compile
  * time, this class compiles and deploys in orgs that do NOT have Advanced
- * Approvals installed — it simply returns UNABLE_TO_EVALUATE there.
+ * Approvals installed: it simply returns UNABLE_TO_EVALUATE there.
  * {"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c"
  * "userField":"sbaa__User__c","statusField":"sbaa__Status__c"
  * "pendingStatuses":["Requested"],"maxNames":5}
@@ -220,7 +218,7 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
   }
 
   /**
-   * Standard-object logic — fully unit-testable without the managed package.
+   * Standard-object logic: fully unit-testable without the managed package.
    * Resolves which of the assigned users are inactive and shapes the result.
    */
   @TestVisible
@@ -398,7 +396,7 @@ Do not return `SKIP` from the class to represent applicability; configure **Appl
 Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](reference.md#6-returning-recordhealthcheckresult).
+[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
 
 
 ## Step 3: Configure the Rule
@@ -429,11 +427,13 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-rule.md#action-label-actionlabel__c) | Leave blank until the org's approval-management destination is verified. |
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-rule.md#action-url-actionurl__c) | Leave blank; managed-package pages and URLs can vary by installed version. |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-rule.md#evaluation-order-evaluationorder__c) | `40` |
-| **Active** | [`IsActive__c`](../../metadata/fields-rule.md#active-isactive__c) | Unchecked — activate only after confirming product API names and tests. |
+| **Active** | [`IsActive__c`](../../metadata/fields-rule.md#active-isactive__c) | Unchecked: activate only after confirming product API names and tests. |
 | **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
 
 > [!IMPORTANT]
-> The sample Rule ships **inactive**. Verify `approvalObject`, `targetField`, `userField`, `statusField`, and `pendingStatuses` in **Setup → Object Manager** before activation (**Confirm in your org**).
+> Leave the Rule **inactive** while you configure and test this example. Before activation, verify
+> `approvalObject`, `targetField`, `userField`, `statusField`, and `pendingStatuses` against the
+> installed product's fields in **Setup → Object Manager** (**Confirm in your org**).
 
 The class supplies a failure message that names inactive users, so it replaces **Message When
 Failed** when the Rule fails. Keep the metadata message as a safe general message in case the class
@@ -459,19 +459,23 @@ Use these Check Set values:
 | **Publish Run Event** | Unchecked |
 | **Active** | Checked |
 
-The Check Set is active, but this Rule remains inactive until its Advanced Approvals API names are verified.
+The Check Set can remain active while you build this example, but leave this Rule inactive until
+you verify its Advanced Approvals API names and complete the tests below.
 **Stop after a system error** affects only `ERROR`; it does not stop the Check Set after `FAIL`,
 `SKIPPED`, or `UNABLE_TO_EVALUATE`.
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The Apex class result becomes these Framework outcomes and card values:
 
-- **Pass:** No inactive assignees on pending steps passes.
-
-- **Needs attention:** Inactive assignee(s) show Critical and name those users.
-
-- **Unable to evaluate:** Missing Advanced Approvals or bad API names produce unable to evaluate — not a false pass.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | No inactive assignees are assigned to pending approval steps. |
+| **`FAIL`** | One or more inactive assignees shows Needs attention with Critical severity and names the affected users. |
+| **`SKIPPED`** | This configuration applies to every Account and has no prerequisite, so it does not produce `SKIPPED`. |
+| **Found** | Found names the inactive assignees discovered on pending steps or confirms that none were found. |
+| **Expected** | Expected states that every pending approval assignee must be active. |
+| **`UNABLE_TO_EVALUATE`** | Missing Advanced Approvals metadata or incorrect API names prevents a reliable result instead of creating a false `PASS`. |
 
 ## Security and access
 
@@ -535,4 +539,4 @@ before activation.
 ## Related
 
 - [← Prev: Strategic readiness](03-strategic-readiness.md)
-- [Browse the pattern library](../README.md)
+- [Browse Apex examples](README.md)

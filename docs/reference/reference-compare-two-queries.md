@@ -1,32 +1,30 @@
-# Compare two queries reference
+# Reference: Compare two queries
 
 > [!NOTE]
-> **On this page**
->
-> Compare two independent SOQL results as single values or lists without custom Apex.
+> On this page, learn how the Framework compares two independent SOQL results, counts, single values, or lists, and choose the operator, empty-result behavior, and limits that fit the Rule.
 >
 > **Reference**
 >
 > - This page defines both query shapes, compatible modes, security, limits, and outcomes.
-> - For every field's size, default, help text, and examples, use the [Rule field reference](../../metadata/fields-rule.md).
+> - For every field's size, default, help text, and examples, use the [Rule field reference](../metadata/fields-rule.md).
 
 ## Required Compare two queries settings
 
 | Setup field | API name | Requirement |
 | --- | --- | --- |
-| **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-rule.md#evaluation-type-evaluationtype__c) | **Compare two queries** — `COMPARE_TWO_QUERIES` |
-| **Source Query** | [`SourceQuery__c`](../../metadata/fields-rule.md#source-query-sourcequery__c) | Required left-side SOQL template |
-| **Source Query Field** | [`SourceQueryField__c`](../../metadata/fields-rule.md#source-query-field-sourcequeryfield__c) | Selected field or aggregate alias; blank for bare `COUNT()` |
-| **Comparison Query** | [`ComparisonQuery__c`](../../metadata/fields-rule.md#comparison-query-comparisonquery__c) | Required right-side SOQL template |
-| **Comparison Query Field** | [`ComparisonQueryField__c`](../../metadata/fields-rule.md#comparison-query-field-comparisonqueryfield__c) | Selected field or aggregate alias; blank for bare `COUNT()` |
-| **How To Read Query Results** | [`QueryResultHandling__c`](../../metadata/fields-rule.md#how-to-read-query-results-queryresulthandling__c) | **One row or aggregate** or **Compare as lists** |
-| **Comparison Operator** | [`ComparisonOperator__c`](../../metadata/fields-rule.md#comparison-operator-comparisonoperator__c) | Operator compatible with the selected mode |
+| **Evaluation Type** | [`EvaluationType__c`](../metadata/fields-rule.md#evaluation-type-evaluationtype__c) | **Compare two queries**: `COMPARE_TWO_QUERIES` |
+| **Source Query** | [`SourceQuery__c`](../metadata/fields-rule.md#source-query-sourcequery__c) | Required left-side SOQL template |
+| **Source Query Field** | [`SourceQueryField__c`](../metadata/fields-rule.md#source-query-field-sourcequeryfield__c) | Selected field or aggregate alias; blank for bare `COUNT()` |
+| **Comparison Query** | [`ComparisonQuery__c`](../metadata/fields-rule.md#comparison-query-comparisonquery__c) | Required right-side SOQL template |
+| **Comparison Query Field** | [`ComparisonQueryField__c`](../metadata/fields-rule.md#comparison-query-field-comparisonqueryfield__c) | Selected field or aggregate alias; blank for bare `COUNT()` |
+| **How To Read Query Results** | [`QueryResultHandling__c`](../metadata/fields-rule.md#how-to-read-query-results-queryresulthandling__c) | **One row or aggregate** or **Compare as lists** |
+| **Comparison Operator** | [`ComparisonOperator__c`](../metadata/fields-rule.md#comparison-operator-comparisonoperator__c) | Operator compatible with the selected mode |
 
 Expected Value Comes From is not used: Comparison Query is always the right side.
 
 ## Single-value mode
 
-Choose **One row or aggregate** — `ONE_RESULT` to compare numeric, text, date, Date/Time, or Boolean
+Choose **One row or aggregate**: `ONE_RESULT` to compare numeric, text, date, Date/Time, or Boolean
 values. Common shapes include two bare `COUNT()` queries or two aliased aggregates.
 
 - Leave both query-field settings blank for bare `COUNT()`.
@@ -36,7 +34,7 @@ values. Common shapes include two bare `COUNT()` queries or two aliased aggregat
 
 ## List mode
 
-Choose **Compare as lists** — `COMPARE_AS_LISTS` and one of these operators:
+Choose **Compare as lists**: `COMPARE_AS_LISTS` and one of these operators:
 
 | Setup label | API value | Pass condition |
 | --- | --- | --- |
@@ -51,9 +49,9 @@ column with each Query Field and configure explicit no-row behavior.
 
 | Setup field | API name | Behavior |
 | --- | --- | --- |
-| **If Query Finds No Records** | [`NoRowsResult__c`](../../metadata/fields-rule.md#if-query-finds-no-records-norowsresult__c) | Determines the outcome when a required list/query side has no records |
-| **If Field Value Is Empty** | [`EmptyValueHandling__c`](../../metadata/fields-rule.md#if-field-value-is-empty-emptyvaluehandling__c) | Ignores, preserves as blank, or forces no match for empty selected values |
-| **Max Query Rows (1-2000)** | [`MaxQueryRows__c`](../../metadata/fields-rule.md#max-query-rows-1-2000-maxqueryrows__c) | Applies to returned rows; defaults to `200`, maximum `2000` |
+| **If Query Finds No Records** | [`NoRowsResult__c`](../metadata/fields-rule.md#if-query-finds-no-records-norowsresult__c) | Determines the outcome when a required list/query side has no records |
+| **If Field Value Is Empty** | [`EmptyValueHandling__c`](../metadata/fields-rule.md#if-field-value-is-empty-emptyvaluehandling__c) | Ignores, preserves as blank, or forces no match for empty selected values |
+| **Max Query Rows (1-2000)** | [`MaxQueryRows__c`](../metadata/fields-rule.md#max-query-rows-1-2000-maxqueryrows__c) | Applies to returned rows; defaults to `200`, maximum `2000` |
 
 Both queries execute in the same evaluation transaction. Keep their selected fields and row counts
 as small as the comparison requires.
@@ -85,7 +83,7 @@ operator, or reason requires a new contract version. No Compare-two-queries fiel
 
 ## Related
 
-- [Opportunity Contact Role coverage](01-opportunity-contact-role-coverage.md)
-- [Rule fields](../../metadata/fields-rule.md)
-- [Reason Codes](../../reference/reason-codes.md)
-- [Configuration guide](../../guides/configuration-guide.md)
+- [Opportunity Contact Role coverage](../examples/compare-two-queries/01-opportunity-contact-role-coverage.md)
+- [Rule fields](../metadata/fields-rule.md)
+- [Reason Codes](reference-reason-codes.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

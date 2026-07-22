@@ -1,13 +1,11 @@
 # 02 · Billing Address Is Ready for Review
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to show one billing-address result when City, State, and Country are all required.
+> On this page, create one Formula Rule that requires Billing City, Billing State, and Billing Country together while showing users the Found and Expected address details they need to act.
 >
 > **Setup reference**
 >
-> Use the [Formula reference](reference.md) for the complete setup fields and behavior.
+> Use the [Formula reference](../../reference/reference-formula.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -103,13 +101,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The card turns the Formula result and its display formulas into these user-facing values:
 
-- **Pass:** The Account passes only when Billing City, Billing State, and Billing Country are all populated.
-
-- **Needs attention:** Clearing any field produces the Critical failure.
-
-- **Found and Expected:** Found names the missing parts, and Expected reminds the user that all three must be populated.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | The Account passes only when Billing City, Billing State, and Billing Country are all populated. |
+| **`FAIL`** | Clearing any required field shows Needs attention with Critical severity and the configured failure and fix guidance. |
+| **`SKIPPED`** | This configuration applies to every Account and has no prerequisite, so it does not produce `SKIPPED`. |
+| **Found** | When the user reveals Found and Expected, Found names each missing address part, such as `City missing; Country missing`. |
+| **Expected** | When the user reveals Found and Expected, Expected shows `City, State, and Country populated`. |
 
 ## Security and access
 
@@ -137,4 +137,4 @@ Before activation, run the complete-address and missing-address cases with the P
 ## Related
 
 - [← Prev: Seller research readiness](01-account-research-ready.md) · [Next: Partner regional assignment →](03-partner-regional-assignment.md)
-- [Browse the pattern library](../README.md)
+- [Browse Formula examples](README.md)

@@ -1,16 +1,14 @@
-# Apex API
+# Reference: Apex API
 
 > [!NOTE]
-> **On this page**
->
-> Call a Check Set or one Rule from Apex and branch on the returned status.
+> On this page, run metadata-defined health checks from Apex and handle typed Check Set or Rule responses without duplicating Framework evaluation logic in the caller.
 >
 > **Reference**
 >
 > - This page is the source of truth for the public `RecordHealthCheck` Apex API: methods,
 >   parameters, limits, errors, and response contracts.
-> - To write the plugin class a Rule calls, use the [Apex reference](../../examples/apex/reference.md) or
->   [Recent Account activity](../../examples/apex/01-recent-activity.md).
+> - To write the plugin class a Rule calls, use the [Apex reference](reference-apex.md) or
+>   [Recent Account activity](../examples/apex/01-recent-activity.md).
 
 The public `RecordHealthCheck` class runs the same metadata-defined Check Sets and Rules used by the
 Lightning card. This reference documents its methods, typed results, limits, security context, and
@@ -45,7 +43,7 @@ Start with `runSet`: a Check Set is the parent configuration and contains the or
 - It does not bypass the running user's Salesforce access.
 - It is not an unlimited bulk-processing API; request caps apply.
 
-New to the model? Read [Integrate Record Health Check](../overview.md) first.
+New to the model? Read [Integrate Record Health Check](../integration/README.md) first.
 
 ## Prerequisites and access
 
@@ -157,7 +155,7 @@ RecordHealthCheckSetResult result = RecordHealthCheck.runSet(
 | Ordinary public API call | `APEX_API` |
 | Source-aware scheduled caller | `SCHEDULED` |
 | Source-aware batch/async caller | `BATCH` |
-| Platform-event subscriber | `SUBSCRIBER` — publication blocked |
+| Platform-event subscriber | `SUBSCRIBER`: publication blocked |
 
 Unknown and blank source values fail closed: evaluation can run, but lifecycle publication is
 blocked.
@@ -195,7 +193,7 @@ delivery even if `EventBus.publish` was already called.
 
 Returned statuses and thrown exceptions are different contracts. `FAIL`, `SKIPPED`,
 `UNABLE_TO_EVALUATE`, and `ERROR` are valid response statuses; inspect `reasonCode` and the
-[reason-code reference](../../reference/reason-codes.md) before retrying. A thrown exception means no
+[reason-code reference](reference-reason-codes.md) before retrying. A thrown exception means no
 usable response was returned for that invocation.
 
 | Symptom | Likely cause | What to investigate |
@@ -235,8 +233,8 @@ or reason value requires a new contract version. Lifecycle events use their own 
 the product version is reported separately as `2.0.0`.
 
 No Apex API is currently deprecated. A future deprecation notice will identify the replacement
-and earliest removal release in this page, the [documentation index](../../README.md), the upgrade guide, and the
-changelog. See the shared [documentation standard](../../development/documentation-standard.md).
+and earliest removal release in this page, the [documentation index](../README.md), the upgrade guide, and the
+changelog.
 
 ## Check Set response
 
@@ -253,7 +251,7 @@ changelog. See the shared [documentation standard](../../development/documentati
 | `unableCount`, `systemErrorCount` | Non-business outcome counts |
 | `results` | Ordered Rule results |
 
-For decisions, use Status, Reason Code, Failure Severity, and Developer Name—not message text.
+For decisions, use Status, Reason Code, Failure Severity, and Developer Name, not message text.
 
 ### Check Set aggregate status
 
@@ -358,14 +356,13 @@ The API can produce these asynchronous outputs in addition to its synchronous re
 | `ContainsRestrictedDetail__c` | Restricted detail existed; the detail itself is never included |
 
 Events intentionally omit record ID, object API name, user ID, messages, queries, and field values.
-The [Platform events reference](../lifecycle-events.md) remains the canonical behavioral overview,
+The [Platform events reference](../integration/lifecycle-events.md) remains the canonical behavioral overview,
 retention, replay, and subscriber contract.
 
 ## Related
 
-- [Integration overview](../overview.md)
-- [Documentation standard](../../development/documentation-standard.md)
-- [Flow actions](../flow-actions.md)
-- [Lightning component](../lightning-component.md)
-- [Reason Codes](../../reference/reason-codes.md)
-- [Recent Account activity](../../examples/apex/01-recent-activity.md)
+- [Integration overview](../integration/README.md)
+- [Flow actions](../integration/flow-actions.md)
+- [Lightning component](../integration/lightning-component.md)
+- [Reason Codes](reference-reason-codes.md)
+- [Recent Account activity](../examples/apex/01-recent-activity.md)

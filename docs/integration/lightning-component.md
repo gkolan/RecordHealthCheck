@@ -1,9 +1,7 @@
-# Lightning component runs and lifecycle events
+# Lightning component
 
 > [!NOTE]
-> **On this page**
->
-> Understand automatic and user-initiated card runs, visible outputs, concurrency, and when lifecycle events can publish.
+> On this page, choose how the Record Health Check card runs on a Lightning record page and understand how that choice shapes user control, concurrent requests, visible results, and lifecycle-event eligibility.
 
 Use this reference to choose whether a Check Set runs when the record page opens or waits for the
 user to select **Run**. The choice affects the card experience and whether the run is eligible to
@@ -33,7 +31,7 @@ action and can publish when the Check Set and Rules opt in.
 - Automatic page load is not consent to publish lifecycle events.
 - A completed card does not prove that an event subscriber processed anything.
 
-New to the model? Read [Integrate Record Health Check](../integration/overview.md) first.
+New to the model? Read [Integrate Record Health Check](../integration/README.md) first.
 
 ## Prerequisites and quick start
 
@@ -116,7 +114,7 @@ For an explicit run:
 2. When every row has resolved, the component makes one completion call.
 3. That call can publish one aggregate Set Run event after its transaction commits.
 
-Results the client determines without calling Apex—such as a dependency skip—count toward the Set
+Results the client determines without calling Apex, such as a dependency skip, count toward the Set
 totals but do not create a separate Rule Result event, because no server Rule evaluation finalized.
 
 ## Best-effort behavior
@@ -142,8 +140,7 @@ change.
 ## Related
 
 - [Platform events](lifecycle-events.md)
-- [Apex API](../integration/apex-api/public-api.md)
+- [Apex API](../reference/reference-apex-api.md)
 - [Flow actions](flow-actions.md)
-- [Configuration guide](../guides/configuration-guide.md)
-- [Show Diagnostics](../guides/show-diagnostics.md)
-- [Documentation standard](../development/documentation-standard.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
+- [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md)

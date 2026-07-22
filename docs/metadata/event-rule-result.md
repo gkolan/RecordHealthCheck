@@ -1,9 +1,7 @@
 # Rule Result Platform Event (`Record_Health_Check_Rule_Result__e`)
 
 > [!NOTE]
-> **On this page**
->
-> Understand when the Rule Result Platform Event publishes, look up every field, and design subscribers for Rule history, routing, alerts, and analytics.
+> On this page, design a secure Rule Result subscriber that receives one finalized Rule outcome after commit and uses its fields responsibly for history, routing, alerts, or analytics.
 
 `Record_Health_Check_Rule_Result__e` contains the finalized public outcome of one Rule in a
 deliberately initiated run. It is a high-volume Salesforce Platform Event with **Publish After
@@ -128,5 +126,5 @@ not change the finalized Rule status.
 - [Lifecycle-events overview](../integration/lifecycle-events.md)
 - [Check Set Run Platform Event](event-set-run.md)
 - [Log Platform Event](event-log.md)
-- [Rule fields](fields-rule.md) — **Publish Result Event**
-- [Reason Codes](../reference/reason-codes.md)
+- [Rule fields](fields-rule.md): **Publish Result Event**
+- [Reason Codes](../reference/reference-reason-codes.md)

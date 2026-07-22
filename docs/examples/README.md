@@ -1,9 +1,7 @@
 # Record Health Check examples
 
 > [!NOTE]
-> **On this page**
->
-> Choose an Evaluation Type and a practical example based on what your Rule needs to check and what you want to learn.
+> On this page, turn the question you want to answer about a Salesforce record into the right Evaluation Type and a practical Rule you can adapt with confidence.
 
 Use these examples to build a health check for a Salesforce record. Each example starts with a
 business question, explains which Evaluation Type fits, lists the Setup values, and shows how to
@@ -18,10 +16,10 @@ Start with where the information for your check is stored.
 
 | What do you need to check? | Use | Good first example |
 | --- | --- | --- |
-| Fields on the current record or a parent record | **Verify with a formula** | [Seller research readiness](formula/01-account-research-ready.md) |
-| Related records, such as Contacts, Opportunities, or Cases | **Verify with a query** | [Customer handoff](query/01-customer-contact.md) |
-| Whether the results of two queries match or overlap | **Compare two queries** | [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) |
-| Logic that formulas and queries cannot express clearly | **Verify with Apex** | [Recent Account activity](apex/01-recent-activity.md) |
+| Fields on the current record or a parent record | [**Verify with a formula**](formula/README.md) | [Seller research readiness](formula/01-account-research-ready.md) |
+| Related records, such as Contacts, Opportunities, or Cases | [**Verify with a query**](query/README.md) | [Customer handoff](query/01-customer-contact.md) |
+| Whether the results of two queries match or overlap | [**Compare two queries**](compare-two-queries/README.md) | [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) |
+| Logic that formulas and queries cannot express clearly | [**Verify with Apex**](apex/README.md) | [Recent Account activity](apex/01-recent-activity.md) |
 
 > [!TIP]
 > Start with a formula when possible. Move to a query when the answer depends on related records.
@@ -36,15 +34,16 @@ Start with where the information for your check is stored.
 4. Replace the sample fields, values, and messages with the ones approved for your organization.
 5. Follow **Test the Rule** and confirm both a passing and a failing result before activating it.
 
-Every folder also contains a reference page. Use the examples when you are learning or building a
-Rule. Use the reference when you need all available settings, operators, limits, or result behavior.
+The shared [reference folder](../reference/README.md) keeps all Evaluation Type contracts in one place. Use
+the practical examples when you are learning or building a Rule. Use a reference when you need all
+available settings, operators, limits, or result behavior.
 
 | Evaluation Type | Start with | Detailed reference |
 | --- | --- | --- |
-| Verify with a formula | [Seller research readiness](formula/01-account-research-ready.md) | [Formula reference](formula/reference.md) |
-| Verify with a query | [Customer handoff](query/01-customer-contact.md) | [Query reference](query/reference.md) |
-| Compare two queries | [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) | [Compare two queries reference](compare-two-queries/reference.md) |
-| Verify with Apex | [Recent Account activity](apex/01-recent-activity.md) | [Apex reference](apex/reference.md) |
+| [Verify with a formula](formula/README.md) | [Seller research readiness](formula/01-account-research-ready.md) | [Formula reference](../reference/reference-formula.md) |
+| [Verify with a query](query/README.md) | [Customer handoff](query/01-customer-contact.md) | [Query reference](../reference/reference-query.md) |
+| [Compare two queries](compare-two-queries/README.md) | [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) | [Compare two queries reference](../reference/reference-compare-two-queries.md) |
+| [Verify with Apex](apex/README.md) | [Recent Account activity](apex/01-recent-activity.md) | [Apex reference](../reference/reference-apex.md) |
 
 ## Formula examples
 
@@ -105,25 +104,25 @@ may use the same Salesforce object, but they do not repeat the same Rule pattern
 
 | Example | Distinct Framework depth |
 | --- | --- |
-| Seller research readiness | Formula `OR`, optional alternatives, and an edit action |
-| Billing address review | Formula `AND` with display-only Found and Expected formulas |
-| Partner regional assignment | Formula applicability, `SKIPPED`, and count-only display for passed Rules |
-| Branch handoff | Parent relationship fields and a parent-record action URL |
-| Small-business program eligibility | Numeric Formula comparison with Found/Expected visible on every result |
-| Customer handoff | Aggregate `COUNT()` compared with a fixed minimum |
-| Pipeline next steps | `ALL_ROWS_PASS`, **Is not empty**, no-row `SKIPPED`, and empty-field failure |
-| Meaningful pipeline | `ANY_ROW_PASSES` compared with an Account formula and formula applicability |
-| Forecast amounts | Numeric `ALL_ROWS_PASS` with result-summary merge tokens |
-| Placeholder email cleanup | Text exclusion, ignored blank fields, and a prerequisite Rule |
-| Account Owner team membership | Query list-membership mode using a record formula and Comparison Query |
-| Case review capacity | Aggregate upper limit plus opt-in Rule Result and Check Set Run lifecycle events |
-| Opportunity Contact Role coverage | Aggregate alias, two-query equality, and count-query applicability |
-| Open-pipeline product continuity | Two lists compared with **Lists overlap** |
-| Account Team coverage | Two lists compared with **Lists contain all** and no-row failure |
-| Recent Account activity | Apex across Task and Event with bounded JSON parameters |
-| Open Opportunity health | Apex applying several conditions to each related record plus count-query applicability |
-| Strategic Account readiness | Weighted Apex score, multiple JSON parameters, and formula applicability |
-| Inactive approval participants | Dynamic object and field names, defensive `UNABLE_TO_EVALUATE`, and stop-after-`ERROR` behavior |
+| [Seller research readiness](formula/01-account-research-ready.md) | Formula `OR`, optional alternatives, and an edit action |
+| [Billing address review](formula/02-billing-address-ready.md) | Formula `AND` with display-only Found and Expected formulas |
+| [Partner regional assignment](formula/03-partner-regional-assignment.md) | Formula applicability, `SKIPPED`, and count-only display for passed Rules |
+| [Branch handoff](formula/04-branch-handoff.md) | Parent relationship fields and a parent-record action URL |
+| [Small-business program eligibility](formula/05-program-eligibility.md) | Numeric Formula comparison with Found/Expected visible on every result |
+| [Customer handoff](query/01-customer-contact.md) | Aggregate `COUNT()` compared with a fixed minimum |
+| [Pipeline next steps](query/02-opportunity-next-steps.md) | `ALL_ROWS_PASS`, **Is not empty**, no-row `SKIPPED`, and empty-field failure |
+| [Meaningful pipeline](query/03-significant-opportunity.md) | `ANY_ROW_PASSES` compared with an Account formula and formula applicability |
+| [Forecast amounts](query/04-forecast-amounts.md) | Numeric `ALL_ROWS_PASS` with result-summary merge tokens |
+| [Placeholder email cleanup](query/05-placeholder-contact-emails.md) | Text exclusion, ignored blank fields, and a prerequisite Rule |
+| [Account Owner team membership](query/06-account-owner-team-membership.md) | Query list-membership mode using a record formula and Comparison Query |
+| [Case review capacity](query/07-high-priority-case-capacity.md) | Aggregate upper limit plus opt-in Rule Result and Check Set Run lifecycle events |
+| [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) | Aggregate alias, two-query equality, and count-query applicability |
+| [Open-pipeline product continuity](compare-two-queries/02-open-pipeline-product-continuity.md) | Two lists compared with **Lists overlap** |
+| [Account Team coverage](compare-two-queries/03-account-team-opportunity-coverage.md) | Two lists compared with **Lists contain all** and no-row failure |
+| [Recent Account activity](apex/01-recent-activity.md) | Apex across Task and Event with bounded JSON parameters |
+| [Open Opportunity health](apex/02-open-opportunity-health.md) | Apex applying several conditions to each related record plus count-query applicability |
+| [Strategic Account readiness](apex/03-strategic-readiness.md) | Weighted Apex score, multiple JSON parameters, and formula applicability |
+| [Inactive approval participants](apex/04-inactive-approver.md) | Dynamic object and field names, defensive `UNABLE_TO_EVALUATE`, and stop-after-`ERROR` behavior |
 
 The reference pages document additional operators and limits that do not need a separate business
 example. The library favors a smaller set of credible, clearly differentiated Rules over one page
@@ -132,6 +131,6 @@ for every possible picklist value.
 ## Related documentation
 
 - [Create your first Rule](../installation/03-create-your-first-rule.md)
-- [Configuration guide](../guides/configuration-guide.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
 - [Rule fields](../metadata/fields-rule.md)
 - [Check Set fields](../metadata/fields-check-set.md)

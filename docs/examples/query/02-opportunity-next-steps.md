@@ -1,13 +1,11 @@
 # 02 · Open Opportunities Are Ready for Pipeline Review
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to check Next Step only when the Account has open Opportunities and skip Accounts with no open pipeline.
+> On this page, require every open Opportunity to have a Next Step, fail on an empty value, and skip the Rule entirely when the Account has no open pipeline to review.
 >
 > **Setup reference**
 >
-> Use the [Query reference](reference.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -105,13 +103,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The query rows and no-row behavior become these Framework outcomes and card values:
 
-- **Skip:** Accounts with no open Opportunities are skipped.
-
-- **Pass:** Every visible open Opportunity has Next Step populated.
-
-- **Needs attention:** At least one visible open Opportunity has blank Next Step, so the card shows Warning.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | Every visible open Opportunity has Next Step populated. |
+| **`FAIL`** | At least one visible open Opportunity has blank Next Step, so the card shows Needs attention with Warning severity. |
+| **`SKIPPED`** | An Account with no open Opportunities is skipped because **No rows result** is **Skipped**. |
+| **Found** | Found identifies the returned Next Step value or empty value that determined the result. |
+| **Expected** | Expected shows that Next Step must not be empty. |
 
 ## Security and access
 
@@ -141,4 +141,4 @@ Before activation, repeat the test as a user who can see only part of the Accoun
 ## Related
 
 - [← Prev: Customer handoff](01-customer-contact.md) · [Next: Significant pipeline →](03-significant-opportunity.md)
-- [Browse the pattern library](../README.md)
+- [Browse Query examples](README.md)

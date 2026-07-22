@@ -1,13 +1,11 @@
 # 03 · Account Has Meaningful Pipeline
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to confirm that an Account has an open Opportunity large enough for the customer’s recorded Annual Revenue.
+> On this page, compare open Opportunity amounts with an Account-specific threshold so one meaningful deal can satisfy the Rule only when the Account is eligible for the review.
 >
 > **Setup reference**
 >
-> Use the [Query reference](reference.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -81,7 +79,7 @@ percentage approved for your pipeline review.
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to compare open Opportunity Amount with Annual Revenue. Confirm access to both objects and fields. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank; applicability already prevents a meaningless zero threshold. |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-rule.md#fix-message-fixmessage__c) | Review Annual Revenue and open Opportunity Amounts, then correct the value that is inaccurate. |
-| **Action Label** | [`ActionLabel__c`](../../metadata/fields-rule.md#action-label-actionlabel__c) | Leave blank — one portable link cannot edit both Account and Opportunity values. |
+| **Action Label** | [`ActionLabel__c`](../../metadata/fields-rule.md#action-label-actionlabel__c) | Leave blank: one portable link cannot edit both Account and Opportunity values. |
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-rule.md#action-url-actionurl__c) | Leave blank; use a verified org-specific report or playbook if needed. |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-rule.md#evaluation-order-evaluationorder__c) | `60` |
 | **Active** | [`IsActive__c`](../../metadata/fields-rule.md#active-isactive__c) | Checked |
@@ -112,13 +110,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+Formula applicability and the query comparison become these Framework outcomes and card values:
 
-- **Pass:** The check passes when any open Opportunity Amount is greater than 10% of Account Annual Revenue.
-
-- **Needs attention:** No visible open Opportunity exceeds the Account-specific threshold, so the card shows Info.
-
-- **Skip:** Blank or zero Annual Revenue skips the Rule so a zero threshold cannot create a misleading pass.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | At least one visible open Opportunity Amount is greater than 10% of Account Annual Revenue. |
+| **`FAIL`** | No visible open Opportunity exceeds the Account-specific threshold, so the card shows Needs attention with Info severity. |
+| **`SKIPPED`** | Blank or zero Annual Revenue skips the Rule so a zero threshold cannot create a misleading pass. |
+| **Found** | Found shows the Opportunity Amount evaluated by the successful or representative query result. |
+| **Expected** | Expected shows the Account-specific threshold calculated from Annual Revenue. |
 
 ## Security and access
 
@@ -148,4 +148,4 @@ Before activation, run the Rule with the Account and Opportunity access assigned
 ## Related
 
 - [← Prev: Pipeline next steps](02-opportunity-next-steps.md) · [Next: Forecast amounts →](04-forecast-amounts.md)
-- [Browse the pattern library](../README.md)
+- [Browse Query examples](README.md)

@@ -1,13 +1,11 @@
 # 06 · Account Owner Is Included on the Account Team
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to search a related-record list for a current-record value by confirming that the Account Owner is also an Account Team Member.
+> On this page, use Query list-membership mode to compare the current Account Owner from a record formula with the User IDs returned by an Account Team query.
 >
 > **Setup reference**
 >
-> Use the [Query reference](reference.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -118,13 +116,16 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The record formula and Account Team query become these Framework outcomes and card values:
 
-- **Pass:** The Account Owner's User ID appears in the visible Account Team Member User IDs.
-
-- **Needs attention:** The Account Team is empty or does not include the Owner, so the card shows Warning.
-
-- **Unable to evaluate:** Missing access to OwnerId, AccountTeamMember, or UserId prevents a reliable comparison.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | The Account Owner's User ID appears in the visible Account Team Member User IDs. |
+| **`FAIL`** | The visible Account Team is empty or does not include the Owner, so the card shows Needs attention with Warning severity. |
+| **`SKIPPED`** | This configuration has no applicability gate or prerequisite and treats an empty Account Team as `FAIL`, so it does not produce `SKIPPED`. |
+| **Found** | Found shows the Account Owner ID resolved from the record formula. |
+| **Expected** | Expected represents the visible Account Team User IDs searched for that Owner ID. |
+| **`UNABLE_TO_EVALUATE`** | Missing access to `OwnerId`, `AccountTeamMember`, or `UserId` prevents a reliable comparison. |
 
 ## Security and access
 
@@ -154,4 +155,4 @@ Before activation, confirm the Rule with users who have the Account Team visibil
 ## Related
 
 - [← Prev: Placeholder email cleanup](05-placeholder-contact-emails.md) · [Next: Case review capacity →](07-high-priority-case-capacity.md)
-- [Browse the pattern library](../README.md)
+- [Browse Query examples](README.md)

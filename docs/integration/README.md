@@ -1,11 +1,9 @@
-# Integrate Record Health Check
+# Salesforce integrations
 
 > [!NOTE]
-> **On this page**
->
-> Choose Lightning, Apex, Flow, or platform events and understand the results, limits, and failure handling for each path.
+> On this page, place each readiness decision on the right Salesforce surface by comparing how Lightning, Apex, Flow, and platform events start work, return outcomes, and handle failure.
 
-Use this overview to decide where a readiness decision belongs: a Lightning record page, Flow,
+Use this page to decide where a readiness decision belongs: a Lightning record page, Flow,
 Apex, or an independent subscriber receiving an after-commit lifecycle event.
 
 Record Health Check uses the same metadata-defined Check Sets and Rules across those surfaces. The
@@ -17,7 +15,7 @@ does not create a second configuration model.
 | Goal | Start here | What you will learn |
 | --- | --- | --- |
 | Show health to a user on a record page | [Lightning component](lightning-component.md) | Automatic versus explicit runs, visible rows, and optional user-initiated events |
-| Make an immediate decision in code | [Apex API](apex-api/public-api.md) | Run a Check Set or Rule and branch on a typed response |
+| Make an immediate decision in code | [Apex API](../reference/reference-apex-api.md) | Run a Check Set or Rule and branch on a typed response |
 | Branch in automation without custom Apex | [Flow actions](flow-actions.md) | Configure an Action and Decision element with explicit status paths |
 | Notify independent automation after commit | [Lifecycle events](lifecycle-events.md) | Opt in, subscribe, and handle replay or duplicate delivery |
 | Implement a decision the other Evaluation Types cannot express | [Recent Account activity](../examples/apex/01-recent-activity.md) | Write the class used by a Verify with Apex Rule |
@@ -52,7 +50,7 @@ Record Health Check is not:
 | Goal | Start here | Immediate output | Optional event source |
 | --- | --- | --- | --- |
 | Show health on a record page | [Lightning component](lightning-component.md) | Rows and Set summary | `USER_INITIATED`; automatic load is blocked |
-| Make a code-level decision | [Apex API](../integration/apex-api/public-api.md) | Typed Rule or Set response | `APEX_API`, `SCHEDULED`, or `BATCH` |
+| Make a code-level decision | [Apex API](../reference/reference-apex-api.md) | Typed Rule or Set response | `APEX_API`, `SCHEDULED`, or `BATCH` |
 | Branch in automation without code | [Flow actions](flow-actions.md) | Flow output variables and JSON | `FLOW` |
 | React asynchronously or export results | [Platform events](lifecycle-events.md) | Event payload | Depends on the publisher |
 | Add a custom evaluation algorithm | [Recent Account activity](../examples/apex/01-recent-activity.md) | Normal Rule result | Inherits the calling run |
@@ -110,7 +108,7 @@ switch on health.status {
 }
 ```
 
-For method overloads, fields, limits, and exceptions, use the [Apex API reference](../integration/apex-api/public-api.md).
+For method overloads, fields, limits, and exceptions, use the [Apex API reference](../reference/reference-apex-api.md).
 
 ## Quick start with Flow
 
@@ -175,9 +173,9 @@ administrator-authored message text.
 
 ## Next steps
 
-- [Apex API](../integration/apex-api/public-api.md)
+- [Apex API](../reference/reference-apex-api.md)
 - [Flow actions](flow-actions.md)
 - [Lightning component](lightning-component.md)
 - [Platform events](lifecycle-events.md)
-- [Reason Codes](../reference/reason-codes.md)
-- [Configuration guide](../guides/configuration-guide.md)
+- [Reason Codes](../reference/reference-reason-codes.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

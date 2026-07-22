@@ -34,7 +34,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
   transaction via `RecordHealthCheckLogger.flush()`, so a check that fails to run leaves a durable,
   `RunId`-correlated trace instead of only an ephemeral `System.debug` line. Default on (opt-out
   via `publishErrorEvents`); `PublishImmediately` so it survives the rollback a failing check
-  triggers. Core only emits the event — persistence, retention, and reporting are owned by the
+  triggers. Core only emits the event: persistence, retention, and reporting are owned by the
   Record Health Check extension package. Subscribers must call
   `RecordHealthCheckLogger.enterSubscriberContext()` to avoid feedback loops.
 - Added `RecordId__c` to all three platform events (`Record_Health_Check_Set_Run__e`,

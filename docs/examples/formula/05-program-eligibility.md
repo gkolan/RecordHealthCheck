@@ -1,13 +1,11 @@
 # 05 · Account Meets the Small-business Program Minimum
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to show the current employee count beside the required minimum so users know what needs to change.
+> On this page, compare Number of Employees with a program minimum and keep the numeric Found and Expected values visible so eligibility is immediately understandable.
 >
 > **Setup reference**
 >
-> Use the [Formula reference](reference.md) for the complete setup fields and behavior.
+> Use the [Formula reference](../../reference/reference-formula.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -107,18 +105,21 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The card turns the numeric Formula result and its display formulas into these user-facing values:
 
-- **Needs attention:** An Account with fewer than 10 employees fails and can show Found and Expected values for the current count and minimum.
-
-- **Pass:** Ten or more employees passes.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | An Account with 10 or more employees passes. |
+| **`FAIL`** | An Account with fewer than 10 employees shows Needs attention. |
+| **`SKIPPED`** | This configuration applies to every Account and has no prerequisite, so it does not produce `SKIPPED`. |
+| **Found** | Found shows the Account's current Number of Employees. |
+| **Expected** | Expected shows the program minimum: `10 employees`. |
 
 This Check Set uses **Every check** for **Found/Expected Display** because the employee count and
 program minimum are useful during both passing and failing eligibility reviews.
 
-- **Found and Expected:** The display formulas affect only what the card shows; they never change the pass or fail result.
-
-- **Display fallback:** If a display formula cannot be evaluated, the card uses its standard display instead.
+The Found and Expected display formulas never change the Pass or Needs attention decision. If a
+display formula cannot be evaluated, the card uses its standard display instead.
 
 ## Security and access
 
@@ -146,4 +147,4 @@ Before activation, confirm the result and Found / Expected display with the Perm
 ## Related
 
 - [← Prev: Branch handoff](04-branch-handoff.md)
-- [Browse the pattern library](../README.md)
+- [Browse Formula examples](README.md)

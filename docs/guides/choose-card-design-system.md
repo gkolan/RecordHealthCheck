@@ -1,15 +1,13 @@
-# Design system (SLDS 2 / SLDS 1)
+# Choose the card design system
 
 > [!NOTE]
-> **On this page**
->
-> Choose SLDS 1 or SLDS 2 styling for the Record Health Check card, per record page.
+> On this page, choose the SLDS generation that matches each Lightning record page and understand how Record Health Check preserves the same behavior across SLDS 1 and SLDS 2 styling.
 >
 > **Reference**
 >
 > - This guide covers only the **Design System** setting; it changes the card's look, not your org
 >   theme or any other component on the page.
-> - For every other card and Check Set setting, use the [Configuration guide](configuration-guide.md).
+> - For every other card and Check Set setting, use the [Configure Check Sets and Rules](configure-check-sets-and-rules.md).
 
 Use the **Design System** component property to match the Record Health Check card to each Lightning
 record page. Select SLDS 2 for a page using the Salesforce Cosmos theme; leave SLDS 1 for established
@@ -51,5 +49,5 @@ on, instead of forcing one choice org-wide.
 
 ## Related
 
-- [Configuration guide](configuration-guide.md): every card and Check Set setting
+- [Configure Check Sets and Rules](configure-check-sets-and-rules.md): every card and Check Set setting
 - [Create your first Rule](../installation/03-create-your-first-rule.md): add the card to a record page

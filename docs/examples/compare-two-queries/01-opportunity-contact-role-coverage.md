@@ -1,13 +1,11 @@
 # 01 · Open Opportunities Have Contact Roles
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to confirm that every open Opportunity has at least one Contact Role before forecast review.
+> On this page, compare two aggregate SOQL results to reveal whether any open Opportunity is missing the Contact Role context needed for forecast review.
 >
 > **Setup reference**
 >
-> Use the [Compare-two-queries reference](reference.md) for the complete setup fields and behavior.
+> Use the [Compare-two-queries reference](../../reference/reference-compare-two-queries.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -106,13 +104,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The card turns the two aggregate query results into these user-facing values:
 
-- **Pass:** Every open Opportunity has at least one Contact Role. Found and Expected show the same count.
-
-- **Needs attention:** Found is lower than Expected. The difference is the number of open Opportunities without a Contact Role.
-
-- **Skip:** The Account has no open Opportunities.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | Every open Opportunity has at least one Contact Role. |
+| **`FAIL`** | One or more open Opportunities has no Contact Role, so the card shows Needs attention. |
+| **`SKIPPED`** | The Account has no open Opportunities to review, so count-query applicability skips the Rule. |
+| **Found** | Found shows how many open Opportunities have at least one Contact Role. |
+| **Expected** | Expected shows the total number of open Opportunities. The difference between Expected and Found is the coverage gap. |
 
 ## Security and access
 
@@ -144,4 +144,4 @@ Record Health Check runs both coverage counts with the running user's Salesforce
 ## Related
 
 - [← Prev: Case review capacity](../query/07-high-priority-case-capacity.md) · [Next: Product continuity →](02-open-pipeline-product-continuity.md)
-- [Browse the pattern library](../README.md)
+- [Browse Compare two queries examples](README.md)

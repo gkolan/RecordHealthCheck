@@ -1,9 +1,7 @@
 # Lifecycle events
 
 > [!NOTE]
-> **On this page**
->
-> Configure, publish, subscribe to, and troubleshoot optional Check Set Run and Rule Result platform events.
+> On this page, decide whether a subscriber needs Check Set Run or Rule Result lifecycle events and enable an after-commit contract without making the Lightning, Flow, or Apex caller wait.
 
 Use lifecycle events when an independent subscriber needs completion information after an explicit
 Record Health Check run. This reference documents publication behavior, event payloads,
@@ -47,7 +45,7 @@ result instead.
 - They are not exactly-once commands. Subscribers must handle duplicates and replay safely.
 - Publish acceptance does not prove delivery or successful subscriber processing.
 
-For the end-to-end model, start with [Integrate Record Health Check](../integration/overview.md).
+For the end-to-end model, start with [Integrate Record Health Check](../integration/README.md).
 
 ## Prerequisites and sandbox quick start
 
@@ -72,8 +70,8 @@ runs. Automatic Lightning record-page runs never publish.
 | `USER_INITIATED` | An explicit Run or Rerun action in the Lightning component |
 | `SCHEDULED` | A source-aware scheduled Apex caller |
 | `BATCH` | A source-aware batch or other asynchronous Apex caller |
-| `RUN_ON_LOAD` | Hard-blocked — never publishes |
-| `SUBSCRIBER` | Hard-blocked — never publishes |
+| `RUN_ON_LOAD` | Hard-blocked: never publishes |
+| `SUBSCRIBER` | Hard-blocked: never publishes |
 
 Unknown, blank, and misspelled source values are also blocked. Source-aware Apex callers must pass
 one of the allowed constants; subscribers must use `SUBSCRIBER` to prevent event feedback loops.
@@ -166,10 +164,10 @@ carries restricted Framework `ERROR` diagnostics and uses **Publish Immediately*
 | --- | --- | --- |
 | Purpose | Completion facts | Errors that need reproducing |
 | Default | Opt-in per Set/Rule (off) | **On by default** (opt-out) |
-| Publish behavior | Publish After Commit | **Publish Immediately** — survives the rollback a failing check triggers |
-| Carries error detail | No — record ID + counts/status only | Yes — record ID plus message, exception type, stack trace |
+| Publish behavior | Publish After Commit | **Publish Immediately**: survives the rollback a failing check triggers |
+| Carries error detail | No: record ID + counts/status only | Yes: record ID plus message, exception type, stack trace |
 | Level | All completed runs | `ERROR` only |
-| Access | Standard subscriber | **Restricted** — permission-gate the subscriber |
+| Access | Standard subscriber | **Restricted**: permission-gate the subscriber |
 
 The Log event is not controlled by **Publish Run Event** or **Publish Result Event**. Its complete
 payload, security requirements, subscriber loop guard, possibilities, and known limitations are in
@@ -177,14 +175,13 @@ the [Log Platform Event reference](../metadata/event-log.md).
 
 ## Related
 
-- [Apex API](../integration/apex-api/public-api.md)
+- [Apex API](../reference/reference-apex-api.md)
 - [Flow actions](flow-actions.md)
 - [Lightning component](lightning-component.md)
-- [Check Set fields](../metadata/fields-check-set.md) — Publish Run Event
-- [Rule fields](../metadata/fields-rule.md) — Publish Result Event
+- [Check Set fields](../metadata/fields-check-set.md): Publish Run Event
+- [Rule fields](../metadata/fields-rule.md): Publish Result Event
 - [Check Set Run Platform Event](../metadata/event-set-run.md)
 - [Rule Result Platform Event](../metadata/event-rule-result.md)
 - [Log Platform Event](../metadata/event-log.md)
 - [Upgrading Record Health Check](../installation/04-upgrading.md)
-- [Reason Codes](../reference/reason-codes.md)
-- [Documentation standard](../development/documentation-standard.md)
+- [Reason Codes](../reference/reference-reason-codes.md)

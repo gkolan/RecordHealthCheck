@@ -1,9 +1,7 @@
-# Action links and Fix Message
+# Configure action links
 
 > [!NOTE]
-> **On this page**
->
-> Give users a next step — a link, a message, or both — when a Rule fails.
+> On this page, turn a failed Rule into a useful next step by pairing a clear Fix Message with a safe, context-aware action link when navigation genuinely helps.
 >
 > **Reference**
 >
@@ -182,7 +180,7 @@ Only `https://` external links are allowed.
 
 ## Related
 
-- [Configuration guide](configuration-guide.md): every card and Check Set setting
+- [Configure Check Sets and Rules](configure-check-sets-and-rules.md): every card and Check Set setting
 - [Rule fields](../metadata/fields-rule.md): field definitions for `ActionLabel__c`, `ActionUrl__c`, and `FixMessage__c`
-- [Field limits](../reference/fields-limits.md): character limits for these fields
-- [Show Diagnostics](show-diagnostics.md): troubleshooting a Rule that fails to evaluate
+- [Field limits](../reference/reference-fields-limits.md): character limits for these fields
+- [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md): troubleshooting a Rule that fails to evaluate

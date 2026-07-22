@@ -1,9 +1,7 @@
-# Run Record Health Check from Flow
+# Flow actions
 
 > [!NOTE]
-> **On this page**
->
-> Build a Flow that runs one Rule or a complete Check Set, branches on the returned status, and handles faults safely.
+> On this page, build a Flow that runs the right scope of health check, branches on its Framework Status, and keeps evaluation faults separate from ordinary readiness outcomes.
 
 Use the packaged Flow actions to evaluate a Salesforce record without writing Apex. A Flow can run
 one Rule or a complete Check Set, then use a Decision element to respond to the result.
@@ -206,7 +204,7 @@ associated with that transaction and prevents Publish After Commit events from b
 | Governor-limit fault | The transaction has insufficient remaining Salesforce limits | Reduce other work or run the evaluation in a separate transaction |
 | `FAIL` returned as a normal output | The Rule found an unhealthy business condition | Route the status with a Decision element; do not use the fault connector |
 
-Use the [reason-code reference](../reference/reason-codes.md) when the action returns a code you do
+Use the [reason-code reference](../reference/reference-reason-codes.md) when the action returns a code you do
 not recognize.
 
 ## Optional: Publish lifecycle events
@@ -242,8 +240,8 @@ replacement and earliest removal release.
 
 ## Related
 
-- [Integration overview](../integration/overview.md)
+- [Integration overview](../integration/README.md)
 - [Create your first Rule](../installation/03-create-your-first-rule.md)
-- [Reason Codes](../reference/reason-codes.md)
+- [Reason Codes](../reference/reference-reason-codes.md)
 - [Lifecycle events](lifecycle-events.md)
-- [Apex API](../integration/apex-api/public-api.md)
+- [Apex API](../reference/reference-apex-api.md)

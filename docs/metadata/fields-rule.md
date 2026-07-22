@@ -1,9 +1,7 @@
 # Rule fields (`Record_Health_Check_Rule__mdt`)
 
 > [!NOTE]
-> **On this page**
->
-> Look up any Rule field by Setup label or API name and see exactly how to configure it.
+> On this page, find the Rule field that controls evaluation, applicability, comparison, user guidance, or event publication and understand when its value participates in Framework behavior.
 >
 > **Reference**
 >
@@ -24,7 +22,7 @@ the other Evaluation Types should remain blank.
 | One SOQL result against another SOQL result | **Compare two queries** (`COMPARE_TWO_QUERIES`) | [Source Query](#source-query-sourcequery__c) and [Comparison Query](#comparison-query-comparisonquery__c) |
 | Logic implemented in a package or org Apex class | **Verify with Apex** (`APEX`) | [Apex Class](#apex-class-apexclass__c) |
 
-After the evaluation fields, configure the user experience: **Check Title**, failure guidance, **Found**, **Expected**, and—when useful—an action link.
+After the evaluation fields, configure the user experience: **Check Title**, failure guidance, **Found**, **Expected**, and, when useful, an action link.
 
 > [!TIP]
 > For a complete, working configuration, choose an example from the [Example library](../examples/README.md). Use this page when you need the exact Setup label, API name, default, allowed value, or runtime behavior.
@@ -152,11 +150,11 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |
-| Default | **Checked** — `true` |
+| Default | **Checked**: `true` |
 | Used when | Every Rule; uncheck to exclude the Rule from evaluation. |
 | Description | <p>When checked, this check is included whenever its Check Set runs. When unchecked, the check is ignored during evaluation - a way to disable it temporarily without deleting the record.</p> |
 | Help text | <p>Checked = the check runs as part of its Check Set. Uncheck to disable it without deleting it.</p> |
-| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+| Allowed values | **Checked**: `true`<br>**Unchecked**: `false` |
 
 
 ## 2. What users see
@@ -206,7 +204,7 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Used when | Optional for every Evaluation Type; classification only in the current card. |
 | Description | <p>Optional classification for the business outcome protected by this Rule, such as Completeness, Readiness, Risk, or Compliance. Use it to make metadata easier to find, report on, and reuse.</p><p>The current card does not group checks by Category. This choice does not change evaluation, severity, order, or the result shown to users.</p> |
 | Help text | <p>Optional business-outcome classification. The current card does not group checks by this value, and it does not affect the result.</p> |
-| Allowed values | **Completeness** — `COMPLETENESS`<br>**Consistency** — `CONSISTENCY`<br>**Timeliness** — `TIMELINESS`<br>**Eligibility** — `ELIGIBILITY`<br>**Readiness** — `READINESS`<br>**Risk** — `RISK`<br>**Compliance** — `COMPLIANCE`<br>**Relationship coverage** — `RELATIONSHIP_COVERAGE` |
+| Allowed values | **Completeness**: `COMPLETENESS`<br>**Consistency**: `CONSISTENCY`<br>**Timeliness**: `TIMELINESS`<br>**Eligibility**: `ELIGIBILITY`<br>**Readiness**: `READINESS`<br>**Risk**: `RISK`<br>**Compliance**: `COMPLIANCE`<br>**Relationship coverage**: `RELATIONSHIP_COVERAGE` |
 
 ### Failure Severity (`FailureSeverity__c`)
 
@@ -217,11 +215,11 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **Warning** — `WARNING` |
+| Default | **Warning**: `WARNING` |
 | Used when | Every Rule; displayed only for a `FAIL` result. |
 | Description | <p>The business-impact level shown only when this check results in Fail: "Critical" shows red, "Warning" shows amber, "Info" shows blue. It has no effect on Pass, Skipped, Unable to Evaluate, or system-error outcomes.</p><p>Defaults to "Warning". Severity is deliberately separate from the engine's system-error status, which is why there is no "Error" choice.</p> |
 | Help text | <p>Sets the color/level when the check fails: "Critical" = red, "Warning" = amber (default), "Info" = blue. No effect on non-fail outcomes.</p> |
-| Allowed values | **Critical** — `CRITICAL`<br>**Warning** — `WARNING`<br>**Info** — `INFO` |
+| Allowed values | **Critical**: `CRITICAL`<br>**Warning**: `WARNING`<br>**Info**: `INFO` |
 
 ### Message When Failed (`FailureMessage__c`)
 
@@ -319,7 +317,7 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Used when | Every Rule; selects the Formula, Query, Compare two queries, or Apex evaluator. |
 | Description | <p>How this check decides pass or fail. Required - there is no default, so you must choose one, and your choice determines which other fields you fill in (complete only the matching section).</p><ul><li>"Verify with a formula" evaluates a true/false formula on the current record - fill in "Pass Condition".</li><li>"Verify with a query" runs one SOQL query and compares its result - fill in "Source Query", "Comparison Operator", and "Expected Value Comes From".</li><li>"Compare two queries" compares the results of two SOQL queries - fill in "Source Query" and "Comparison Query".</li><li>"Verify with Apex" runs your own Apex class - fill in "Apex Class".</li></ul> |
 | Help text | Required. Choose Formula for record fields, Query for related or aggregate data, Compare two queries for two result sets, or Apex for logic the other options cannot express. |
-| Allowed values | **Verify with a formula** — `FORMULA`<br>**Verify with a query** — `QUERY`<br>**Compare two queries** — `COMPARE_TWO_QUERIES`<br>**Verify with Apex** — `APEX` |
+| Allowed values | **Verify with a formula**: `FORMULA`<br>**Verify with a query**: `QUERY`<br>**Compare two queries**: `COMPARE_TWO_QUERIES`<br>**Verify with Apex**: `APEX` |
 
 
 ## 4. Check fields on this record (`FORMULA`)
@@ -381,11 +379,11 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **Auto** — `AUTO` |
+| Default | **Auto**: `AUTO` |
 | Used when | Optional when the Rule uses a record formula; `AUTO` is valid for all supported formula result types. |
 | Description | <p>Declares the data type your formulas return. It applies to all single-value formulas in this check - "Value to find in the list (formula)" and "Expected Value (Formula)", which affect pass/fail, as well as "Display: Found Formula" and "Display: Expected Formula", which are display only.</p><p>Leave "Auto" unless you know the return type; declaring it saves formula calls, but "Auto" always resolves correctly. Choices: "Auto", "Checkbox", "Number", "Date", "Date/Time", "Text".</p> |
 | Help text | <p>The type your formulas return. Applies to every formula in the check (the list/expected value formulas and the display formulas).</p><p>Leave "Auto" unless you know the type - "Auto" always works but uses more formula calls.</p> |
-| Allowed values | **Auto** — `AUTO`<br>**Checkbox** — `BOOLEAN`<br>**Number** — `NUMBER`<br>**Date** — `DATE`<br>**Date/Time** — `DATETIME`<br>**Text** — `TEXT` |
+| Allowed values | **Auto**: `AUTO`<br>**Checkbox**: `BOOLEAN`<br>**Number**: `NUMBER`<br>**Date**: `DATE`<br>**Date/Time**: `DATETIME`<br>**Text**: `TEXT` |
 
 
 ## 5. Query sources (`QUERY` / `COMPARE_TWO_QUERIES`)
@@ -486,7 +484,7 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Used when | Required for Query and Compare two queries Rules. |
 | Description | <p>How the value from the "Source Query" is compared to the expected value. Required for "Verify with a query" and "Compare two queries"; not used for "Verify with a formula". No default, so you must choose one.</p><p>"Is empty" and "Is not empty" need nothing to compare against. The list operators split into two groups:</p><ul><li>"List contains any" and "List contains none" work with "Verify with a query" and "How To Read Query Results" set to "Compare as lists" - the record value comes from "Value to find in the list (formula)" and the list comes from "Comparison Query".</li><li>"Lists overlap", "Lists contain all", and "Lists match exactly" work only with "Compare two queries" and "How To Read Query Results" set to "Compare as lists" - both lists come from the two queries.</li></ul> |
 | Help text | <p>Required for query checks. Choose how Found is compared with Expected.</p><p>Empty operators need no Expected value; list operators require "Compare as lists".</p> |
-| Allowed values | **Equals** — `EQUALS`<br>**Does not equal** — `NOT_EQUALS`<br>**Greater than** — `GREATER_THAN`<br>**Greater than or equal** — `GREATER_THAN_OR_EQUAL`<br>**Less than** — `LESS_THAN`<br>**Less than or equal** — `LESS_THAN_OR_EQUAL`<br>**Contains text** — `CONTAINS`<br>**Does not contain text** — `DOES_NOT_CONTAIN`<br>**Is empty** — `IS_BLANK`<br>**Is not empty** — `IS_NOT_BLANK`<br>**List contains any** — `LIST_CONTAINS_ANY`<br>**List contains none** — `LIST_CONTAINS_NONE`<br>**Lists overlap** — `LISTS_OVERLAP`<br>**Lists contain all** — `LISTS_CONTAIN_ALL`<br>**Lists match exactly** — `LISTS_MATCH_EXACTLY` |
+| Allowed values | **Equals**: `EQUALS`<br>**Does not equal**: `NOT_EQUALS`<br>**Greater than**: `GREATER_THAN`<br>**Greater than or equal**: `GREATER_THAN_OR_EQUAL`<br>**Less than**: `LESS_THAN`<br>**Less than or equal**: `LESS_THAN_OR_EQUAL`<br>**Contains text**: `CONTAINS`<br>**Does not contain text**: `DOES_NOT_CONTAIN`<br>**Is empty**: `IS_BLANK`<br>**Is not empty**: `IS_NOT_BLANK`<br>**List contains any**: `LIST_CONTAINS_ANY`<br>**List contains none**: `LIST_CONTAINS_NONE`<br>**Lists overlap**: `LISTS_OVERLAP`<br>**Lists contain all**: `LISTS_CONTAIN_ALL`<br>**Lists match exactly**: `LISTS_MATCH_EXACTLY` |
 
 ### Expected Value Comes From (`ExpectedValueSource__c`)
 
@@ -501,7 +499,7 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Used when | Set for Query Rules when the operator needs a right-side value; omit for empty-value operators and Compare two queries. |
 | Description | <p>For a "Verify with a query" check, this says where the expected value comes from. No default.</p><ul><li>"Fixed value" - type it in "Expected Value (Fixed)".</li><li>"Record formula" - enter it in "Expected Value (Formula)".</li><li>"Comparison query" - the expected value comes from the "Comparison Query" result.</li></ul><p>Leave unset for "Compare two queries" (both sides are queries) and for the operators "Is empty" / "Is not empty".</p> |
 | Help text | <p>Where the expected value comes from (query checks).</p><ul><li>"Fixed value" -> "Expected Value (Fixed)".</li><li>"Record formula" -> "Expected Value (Formula)".</li><li>"Comparison query" -> "Comparison Query".</li></ul><p>Leave unset for Compare two queries and "Is empty"/"Is not empty".</p> |
-| Allowed values | **Fixed value** — `FIXED_VALUE`<br>**Record formula** — `RECORD_FORMULA`<br>**Comparison query** — `COMPARISON_QUERY` |
+| Allowed values | **Fixed value**: `FIXED_VALUE`<br>**Record formula**: `RECORD_FORMULA`<br>**Comparison query**: `COMPARISON_QUERY` |
 
 ### Expected Value (Fixed) (`ExpectedFixedValue__c`)
 
@@ -547,11 +545,11 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **One row or aggregate** — `ONE_RESULT` |
+| Default | **One row or aggregate**: `ONE_RESULT` |
 | Used when | Required for Query and Compare two queries Rules. |
 | Description | <p>Tells the engine how to read the "Source Query" result. Required for "Verify with a query" and "Compare two queries".</p><ul><li>"One row or aggregate" expects a single row or an aggregate such as COUNT() or SUM().</li><li>"Any record passes" passes if at least one returned record passes.</li><li>"Every record passes" passes only if all returned records pass.</li><li>"Compare as lists" treats results as lists - required for every list operator (both the "List contains any/none" membership checks and the "Lists overlap / contain all / match exactly" comparisons).</li></ul><p>Defaults to "One row or aggregate".</p> |
 | Help text | <p>How to read the query result.</p><ul><li>"One row or aggregate" = one row, COUNT(), or SUM().</li><li>"Any record passes" = one passing record is enough.</li><li>"Every record passes" = all must pass.</li><li>"Compare as lists" = required for every list operator.</li></ul> |
-| Allowed values | **One row or aggregate** — `ONE_RESULT`<br>**Any record passes** — `ANY_ROW_PASSES`<br>**Every record passes** — `ALL_ROWS_PASS`<br>**Compare as lists** — `COMPARE_AS_LISTS` |
+| Allowed values | **One row or aggregate**: `ONE_RESULT`<br>**Any record passes**: `ANY_ROW_PASSES`<br>**Every record passes**: `ALL_ROWS_PASS`<br>**Compare as lists**: `COMPARE_AS_LISTS` |
 
 ### If Query Finds No Records (`NoRowsResult__c`)
 
@@ -566,7 +564,7 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Used when | Required for multi-row and list query modes; not used by Formula or Apex Rules. |
 | Description | <p>What the check should do when the "Source Query" returns no records. No default - you must choose, because Pass versus Fail can invert the meaning of a check.</p><p>Required when "How To Read Query Results" is "Any record passes", "Every record passes", or "Compare as lists". Choices: "Pass" (no records is healthy), "Fail" (no records is a problem), "Skip" (not applicable here), or "Unable to evaluate" (cannot tell).</p><p>Example: a query for open high-priority cases finding none usually means the record is healthy, so choose "Pass".</p> |
 | Help text | <p>Required for multi-row and list checks. Choose the business meaning of no matching records: Pass, Fail, Skip, or Unable to evaluate.</p> |
-| Allowed values | **Pass** — `PASS`<br>**Fail** — `FAIL`<br>**Skip** — `SKIP`<br>**Unable to evaluate** — `UNABLE_TO_EVALUATE` |
+| Allowed values | **Pass**: `PASS`<br>**Fail**: `FAIL`<br>**Skip**: `SKIP`<br>**Unable to evaluate**: `UNABLE_TO_EVALUATE` |
 
 ### If Field Value Is Empty (`EmptyValueHandling__c`)
 
@@ -577,11 +575,11 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **Treat as not matching** — `AS_NO_MATCH` |
+| Default | **Treat as not matching**: `AS_NO_MATCH` |
 | Used when | Optional for non-aggregate Query and Compare two queries comparisons. |
 | Description | <p>How to handle an empty field value while comparing query results. Applies to "Verify with a query" and "Compare two queries"; ignored for "Verify with a formula", "Verify with Apex", and pure aggregate queries.</p><ul><li>"Ignore the record" leaves records with an empty value out of the comparison.</li><li>"Treat as blank" compares the empty value as blank text.</li><li>"Treat as not matching" makes an empty value always fail the comparison.</li></ul><p>Defaults to "Treat as not matching", so an empty value does not silently pass a data-quality check.</p> |
 | Help text | <p>How empty field values are compared.</p><ul><li>"Ignore the record" = leave them out.</li><li>"Treat as blank" = compare as blank text.</li><li>"Treat as not matching" (default) = an empty value fails the comparison.</li></ul> |
-| Allowed values | **Ignore the record** — `SKIP_RECORD`<br>**Treat as blank** — `AS_BLANK`<br>**Treat as not matching** — `AS_NO_MATCH` |
+| Allowed values | **Ignore the record**: `SKIP_RECORD`<br>**Treat as blank**: `AS_BLANK`<br>**Treat as not matching**: `AS_NO_MATCH` |
 
 ### Max Query Rows (1-2000) (`MaxQueryRows__c`)
 
@@ -646,11 +644,11 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **All records** — `ALL_RECORDS` |
+| Default | **All records**: `ALL_RECORDS` |
 | Used when | Every Rule; defaults to all records. |
 | Description | <p>Decides whether this check applies to the current record before it runs.</p><ul><li>"All records" runs it on every record.</li><li>"When a formula is true" runs it only when the formula in "Applies When (Formula)" returns true.</li><li>"When a count query matches" runs it only when the count from "Applies When (Count Query)" satisfies "Count Must Be" and "Count Value".</li></ul><p>When the condition is not met, the check is marked Skipped (not Failed). Defaults to "All records".</p> |
 | Help text | <p>Chooses whether the check applies to this record.</p><ul><li>"All records" = always.</li><li>"When a formula is true" = gate on "Applies When (Formula)".</li><li>"When a count query matches" = gate on "Applies When (Count Query)".</li></ul><p>If the gate isn't met, the check is Skipped.</p> |
-| Allowed values | **All records** — `ALL_RECORDS`<br>**When a formula is true** — `WHEN_FORMULA_TRUE`<br>**When a count query matches** — `WHEN_COUNT_QUERY_MATCHES` |
+| Allowed values | **All records**: `ALL_RECORDS`<br>**When a formula is true**: `WHEN_FORMULA_TRUE`<br>**When a count query matches**: `WHEN_COUNT_QUERY_MATCHES` |
 
 ### Applies When (Formula) (`ApplicabilityFormula__c`)
 
@@ -697,7 +695,7 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Used when | Required when Applies To is **When a count query matches**. |
 | Description | <p>Part of the applicability gate only - not the main pass/fail check. Sets how the count from "Applies When (Count Query)" is compared to "Count Value"; the check runs only when this comparison is true.</p><p>Required when "Applies To" is "When a count query matches". Choices: "Equal to", "Not equal to", "Greater than", "At least" (greater than or equal), "Less than", "At most" (less than or equal).</p> |
 | Help text | <p>Applicability gate only. How the count is compared to "Count Value", e.g. "Greater than" with a "Count Value" of 0 runs the check only when at least one row matches.</p><p>Required when "Applies To" = "When a count query matches".</p> |
-| Allowed values | **Equal to** — `EQUALS`<br>**Not equal to** — `NOT_EQUALS`<br>**Greater than** — `GREATER_THAN`<br>**At least** — `GREATER_THAN_OR_EQUAL`<br>**Less than** — `LESS_THAN`<br>**At most** — `LESS_THAN_OR_EQUAL` |
+| Allowed values | **Equal to**: `EQUALS`<br>**Not equal to**: `NOT_EQUALS`<br>**Greater than**: `GREATER_THAN`<br>**At least**: `GREATER_THAN_OR_EQUAL`<br>**Less than**: `LESS_THAN`<br>**At most**: `LESS_THAN_OR_EQUAL` |
 
 ### Count Value (`ApplicabilityCountThreshold__c`)
 
@@ -778,14 +776,14 @@ After the evaluation fields, configure the user experience: **Check Title**, fai
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |
-| Default | **Unchecked** — `false` |
+| Default | **Unchecked**: `false` |
 | Used when | Optional for every Evaluation Type; affects deliberate runs only and defaults off. |
 | Description | <p>Publishes this finalized Rule result after a deliberately initiated run. Page-load runs never publish because ordinary record-page navigation could otherwise consume event allocations and repeatedly trigger subscriber automation.</p><p>Leave unchecked unless a reviewed subscriber needs this Rule's individual status, reason, and severity. Enable only the Rules the subscriber uses; per-Rule publication can create many more events than one Check Set Run summary.</p> |
 | Help text | <p>Publish this Rule's result for deliberate API, Flow, scheduled, batch, or user-requested runs. Page-load runs never publish.</p> |
-| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+| Allowed values | **Checked**: `true`<br>**Unchecked**: `false` |
 
 ## Related
 
 - [Check type examples](../examples/README.md)
 - [Check Set fields](fields-check-set.md)
-- [Configuration guide](../guides/configuration-guide.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

@@ -1,13 +1,11 @@
 # 03 · Account Team Covers Open Opportunity Owners
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to confirm that every open Opportunity owner is represented on the Account Team before a sales handoff.
+> On this page, compare Account Team members with open Opportunity owners to expose every owner who is missing from the team before a sales handoff.
 >
 > **Setup reference**
 >
-> Use the [Compare-two-queries reference](reference.md) for the complete setup fields and behavior.
+> Use the [Compare-two-queries reference](../../reference/reference-compare-two-queries.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -111,13 +109,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The Opportunity Owner and Account Team lists become these Framework outcomes and card values:
 
-- **Pass:** Every open Opportunity owner appears on the Account Team.
-
-- **Needs attention:** One or more open Opportunity owners are missing from the Account Team.
-
-- **Skip:** The Account has no open Opportunities.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | Every open Opportunity owner appears on the Account Team. |
+| **`FAIL`** | One or more open Opportunity owners is missing from the Account Team, so the card shows Needs attention. |
+| **`SKIPPED`** | The Account has no open Opportunities, so there are no required owners to compare. |
+| **Found** | Found represents the User IDs returned for open Opportunity owners. |
+| **Expected** | Expected represents the Account Team User IDs that must contain every open Opportunity owner. |
 
 ## Security and access
 
@@ -149,4 +149,4 @@ Record Health Check builds the Opportunity Owner and Account Team lists with the
 ## Related
 
 - [← Prev: Product continuity](02-open-pipeline-product-continuity.md)
-- [Browse the pattern library](../README.md)
+- [Browse Compare two queries examples](README.md)

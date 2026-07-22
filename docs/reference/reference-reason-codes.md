@@ -1,9 +1,7 @@
-# Reason Codes
+# Reference: Reason Codes
 
 > [!NOTE]
-> **On this page**
->
-> Look up the stable code behind a skipped, unable-to-evaluate, configuration, access, query, formula, Apex, or token result.
+> On this page, translate a stable Reason Code into the Framework decision that produced it and the first useful Salesforce configuration, access, query, Formula, Apex, or token check to perform.
 
 Use this registry to translate a stable **Reason Code** into its status, meaning, and first useful
 investigation. Reason Codes let administrators and integrations identify causes without interpreting
@@ -142,14 +140,14 @@ These often appear on the card chrome rather than a single Rule row:
 ## Consumer guidance
 
 1. Branch automation on `status` first, then `reasonCode`.
-2. Treat unknown future codes as additive — do not reject a code just because you have not seen it before, unless you maintain an intentionally strict allowlist.
+2. Treat unknown future codes as additive: do not reject a code just because you have not seen it before, unless you maintain an intentionally strict allowlist.
 3. Never show diagnostics-only codes to unauthorized users; trust the remapped public `reasonCode`.
 4. Log lines may mention events such as `DEPENDENCY_NOT_PASSED`; that is a **log event name**, not the public Rule `reasonCode` (`PREREQUISITE_NOT_MET` is).
 
 ## Related
 
-- [Apex API](../integration/apex-api/public-api.md)
+- [Apex API](../reference/reference-apex-api.md)
 - [Flow actions](../integration/flow-actions.md)
 - [Lifecycle events](../integration/lifecycle-events.md)
-- [Show Diagnostics](../guides/show-diagnostics.md)
-- [Design Specification](record-health-check-design-spec.md)
+- [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md)
+- [Architecture map](reference-architecture-map.md)

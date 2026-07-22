@@ -1,9 +1,7 @@
 # How Record Health Check works
 
 > [!NOTE]
-> **On this page**
->
-> Understand Check Sets, Rules, result meanings, and when Record Health Check fits better than a Validation Rule.
+> On this page, learn how Check Sets and Rules turn Salesforce record data into advisory readiness guidance, and when that experience serves users better than blocking a save with a Validation Rule.
 
 Record Health Check provides advisory guidance as a read-only card on a Lightning record page. An
 administrator groups related questions in a **Check Set**, configures each question as a **Rule**,
@@ -88,10 +86,10 @@ patterns that you can adapt.
 - **Formula errors:** confirm the formula returns true/false for pass/fail and uses valid field API names.
 - **User does not see troubleshooting details:** confirm **Show Diagnostics** is checked on the Check Set and the user has the Permission Set named `Record_Health_Check_Admin`.
 
-For deeper fixes, use [Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
+For deeper fixes, use [Configuration Guide: Troubleshooting](../guides/configure-check-sets-and-rules.md#13-troubleshooting).
 
 ## Next steps
 
-- [Create your first Rule](03-create-your-first-rule.md) — create your first Rule
-- [Configuration guide](../guides/configuration-guide.md) — configure every Evaluation Type
-- [Reason Codes](../reference/reason-codes.md) — diagnose unable and system-error outcomes
+- [Create your first Rule](03-create-your-first-rule.md): create your first Rule
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): configure every Evaluation Type
+- [Reason Codes](../reference/reference-reason-codes.md): diagnose unable and system-error outcomes

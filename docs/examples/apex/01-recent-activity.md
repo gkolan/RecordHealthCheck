@@ -1,13 +1,11 @@
 # 01 · Account Is Ready for Customer Follow-up
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to show recent completed Tasks and Events in one Account result and let an administrator choose the activity window.
+> On this page, build one Apex Rule that brings completed Tasks and Events into a single Account follow-up result while keeping the activity window configurable in Custom Metadata.
 >
 > **Setup reference**
 >
-> Use the [Apex reference](reference.md) for the complete setup fields and behavior.
+> Use the [Apex reference](../../reference/reference-apex.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -94,7 +92,7 @@ After deploying the class:
 Record Health Check parses the JSON automatically and passes it to the class as
 `context.parameters`, a map of parameter names to values. The class uses 30 days when `daysBack`
 is absent, null, nonnumeric, or outside `1`–`3650`; the shipped Rule explicitly uses 90 days. See
-[Parameter parsing patterns](reference.md#4-apex-parameters-json-apexparametersjson__c)
+[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
 for validation and type-conversion guidance.
 
 ## Step 2: Create the Apex class
@@ -117,7 +115,7 @@ Expected.
  * within a configurable look-back window. The number of days is read from
  * ApexParametersJson__c so an administrator can change it without editing code
  * ApexParametersJson__c: {"daysBack": 90}
- * Failure message, severity, and label all come from the CMT record — this
+ * Failure message, severity, and label all come from the CMT record: this
  * class determines PASS/FAIL and returns comparison values for the UI.
  */
 public with sharing class AccountHasRecentActivityCheck implements RecordHealthCheckRule {
@@ -230,7 +228,7 @@ Do not return `SKIP` from the class to represent applicability; configure **Appl
 Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](reference.md#6-returning-recordhealthcheckresult).
+[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
 
 
 ## Step 3: Configure the Rule
@@ -313,15 +311,19 @@ Formula, Query, and Compare two queries fields do not apply because this is the 
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The Apex class turns the activity counts and effective date window into these user-facing values:
 
-- **Pass:** A completed Task or Event with `ActivityDate` on or after the cutoff passes.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | A completed Task or Event with `ActivityDate` on or after the cutoff passes. |
+| **`FAIL`** | No matching activity shows Needs attention through a normal `FAIL`, not an evaluation error. |
+| **`SKIPPED`** | This configuration applies to every Account and has no prerequisite, so it does not produce `SKIPPED`. |
+| **Found** | Found shows separate counts for completed Tasks and Events inside the effective activity window. |
+| **Expected** | Expected shows the effective date window used by the Rule. |
 
-- **Needs attention:** No matching rows produce counts of zero and a normal `FAIL`, not an evaluation error.
-
-- **Found and Expected:** The class supplies separate Task and Event counts plus the date window. The Rule supplies the label, severity, and failure message.
-
-- **Parameter fallback:** Invalid `daysBack` values use 30 days. Expected shows the effective 30-day window so an administrator can spot a mistyped value.
+Invalid `daysBack` values use 30 days. Because Expected shows that effective 30-day window, an
+administrator can spot a mistyped parameter. The Rule still supplies the label, severity, and
+failure message.
 
 ## Security and access
 
@@ -383,4 +385,4 @@ Rule with a simpler Verify with a formula.
 ## Related
 
 - [Next: Combine per-row conditions on a child object →](02-open-opportunity-health.md)
-- [Browse the pattern library](../README.md)
+- [Browse Apex examples](README.md)

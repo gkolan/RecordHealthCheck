@@ -1,13 +1,11 @@
 # 03 · Partner Account Is Ready for Regional Assignment
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to request Billing Country only for Partner Accounts while leaving other Account Types unaffected.
+> On this page, use Formula applicability to require Billing Country for Partner Accounts and return `SKIPPED` for Accounts that do not belong in the regional-assignment process.
 >
 > **Setup reference**
 >
-> Use the [Formula reference](reference.md) for the complete setup fields and behavior.
+> Use the [Formula reference](../../reference/reference-formula.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -104,16 +102,18 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+Formula applicability and the Pass Condition become these Framework outcomes and card values:
 
-- **Skip:** Non-Partner Accounts are skipped and do not show a pass or fail for this Rule.
-
-- **Pass:** A Partner Account passes when Billing Country is populated.
-
-- **Needs attention:** A Partner Account with blank Billing Country shows Critical.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | A Partner Account passes when Billing Country is populated. |
+| **`FAIL`** | A Partner Account with blank Billing Country shows Needs attention with Critical severity. |
+| **`SKIPPED`** | A non-Partner Account is skipped because the Rule does not apply to its regional-assignment process. |
+| **Found** | Found shows the evaluated Billing Country value when the user reveals Found and Expected. |
+| **Expected** | Expected shows that Billing Country must be populated when the user reveals Found and Expected. |
 
 This Check Set uses **Show count only** for passed Rules so successful partner requirements do not
-crowd the card. Skipped Rules remain visible because the skipped result explains why the Rule did
+crowd the card. Skipped Rules remain visible because the `SKIPPED` result explains why the Rule did
 not apply.
 
 ## Security and access
@@ -144,4 +144,4 @@ Before activation, test a Partner Account and a non-Partner Account with the Per
 ## Related
 
 - [← Prev: Billing address review](02-billing-address-ready.md) · [Next: Branch handoff →](04-branch-handoff.md)
-- [Browse the pattern library](../README.md)
+- [Browse Formula examples](README.md)
