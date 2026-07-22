@@ -5,10 +5,10 @@
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
 [![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)
 
-**Can users trust this Salesforce record enough to move forward?**
-
-_Record Health Check answers that question on the record page, then shows the user what needs
-attention, why it matters, and how to act._
+> **Can users trust this Salesforce record enough to move forward?**
+>
+> _Record Health Check answers that question on the record page, then shows the user what needs
+> attention, why it matters, and how to act._
 
 Every Rule returns **Pass**, **Fail**, **Skipped**, or **Unable to Check**. When a record needs
 attention, the card can show its **Critical**, **Warning**, or **Info** severity; explain what was
@@ -18,7 +18,7 @@ Administrators define **Check Sets** and **Rules** in Custom Metadata. The Frame
 at read time, so one card can review the current record, related records, aggregate results, and
 data that existed before the Rules were created, without writing to the record.
 
-> [!IMPORTANT]
+> [!NOTE]
 > Record Health Check provides advisory guidance; it never blocks a save. When Salesforce must
 > prevent a record change, use a Validation Rule, Flow, or Apex trigger instead.
 
@@ -64,7 +64,7 @@ order.
 Start in a **sandbox**. The deployment installs the Framework, but it does not add example Check
 Sets, Rules, or Apex implementations to your org.
 
-> [!IMPORTANT]
+> [!NOTE]
 > **Already using Record Health Check?** Back up your Custom Metadata before deploying. Earlier
 > field API names are not supported by the current Framework, so follow the
 > [upgrade and rollback guide](docs/installation/04-upgrading.md).
