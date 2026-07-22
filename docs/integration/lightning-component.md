@@ -47,7 +47,7 @@ New to the model? Read [Integrate Record Health Check](../integration/README.md)
 
 For installation details, use [Create your first Rule](../installation/03-create-your-first-rule.md). Advanced
 diagnostic values additionally require **Show Diagnostics** and the
-`Record_Health_Check_View_Details` Custom Permission.
+`Record_Health_Check_View_Diagnostics` Custom Permission.
 
 ## Behavior matrix
 

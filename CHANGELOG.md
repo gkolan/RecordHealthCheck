@@ -79,7 +79,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 
 ### Permissions & diagnostics
 
-- One permission covers advanced and debug detail: `Record_Health_Check_View_Details`. The older `Record_Health_Check_Debug` permission is removed.
+- One permission covers advanced and debug detail: `Record_Health_Check_View_Diagnostics`. The older `Record_Health_Check_Debug` permission is removed.
 - Found/Expected source notes no longer appear on the card; with debug on, they show in the browser console under **Source detail**.
 - Console diagnostics are cleaner: short outcome line, compact run info, and a results table with reason code and evaluator type.
 - Tooltips wait **600ms** of hover before showing, so scanning rows does not flash popovers. Keyboard focus still shows sooner.
@@ -88,7 +88,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 
 - LWC Jest suite: **106** tests; Apex local suite: **162** tests (**96%** org-wide coverage on scratch).
 - Updated security notes, package manifest, docs, examples, help text, troubleshooting, and the design spec for the Check Set picker, setup messages, console-only source notes, the single details permission, Schema describe caching, and the upgrade steps for old LWC properties.
-- Troubleshooting guide clarifies that `Record_Health_Check_View_Details` alone still unlocks Formula **Passes when**; full card/console troubleshooting still needs **Show Troubleshooting Details**.
+- Troubleshooting guide clarifies that `Record_Health_Check_View_Diagnostics` alone still unlocks Formula **Passes when**; full card/console troubleshooting still needs **Show Troubleshooting Details**.
 - Client-side circular-dependency and skip messages now match Apex wording.
 - Setup availability (`getCheckSetAvailabilityForRecord`) is no longer Aura-cacheable, so activating a Check Set refreshes the blank-setup banner on the next load.
 
@@ -101,9 +101,8 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Added a divider above Found/Expected on busy inline rows, and Rerun now collapses any comparison caret the user had opened.
 - Wired the `Example - Every Contact Has Email` rule with a fix link and friendly summary as a demo.
 - Added comparison display controls for Found/Expected values, including Check Set `FoundExpectedDisplay__c` and the component-level `comparisonDisclosure` initial caret setting.
-- Added gated comparison provenance details via `RecordHealthCheckValueSource` and the `Record_Health_Check_View_Details` custom permission.
+- Added gated comparison provenance details via `RecordHealthCheckValueSource` and the `Record_Health_Check_View_Diagnostics` custom permission.
 - Added metadata-only category and remediation fields for future grouped display and guided fixes.
-- Added `Record_Health_Check_Configure` as a reserved custom permission for future configuration tooling.
 - Improved provenance notes: row counts pluralize consistently (`1 row` / `3 rows`) and source notes now attach directly to the matching Found/Expected value.
 - Simplified `Record_Health_Check_Rule__mdt` / `Set__mdt` labels, descriptions, and layouts for friendlier first-time admin setup (no engine changes).
 - Reworked the Check Set display defaults for a friendlier first run: renamed `CardRevealMode__c` from **Result Display Style** to **How checks appear** (clearer description and inline help that explain the on-load behavior), and changed its default to `OneAtATime` so checks reveal one at a time as the run advances. Passed and skipped checks now default to `Show` (`PassedChecksDisplay__c` / `SkippedChecksDisplay__c`) so viewers see what passed and what was skipped; `Hide` remains the power-user opt-in for a summarize-only, failures-focused view. Example Check Sets updated to match, except `Account_Data_Quality`, kept as the intentional failures-only demo.

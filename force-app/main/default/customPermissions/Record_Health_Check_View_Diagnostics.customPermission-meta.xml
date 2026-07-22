@@ -2,6 +2,6 @@
 <CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
     <description
   >Allows viewing Advanced-tier Record Health Check details, including troubleshooting output when enabled and comparison diagnostic details in console diagnostics.</description>
-    <label>Record Health Check View Details</label>
+    <label>Record Health Check View Diagnostics</label>
     <isLicensed>false</isLicensed>
 </CustomPermission>

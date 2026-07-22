@@ -6,11 +6,7 @@
     <hasActivationRequired>false</hasActivationRequired>
     <customPermissions>
         <enabled>true</enabled>
-        <name>Record_Health_Check_Configure</name>
-    </customPermissions>
-    <customPermissions>
-        <enabled>true</enabled>
-        <name>Record_Health_Check_View_Details</name>
+        <name>Record_Health_Check_View_Diagnostics</name>
     </customPermissions>
     <classAccesses>
         <apexClass>RecordHealthCheckController</apexClass>
