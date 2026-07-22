@@ -102,7 +102,7 @@ private class RecordHealthCheckEngineTest {
       result.status,
       'Unexpected result detail: ' + result.detailMessage
     );
-    // Direct evaluator calls expose the v2 evaluator contract. The engine maps
+    // Direct evaluator calls expose the evaluator contract. The engine maps
     // this value to the LWC wire string only at its response boundary.
     System.assertEquals('QUERY', result.evaluatorType);
   }

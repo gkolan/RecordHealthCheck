@@ -42,7 +42,7 @@ Install into a **sandbox** first. Core has one production manifest and contains 
 Sets, Rules, or example Apex implementations.
 
 > [!IMPORTANT]
-> **Upgrading to V2:** V2 is a breaking metadata-contract release with no dual-read support for v1.x field names. Back up custom metadata and follow the [V2 upgrade and rollback guide](docs/v2/installation/upgrading-to-v2.md) before deploying.
+> **Upgrading from an earlier release:** The current metadata contract does not read v1.x field names. Back up Custom Metadata and follow the [upgrade and rollback guide](docs/installation/04-upgrading.md) before deploying.
 
 **Option 1 — Salesforce CLI.**
 
@@ -60,10 +60,9 @@ sf org assign permset --name Record_Health_Check_User
 
 Assign the **`Record_Health_Check_User`** permission set, install or create a Check Set, add the
 **recordHealthCheck** component to a Lightning record page, and select that Check Set in App
-Builder. Ready-made Check Sets live in
-[RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples).
+Builder. To create the configuration in Setup, follow [Create your first Rule](docs/installation/03-create-your-first-rule.md).
 
-Full walkthrough: [First 10 Minutes](docs/v2/start/first-10-minutes.md)
+Full walkthrough: [Install and Verify](docs/installation/02-install-and-verify.md)
 
 ## What You Get
 
@@ -71,32 +70,24 @@ Full walkthrough: [First 10 Minutes](docs/v2/start/first-10-minutes.md)
 - Custom Metadata configuration
 - Formula, SOQL, compare-two-SOQL, and Apex checks
 - Guided remediation: optional "Fix it" deep links and fix instructions on failing checks
-- Per-placement visual treatment: SLDS 1 (default) or SLDS 2, set on the App Builder card — see [Design System](docs/v2/guides/design-system.md)
+- Per-placement visual treatment: SLDS 1 (default) or SLDS 2, set on the App Builder card — see [Design System](docs/guides/design-system.md)
 - User and Admin Permission Sets
 
 ## Documentation
 
-Current documentation is under [`docs/v2/`](docs/v2/). For V1 migrations, start with [Upgrading to V2](docs/v2/installation/upgrading-to-v2.md).
+Full documentation is in [docs/](docs/README.md). For migrations from an earlier release, start with [Upgrading Record Health Check](docs/installation/04-upgrading.md).
 
-- Learn the concepts: [Admin Quick Start](docs/v2/installation/admin-quick-start.md)
-- Create your first Rule: [Getting Started](docs/v2/installation/getting-started.md#step-4-create-your-first-rule)
-- Install an example pack: [Examples install guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)
-- Add a "Fix it" link: [Action Links and Fix Instructions](docs/v2/guides/action-links.md)
-- Full field reference: [Configuration Guide](docs/v2/guides/configuration-guide.md) or [Apex reference](docs/v2/apex/apex-reference.md)
+- Learn the concepts: [How It Works](docs/installation/01-how-it-works.md)
+- Create your first Rule: [Create your first Rule](docs/installation/03-create-your-first-rule.md)
+- Adapt a practical Rule: [Examples library](docs/examples/README.md)
+- Add a "Fix it" link: [Action Links and Fix Instructions](docs/guides/action-links.md)
+- Full field reference: [Configuration Guide](docs/guides/configuration-guide.md) or [Apex reference](docs/examples/apex/reference.md)
 
-## Example Library
+## Example library
 
-Reusable scenarios, Rule patterns, and example Apex classes live in
-[**RecordHealthCheck-Examples**](https://github.com/gkolan/RecordHealthCheck-Examples). Core ships
-no example metadata. V1 bundled examples with Core; V2 installs optional packs independently after
-Core. See the
-[Core vs Examples boundary](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/core-and-examples-boundary.md).
-
-- [Install packs (Setup · Git/CLI · Local DX)](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/install.md)
-- [Pack catalog by outcome](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/catalog/by-outcome.md)
-- [Pattern library](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/pattern-library/index.md)
-- [Authoring guide](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/authoring-guide.md)
-- [Pack index](https://github.com/gkolan/RecordHealthCheck-Examples/blob/main/docs/examples-index.md)
+The [examples library](docs/examples/README.md) contains distinct Formula, Query, Compare two
+queries, and Apex patterns. Each example explains the business decision, exact Rule configuration,
+Framework behavior, security considerations, and tests. Core ships no example Custom Metadata.
 
 ## Local Checks
 

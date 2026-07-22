@@ -1,0 +1,149 @@
+# Lightning component runs and lifecycle events
+
+> [!NOTE]
+> **On this page**
+>
+> Understand automatic and user-initiated card runs, visible outputs, concurrency, and when lifecycle events can publish.
+
+Use this reference to choose whether a Check Set runs when the record page opens or waits for the
+user to select **Run**. The choice affects the card experience and whether the run is eligible to
+publish lifecycle events.
+
+The **Record Health Check** Lightning Web Component supports both experiences. Automatic page-load
+evaluation is read-only and never publishes. An explicit **Run** or **Rerun** is a deliberate user
+action and can publish when the Check Set and Rules opt in.
+
+## Choose the run experience
+
+| User experience | Check Set setting | When to use it | Lifecycle events |
+| --- | --- | --- | --- |
+| Results appear after the page opens | **When the page opens** (`RUN_ON_LOAD`) | Users need passive readiness guidance whenever they view the record | Never publishes |
+| The card waits for the user | **When the user clicks Run** (`RUN_ON_REQUEST`) | The review is deliberate, data may change first, or publication may be enabled | Run and Rerun can publish when configured |
+
+## What the component is
+
+- A record-page component that displays and coordinates runs for one configured Check Set.
+- A transient view of Set and Rule results under the current user's access.
+- An optional event publisher only when the user explicitly clicks Run or Rerun.
+
+## What the component is not
+
+- It is not a result-history store.
+- It does not block record save or automatically remediate failures.
+- Automatic page load is not consent to publish lifecycle events.
+- A completed card does not prove that an event subscriber processed anything.
+
+New to the model? Read [Integrate Record Health Check](../integration/overview.md) first.
+
+## Prerequisites and quick start
+
+1. Assign **Record Health Check User** to the viewer and grant access to the record and fields used
+   by the selected Rules.
+2. In Lightning App Builder, add **Record Health Check** to a record page and select an active Check
+   Set for that object.
+3. On the Check Set Custom Metadata record, set **When Checks Run** to **When the page opens** or
+   **When the user clicks Run**.
+4. Save and activate the Lightning page, then open a matching record.
+5. Confirm the card returns rows and summary counts. Click Run or Rerun only when an explicit run is
+   intended.
+
+For installation details, use [Create your first Rule](../installation/03-create-your-first-rule.md). Advanced
+diagnostic values additionally require **Show Diagnostics** and the
+`Record_Health_Check_View_Details` Custom Permission.
+
+## Behavior matrix
+
+| Component action | Source | Set event | Rule events |
+| --- | --- | --- | --- |
+| Automatic page-load run | `RUN_ON_LOAD` | Never | Never |
+| User clicks Run | `USER_INITIATED` | Enabled Check Set | Enabled Rules |
+| User clicks Rerun | `USER_INITIATED` | Enabled Check Set | Enabled Rules |
+
+Custom Metadata switches remain off by default:
+
+- `PublishRunEvent__c` enables one Set Run completion event for the Check Set.
+- `PublishResultEvent__c` enables a Rule Result event for that Rule.
+
+An automatic run never publishes even when both switches are enabled.
+
+The block is intentional. Opening or refreshing a record page is passive navigation, not a request
+to notify downstream systems. If automatic runs published, ordinary browsing could consume Platform
+Event allocations, create duplicate history, and trigger subscriber automation repeatedly. Run and
+Rerun provide the deliberate boundary required before publication is eligible.
+
+## Component inputs and visible outputs
+
+| Input/context | Meaning |
+| --- | --- |
+| Check Set selected in App Builder | Configuration loaded and evaluated by the card |
+| Current record ID | Record evaluated |
+| Check Set **When Checks Run** = **When the page opens** (`RUN_ON_LOAD`) | Run after definitions load; publication blocked |
+| Check Set **When Checks Run** = **When the user clicks Run** (`RUN_ON_REQUEST`) | Wait for an explicit Run; publication can be enabled |
+| Run or Rerun button | Explicit user-initiated run; publication can be enabled |
+
+The visible output is the completed row list and summary counts. Results remain in component state;
+the component does not create a history record.
+
+## Event outputs for Run and Rerun
+
+### Check Set Run event
+
+After every row resolves, an opted-in Set can produce `Record_Health_Check_Set_Run__e` with
+`Phase__c = COMPLETED` and `Source__c = USER_INITIATED`. See
+[Check Set Run event fields](../metadata/event-set-run.md#fields)
+for the complete field list.
+
+### Rule Result event
+
+Each server-finalized, opted-in Rule can produce `Record_Health_Check_Rule_Result__e` with
+`Source__c = USER_INITIATED`. See
+[Rule Result event fields](../metadata/event-rule-result.md#fields)
+for the complete field list.
+
+## Why publication happens in two stages
+
+The component evaluates Rules through separate Apex requests so it can enforce dependencies,
+control concurrency, stop after system errors, and progressively reveal results.
+
+When **Stop after a system error** is unchecked, the component allows up to five evaluations at a
+time so the card can finish promptly without flooding the browser or Salesforce with one request per
+Rule all at once. When it is checked, evaluation becomes sequential; the component must know whether
+the current Rule returned `ERROR` before deciding whether the next Rule is allowed to start.
+
+For an explicit run:
+
+1. Each server-finalized Rule result can publish its own Rule Result event after that Apex request commits.
+2. When every row has resolved, the component makes one completion call.
+3. That call can publish one aggregate Set Run event after its transaction commits.
+
+Results the client determines without calling Apex—such as a dependency skip—count toward the Set
+totals but do not create a separate Rule Result event, because no server Rule evaluation finalized.
+
+## Best-effort behavior
+
+Event publication never changes the card result. If the completion call or event publication fails,
+the user still sees the completed health-check results. Consumers should monitor their own event and
+subscriber processing rather than treating the card as delivery confirmation.
+
+Use the [lifecycle-events overview](lifecycle-events.md) for cross-event behavior and
+the linked metadata references for exact field types, replay, retention, and subscriber design.
+
+## Versioning and compatibility
+
+The component consumes the stable synchronous response contract `1.0`. Events created by explicit
+Run or Rerun use the independent lifecycle-event contract `1.0` and report Core `2.0.0`. No
+component run behavior is currently deprecated.
+
+The contract numbers identify response and event shapes for integrations; Core identifies the
+installed Framework release. Keeping them separate allows compatible Framework updates without
+making the Lightning component or subscribers treat every product release as a breaking schema
+change.
+
+## Related
+
+- [Platform events](lifecycle-events.md)
+- [Apex API](../integration/apex-api/public-api.md)
+- [Flow actions](flow-actions.md)
+- [Configuration guide](../guides/configuration-guide.md)
+- [Show Diagnostics](../guides/show-diagnostics.md)
+- [Documentation standard](../development/documentation-standard.md)

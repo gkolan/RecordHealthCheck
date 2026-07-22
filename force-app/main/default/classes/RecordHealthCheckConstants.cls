@@ -199,7 +199,7 @@ public with sharing class RecordHealthCheckConstants {
   }
 
   // ─── LWC wire contract ──────────────────────────────────────────────────────
-  // Check Set picklists store v2 API values; the LWC still compares against the
+  // Check Set picklists store current API values; the LWC still compares against the
   // original Automatic/Manual, Show/Hide, etc. strings. Map at the Apex boundary.
 
   public static String toLwcTriggerMode(String cardRunMode) {

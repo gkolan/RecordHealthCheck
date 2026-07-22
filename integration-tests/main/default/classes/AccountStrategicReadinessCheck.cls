@@ -5,7 +5,7 @@
 
 /**
  * Reference RecordHealthCheckRule — weighted readiness score for Strategic Accounts.
- * Example implementation owned by RecordHealthCheck-Examples; retained here only as an integration fixture.
+ * Example implementation retained here only as an integration-test fixture.
  * {"minScore": 80, "activityDaysBack": 60}
  */
 public with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
