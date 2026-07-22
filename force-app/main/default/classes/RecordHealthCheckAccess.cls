@@ -11,7 +11,7 @@ public with sharing class RecordHealthCheckAccess {
   /**
    * Single Advanced-tier permission. Power-user explanation (Passes when,
    * value source) and troubleshooting internals (raw exceptions, timings) are one
-   * audience, so they share one grant: Record_Health_Check_View_Details.
+   * audience, so they share one grant: Record_Health_Check_View_Diagnostics.
    * The Check Set's ShowDiagnostics__c flag still decides *when* the troubleshooting
    * subset is shown — it is a per-set switch, not a second permission.
    */
@@ -20,7 +20,7 @@ public with sharing class RecordHealthCheckAccess {
       return viewDetailsPermissionOverride;
     }
     return FeatureManagement.checkPermission(
-      'Record_Health_Check_View_Details'
+      'Record_Health_Check_View_Diagnostics'
     );
   }
 

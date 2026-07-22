@@ -20,13 +20,13 @@ when the investigation is complete.
 
 | Question | Answer on this page |
 | --- | --- |
-| Why does checking Show Diagnostics appear to do nothing? | The viewer also needs `Record_Health_Check_View_Details` through the Admin Permission Set |
+| Why does checking Show Diagnostics appear to do nothing? | The viewer also needs `Record_Health_Check_View_Diagnostics` through the Admin Permission Set |
 | What changes on the card? | Authorized troubleshooting lines and details appear after a run |
 | What appears in the browser console? | One `[RHC]` group containing run identity, results, timing, and available source details |
 | How do I return to normal operation? | Uncheck Show Diagnostics and remove temporary administrator access when appropriate |
 
 > [!WARNING]
-> Turning on **Show Diagnostics** on the Check Set alone does **nothing** visible. Both the Check Set flag **and** the `Record_Health_Check_View_Details` permission are required for troubleshooting output.
+> Turning on **Show Diagnostics** on the Check Set alone does **nothing** visible. Both the Check Set flag **and** the `Record_Health_Check_View_Diagnostics` permission are required for troubleshooting output.
 
 ## Both steps are required
 
@@ -35,7 +35,7 @@ when the investigation is complete.
 | **1. Check Set** | Check **Show Diagnostics** | **Custom Metadata Types** → **Record Health Check Set** → open your Check Set → **Show Diagnostics** (`ShowDiagnostics__c`) |
 | **2. User** | Assign the Permission Set named `Record_Health_Check_Admin` | **Permission Sets** → open `Record_Health_Check_Admin` → **Manage Assignments** → add the troubleshooting user |
 
-Step 2 grants the **`Record_Health_Check_View_Details`** Custom Permission, which unlocks advanced detail. The Check Set's **Show Diagnostics** flag then decides when that detail appears on the card and in the console.
+Step 2 grants the **`Record_Health_Check_View_Diagnostics`** Custom Permission, which unlocks advanced detail. The Check Set's **Show Diagnostics** flag then decides when that detail appears on the card and in the console.
 
 The two controls answer different questions. **Show Diagnostics** lets an administrator choose
 which Check Sets may produce troubleshooting output. The Custom Permission decides which users may
@@ -47,13 +47,13 @@ Reason Codes, source details, or access failures to every user of the Lightning 
 | Permission Set | API name | Can run checks | Includes View Details |
 | --- | --- | --- | --- |
 | Record Health Check User | `Record_Health_Check_User` | Yes | No |
-| Record Health Check Admin | `Record_Health_Check_Admin` | Yes | Yes: includes `Record_Health_Check_View_Details` |
+| Record Health Check Admin | `Record_Health_Check_Admin` | Yes | Yes: includes `Record_Health_Check_View_Diagnostics` |
 
 If you checked Show Diagnostics on the Check Set but still see a normal card, the most common cause is that the viewing user does not have the Permission Set named **`Record_Health_Check_Admin`**.
 
 ## What View Details unlocks
 
-`Record_Health_Check_View_Details` is the Custom Permission that authorizes advanced result and
+`Record_Health_Check_View_Diagnostics` is the Custom Permission that authorizes advanced result and
 troubleshooting information. The Record Health Check Admin Permission Set includes it.
 
 | Capability | View Details required | Show Diagnostics required | What the authorized user receives |
@@ -80,10 +80,10 @@ After you **run** the checks (automatic or manual), and only when both steps abo
 | **Gray line under each result** | Compact summary, for example `FAIL · FORMULA_FALSE · 38ms · Formula`: Status, Reason Code, duration, and Evaluation Type (API value). |
 | **Troubleshooting detail** | On checks that errored or did not run, a **Troubleshooting detail** block showing the technical message inline (SOQL problems, missing field access, and similar) |
 | **Found / Expected** | On failing checks, labelled chips when the engine captured values. Found / Expected visibility is controlled by **Found/Expected Display** on the Check Set. |
-| **Found and Expected source details** | When the viewer has `Record_Health_Check_View_Details`, source details are included in the browser-console diagnostics, not on the card. |
+| **Found and Expected source details** | When the viewer has `Record_Health_Check_View_Diagnostics`, source details are included in the browser-console diagnostics, not on the card. |
 | **Console hint** | Small footnote at the bottom of the card: **Check console (F12) for diagnostics.** |
 
-Users **without** `Record_Health_Check_View_Details` never see the gray lines, Troubleshooting detail blocks, or the console hint: even when Show Diagnostics is checked on the Check Set. This is intentional so technical detail is not exposed to everyday users.
+Users **without** `Record_Health_Check_View_Diagnostics` never see the gray lines, Troubleshooting detail blocks, or the console hint: even when Show Diagnostics is checked on the Check Set. This is intentional so technical detail is not exposed to everyday users.
 
 ## What you see in the browser console
 

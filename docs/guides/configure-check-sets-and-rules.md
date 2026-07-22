@@ -158,7 +158,7 @@ does not guarantee two Account parents.
 
 ### Showing Found vs Expected (optional)
 
-By default a Formula check shows only a **Passes when** line: the pass/fail formula text, unquoted: and no **Found** value. That **Passes when** line is **Advanced-tier**: users without `Record_Health_Check_View_Details` see the failure message only (plus any display-formula Found/Expected chips). For balance and comparison checks you can declare two optional single-value formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
+By default a Formula check shows only a **Passes when** line: the pass/fail formula text, unquoted: and no **Found** value. That **Passes when** line is **Advanced-tier**: users without `Record_Health_Check_View_Diagnostics` see the failure message only (plus any display-formula Found/Expected chips). For balance and comparison checks you can declare two optional single-value formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
 
 | Field | Purpose |
 | ----- | ------- |
@@ -370,7 +370,7 @@ Before activating a Check Set:
 - [ ] `NoRowsResult__c` is set for `ANY_ROW_PASSES` / `ALL_ROWS_PASS` / `COMPARE_AS_LISTS` Rules.
 - [ ] Apex Rules reference deployed `RecordHealthCheckRule` implementations.
 - [ ] Dependencies reference active Rules with lower Evaluation Order in the same Check Set.
-- [ ] **Show Diagnostics** is off for production unless actively troubleshooting (requires `Record_Health_Check_View_Details` via `Record_Health_Check_Admin`: see [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md)).
+- [ ] **Show Diagnostics** is off for production unless actively troubleshooting (requires `Record_Health_Check_View_Diagnostics` via `Record_Health_Check_Admin`: see [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md)).
 - [ ] Lifecycle publication switches stay off until subscribers and allocations are reviewed ([Lifecycle events](../integration/lifecycle-events.md)).
 - [ ] Tested on records that pass, fail, skip, and unable-to-evaluate.
 

@@ -148,7 +148,7 @@ Minimum fields when creating a new Check Set:
 | `SkippedChecksDisplay__c` | Skipped Checks | Yes | `SHOW_EACH_CHECK` or `SHOW_COUNT_ONLY` |
 | `FoundExpectedDisplay__c` | Found/Expected Display | Yes | `ON_DEMAND` (default), `FAILURES_ONLY`, or `ALL_ROWS` |
 | `IsActive__c` | Active | No | `true` |
-| `ShowDiagnostics__c` | Show Diagnostics | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Details` (from `Record_Health_Check_Admin`). See [Show Diagnostics guide](troubleshoot-with-show-diagnostics.md). |
+| `ShowDiagnostics__c` | Show Diagnostics | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Diagnostics` (from `Record_Health_Check_Admin`). See [Show Diagnostics guide](troubleshoot-with-show-diagnostics.md). |
 | `PublishRunEvent__c` | Publish Run Event | No | `false` by default; page-load runs never publish |
 
 **Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `checkSetDeveloperName`.

@@ -93,7 +93,7 @@ The evaluation path is **read-only** (`with sharing`, `WITH USER_MODE`).
 | Class | Responsibility |
 | ----- | -------------- |
 | `RecordHealthCheckLogger` | Structured `[RHC]` logging. |
-| `RecordHealthCheckAccess` | `Record_Health_Check_View_Details` gating. |
+| `RecordHealthCheckAccess` | `Record_Health_Check_View_Diagnostics` gating. |
 | `RecordHealthCheckValueSource` | Comparison diagnostic detail rendering. |
 | `RecordHealthCheckSetPicklist` | App Builder Check Set picker. |
 

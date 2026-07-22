@@ -183,8 +183,7 @@
         <name>LightningComponentBundle</name>
     </types>
     <types>
-        <members>Record_Health_Check_Configure</members>
-        <members>Record_Health_Check_View_Details</members>
+        <members>Record_Health_Check_View_Diagnostics</members>
         <name>CustomPermission</name>
     </types>
     <types>

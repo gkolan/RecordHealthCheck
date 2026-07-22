@@ -54,7 +54,7 @@ New to the model? Read [Integrate Record Health Check](../integration/README.md)
 - Calls run `with sharing` and evaluation uses the calling user's record and field access. The API
   does not elevate access.
 - Restricted diagnostic values are returned only when the user has the
-  `Record_Health_Check_View_Details` Custom Permission. Do not make business logic depend on those
+  `Record_Health_Check_View_Diagnostics` Custom Permission. Do not make business logic depend on those
   optional values.
 
 ## Quick examples

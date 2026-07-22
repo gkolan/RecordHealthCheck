@@ -96,5 +96,5 @@ When an action URL is unsafe or longer than 2,000 characters, the Rule can still
 
 - [Check Set fields](../metadata/fields-check-set.md)
 - [Rule fields](../metadata/fields-rule.md)
-- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
+- [Configuration guide](../guides/configure-check-sets-and-rules.md)
 - [Architecture map](reference-architecture-map.md)
