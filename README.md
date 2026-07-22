@@ -27,16 +27,20 @@ data that existed before the Rules were created, without writing to the record.
 <table>
   <tr>
     <td width="48%" valign="top">
-      <p><b>A clear answer on the record page</b></p>
-      <p><b>Example: Account 360 Health Check.</b> This Check Set brings signals from the Account's Contacts, Opportunities, Cases, Contracts, and Activities into the place where the user is already working. When a Rule needs attention, a <b>Fix it</b> link can open a report already filtered to this Account.</p>
+      <p><b>Example: Account 360 Health Check</b></p>
+      <p>An account team can review whether an Account is ready for the next conversation without leaving the record page.</p>
       <ul>
-        <li><b>Scan the outcome.</b> The footer summarizes Passed, Failed, Warning, Info, and Skipped Rules.</li>
-        <li><b>Focus attention.</b> Passed Rules stay compact, while failed Rules show their severity and guidance.</li>
-        <li><b>Understand the result.</b> Expanded rows can show what the Framework found, what it expected, and why a Rule was skipped.</li>
-        <li><b>Take the next step.</b> A failed Rule can provide fix instructions and an optional read-only <b>Fix it</b> link.</li>
+        <li><b>Review the whole Account.</b> The Check Set evaluates the Account together with its Contacts, Opportunities, Cases, Contracts, and Activities.</li>
+        <li><b>Start with the summary.</b> The footer shows how many results Passed, Failed, raised a Warning or Info issue, or were Skipped.</li>
+        <li><b>Open the detail that matters.</b> Passed Rules remain compact. Other rows can explain the issue and severity, show what the Framework found and expected, or state why the Rule did not apply.</li>
+        <li><b>Go directly to the next step.</b> When an issue has a clear destination, a <b>Fix it</b> link can take the user there. In this example, it opens a report already filtered to the Account.</li>
       </ul>
-      <p><b>Built for administrators to adapt</b></p>
-      <p>Each row is a Rule in a Check Set. Administrators use Custom Metadata to decide what the card checks, when a Rule applies, and whether the card runs when the page opens or when the user selects <b>Run</b>. The same component can support any Salesforce object with a record page.</p>
+      <p><b>Administrators control the experience</b></p>
+      <ul>
+        <li>Each check shown on the card is a Rule in the selected Check Set.</li>
+        <li>Custom Metadata defines what each Rule evaluates, when it applies, and whether the card runs when the page opens or when the user selects <b>Run</b>.</li>
+        <li>The same component can be configured for any Salesforce object with a record page.</li>
+      </ul>
       <!-- Video walkthrough: replace the line below with
            <p><sub>▶ <a href="https://youtu.be/YOUR_VIDEO_ID">Watch the two-minute walkthrough</a></sub></p> -->
       <p><sub>▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See it in motion (animated GIF)</a></sub></p>
