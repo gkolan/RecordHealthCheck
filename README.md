@@ -27,7 +27,7 @@ data that existed before the Rules were created, without writing to the record.
 <table>
   <tr>
     <td width="48%" valign="top">
-      <p><b>Example: Account 360 Health Check</b> &nbsp;▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">Animated GIF</a></p>
+      <p><b>Example: Account 360 Health Check</b><br />▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">Animated GIF</a></p>
       <p>An account team can review whether an Account is ready for the next conversation without leaving the record page.</p>
       <ul>
         <li><b>Review the whole Account.</b> The Check Set evaluates the Account together with its Contacts, Opportunities, Cases, Contracts, and Activities.</li>
