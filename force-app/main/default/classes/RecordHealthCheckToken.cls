@@ -1,4 +1,4 @@
-/** A parsed V2 merge token and its source span. */
+/** A parsed namespaced merge token and its source span. */
 public class RecordHealthCheckToken {
   public String expression;
   public String namespaceName;

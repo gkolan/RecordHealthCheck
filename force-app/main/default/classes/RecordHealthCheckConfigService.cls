@@ -591,7 +591,7 @@ public with sharing class RecordHealthCheckConfigService {
     );
     if (tokenIssue != null) {
       throw new ConfigException(
-        'Invalid V2 merge token configuration on Rule "' +
+        'Invalid merge token configuration on Rule "' +
           rule.DeveloperName +
           '": ' +
           tokenIssue.message,

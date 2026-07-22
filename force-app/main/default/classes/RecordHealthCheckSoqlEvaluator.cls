@@ -624,7 +624,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       ' did not pass';
   }
 
-  // Resolves an admin-authored summary through the shared V2 token context.
+  // Resolves an admin-authored summary through the shared token context.
   private String resolveSummaryTemplate(
     String template,
     Integer failing,

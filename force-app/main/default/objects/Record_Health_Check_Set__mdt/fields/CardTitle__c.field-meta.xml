@@ -3,7 +3,7 @@
     <fullName>CardTitle__c</fullName>
     <label>Card Title</label>
     <description
-  >The title shown at the top of the health check card on the record page. Required. Example: "Account Data Quality".</description>
+  >The title shown at the top of the Record Health Check card on the Lightning record page. Required. Example: "Account Data Quality".</description>
     <type>Text</type>
     <length>255</length>
         <inlineHelpText

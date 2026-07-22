@@ -11,7 +11,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - `RecordHealthCheckDualSoqlEvaluator` renamed to `RecordHealthCheckCompareQueriesEvaluator`.
 - Plugin API `RecordHealthCheckProvenance` / `actualProvenance` / `expectedProvenance` renamed to `RecordHealthCheckValueSource` / `actualValueSource` / `expectedValueSource`.
 - `RecordHealthCheckComparatorEngine` renamed to `RecordHealthCheckComparisonEngine` (comparison helper methods renamed accordingly).
-- Rule and Check Set field API names changed as listed in `docs/v2/reference/field-migration-before-after.md`; V2 does not dual-read v1.x names.
+- Rule and Check Set field API names changed as listed in `docs/installation/04-upgrading.md`; the current release does not read v1.x names.
 - Public constant names ending in `COMPARATORS` now end in `OPERATORS`; value-resolver methods named `scalarFromRow` / `scalarList` are now `singleValueFromRow` / `singleValueList`.
 - Reason code `INVALID_COMPARATOR` is now `INVALID_OPERATOR`.
 - Category vocabulary changed, Severity `Error` became `Critical`, and long-text fields that became Text are limited to 255 characters.
@@ -22,7 +22,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Versioned, bounded synchronous Rule/Check Set façade and Flow action.
 - Opt-in, Publish After Commit Set Run and Rule Result lifecycle events.
 - Stable reason-code catalog, diagnostics-only restricted detail, and explicit skip causes.
-- Completed the hard-cut V2 identity contract across LWC, Apex, Flow, diagnostics, and tests:
+- Completed the hard-cut identity contract across LWC, Apex, Flow, diagnostics, and tests:
   `checkSetDeveloperName` identifies a Check Set and `ruleDeveloperName` identifies a Rule. No
   compatibility aliases or internal mapping fields remain. `completeRun` now also accepts
   `recordId`.

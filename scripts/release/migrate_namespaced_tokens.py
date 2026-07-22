@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit or convert legacy Record Health Check merge tokens to strict V2."""
+"""Audit or convert legacy Record Health Check merge tokens to namespaced syntax."""
 
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ TARGETS = (
 # `{!Field}` tokens were the real syntax. They must keep it, so they are never
 # scanned or rewritten. (BLK-4: policy (a) — immutable v1 archive.)
 ARCHIVE = ROOT / "docs" / "v1"
-MIGRATION_MAP = ROOT / "docs" / "v2" / "reference" / "field-migration-before-after.md"
-# V2 docs occasionally need to *show* a rejected legacy token as an example
+MIGRATION_MAP = ROOT / "docs" / "installation" / "04-upgrading.md"
+# Current docs occasionally need to *show* a rejected legacy token as an example
 # (e.g. the reason-codes catalog). A line carrying this marker is left as-is so
 # the gate can't be re-broken by a legitimate documentation example.
 ALLOW_MARKER = "legacy-token-ok"

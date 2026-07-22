@@ -16,7 +16,8 @@
   "scripts": {
     "lint": "eslint --no-error-on-unmatched-pattern **/{aura,lwc}/**/*.js",
     "check:namespaced-tokens": "python3 scripts/release/migrate_namespaced_tokens.py check",
-    "check:docs": "node scripts/release/check_v2_docs.mjs",
+    "check:docs": "node scripts/release/check_docs.mjs && node scripts/release/audit_docs_quality.mjs --check",
+    "audit:docs": "node scripts/release/audit_docs_quality.mjs",
     "test": "npm run test:unit",
     "test:unit": "sfdx-lwc-jest",
     "test:unit:watch": "sfdx-lwc-jest --watch",

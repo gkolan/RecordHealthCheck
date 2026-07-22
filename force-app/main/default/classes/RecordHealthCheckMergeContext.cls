@@ -1,4 +1,4 @@
-/** Typed sources available to V2 merge-token resolution. */
+/** Typed sources available to namespaced merge-token resolution. */
 public class RecordHealthCheckMergeContext {
   public SObject record;
   public Record_Health_Check_Rule__mdt rule;
