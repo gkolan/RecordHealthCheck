@@ -27,7 +27,7 @@ data that existed before the Rules were created, without writing to the record.
 <table>
   <tr>
     <td width="48%" valign="top">
-      <p><b>Example: Account 360 Health Check</b></p>
+      <p><b>Example: Account 360 Health Check</b> &nbsp;▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">Animated GIF</a></p>
       <p>An account team can review whether an Account is ready for the next conversation without leaving the record page.</p>
       <ul>
         <li><b>Review the whole Account.</b> The Check Set evaluates the Account together with its Contacts, Opportunities, Cases, Contracts, and Activities.</li>
@@ -41,9 +41,6 @@ data that existed before the Rules were created, without writing to the record.
         <li>Custom Metadata defines what each Rule evaluates, when it applies, and whether the card runs when the page opens or when the user selects <b>Run</b>.</li>
         <li>The same component can be configured for any Salesforce object with a record page.</li>
       </ul>
-      <!-- Video walkthrough: replace the line below with
-           <p><sub>▶ <a href="https://youtu.be/YOUR_VIDEO_ID">Watch the two-minute walkthrough</a></sub></p> -->
-      <p><sub>▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">See it in motion (animated GIF)</a></sub></p>
     </td>
     <td width="52%" valign="top">
       <img src="assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
