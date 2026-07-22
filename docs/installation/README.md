@@ -1,9 +1,7 @@
 # Install or upgrade Record Health Check
 
 > [!NOTE]
-> **On this page**
->
-> Choose the right path for a new installation or an upgrade, and understand the result of each step.
+> On this page, choose a safe route for a new installation or an existing-org upgrade and see the Salesforce outcome each step is designed to prove.
 
 Use the new-install path when the org does not already contain Record Health Check. Use the upgrade
 path when any earlier version, Custom Metadata configuration, Lightning placement, Apex caller, or
@@ -33,6 +31,6 @@ guide covers renamed values, integration changes, verification, and rollback.
 
 ## Next steps
 
-- [Documentation home](../README.md) — choose configuration, integration, metadata, or troubleshooting guidance
-- [Examples library](../examples/README.md) — learn through complete Salesforce scenarios
-- [Metadata reference](../metadata/README.md) — look up current Setup labels, API names, allowed values, and defaults
+- [Documentation home](../README.md): choose configuration, integration, metadata, or troubleshooting guidance
+- [Examples library](../examples/README.md): learn through complete Salesforce scenarios
+- [Metadata reference](../metadata/README.md): look up current Setup labels, API names, allowed values, and defaults

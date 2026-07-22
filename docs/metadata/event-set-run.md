@@ -1,9 +1,7 @@
 # Check Set Run Platform Event (`Record_Health_Check_Set_Run__e`)
 
 > [!NOTE]
-> **On this page**
->
-> Understand when the Check Set Run Platform Event publishes, look up every field, and design subscribers for history, monitoring, analytics, and downstream automation.
+> On this page, design a secure Check Set Run subscriber that receives one after-commit summary and uses its outcome counts for history, monitoring, analytics, or downstream automation.
 
 `Record_Health_Check_Set_Run__e` contains one completion summary for a deliberately initiated Check
 Set run. It is a high-volume Salesforce Platform Event with **Publish After Commit** behavior.
@@ -25,7 +23,7 @@ one event per Rule.
 | Completion reporting | Compare passed, failed, skipped, unable, and system-error counts without receiving Rule detail |
 
 Do not use this event when the current Salesforce transaction needs an immediate decision. Use the
-synchronous [Apex API](../integration/apex-api/public-api.md) or [Flow action](../integration/flow-actions.md)
+synchronous [Apex API](../reference/reference-apex-api.md) or [Flow action](../integration/flow-actions.md)
 response instead.
 
 ## Publication conditions
@@ -121,5 +119,5 @@ or successful subscriber processing, and subscriber failure never changes the co
 - [Lifecycle-events overview](../integration/lifecycle-events.md)
 - [Rule Result Platform Event](event-rule-result.md)
 - [Log Platform Event](event-log.md)
-- [Check Set fields](fields-check-set.md) — **Publish Run Event**
-- [Reason Codes](../reference/reason-codes.md)
+- [Check Set fields](fields-check-set.md): **Publish Run Event**
+- [Reason Codes](../reference/reference-reason-codes.md)

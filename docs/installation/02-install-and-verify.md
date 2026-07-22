@@ -1,9 +1,7 @@
 # Install and verify
 
 > [!NOTE]
-> **On this page**
->
-> Deploy Core, assign user access, add a Check Set, place the Lightning card, and confirm that a Rule can run.
+> On this page, take Record Health Check from deployment to a proven Lightning record-page result by configuring access, one Check Set, one Rule, and a representative-user verification.
 
 This tutorial takes Core from sandbox deployment to an observable Rule result on a Lightning record
 page. Complete the verification as a representative user before planning a production release.
@@ -82,10 +80,10 @@ administrator who deployed Core.
 | A Rule shows Unable to Check | Review its Reason Code, Rule configuration, and the running user's Salesforce access. |
 
 If the card does not appear or a Rule will not evaluate, see
-[Configuration Guide: Troubleshooting](../guides/configuration-guide.md#13-troubleshooting).
+[Configuration Guide: Troubleshooting](../guides/configure-check-sets-and-rules.md#13-troubleshooting).
 
 ## Next steps
 
-- [Examples library](../examples/README.md) — adapt another Rule pattern
-- [Configuration guide](../guides/configuration-guide.md) — configure every field
-- [How It Works](01-how-it-works.md) — learn the result vocabulary
+- [Examples library](../examples/README.md): adapt another Rule pattern
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): configure every field
+- [How It Works](01-how-it-works.md): learn the result vocabulary

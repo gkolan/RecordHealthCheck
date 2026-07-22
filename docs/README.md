@@ -1,9 +1,7 @@
 # Record Health Check documentation
 
 > [!NOTE]
-> **On this page**
->
-> Choose the shortest documentation path for installing, configuring, extending, or troubleshooting Record Health Check.
+> On this page, find the shortest path from your Salesforce goal to the Record Health Check guidance, example, or reference that will help you complete it.
 
 Record Health Check helps Salesforce teams show whether a record is ready for a business process.
 Administrators define the questions as Custom Metadata, and users see the results on a Lightning
@@ -20,9 +18,9 @@ Health Check, begin with **Install and verify**, then create one Rule or copy an
 | Install it and see a working card | [Install and verify](installation/02-install-and-verify.md) | Deploy Core, add a Check Set, place the card, and verify a result |
 | Create my first check in Salesforce Setup | [Create your first Rule](installation/03-create-your-first-rule.md) | Configure a Formula Rule without writing Apex or using the command line |
 | Copy a practical business example | [Examples library](examples/README.md) | Choose Formula, Query, Compare Two Queries, or Apex and adapt a complete example |
-| Configure advanced behavior | [Configuration guide](guides/configuration-guide.md) | Applicability, dependencies, messages, actions, display behavior, and troubleshooting |
+| Configure advanced behavior | [Configure Check Sets and Rules](guides/configure-check-sets-and-rules.md) | Applicability, dependencies, messages, actions, display behavior, and troubleshooting |
 | Upgrade an existing installation | [Upgrade Record Health Check](installation/04-upgrading.md) | Back up, migrate renamed fields, validate, and prepare rollback |
-| Call health checks from code or automation | [Integration overview](integration/overview.md) | Choose Lightning, Apex, Flow, or platform events |
+| Call health checks from code or automation | [Integration overview](integration/README.md) | Choose Lightning, Apex, Flow, or platform events |
 | Look up one Setup field | [Metadata reference](metadata/README.md) | Find the exact label, API name, allowed values, default, and behavior |
 
 > [!TIP]
@@ -37,7 +35,7 @@ Health Check, begin with **Install and verify**, then create one Rule or copy an
 | 2 | [Install and verify](installation/02-install-and-verify.md) | A Record Health Check card appears on a sandbox record page |
 | 3 | [Create your first Rule](installation/03-create-your-first-rule.md) | The card evaluates one Rule you configured in Setup |
 | 4 | [Choose another example](examples/README.md) | You can select an Evaluation Type based on where the required data is stored |
-| 5 | [Review the configuration guide](guides/configuration-guide.md) | The Check Set is ready for broader testing and release review |
+| 5 | [Review the configuration guide](guides/configure-check-sets-and-rules.md) | The Check Set is ready for broader testing and release review |
 
 ## Learn by example
 
@@ -55,38 +53,39 @@ Evaluation Type fits, the exact Setup values, what users see, and how to test it
 
 ## Configure and troubleshoot
 
+[Browse all configuration and troubleshooting guides →](guides/README.md)
+
 | Guide | Use it when… |
 | --- | --- |
-| [Configuration guide](guides/configuration-guide.md) | You need the complete mental model, Evaluation Type guidance, or go-live checklist |
-| [Action links and Fix Message](guides/action-links.md) | A failed Rule should tell users what to do or where to go |
-| [Show Diagnostics](guides/show-diagnostics.md) | An administrator needs authorized troubleshooting details |
-| [Design system](guides/design-system.md) | You need to choose SLDS 1 or SLDS 2 for a component placement |
-| [Salesforce CLI commands](development/cli-commands.md) | You deploy, test, validate, or maintain the repository from the command line |
-| [Configure with AI](guides/llm-configuration.md) | You want an AI assistant to draft configuration from a business requirement |
+| [Configure Check Sets and Rules](guides/configure-check-sets-and-rules.md) | You need the complete mental model, Evaluation Type guidance, or go-live checklist |
+| [Configure action links](guides/configure-action-links.md) | A failed Rule should tell users what to do or where to go |
+| [Troubleshoot with Show Diagnostics](guides/troubleshoot-with-show-diagnostics.md) | An administrator needs authorized troubleshooting details |
+| [Choose the card design system](guides/choose-card-design-system.md) | You need to choose SLDS 1 or SLDS 2 for a component placement |
+| [Draft configuration with AI](guides/draft-configuration-with-ai.md) | You want an AI assistant to draft configuration from a business requirement |
 
 ## Integrate with Salesforce automation
 
 | Surface | Use it when… | Documentation |
 | --- | --- | --- |
 | Lightning record page | Users need to see and rerun checks on a record | [Lightning component](integration/lightning-component.md) |
-| Apex | Code needs a typed Rule or Check Set result immediately | [Apex API](integration/apex-api/public-api.md) |
+| Apex | Code needs a typed Rule or Check Set result immediately | [Apex API](reference/reference-apex-api.md) |
 | Flow | Automation needs to branch on a result without custom code | [Flow actions](integration/flow-actions.md) |
 | Platform events | Subscribers need an optional after-commit notification | [Lifecycle events](integration/lifecycle-events.md) |
 
-Start with the [integration overview](integration/overview.md) if you are unsure which surface fits.
+Start with the [integration overview](integration/README.md) if you are unsure which surface fits.
 
 ## Look up technical details
+
+[Browse all technical references →](reference/README.md)
 
 | Reference | What it contains |
 | --- | --- |
 | [Check Set fields](metadata/fields-check-set.md) | Every Check Set field, default, dependency, and allowed value |
 | [Rule fields](metadata/fields-rule.md) | Every Rule field grouped by purpose and Evaluation Type |
-| [Reason Codes](reference/reason-codes.md) | Stable explanations for skipped, unable-to-evaluate, and error outcomes |
+| [Reason Codes](reference/reference-reason-codes.md) | Stable explanations for skipped, unable-to-evaluate, and error outcomes |
 | [Platform Event metadata](metadata/README.md#choose-a-platform-event-reference) | Fields and usage for Set Run, Rule Result, and Log events |
-| [Field limits](reference/fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
-| [Architecture map](reference/architecture-map.md) | Source files and their responsibilities |
-| [Design specification](reference/record-health-check-design-spec.md) | Detailed runtime behavior and implementation decisions |
-| [Documentation standard](development/documentation-standard.md) | The publishing rules used for these pages |
+| [Field limits](reference/reference-fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
+| [Architecture map](reference/reference-architecture-map.md) | Source files and their responsibilities |
 
 ## Important behavior to know
 
@@ -100,6 +99,6 @@ Start with the [integration overview](integration/overview.md) if you are unsure
 ## Related
 
 - [Examples library](examples/README.md)
-- [Configuration guide](guides/configuration-guide.md)
-- [Integration overview](integration/overview.md)
+- [Configure Check Sets and Rules](guides/configure-check-sets-and-rules.md)
+- [Integration overview](integration/README.md)
 - [Metadata reference](metadata/README.md)

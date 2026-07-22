@@ -1,13 +1,11 @@
 # 03 · Strategic Account Is Ready
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to combine four Strategic Account readiness areas into one score, show what needs attention, and let an administrator choose the passing score.
+> On this page, build a weighted Apex readiness score that combines four Strategic Account signals, explains the gaps, and lets an administrator control the passing threshold through Custom Metadata.
 >
 > **Setup reference**
 >
-> Use the [Apex reference](reference.md) for the complete setup fields and behavior.
+> Use the [Apex reference](../../reference/reference-apex.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -83,7 +81,7 @@ Before activation, choose the policy that matches your process:
 | Approach | What the user gets |
 | --- | --- |
 | **One Verify with Apex** | One readiness result with a score out of 100, the criteria met, and the criteria that still need attention. An administrator can change the passing score in **Apex Parameters (JSON)**. |
-| **Four separate Query or Rules that use Verify with a formula** | Four pass-or-fail results—one for Contacts, pipeline, activity, and billing. Use this approach when every area is required or should remain visible on its own. |
+| **Four separate Query or Rules that use Verify with a formula** | Four pass-or-fail results, one for Contacts, pipeline, activity, and billing. Use this approach when every area is required or should remain visible on its own. |
 | **Rules with prerequisites** | Checks can run in a required order, but their results are not added into one score. Use prerequisites when a later check should wait for an earlier check to pass. |
 
 ## What Record Health Check passes to Apex
@@ -128,7 +126,7 @@ After deploying the class:
 Record Health Check parses the JSON and supplies both named values in `context.parameters`.
 `minScore` accepts `1`–`100`, and `activityDaysBack` accepts `1`–`3650`; missing or invalid values
 use 80 and 30. See
-[Parameter parsing patterns](reference.md#4-apex-parameters-json-apexparametersjson__c)
+[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
 for validation and type-conversion guidance.
 
 ## Implementation summary
@@ -364,7 +362,7 @@ Do not return `SKIP` from the class to represent applicability; configure **Appl
 Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](reference.md#6-returning-recordhealthcheckresult).
+[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
 
 
 ## Step 3: Configure the Rule
@@ -383,7 +381,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-rule.md#applies-to-applicabilitymode__c) | When a formula is true |
 | **Applies When (Formula)** | [`ApplicabilityFormula__c`](../../metadata/fields-rule.md#applies-when-formula-applicabilityformula__c) | `ISPICKVAL(Type, "Strategic")` |
 
-Confirm the `Strategic` Type picklist API value in your org. Skip comes from applicability — the class always returns PASS or FAIL when it runs.
+Confirm the `Strategic` Type picklist API value in your org. Skip comes from applicability: the class always returns PASS or FAIL when it runs.
 
 ## Optional configuration
 
@@ -395,7 +393,7 @@ Confirm the `Strategic` Type picklist API value in your org. Skip comes from app
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to calculate strategic readiness. Confirm the running user can read the Account and related records used by this Rule. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-rule.md#fix-message-fixmessage__c) | Review the missing readiness items shown in Found: Contact, open pipeline, recent activity, or billing address. |
-| **Action Label** | [`ActionLabel__c`](../../metadata/fields-rule.md#action-label-actionlabel__c) | Leave blank — one portable link cannot correct all four readiness areas. |
+| **Action Label** | [`ActionLabel__c`](../../metadata/fields-rule.md#action-label-actionlabel__c) | Leave blank: one portable link cannot correct all four readiness areas. |
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-rule.md#action-url-actionurl__c) | Leave blank; use an org-specific readiness report or playbook only after verifying it. |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-rule.md#evaluation-order-evaluationorder__c) | `30` |
 | **Active** | [`IsActive__c`](../../metadata/fields-rule.md#active-isactive__c) | Checked |
@@ -430,17 +428,18 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The Apex class turns the weighted score and configured threshold into these user-facing values:
 
-- **Skip:** Non-Strategic Accounts are skipped.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | A Strategic Account at or above `minScore` passes. |
+| **`FAIL`** | A score below `minScore` shows Needs attention with Critical severity. |
+| **`SKIPPED`** | A non-Strategic Account is skipped by Formula applicability before the Apex class runs. |
+| **Found** | Found shows the score and criteria met, such as `75/100; met: Contact, open pipeline, billing address`. |
+| **Expected** | Expected shows the passing threshold and gaps, such as `80+; improve: recent activity`. |
 
-- **Pass:** Strategic Accounts at or above `minScore` pass.
-
-- **Found and Expected:** For example, Found can show `75/100; met: Contact, open pipeline, billing address`, while Expected shows `80+; improve: recent activity`.
-
-- **Needs attention:** Scores below the minimum show Critical with the same diagnostic detail.
-
-- **Threshold effect:** Scores move in 25-point increments, so a minimum of 80 effectively requires 100; use 75 when three criteria should pass.
+Scores move in 25-point increments, so a minimum of 80 effectively requires 100. Use 75 when
+meeting three of the four criteria should pass.
 
 ## Security and access
 
@@ -500,4 +499,4 @@ test, threshold, and documentation updates.
 ## Related
 
 - [← Prev: Open Opportunity health](02-open-opportunity-health.md) · [Next: Inactive approvers →](04-inactive-approver.md)
-- [Browse the pattern library](../README.md)
+- [Browse Apex examples](README.md)

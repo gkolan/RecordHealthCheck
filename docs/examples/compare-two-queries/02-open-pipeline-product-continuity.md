@@ -1,13 +1,11 @@
 # 02 · Open Pipeline Includes a Previously Purchased Product
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to compare two lists by checking whether open-pipeline products overlap the products on the Account's closed-won Opportunities.
+> On this page, compare two SOQL lists to show whether the Account's open pipeline includes at least one Product the customer has already purchased.
 >
 > **Setup reference**
 >
-> Use the [Compare-two-queries reference](reference.md) for the complete setup fields and behavior.
+> Use the [Compare-two-queries reference](../../reference/reference-compare-two-queries.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -113,13 +111,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The two Product lists and no-row behavior become these Framework outcomes and card values:
 
-- **Pass:** At least one Product ID appears in both the open-pipeline and closed-won lists.
-
-- **Needs attention:** Both lists contain products, but none of the Product IDs overlap.
-
-- **Skip:** The Account has no closed-won Opportunity Product history, or the open pipeline has no Opportunity Products to compare.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | At least one Product ID appears in both the open-pipeline and closed-won lists. |
+| **`FAIL`** | Both lists contain Products but none of their Product IDs overlap, so the card shows Needs attention. |
+| **`SKIPPED`** | The Account has no closed-won Opportunity Product history or no open-pipeline Opportunity Products to compare. |
+| **Found** | Found represents the Product IDs returned by the open-pipeline query. |
+| **Expected** | Expected represents the Product IDs returned by the closed-won history query. |
 
 ## Security and access
 
@@ -152,4 +152,4 @@ Record Health Check builds both Product lists with the running user's Salesforce
 ## Related
 
 - [← Prev: Opportunity Contact Role coverage](01-opportunity-contact-role-coverage.md) · [Next: Account Team coverage →](03-account-team-opportunity-coverage.md)
-- [Browse the pattern library](../README.md)
+- [Browse Compare two queries examples](README.md)

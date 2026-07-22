@@ -1,13 +1,11 @@
 # 05 · Imported Contact Emails Are Ready for Use
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to find placeholder Contact email domains before imported Account data is used.
+> On this page, exclude placeholder Contact email domains, ignore genuinely blank Email fields, and use a prerequisite Rule so cleanup runs only when Contacts exist.
 >
 > **Setup reference**
 >
-> Use the [Query reference](reference.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -115,13 +113,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The query rows, empty-value handling, and prerequisite become these Framework outcomes and card values:
 
-- **Skip:** Accounts with no populated Contact emails are skipped.
-
-- **Pass:** Every returned Email that excludes the confirmed placeholder domain passes.
-
-- **Needs attention:** Any returned Email containing that domain shows the Warning.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | Every returned Email excludes the confirmed placeholder domain. |
+| **`FAIL`** | Any returned Email containing that domain shows Needs attention with Warning severity. |
+| **`SKIPPED`** | The Rule is skipped when its Contact prerequisite does not pass or when the query returns no populated Contact emails. |
+| **Found** | Found shows the Email value that determined the result when the user reveals Found and Expected. |
+| **Expected** | Expected shows that returned Email values must not contain the configured placeholder text. |
 
 ## Security and access
 
@@ -153,4 +153,4 @@ Before activation, test placeholder-domain, verified-domain, and restricted-Cont
 ## Related
 
 - [← Prev: Forecast amounts](04-forecast-amounts.md) · [Next: Account Owner team membership →](06-account-owner-team-membership.md)
-- [Browse the pattern library](../README.md)
+- [Browse Query examples](README.md)

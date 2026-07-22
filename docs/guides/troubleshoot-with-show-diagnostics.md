@@ -1,14 +1,12 @@
-# Show Diagnostics
+# Troubleshoot with Show Diagnostics
 
 > [!NOTE]
-> **On this page**
->
-> Turn on extra troubleshooting detail on the Record Health Check card and in the browser console.
+> On this page, reveal authorized troubleshooting evidence on the Record Health Check card and in the browser console, then remove that extra visibility when the investigation is complete.
 >
 > **Reference**
 >
 > - This page is the canonical source for Show Diagnostics and the F12 console output.
-> - For every other Check Set field, use the [Configuration guide](configuration-guide.md#3-check-set-fields).
+> - For every other Check Set field, use the [Configure Check Sets and Rules](configure-check-sets-and-rules.md#3-check-set-fields).
 
 Use this guide when a Rule shows **Unable to check**, behaves differently between users, or needs
 additional runtime evidence. Temporarily enable **Show Diagnostics** and test with authorized
@@ -49,7 +47,7 @@ Reason Codes, source details, or access failures to every user of the Lightning 
 | Permission Set | API name | Can run checks | Includes View Details |
 | --- | --- | --- | --- |
 | Record Health Check User | `Record_Health_Check_User` | Yes | No |
-| Record Health Check Admin | `Record_Health_Check_Admin` | Yes | Yes — includes `Record_Health_Check_View_Details` |
+| Record Health Check Admin | `Record_Health_Check_Admin` | Yes | Yes: includes `Record_Health_Check_View_Details` |
 
 If you checked Show Diagnostics on the Check Set but still see a normal card, the most common cause is that the viewing user does not have the Permission Set named **`Record_Health_Check_Admin`**.
 
@@ -117,5 +115,5 @@ Use the **Run ID** to match Apex log entries when Apex logging is enabled for yo
 ## Related
 
 - [Install and verify](../installation/02-install-and-verify.md): first install and permission assignment
-- [Configuration guide: Check Set fields](configuration-guide.md#3-check-set-fields): every Check Set field
-- [Configuration guide: Troubleshooting](configuration-guide.md#13-troubleshooting): when a check fails or cannot run
+- [Configuration guide: Check Set fields](configure-check-sets-and-rules.md#3-check-set-fields): every Check Set field
+- [Configuration guide: Troubleshooting](configure-check-sets-and-rules.md#13-troubleshooting): when a check fails or cannot run

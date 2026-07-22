@@ -1,9 +1,7 @@
-# Field limits
+# Reference: Field limits
 
 > [!NOTE]
-> **On this page**
->
-> Find the limit for a Check Set or Rule field and understand what to do when Salesforce rejects a value or a Rule returns `ERROR`.
+> On this page, distinguish what Salesforce can store from what the Framework can safely resolve, then fix the field, completed text, or action URL responsible for a rejected value or `ERROR`.
 
 <!-- Generated from shipped Salesforce metadata by scripts/release/generate_field_size_registry.py. -->
 
@@ -98,5 +96,5 @@ When an action URL is unsafe or longer than 2,000 characters, the Rule can still
 
 - [Check Set fields](../metadata/fields-check-set.md)
 - [Rule fields](../metadata/fields-rule.md)
-- [Configuration guide](../guides/configuration-guide.md)
-- [Design specification](record-health-check-design-spec.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
+- [Architecture map](reference-architecture-map.md)

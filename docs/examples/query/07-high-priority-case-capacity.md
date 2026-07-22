@@ -1,13 +1,11 @@
 # 07 · High-priority Case Backlog Is Within Review Capacity
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to count related records and enforce an upper limit by keeping the visible high-priority Case backlog at three or fewer.
+> On this page, enforce a maximum high-priority Case backlog with an aggregate Query Rule and opt in to lifecycle events only when an approved subscriber needs completion facts.
 >
 > **Setup reference**
 >
-> Use the [Query reference](reference.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -111,13 +109,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The card turns the aggregate count and upper limit into these user-facing values:
 
-- **Pass:** Zero through three visible open high-priority Cases is within the example limit.
-
-- **Needs attention:** Four or more visible open high-priority Cases exceeds the limit and shows Warning.
-
-- **Found and Expected:** Found is the current Case count; Expected is `3` when the user opens the values on demand.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | Zero through three visible open high-priority Cases is within the example limit. |
+| **`FAIL`** | Four or more visible open high-priority Cases exceeds the limit and shows Needs attention with Warning severity. |
+| **`SKIPPED`** | Bare `COUNT()` returns zero rather than no rows, and this configuration has no applicability gate or prerequisite, so it does not produce `SKIPPED`. |
+| **Found** | When the user reveals Found and Expected, Found shows the current visible high-priority Case count. |
+| **Expected** | When the user reveals Found and Expected, Expected shows the maximum allowed count: `3`. |
 
 Because **When Checks Run** is **Run on request**, an explicit Run or Rerun can publish lifecycle
 events when the two publication settings are checked. Automatic page-load evaluation never
@@ -152,4 +152,4 @@ Before activation, confirm the capacity result with the Case sharing model used 
 ## Related
 
 - [← Prev: Account Owner team membership](06-account-owner-team-membership.md) · [Next: Opportunity Contact Role coverage →](../compare-two-queries/01-opportunity-contact-role-coverage.md)
-- [Browse the pattern library](../README.md)
+- [Browse Query examples](README.md)

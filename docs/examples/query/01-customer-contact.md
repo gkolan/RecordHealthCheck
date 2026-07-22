@@ -1,13 +1,11 @@
 # 01 · Account Is Ready for Customer Handoff
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to confirm that an Account has at least one Contact before a handoff or account review.
+> On this page, create a Query Rule that turns a related Contact count and a visible minimum into a clear Account handoff decision users can understand.
 >
 > **Setup reference**
 >
-> Use the [Query reference](reference.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -106,13 +104,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The aggregate Contact count becomes these Framework outcomes and card values:
 
-- **Pass:** The check passes once at least one related Contact exists.
-
-- **Needs attention:** A zero Contact count shows the Warning above.
-
-- **Found:** The related Contact count is available when Found/Expected display is enabled on the Check Set.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | The Rule passes when at least one visible related Contact exists. |
+| **`FAIL`** | A count of zero shows Needs attention with Warning severity. |
+| **`SKIPPED`** | Bare `COUNT()` returns zero rather than no rows, and this configuration has no applicability gate or prerequisite, so it does not produce `SKIPPED`. |
+| **Found** | Found shows the visible related Contact count when Found/Expected display is enabled on the Check Set. |
+| **Expected** | Expected shows the fixed minimum required by the Rule: `0` with the **Greater than** operator. |
 
 ## Security and access
 
@@ -142,4 +142,4 @@ Before activation, run the no-Contact and has-Contact cases with the sharing acc
 ## Related
 
 - [Next: Pipeline next steps →](02-opportunity-next-steps.md)
-- [Browse the pattern library](../README.md)
+- [Browse Query examples](README.md)

@@ -1,9 +1,7 @@
 # Create your first Rule
 
 > [!NOTE]
-> **On this page**
->
-> Create one Account Check Set and one Formula Rule in Salesforce Setup, place the card, and test passing and failing results.
+> On this page, build your first Account readiness experience in Salesforce Setup and prove that its Formula Rule communicates both a passing record and a record that needs attention.
 
 Use this guide to create one Check Set and one Formula Rule in Salesforce Setup. When you finish,
 an Account record page will show whether Billing City is populated.
@@ -104,7 +102,7 @@ The card does not rerun automatically after a record edit. Select **Rerun** or r
 | The Rule cannot evaluate | Confirm the running user can read Account and `BillingCity` |
 | Setup changes do not appear | Refresh the record page after saving Custom Metadata |
 
-For authorized troubleshooting details, use [Show Diagnostics](../guides/show-diagnostics.md).
+For authorized troubleshooting details, use [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md).
 
 ## What to learn next
 
@@ -112,13 +110,13 @@ For authorized troubleshooting details, use [Show Diagnostics](../guides/show-di
 | --- | --- |
 | Add more Formula Rules | [Formula examples](../examples/README.md#formula-examples) |
 | Check Contacts, Opportunities, Cases, or other related records | [Query examples](../examples/README.md#query-examples) |
-| Understand every available field | [Configuration guide](../guides/configuration-guide.md) |
-| Add a link or instruction to a failed Rule | [Action links and Fix Message](../guides/action-links.md) |
-| Prepare the Check Set for release | [Configuration review checklist](../guides/configuration-guide.md#14-review-checklist) |
+| Understand every available field | [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md) |
+| Add a link or instruction to a failed Rule | [Configure action links](../guides/configure-action-links.md) |
+| Prepare the Check Set for release | [Configuration review checklist](../guides/configure-check-sets-and-rules.md#14-review-checklist) |
 
 ## Next steps
 
 - [Examples library](../examples/README.md)
-- [Configuration guide](../guides/configuration-guide.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
 - [Check Set fields](../metadata/fields-check-set.md)
 - [Rule fields](../metadata/fields-rule.md)

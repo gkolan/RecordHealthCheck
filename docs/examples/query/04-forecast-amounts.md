@@ -1,13 +1,11 @@
 # 04 · Open Pipeline Is Ready for Forecast Review
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to find any open Opportunity with a blank or zero Amount before forecast review.
+> On this page, require every open Opportunity to carry a positive Amount and use result-summary merge tokens to tell users how much pipeline passed the forecast check.
 >
 > **Setup reference**
 >
-> Use the [Query reference](reference.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -109,13 +107,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The query rows and no-row behavior become these Framework outcomes and card values:
 
-- **Skip:** Accounts with no open Opportunities are skipped.
-
-- **Pass:** Every visible open Opportunity has Amount greater than zero.
-
-- **Needs attention:** At least one visible open Opportunity has blank, zero, or negative Amount, so the card shows Warning.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | Every visible open Opportunity has Amount greater than zero. |
+| **`FAIL`** | At least one visible open Opportunity has blank, zero, or negative Amount, so the card shows Needs attention with Warning severity. |
+| **`SKIPPED`** | An Account with no open Opportunities is skipped because **No rows result** is **Skipped**. |
+| **Found** | Found shows the Amount that determined the result when the user reveals Found and Expected. |
+| **Expected** | Expected shows the fixed comparison value: an Amount greater than `0`. |
 
 ## Security and access
 
@@ -145,4 +145,4 @@ Before activation, test as a forecast user with restricted Opportunity sharing a
 ## Related
 
 - [← Prev: Meaningful pipeline](03-significant-opportunity.md) · [Next: Placeholder email cleanup →](05-placeholder-contact-emails.md)
-- [Browse the pattern library](../README.md)
+- [Browse Query examples](README.md)

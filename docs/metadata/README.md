@@ -1,9 +1,7 @@
 # Custom Metadata Types and fields
 
 > [!NOTE]
-> **On this page**
->
-> Choose the Check Set or Rule field reference and find related documentation for statuses, events, Apex, Flow, and limits.
+> On this page, move from the Custom Metadata record you are configuring to the exact Check Set, Rule, Platform Event, limit, or integration reference that defines its behavior.
 
 Record Health Check configuration uses two Custom Metadata Types. The **Record Health Check Set**
 controls the card and groups related Rules. The **Record Health Check Rule** defines one question
@@ -36,23 +34,21 @@ publication contract and security profile.
 | -------- | ---- |
 | [Check Set fields](fields-check-set.md) | Every field on the Check Set type |
 | [Rule fields](fields-rule.md) | Every field on the Rule type |
-| [Reason Codes](../reference/reason-codes.md) | Stable codes for skipped, unable, setup, and error outcomes |
+| [Reason Codes](../reference/reference-reason-codes.md) | Stable codes for skipped, unable, setup, and error outcomes |
 | [Lifecycle-events overview](../integration/lifecycle-events.md) | Publication behavior, source rules, opt-in choices, and subscriber failures |
 | [Check Set Run Platform Event](event-set-run.md) | Every field, summary-event possibilities, examples, limits, and subscriber design |
 | [Rule Result Platform Event](event-rule-result.md) | Every field, status interpretation, routing possibilities, limits, and subscriber design |
 | [Log Platform Event](event-log.md) | Every diagnostic field, security requirements, loop protection, and limitations |
-| [Apex API](../integration/apex-api/public-api.md) | Public `runRule` / `runSet` methods |
+| [Apex API](../reference/reference-apex-api.md) | Public `runRule` / `runSet` methods |
 | [Flow actions](../integration/flow-actions.md) | Packaged Rule and Set Flow actions |
 | [Lightning component](../integration/lightning-component.md) | Automatic versus explicit publication behavior |
-| [Field limits](../reference/fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
-| [Configuration Guide](../guides/configuration-guide.md) | Mental model, walkthroughs, troubleshooting, go-live checklist |
-| [Design Specification](../reference/record-health-check-design-spec.md) | Formal runtime contract |
+| [Field limits](../reference/reference-fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
+| [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md) | Mental model, walkthroughs, troubleshooting, go-live checklist |
 
-For merge tokens, applicability, and evaluator behavior, see the [Configuration Guide](../guides/configuration-guide.md) and the [design spec](../reference/record-health-check-design-spec.md).
+For merge tokens, applicability, and evaluator behavior, see the [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md) and the Evaluation Type references in the [examples library](../examples/README.md).
 
 ## Related
 
-- [Configuration Guide](../guides/configuration-guide.md): mental model and walkthroughs
-- [Design Specification](../reference/record-health-check-design-spec.md): formal runtime contract
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): mental model and walkthroughs
 - [Upgrading Record Health Check](../installation/04-upgrading.md): breaking-change and rollback guide
 - [Examples library](../examples/README.md): practical Rule patterns by Evaluation Type

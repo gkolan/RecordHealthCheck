@@ -1,14 +1,12 @@
-# Architecture map
+# Reference: Architecture map
 
 > [!NOTE]
-> **On this page**
->
-> Find the production class, Lightning component, metadata, or reference page responsible for a specific behavior.
+> On this page, trace a Record Health Check behavior from the user experience to the Apex, Lightning Web Component, Custom Metadata, or contract that owns it before making a change.
 
 Use this map to navigate the codebase and find the right file to change. This page is an index,
-not a specification: for detailed behavior see the [design specification](record-health-check-design-spec.md),
-[Apex API](../integration/apex-api/public-api.md), [Flow actions](../integration/flow-actions.md), and
-[Platform events](../integration/lifecycle-events.md).
+not a specification: use the [Apex API](../reference/reference-apex-api.md),
+[Flow actions](../integration/flow-actions.md), [Platform events](../integration/lifecycle-events.md),
+and Evaluation Type references for published behavior.
 
 ## Use this map during a code change
 
@@ -112,23 +110,22 @@ The evaluation path is **read-only** (`with sharing`, `WITH USER_MODE`).
 
 ## 4. LWC bundle
 
-`recordHealthCheck` (orchestration) + `healthCheckRunner` / `healthCheckModel` / `healthCheckPresentation`. One component, four JS modules — do not split into separate LWCs.
+`recordHealthCheck` (orchestration) + `healthCheckRunner` / `healthCheckModel` / `healthCheckPresentation`. One component, four JS modules: do not split into separate LWCs.
 
 ## 5. Documentation map
 
 | Need | Doc |
 | ---- | --- |
 | Field reference | [Check Set fields](../metadata/fields-check-set.md), [Rule fields](../metadata/fields-rule.md) |
-| Apex callers | [Apex API](../integration/apex-api/public-api.md) |
+| Apex callers | [Apex API](../reference/reference-apex-api.md) |
 | Flow callers | [Flow actions](../integration/flow-actions.md) |
 | Lightning component | [Lightning component](../integration/lightning-component.md) |
 | Events | [Lifecycle events](../integration/lifecycle-events.md) |
-| Reason Codes | [Reason Codes](reason-codes.md) |
-| Formal runtime contract | [Design Specification](record-health-check-design-spec.md) |
+| Reason Codes | [Reason Codes](reference-reason-codes.md) |
 | Upgrade | [Upgrading Record Health Check](../installation/04-upgrading.md) |
 
 ## Related
 
 - [Documentation index](../README.md)
-- [Integration overview](../integration/overview.md)
-- [Configuration guide](../guides/configuration-guide.md)
+- [Integration overview](../integration/README.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

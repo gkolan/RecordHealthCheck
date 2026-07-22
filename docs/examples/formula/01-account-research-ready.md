@@ -1,13 +1,11 @@
 # 01 · Account Is Ready for Seller Research
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to confirm that an Account has at least one useful research or contact option: Phone or Website.
+> On this page, create a Formula Rule that considers an Account ready for seller research when either Phone or Website gives the seller a useful place to begin.
 >
 > **Setup reference**
 >
-> Use the [Formula reference](reference.md) for the complete setup fields and behavior.
+> Use the [Formula reference](../../reference/reference-formula.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -102,11 +100,15 @@ Use these Check Set values:
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+The Formula result becomes these Framework outcomes and card values:
 
-- **Pass:** The check passes as soon as Phone or Website has a value.
-
-- **Needs attention:** It shows Warning only when both are blank.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | The Rule passes as soon as Phone or Website has a value. |
+| **`FAIL`** | When both fields are blank, the card shows Needs attention with Warning severity and the configured guidance. |
+| **`SKIPPED`** | This configuration applies to every Account and has no prerequisite, so it does not produce `SKIPPED`. |
+| **Found** | The standard Formula result identifies the evaluated value when the user reveals Found and Expected. |
+| **Expected** | The standard Formula result identifies the passing requirement when the user reveals Found and Expected. |
 
 ## Security and access
 
@@ -135,4 +137,4 @@ Before activation, run the Rule with the Permission Sets and field access assign
 ## Related
 
 - [Next: Billing address is ready for review →](02-billing-address-ready.md)
-- [Browse the pattern library](../README.md)
+- [Browse Formula examples](README.md)

@@ -1,13 +1,11 @@
 # 04 · Branch Account Is Ready for Handoff
 
 > [!NOTE]
-> **On this page**
->
-> Learn how to confirm that a branch Account’s parent has the Billing City needed for regional coordination.
+> On this page, create a Formula Rule that reads the parent Account's Billing City and gives users a direct action link when headquarters information blocks a branch handoff.
 >
 > **Setup reference**
 >
-> Use the [Formula reference](reference.md) for the complete setup fields and behavior.
+> Use the [Formula reference](../../reference/reference-formula.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -104,13 +102,15 @@ If the running user cannot read the parent relationship or field, the check may 
 
 ## What the user sees
 
-The card shows one status each time the Rule runs. Supporting details appear only when they apply:
+Formula applicability and the parent-field check become these Framework outcomes and card values:
 
-- **Skip:** Top-level Accounts are skipped.
-
-- **Pass:** A child Account passes when its parent Account has Billing City.
-
-- **Needs attention:** A child Account shows Warning when its parent Account has blank Billing City.
+| Framework result or card value | What the user sees |
+| --- | --- |
+| **`PASS`** | A child Account passes when its parent Account has Billing City. |
+| **`FAIL`** | A child Account whose parent has blank Billing City shows Needs attention with Warning severity and an action link to the parent. |
+| **`SKIPPED`** | A top-level Account is skipped because it has no parent handoff requirement. |
+| **Found** | Found shows the parent Account's Billing City value when the user reveals Found and Expected. |
+| **Expected** | Expected shows that the parent Billing City must be populated when the user reveals Found and Expected. |
 
 ## Security and access
 
@@ -140,4 +140,4 @@ Before activation, test both a blank and populated parent Billing City as a hand
 ## Related
 
 - [← Prev: Partner regional assignment](03-partner-regional-assignment.md) · [Next: Program eligibility →](05-program-eligibility.md)
-- [Browse the pattern library](../README.md)
+- [Browse Formula examples](README.md)

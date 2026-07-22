@@ -1,15 +1,13 @@
 # Log Platform Event (`Record_Health_Check_Log__e`)
 
 > [!NOTE]
-> **On this page**
->
-> Understand the restricted Framework diagnostics event, look up every field, and design secure subscribers for error persistence, investigation, and alerting.
+> On this page, use the restricted Log Platform Event to preserve and correlate Framework errors without exposing diagnostic detail to business workflows or creating subscriber loops.
 
 `Record_Health_Check_Log__e` carries structured Framework `ERROR` information. Unlike the two
 lifecycle events, it uses **Publish Immediately**, contains restricted diagnostic detail, and is not
 controlled by Check Set or Rule publication fields.
 
-This event is for technical operations and support—not business readiness workflows.
+This event is for technical operations and support, not business readiness workflows.
 
 ## When to use this event
 
@@ -121,12 +119,12 @@ repeat.
 - Publish acceptance does not prove delivery, persistence, alerting, or successful investigation.
 - Platform Event retention is temporary; long-term history requires a subscriber-owned store.
 - A missing Record ID or metadata name can be legitimate when the error occurred before that context was known.
-- `Code__c` can contain Framework-internal codes; use the public [Reason Code registry](../reference/reason-codes.md) only for public Rule outcomes.
+- `Code__c` can contain Framework-internal codes; use the public [Reason Code registry](../reference/reference-reason-codes.md) only for public Rule outcomes.
 
 ## Related
 
 - [Lifecycle-events overview](../integration/lifecycle-events.md)
 - [Check Set Run Platform Event](event-set-run.md)
 - [Rule Result Platform Event](event-rule-result.md)
-- [Show Diagnostics](../guides/show-diagnostics.md)
-- [Reason Codes](../reference/reason-codes.md)
+- [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md)
+- [Reason Codes](../reference/reference-reason-codes.md)

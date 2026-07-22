@@ -1,9 +1,7 @@
 # Upgrading Record Health Check
 
 > [!NOTE]
-> **On this page**
->
-> Prepare, migrate, verify, and—if necessary—roll back an installation from an earlier release.
+> On this page, move an existing Record Health Check installation to the current contract without losing configuration, access, Lightning behavior, integrations, or a tested rollback path.
 
 Use this guide to migrate existing Record Health Check configuration and integrations to the current release.
 Because the current release renames metadata fields and other public identifiers, test the complete upgrade in a
@@ -28,7 +26,7 @@ sandbox or scratch org made from a current production backup before changing pro
 - The public synchronous response contract is stable at `1.0` on `RecordHealthCheckResult` /
   `RecordHealthCheckSetResult` and grows additively. The independent lifecycle event contract is
   also `1.0`, is opt-in, and
-  Publish After Commit. See [Apex API](../integration/apex-api/public-api.md), [Flow actions](../integration/flow-actions.md), and
+  Publish After Commit. See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and
   [Platform events](../integration/lifecycle-events.md).
 
 ## Upgrade procedure
@@ -94,7 +92,7 @@ For current descriptions, allowed values, defaults, and dependencies, use the
 | `PrimaryActionLabel__c` | Action Button Label | `ActionLabel__c` | Action Label | Text(80) |
 | `PrimaryActionUrl__c` | Action Button URL | `ActionUrl__c` | Action URL | Long Text Area |
 | `FixInstructions__c` | Fix Instructions | `FixMessage__c` | Fix Message | Long Text Area |
-| — | Added in the current release | `PublishResultEvent__c` | Publish Result Event | Checkbox |
+| Not applicable | Added in the current release | `PublishResultEvent__c` | Publish Result Event | Checkbox |
 
 ### Check Set fields
 
@@ -111,7 +109,7 @@ For current descriptions, allowed values, defaults, and dependencies, use the
 | `PassedChecksDisplay__c` | Passed Checks | `PassedChecksDisplay__c` | Passed Checks | Picklist (2) |
 | `SkippedChecksDisplay__c` | Skipped Checks | `SkippedChecksDisplay__c` | Skipped Checks | Picklist (2) |
 | `DebugMode__c` | Show Troubleshooting Details | `ShowDiagnostics__c` | Show Diagnostics | Checkbox |
-| — | Added in the current release | `PublishRunEvent__c` | Publish Run Event | Checkbox |
+| Not applicable | Added in the current release | `PublishRunEvent__c` | Publish Run Event | Checkbox |
 
 ### Migration decisions that require review
 
@@ -154,7 +152,7 @@ Do not run the upgrade's destructive changes in production until the backup has 
 
 ## Next steps
 
-- [Create your first Rule](03-create-your-first-rule.md) — verify the upgraded installation and first Rule
-- [Metadata reference](../metadata/README.md) — review current field APIs and values
-- [Lifecycle events](../integration/lifecycle-events.md) — validate opt-in publication and subscribers
-- [Reason Codes](../reference/reason-codes.md) — update downstream status handling
+- [Create your first Rule](03-create-your-first-rule.md): verify the upgraded installation and first Rule
+- [Metadata reference](../metadata/README.md): review current field APIs and values
+- [Lifecycle events](../integration/lifecycle-events.md): validate opt-in publication and subscribers
+- [Reason Codes](../reference/reference-reason-codes.md): update downstream status handling

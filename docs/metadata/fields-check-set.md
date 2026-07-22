@@ -1,9 +1,7 @@
 # Check Set fields (`Record_Health_Check_Set__mdt`)
 
 > [!NOTE]
-> **On this page**
->
-> Look up any Check Set field by Setup label or API name and see exactly how to configure it.
+> On this page, find the Check Set field that controls the card, run experience, result display, diagnostics, or lifecycle events and configure it with the correct Salesforce value.
 >
 > **Reference**
 >
@@ -106,11 +104,11 @@ whether the field belongs in your configuration.
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |
-| Default | **Checked** — `true` |
+| Default | **Checked**: `true` |
 | Used when | Every Check Set; uncheck to disable the entire Set. |
 | Description | <p>When checked, this Check Set is live. When unchecked, the entire Check Set is disabled without deleting metadata - no checks load or run, and the component shows a "Health Check Unavailable" message.</p> |
 | Help text | <p>Checked = the Check Set is live. Uncheck to disable the whole set without deleting it (users see "Health Check Unavailable").</p> |
-| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+| Allowed values | **Checked**: `true`<br>**Unchecked**: `false` |
 
 
 ## 2. Card text
@@ -159,11 +157,11 @@ whether the field belongs in your configuration.
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **When the user clicks Run** — `RUN_ON_REQUEST` |
+| Default | **When the user clicks Run**: `RUN_ON_REQUEST` |
 | Used when | Every Check Set; controls automatic page-load versus user-requested runs. |
 | Description | <p>Decides whether checks run on their own when the page opens, or only after the user clicks Run.</p><ul><li>"When the page opens" runs them automatically on load.</li><li>"When the user clicks Run" shows a Run button and runs nothing until it is clicked - choose this for checks that are slow or should run on demand.</li></ul><p>Defaults to "When the user clicks Run".</p> |
 | Help text | <ul><li>"When the page opens" = checks run automatically on load.</li><li>"When the user clicks Run" (default) = a Run button appears; nothing runs until clicked.</li></ul><p>Use the latter for heavy checks.</p> |
-| Allowed values | **When the page opens** — `RUN_ON_LOAD`<br>**When the user clicks Run** — `RUN_ON_REQUEST` |
+| Allowed values | **When the page opens**: `RUN_ON_LOAD`<br>**When the user clicks Run**: `RUN_ON_REQUEST` |
 
 ### Reveal Mode (`CardRevealMode__c`)
 
@@ -174,11 +172,11 @@ whether the field belongs in your configuration.
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **One by one** — `ONE_BY_ONE` |
+| Default | **One by one**: `ONE_BY_ONE` |
 | Used when | Every Check Set; controls when eligible rows become visible. |
 | Description | <p>Cosmetic only - same checks, same order, same outcomes either way. It does not change when checks run; that is controlled by "When Checks Run".</p><ul><li>"All at once" lists every eligible check on load (pending), then fills in each result in place.</li><li>"One by one" shows no rows until the run starts, then adds each check as it is reached.</li></ul><p>Defaults to "One by one".</p> |
 | Help text | <p>Cosmetic only. "All at once" = every check listed on load, then results fill in.</p><p>"One by one" (default) = checks appear as the run reaches them. Doesn't change when checks run.</p> |
-| Allowed values | **All at once** — `ALL_AT_ONCE`<br>**One by one** — `ONE_BY_ONE` |
+| Allowed values | **All at once**: `ALL_AT_ONCE`<br>**One by one**: `ONE_BY_ONE` |
 
 ### Stop after a system error (`StopOnSystemError__c`)
 
@@ -189,11 +187,11 @@ whether the field belongs in your configuration.
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |
-| Default | **Unchecked** — `false` |
+| Default | **Unchecked**: `false` |
 | Used when | Optional for every Check Set; affects unexpected system errors, not `FAIL` or `SKIPPED`. |
 | Description | <p>When checked, the run stops as soon as a Rule reaches `ERROR`. It does not stop for `FAIL`, `SKIPPED`, or `UNABLE_TO_EVALUATE`; those are completed business, applicability, or expected unable-to-decide outcomes, so later Rules can still provide useful evidence.</p><p>Leave unchecked when independent Rules should continue after one unexpected system problem. Check it when later Rules depend on a healthy technical path or continuing could repeat the same failing operation. Sequential Lightning evaluation is required when this option is checked so the component can see each result before starting the next Rule.</p> |
 | Help text | <p>Checked = stop the whole run on an unexpected system error. Does not stop on a normal Fail or Skip.</p><p>Off by default.</p> |
-| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+| Allowed values | **Checked**: `true`<br>**Unchecked**: `false` |
 
 
 ## 4. Result display
@@ -207,11 +205,11 @@ whether the field belongs in your configuration.
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **On demand** — `ON_DEMAND` |
+| Default | **On demand**: `ON_DEMAND` |
 | Used when | Every Check Set; controls when available Found and Expected values appear. |
 | Description | <p>Controls when users see the Found and Expected values for each check in this Check Set.</p><ul><li>"On demand" lets users expand a check to see its values, and failed checks also show their values inline.</li><li>"Failed checks only" shows values only on failed checks, keeping passing checks compact.</li><li>"Every check" shows values inline on every check where values are available.</li></ul><p>Defaults to "On demand".</p> |
 | Help text | <p>When Found/Expected values show.</p><ul><li>"On demand" (default) = expand to see; failed checks show inline.</li><li>"Failed checks only" = only on failures.</li><li>"Every check" = inline everywhere available.</li></ul> |
-| Allowed values | **On demand** — `ON_DEMAND`<br>**Failed checks only** — `FAILURES_ONLY`<br>**Every check** — `ALL_ROWS` |
+| Allowed values | **On demand**: `ON_DEMAND`<br>**Failed checks only**: `FAILURES_ONLY`<br>**Every check**: `ALL_ROWS` |
 
 ### Passed Checks (`PassedChecksDisplay__c`)
 
@@ -222,11 +220,11 @@ whether the field belongs in your configuration.
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **Show each check** — `SHOW_EACH_CHECK` |
+| Default | **Show each check**: `SHOW_EACH_CHECK` |
 | Used when | Every Check Set; controls whether passing rows or only their count appear. |
 | Description | <p>Controls how checks that Pass appear.</p><ul><li>"Show each check" lists every passed check.</li><li>"Show count only" removes passed checks from the list; their count still appears in the summary bar at the bottom of the card.</li></ul><p>Defaults to "Show each check".</p> |
 | Help text | <p>How passing checks appear.</p><ul><li>"Show each check" (default) = list them all.</li><li>"Show count only" = hide from the list; the count still shows in the summary bar.</li></ul> |
-| Allowed values | **Show each check** — `SHOW_EACH_CHECK`<br>**Show count only** — `SHOW_COUNT_ONLY` |
+| Allowed values | **Show each check**: `SHOW_EACH_CHECK`<br>**Show count only**: `SHOW_COUNT_ONLY` |
 
 ### Skipped Checks (`SkippedChecksDisplay__c`)
 
@@ -237,11 +235,11 @@ whether the field belongs in your configuration.
 | Type | Picklist |
 | Capacity | Restricted picklist |
 | Always required | No |
-| Default | **Show each check** — `SHOW_EACH_CHECK` |
+| Default | **Show each check**: `SHOW_EACH_CHECK` |
 | Used when | Every Check Set; controls whether skipped rows or only their count appear. |
 | Description | <p>Controls how checks that were not run appear. This includes checks that do not apply to the record and checks whose prerequisite did not pass.</p><ul><li>"Show each check" lists every skipped check.</li><li>"Show count only" removes skipped checks from the list; their count still appears in the summary bar at the bottom of the card.</li></ul><p>Defaults to "Show each check".</p> |
 | Help text | <p>How checks that were not run appear.</p><ul><li>"Show each check" (default) lists them.</li><li>"Show count only" hides the rows while keeping the summary count.</li></ul> |
-| Allowed values | **Show each check** — `SHOW_EACH_CHECK`<br>**Show count only** — `SHOW_COUNT_ONLY` |
+| Allowed values | **Show each check**: `SHOW_EACH_CHECK`<br>**Show count only**: `SHOW_COUNT_ONLY` |
 
 
 ## 5. Troubleshooting
@@ -255,11 +253,11 @@ whether the field belongs in your configuration.
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |
-| Default | **Unchecked** — `false` |
+| Default | **Unchecked**: `false` |
 | Used when | Optional for every Check Set; detail also requires the View Details Custom Permission. |
 | Description | <p>Enables authorized troubleshooting details on the card and in the browser console. A user sees those details only when this field is checked and the user has the "Record Health Check View Details" Custom Permission.</p><p>Other users continue to see the standard card. Enable it only while diagnosing a configuration or evaluation problem.</p> |
 | Help text | <p>Troubleshooting only. Details appear only to users with "Record Health Check View Details".</p><p>Leave unchecked during normal use.</p> |
-| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+| Allowed values | **Checked**: `true`<br>**Unchecked**: `false` |
 
 
 ## 6. Lifecycle events
@@ -273,14 +271,14 @@ whether the field belongs in your configuration.
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |
-| Default | **Unchecked** — `false` |
+| Default | **Unchecked**: `false` |
 | Used when | Optional for every Check Set; affects deliberate runs only and defaults off. |
 | Description | <p>Publishes one Check Set Run event after a deliberately initiated run completes. Page-load runs never publish because opening or refreshing a record is passive navigation and could otherwise consume event allocations or repeatedly trigger subscribers.</p><p>Leave unchecked until a reviewed subscriber needs an after-commit summary. Publication consumes the org's Platform Event allocation and does not confirm that the subscriber processed the event.</p> |
 | Help text | <p>Publish a completion event for deliberate API, Flow, scheduled, batch, or user-requested runs. Page-load runs never publish.</p> |
-| Allowed values | **Checked** — `true`<br>**Unchecked** — `false` |
+| Allowed values | **Checked**: `true`<br>**Unchecked**: `false` |
 
 ## Related
 
 - [Rule fields](fields-rule.md)
 - [Create your first Rule](../installation/03-create-your-first-rule.md)
-- [Configuration guide](../guides/configuration-guide.md)
+- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

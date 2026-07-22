@@ -1,13 +1,11 @@
-# Record Health Check: LLM configuration guide
+# Draft configuration with AI
 
 > [!NOTE]
-> **On this page**
->
-> Give an AI assistant the vocabulary, rules, and output format needed to draft valid Record Health Check configuration.
+> On this page, give an AI assistant enough Framework and Salesforce context to draft reviewable Check Set and Rule configuration without inventing fields, values, or unsupported behavior.
 
 **Version:** 2.0.0 (2026-07-13)
 
-This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see the [Configuration Guide](configuration-guide.md). For formal contracts, see the [Design Specification](../reference/record-health-check-design-spec.md).
+This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see the [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-rule.md) references.
 
 ## 1. What this product does
 
@@ -150,7 +148,7 @@ Minimum fields when creating a new Check Set:
 | `SkippedChecksDisplay__c` | Skipped Checks | Yes | `SHOW_EACH_CHECK` or `SHOW_COUNT_ONLY` |
 | `FoundExpectedDisplay__c` | Found/Expected Display | Yes | `ON_DEMAND` (default), `FAILURES_ONLY`, or `ALL_ROWS` |
 | `IsActive__c` | Active | No | `true` |
-| `ShowDiagnostics__c` | Show Diagnostics | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Details` (from `Record_Health_Check_Admin`). See [Show Diagnostics guide](show-diagnostics.md). |
+| `ShowDiagnostics__c` | Show Diagnostics | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Details` (from `Record_Health_Check_Admin`). See [Show Diagnostics guide](troubleshoot-with-show-diagnostics.md). |
 | `PublishRunEvent__c` | Publish Run Event | No | `false` by default; page-load runs never publish |
 
 **Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `checkSetDeveloperName`.
@@ -167,7 +165,7 @@ Always include (all Evaluation Types):
 | `CheckTitle__c` | Check Title | Yes | `Open pipeline ≥ 1.5× annual revenue` |
 | `EvaluationType__c` | Evaluation Type | Yes | `QUERY` |
 | `EvaluationOrder__c` | Evaluation Order | Yes | `10` (use gaps: 10, 20, 30…) |
-| `Category__c` | Category | No | `COMPLETENESS`, `READINESS`, `COMPLIANCE`, `RELATIONSHIP_COVERAGE`, or blank. Metadata only — UI grouping not implemented yet. |
+| `Category__c` | Category | No | `COMPLETENESS`, `READINESS`, `COMPLIANCE`, `RELATIONSHIP_COVERAGE`, or blank. Metadata only: UI grouping not implemented yet. |
 | `FailureSeverity__c` | Failure Severity | Yes | `CRITICAL`, `WARNING`, or `INFO` |
 | `FailureMessage__c` | Message When Failed | Yes | `{!record.Name} pipeline is below 1.5× annual revenue.` |
 | `FixMessage__c` | Fix Message | No | `Review open opportunities…` (renders on FAIL rows) |
@@ -183,7 +181,7 @@ Use remediation fields for guidance and explicit navigation. Rendering or openin
 make Record Health Check perform DML, although a destination can be an edit or prefilled create page
 where the user chooses whether to save. Unsafe or overlong URLs are dropped, but Fix Message can
 still render. For create-page, Knowledge, report, related-list, and external examples, see
-[Action links and Fix Message](action-links.md).
+[Configure action links](configure-action-links.md).
 
 ### 4.4 Pattern citation
 
@@ -193,7 +191,7 @@ Apex example.
 
 ### 4.5 Class sketch (Apex only)
 
-When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex reference](../examples/apex/reference.md) for full patterns.
+When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex reference](../reference/reference-apex.md) for full patterns.
 
 | Item | What to include |
 | ---- | --------------- |
@@ -213,11 +211,11 @@ Setup label: **Verify with a formula**.
 | API field | Required | Value |
 | --- | --- | --- |
 | `PassConditionFormula__c` | Yes | Boolean formula; `true` = pass |
-| `DisplayFoundFormula__c` | Optional | single-value formula shown as **Found** (left side of a comparison). Display only — does not affect pass/fail. |
+| `DisplayFoundFormula__c` | Optional | single-value formula shown as **Found** (left side of a comparison). Display only: does not affect pass/fail. |
 | `DisplayExpectedFormula__c` | Optional | single-value formula shown as **Expected** (right side). Display only; blank = Expected echoes `PassConditionFormula__c`. |
 | `FormulaResultType__c` | Optional | Type of the Found/Expected single values (`NUMBER` / `TEXT` / `DATE` / `DATETIME` / `BOOLEAN`), or `AUTO`. |
 
-Operands in any of these formulas may be calculated fields (formula, roll-up) at any depth — the engine loads the full dependency chain.
+Operands in any of these formulas may be calculated fields (formula, roll-up) at any depth: the engine loads the full dependency chain.
 
 **Found/Expected are display-only and NOT compared to each other.** `PassConditionFormula__c` performs the comparison and decides pass/fail. Set Found/Expected only for comparison/balance checks, and mirror each side of the Pass/Fail comparison (Found = left operand, Expected = right) so the row does not mislead. For framework-driven comparison with an operator, use a Query check (`ExpectedValueSource__c` = `FIXED_VALUE` / `RECORD_FORMULA` / `COMPARISON_QUERY`).
 
@@ -277,14 +275,14 @@ List operators for `COMPARE_AS_LISTS`: `LISTS_OVERLAP`, `LISTS_CONTAIN_ALL`, `LI
 
 ### 5.4 Apex (`EvaluationType__c` = `APEX`)
 
-Full walkthroughs: [Apex examples](../examples/README.md#apex-examples) · [Recent Account activity](../examples/apex/01-recent-activity.md) · [Apex reference](../examples/apex/reference.md)
+Full walkthroughs: [Apex examples](../examples/README.md#apex-examples) · [Recent Account activity](../examples/apex/01-recent-activity.md) · [Apex reference](../reference/reference-apex.md)
 
 | API field | Required | Notes |
 | --- | --- | --- |
 | `ApexClass__c` | Yes | Class implementing `RecordHealthCheckRule`: deploy before activating Rule |
 | `ApexParametersJson__c` | No | JSON **object** (not array), e.g. `{"daysBack": 90}`, `{"minDigits": 10}`, `{"staleDays": 30}` |
 
-**Apex interface summary:** Full patterns: [Apex reference](../examples/apex/reference.md).
+**Apex interface summary:** Full patterns: [Apex reference](../reference/reference-apex.md).
 
 ```apex
 public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
@@ -585,10 +583,10 @@ select a distinct pattern, then output configuration the reader can create in Sa
 
 ## 15. Deeper documentation map
 
-- [Configuration guide](configuration-guide.md): every Setup field explained
-- [Configuration guide: what it can check](configuration-guide.md#2-what-it-can-check): when to use which Evaluation Type
+- [Configure Check Sets and Rules](configure-check-sets-and-rules.md): every Setup field explained
+- [Configuration guide: what it can check](configure-check-sets-and-rules.md#2-what-it-can-check): when to use which Evaluation Type
 - [Examples README](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/README.md): pattern matrix, merge tokens, and copy-paste examples by type
-- [Design specification](../reference/record-health-check-design-spec.md): Reason Codes and contracts
+- [Reason Codes](../reference/reference-reason-codes.md): stable Framework outcomes and investigation guidance
 - [Create your first Rule](../installation/03-create-your-first-rule.md): install and first Rule
 
 ## 16. Gemini gem checklist
@@ -596,7 +594,7 @@ select a distinct pattern, then output configuration the reader can create in Sa
 When building a Gemini gem for this project:
 
 1. Upload this file as primary knowledge.
-2. Add `configuration-guide.md` and `https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/README.md` as secondary knowledge.
+2. Add `configure-check-sets-and-rules.md` and `https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/README.md` as secondary knowledge.
 3. Paste Section 2 (system prompt) into gem instructions.
 4. Tell users to paste: base object, fields involved, pass/fail semantics, and whether zero children should pass or skip.
 5. Require gem output to use Section 4 tables (API names, not Setup-only labels).
@@ -604,7 +602,7 @@ When building a Gemini gem for this project:
 
 ## Related
 
-- [Configuration guide](configuration-guide.md)
+- [Configure Check Sets and Rules](configure-check-sets-and-rules.md)
 - [Metadata reference](../metadata/README.md)
-- [Apex reference](../examples/apex/reference.md)
-- [Reason Codes](../reference/reason-codes.md)
+- [Apex reference](../reference/reference-apex.md)
+- [Reason Codes](../reference/reference-reason-codes.md)
