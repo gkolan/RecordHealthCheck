@@ -64,9 +64,9 @@ Start in a **sandbox**. The deployment installs the Framework, but it does not a
 Sets, Rules, or Apex implementations to your org.
 
 > [!NOTE]
-> **Already using Record Health Check?** Back up your Custom Metadata before deploying. Earlier
-> field API names are not supported by the current Framework, so follow the
-> [upgrade and rollback guide](docs/installation/04-upgrading.md).
+> **Upgrading an existing installation?** This release uses updated Custom Metadata field API
+> names. Review the [upgrade guide](docs/installation/04-upgrading.md) for the field mapping and
+> upgrade steps.
 
 ### Deploy to a sandbox
 
