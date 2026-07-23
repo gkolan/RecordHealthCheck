@@ -68,9 +68,9 @@ For setup, see [Create your first Rule](../installation/03-create-your-first-rul
 Wiring example:
 
 ```text
-Lightning component Check Set: Example_Account_360_Health_Check
-Check Set DeveloperName: Example_Account_360_Health_Check
-Rule DeveloperName: Example_Recent_Activity
+Lightning component Check Set: Example_Account_Relationship_Risk
+Check Set DeveloperName: Example_Account_Relationship_Risk
+Rule DeveloperName: Example_Customer_Engagement_Current
 ```
 
 **Where to place the component:** Lightning **record pages** only. The component needs a record context (`recordId`). It is not exposed on App or Home pages.

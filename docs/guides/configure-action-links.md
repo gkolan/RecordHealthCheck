@@ -137,7 +137,7 @@ Action URL:
 Fix Message:
 `Open the account's contacts and add the missing email addresses.`
 
-This pattern ships in the `Example_Every_Contact_Has_Email` sample Rule.
+This pattern ships in the `Example_Contacts_Have_Email` sample Rule.
 
 ### High-priority open Cases
 
@@ -152,7 +152,7 @@ Action URL:
 Fix Message:
 `Review the open high-priority cases before your next renewal or executive conversation.`
 
-This pattern ships in the `Example_No_High_Priority_Cases` sample Rule. Replace the report Id with the Id from your org.
+This pattern ships in the `Example_No_High_Priority_Issues` sample Rule. Replace the report Id with the Id from your org.
 
 ### External playbook
 

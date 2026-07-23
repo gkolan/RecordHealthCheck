@@ -91,7 +91,7 @@ make the schemas interchangeable; each can version independently.
 
 ```apex
 RecordHealthCheckSetResult health = RecordHealthCheck.runSet(
-  'Example_Account_360_Health_Check',
+  'Example_Account_Relationship_Risk',
   accountId
 );
 

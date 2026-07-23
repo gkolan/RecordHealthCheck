@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- Org-specific backup scope required before removing the platform events
+         that consume capacity needed by Record Health Check V2. -->
+    <types>
+        <members>BulkRecordUploadTestDataFactory</members>
+        <members>EPRuleContractTriggerHandler</members>
+        <members>EPRuleLogWriter</members>
+        <members>EPRuleOpportunityTriggerHandler</members>
+        <members>EPRulePipelineStateWriter</members>
+        <members>EPRulePlatformEventHandler</members>
+        <members>GlobalPlatformEventHandler</members>
+        <members>GlobalPlatformEventHandlerTest</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>EPRulePipelineEventTrigger</members>
+        <members>EPRulePipelineRetryTrigger</members>
+        <members>GlobalPlatformEventTrigger</members>
+        <members>RuleExecutionResultTrigger</members>
+        <name>ApexTrigger</name>
+    </types>
+    <types>
+        <members>EPRule_Pipeline_Event__e</members>
+        <members>EPRule_Pipeline_Retry__e</members>
+        <members>GlobalPlatformEvent__e</members>
+        <members>Rule_Execution_Result__e</members>
+        <name>CustomObject</name>
+    </types>
+    <version>66.0</version>
+</Package>

@@ -27,6 +27,7 @@ public class RecordHealthCheckTokenRegistry {
   public static final Set<String> RESULT_PROPERTIES = new Set<String>{
     'status',
     'foundValue',
+    'foundValuePluralSuffix',
     'expectedValue',
     'failedRecordCount',
     'totalRecordCount',

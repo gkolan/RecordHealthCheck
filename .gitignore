@@ -122,6 +122,9 @@ scripts/*
 !scripts/apex/
 scripts/apex/*
 !scripts/apex/validateMetadata.apex
+!scripts/apex/*V2Demo*.apex
+!scripts/demo/
+!scripts/demo/**
 
 # Internal planning / roadmap docs — kept local, not published with the project.
 docs/spec/

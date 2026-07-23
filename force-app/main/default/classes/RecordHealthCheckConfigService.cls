@@ -562,6 +562,7 @@ public with sharing class RecordHealthCheckConfigService {
         PrerequisiteRule__c,
         ApplicabilityMode__c,
         ApplicabilityFormula__c,
+        ApplicabilityNotMetMessage__c,
         ApplicabilityCountQuery__c,
         ApplicabilityCountOperator__c,
         ApplicabilityCountThreshold__c,
