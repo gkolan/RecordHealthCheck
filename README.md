@@ -42,19 +42,20 @@ data that existed before the Rules were created, without writing to the record.
         <li>Custom Metadata defines what each Rule evaluates, when it applies, and whether the card runs when the page opens or when the user selects <b>Run</b>.</li>
         <li>The same component can be configured for any Salesforce object with a record page.</li>
       </ul>
-      <p><b>What this example demonstrates</b></p>
-      <ul>
-        <li><b>Formula checks</b> evaluate Account ownership and parent-account alignment.</li>
-        <li><b>Related-record and aggregate queries</b> measure executive sponsorship, contact reachability, pipeline coverage, and open customer issues.</li>
-        <li><b>Custom Apex</b> evaluates recent Tasks and Events within a configurable 90-day window.</li>
-        <li><b>Applicability rules</b> skip channel governance for a direct customer and explain why.</li>
-      </ul>
     </td>
     <td width="52%" valign="top">
       <img src="assets/img/Example_Account_Relationship_Risk_Screenshot.png" alt="Account Relationship and Risk Health Check showing executive sponsorship, ownership, engagement, revenue coverage, customer issues, descriptive Found and Expected values, and an intentional business-specific skip" width="100%" />
     </td>
   </tr>
 </table>
+
+### What this example demonstrates
+
+- **Formula checks** evaluate Account ownership and parent-account alignment.
+- **Related-record and aggregate queries** measure executive sponsorship, contact reachability,
+  pipeline coverage, and open customer issues.
+- **Custom Apex** evaluates recent Tasks and Events within a configurable 90-day window.
+- **Applicability rules** skip channel governance for a direct customer and explain why.
 
 ## Start here
 
