@@ -5,10 +5,11 @@
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
 [![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)
 
-> **Can users trust this Salesforce record enough to move forward?**
+> **Make informed decisions before taking action on Salesforce data.**
 >
-> _Record Health Check answers that question on the record page, then shows the user what needs
-> attention, why it matters, and how to act._
+> Record Health Check evaluates Salesforce records directly on the record page, surfacing what
+> needs attention, why it matters, and how to resolve it without modifying the record or blocking
+> users.
 
 Every Rule returns **Pass**, **Fail**, **Skipped**, or **Unable to Check**. When a record needs
 attention, the card can show its **Critical**, **Warning**, or **Info** severity; explain what was
