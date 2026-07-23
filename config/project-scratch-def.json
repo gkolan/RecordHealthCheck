@@ -1,6 +1,7 @@
 {
   "orgName": "Gautam Kolan S1",
   "edition": "Developer",
+  "hasSampleData": true,
   "features": ["EnableSetPasswordInApi"],
   "settings": {
     "lightningExperienceSettings": {

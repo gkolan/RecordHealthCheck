@@ -36,7 +36,7 @@ sandbox or scratch org made from a current production backup before changing pro
 3. Run `scripts/apex/validateMetadata.apex` and resolve every invalid Rule or Check Set.
 4. Assign `Record_Health_Check_User` to viewers and `Record_Health_Check_Admin` only to administrators. Assign the diagnostics-detail Custom Permission only where justified.
 5. Open each Lightning record page containing Record Health Check. Re-select the intended Check Set if the old component placement used removed properties, then save and activate the page.
-6. Verify `Example_Account_360_Health_Check` on an Account for authorized, unauthorized, diagnostics-enabled, and diagnostics-disabled paths.
+6. Verify `Example_Account_Relationship_Risk` on an Account for authorized, unauthorized, diagnostics-enabled, and diagnostics-disabled paths.
 7. Enable `PublishRunEvent__c` or `PublishResultEvent__c` only after reviewing event allocations and installed subscribers. Both remain false by default, and page-load evaluations never publish.
 
 ## Field migration reference

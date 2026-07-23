@@ -39,6 +39,22 @@ function headings(markdown) {
 
 walk(docsRoot);
 const failures = [];
+const projectMarkdownFiles = [
+  ...markdownFiles,
+  ...fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+    .map((entry) => path.join(root, entry.name))
+];
+
+for (const file of projectMarkdownFiles) {
+  const markdown = fs.readFileSync(file, "utf8");
+  if (markdown.includes("—")) {
+    failures.push(
+      `${path.relative(root, file)}: replace em dashes with natural sentence punctuation`
+    );
+  }
+}
 
 const canonicalFieldAnchors = new Map();
 for (const reference of [
@@ -56,7 +72,7 @@ for (const reference of [
 
 for (const folder of ["formula", "query", "compare-two-queries", "apex"]) {
   const examplesDirectory = path.join(docsRoot, "examples", folder);
-  const reference = path.join(examplesDirectory, "reference.md");
+  const reference = path.join(docsRoot, "reference", `reference-${folder}.md`);
   if (!fs.existsSync(reference))
     failures.push(`missing ${folder} reference page`);
 
@@ -112,23 +128,43 @@ for (const [eventName, referenceName] of [
 for (const file of markdownFiles) {
   const markdown = fs.readFileSync(file, "utf8");
   const relativeFile = path.relative(root, file);
+  const isPracticalExample = /^docs\/examples\/[^/]+\/\d[^/]+\.md$/.test(
+    relativeFile
+  );
 
-  if (!/^# .+\n\n> \[!NOTE\]\n> \*\*On this page\*\*/.test(markdown)) {
+  if (!/^# .+\n\n> \[!NOTE\]\n> On this page,/.test(markdown)) {
     failures.push(
       `${relativeFile}: page must begin with an On this page note immediately after the title`
     );
   }
 
-  if (/(\/|-)example\.md$/.test(file)) {
+  if (isPracticalExample) {
     const opening = markdown.split(/^##\s/m, 1)[0];
     if (
       !/> \[!NOTE\]/.test(opening) ||
-      !/> \*\*On this page\*\*/.test(opening) ||
-      !/> \*\*Reference\*\*/.test(opening)
+      !/> On this page,/.test(opening) ||
+      !/> \*\*Setup reference\*\*/.test(opening)
     ) {
       failures.push(
-        `${relativeFile}: example must open with On this page and Reference note`
+        `${relativeFile}: example must open with On this page and Setup reference`
       );
+    }
+
+    const userResultSection = markdown
+      .split(/^## What the user sees\s*$/m)[1]
+      ?.split(/^## /m)[0];
+    for (const requiredRow of [
+      "| **`PASS`** |",
+      "| **`FAIL`** |",
+      "| **`SKIPPED`** |",
+      "| **Found** |",
+      "| **Expected** |"
+    ]) {
+      if (!userResultSection?.includes(requiredRow)) {
+        failures.push(
+          `${relativeFile}: What the user sees must include ${requiredRow.replaceAll("|", "").trim()}`
+        );
+      }
     }
   }
 
@@ -170,7 +206,7 @@ for (const file of markdownFiles) {
       if (type === "Picklist") {
         const allowed =
           section.match(/^\| Allowed values \| (.+) \|/m)?.[1] || "";
-        if (!/\*\*.+\*\* — `.+`/.test(allowed))
+        if (!/\*\*.+\*\*: `.+`/.test(allowed))
           failures.push(
             `${relativeFile}: ${heading} picklist values need labels and API values`
           );
@@ -178,7 +214,7 @@ for (const file of markdownFiles) {
           section.match(/^\| Default \| (.+) \|/m)?.[1] || "";
         if (
           defaultValue !== "No default" &&
-          !/\*\*.+\*\* — `.+`/.test(defaultValue)
+          !/\*\*.+\*\*: `.+`/.test(defaultValue)
         )
           failures.push(
             `${relativeFile}: ${heading} picklist default needs label and API value`
@@ -188,14 +224,14 @@ for (const file of markdownFiles) {
         const allowed =
           section.match(/^\| Allowed values \| (.+) \|/m)?.[1] || "";
         if (
-          !/\*\*Checked\*\* — `true`.*\*\*Unchecked\*\* — `false`/.test(allowed)
+          !/\*\*Checked\*\*: `true`.*\*\*Unchecked\*\*: `false`/.test(allowed)
         )
           failures.push(
             `${relativeFile}: ${heading} checkbox values need labels and Boolean values`
           );
         const defaultValue =
           section.match(/^\| Default \| (.+) \|/m)?.[1] || "";
-        if (!/\*\*(Checked|Unchecked)\*\* — `(true|false)`/.test(defaultValue))
+        if (!/\*\*(Checked|Unchecked)\*\*: `(true|false)`/.test(defaultValue))
           failures.push(
             `${relativeFile}: ${heading} checkbox default needs label and Boolean value`
           );

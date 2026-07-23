@@ -1287,7 +1287,9 @@ public with sharing class RecordHealthCheckEngine {
     r.reasonCode = rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE'
       ? RecordHealthCheckReasonCodes.NOT_APPLICABLE_BY_FORMULA
       : RecordHealthCheckReasonCodes.NOT_APPLICABLE_BY_COUNT;
-    if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
+    if (String.isNotBlank(rule.ApplicabilityNotMetMessage__c)) {
+      r.message = rule.ApplicabilityNotMetMessage__c;
+    } else if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
       r.message = 'This check does not apply because its formula applicability condition evaluated to false.';
     } else if (rule.ApplicabilityMode__c == 'WHEN_COUNT_QUERY_MATCHES') {
       r.message = 'This check does not apply because its SOQL applicability query did not meet the configured threshold.';

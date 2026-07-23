@@ -86,6 +86,8 @@ private class RecordHealthCheckEngineTest {
       ComparisonOperator__c = 'EQUALS',
       ExpectedValueSource__c = 'RECORD_FORMULA',
       ExpectedRecordFormula__c = 'AnnualRevenue * 0.1',
+      DisplayFoundText__c = 'Pipeline: {!rhcResult.foundValue}',
+      DisplayExpectedText__c = 'Target: {!rhcResult.expectedValue}',
       NoRowsResult__c = 'FAIL',
       EmptyValueHandling__c = 'AS_NO_MATCH',
       FailureMessage__c = 'Related opportunity amount does not match expected revenue.',
@@ -105,6 +107,14 @@ private class RecordHealthCheckEngineTest {
     // Direct evaluator calls expose the evaluator contract. The engine maps
     // this value to the LWC wire string only at its response boundary.
     System.assertEquals('QUERY', result.evaluatorType);
+    System.assert(
+      result.actualValue.startsWith('Pipeline: '),
+      'Single-value Found template should preserve and label the query value.'
+    );
+    System.assert(
+      result.expectedValue.startsWith('Target: '),
+      'Single-value Expected template should preserve and label the comparison value.'
+    );
   }
 
   @isTest

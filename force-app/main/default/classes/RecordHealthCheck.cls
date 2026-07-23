@@ -8,7 +8,7 @@
  * Apex triggers, batch/queueable, scheduled jobs, anonymous Apex, other classes
  * or tests. This is the simplest adoption surface: no LWC, no record page.
  * RecordHealthCheckResult r = RecordHealthCheck.runRule(
- * 'Example_Owner_Is_Active', accountId);
+ * 'Example_Account_Owner_Active', accountId);
  * if (r.status == 'FAIL') { ... }
  * Like the LWC path, the call is correlated by a generated `runId` and every
  * `[RHC]` log line is attributed to the actual running user.

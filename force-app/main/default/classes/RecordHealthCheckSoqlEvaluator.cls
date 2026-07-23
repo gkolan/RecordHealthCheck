@@ -266,20 +266,37 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
             comparisonValue
           );
     } else {
-      result.actualValue = primaryList != null
+      String rawActualValue = primaryList != null
         ? RecordHealthCheckComparisonEngine.formatList(primaryList)
         : RecordHealthCheckComparisonEngine.formatValue(primaryValue);
+      String rawExpectedValue;
       if (isListOperator) {
-        result.expectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
+        rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
           rule.ComparisonOperator__c,
           comparisonList
         );
       } else {
-        result.expectedValue = RecordHealthCheckComparisonEngine.describeExpected(
+        rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpected(
           rule.ComparisonOperator__c,
           comparisonValue
         );
       }
+      result.actualValue = String.isNotBlank(rule.DisplayFoundText__c)
+        ? resolveSingleValueTemplate(
+            rule.DisplayFoundText__c,
+            rawActualValue,
+            rawExpectedValue,
+            record
+          )
+        : rawActualValue;
+      result.expectedValue = String.isNotBlank(rule.DisplayExpectedText__c)
+        ? resolveSingleValueTemplate(
+            rule.DisplayExpectedText__c,
+            rawActualValue,
+            rawExpectedValue,
+            record
+          )
+        : rawExpectedValue;
     }
 
     // Value source — where each side came from and its raw value/row count, so an
@@ -636,6 +653,23 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       .withResult(new RecordHealthCheckResult(), true);
     context.failedRecordCount = failing;
     context.totalRecordCount = total;
+    return RecordHealthCheckTemplateService.resolveDisplay(template, context);
+  }
+
+  // Applies business-facing labels to a single query value while preserving the
+  // raw values in the merge context and in diagnostic value-source details.
+  private String resolveSingleValueTemplate(
+    String template,
+    String foundValue,
+    String expectedValue,
+    SObject record
+  ) {
+    RecordHealthCheckResult rawResult = new RecordHealthCheckResult();
+    rawResult.actualValue = foundValue;
+    rawResult.expectedValue = expectedValue;
+    RecordHealthCheckMergeContext context = new RecordHealthCheckMergeContext()
+      .withRecord(record)
+      .withResult(rawResult, true);
     return RecordHealthCheckTemplateService.resolveDisplay(template, context);
   }
 

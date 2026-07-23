@@ -144,6 +144,23 @@ private class RecordHealthCheckTemplateServiceTest {
     System.assert(resolved.contains('Found|Expected|MISMATCH'));
     System.assert(resolved.contains('run-456|FLOW|2026-07-14T01:02:03.000Z'));
     System.assert(resolved.endsWith('|1000'));
+
+    result.actualValue = '1';
+    System.assertEquals(
+      '1 Sponsor',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!rhcResult.foundValue} Sponsor{!rhcResult.foundValuePluralSuffix}',
+        context
+      )
+    );
+    result.actualValue = '3';
+    System.assertEquals(
+      '3 Sponsors',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!rhcResult.foundValue} Sponsor{!rhcResult.foundValuePluralSuffix}',
+        context
+      )
+    );
   }
 
   @IsTest

@@ -308,6 +308,16 @@ public class RecordHealthCheckTemplateService {
       return context.result.status;
     if (property == 'foundValue')
       return context.result.actualValue;
+    if (property == 'foundValuePluralSuffix') {
+      try {
+        Decimal foundNumber = Decimal.valueOf(
+          context.result.actualValue.replace(',', '').trim()
+        );
+        return foundNumber == 1 ? '' : 's';
+      } catch (Exception ignored) {
+        return 's';
+      }
+    }
     if (property == 'expectedValue')
       return context.result.expectedValue;
     if (property == 'failedRecordCount')
