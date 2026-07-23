@@ -1825,8 +1825,8 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     );
     evaluateCheck.mockResolvedValue({
       ...FAIL_NO_SEVERITY("Check_A"),
-      actualValue: '"Finance"',
-      expectedValue: 'to equal "Technology"'
+      actualValue: "Finance",
+      expectedValue: "to equal Technology"
     });
     await appendAndLoad(element);
     await clickRun(element);
@@ -1840,12 +1840,12 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
       n.textContent.trim()
     );
     expect(keys).toEqual(["Found", "Expected"]);
-    expect(vals).toEqual(['"Finance"', 'to equal "Technology"']);
+    expect(vals).toEqual(["Finance", "to equal Technology"]);
 
     const row = element.shadowRoot.querySelector("li[aria-label]");
-    expect(row.getAttribute("aria-label")).toContain('Found "Finance"');
+    expect(row.getAttribute("aria-label")).toContain("Found Finance");
     expect(row.getAttribute("aria-label")).toContain(
-      'Expected to equal "Technology"'
+      "Expected to equal Technology"
     );
   });
 
@@ -1954,22 +1954,22 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(chip).not.toBeNull();
     const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
     expect(toggle).not.toBeNull();
-    expect(toggle.textContent.trim()).toBe("...");
-    expect(toggle.getAttribute("aria-label")).toBe("Show more");
+    expect(toggle.textContent.trim()).toBe("+");
+    expect(toggle.getAttribute("aria-label")).toBe("Expand value");
 
     toggle.click();
     await Promise.resolve();
     expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(true);
-    expect(toggle.textContent.trim()).toBe("less");
+    expect(toggle.textContent.trim()).toBe("−");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(toggle.getAttribute("aria-label")).toBe("Show less");
+    expect(toggle.getAttribute("aria-label")).toBe("Collapse value");
 
     toggle.click();
     await Promise.resolve();
     expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(false);
-    expect(toggle.textContent.trim()).toBe("...");
+    expect(toggle.textContent.trim()).toBe("+");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(toggle.getAttribute("aria-label")).toBe("Show more");
+    expect(toggle.getAttribute("aria-label")).toBe("Expand value");
   });
 
   it("does not render the comparison block on a passing row", async () => {

@@ -653,9 +653,12 @@ export default class RecordHealthCheck extends LightningElement {
       return;
     }
     const expanded = chip.classList.toggle("rhc-cmp__val--expanded");
-    toggle.textContent = expanded ? "less" : "...";
+    toggle.textContent = expanded ? "−" : "+";
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-    toggle.setAttribute("aria-label", expanded ? "Show less" : "Show more");
+    toggle.setAttribute(
+      "aria-label",
+      expanded ? "Collapse value" : "Expand value"
+    );
   }
 
   get checkCountLabel() {
