@@ -28,13 +28,13 @@ data that existed before the Rules were created, without writing to the record.
 <table>
   <tr>
     <td width="48%" valign="top">
-      <p><b>Example: Account 360 Health Check</b><br />▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">Animated GIF</a></p>
-      <p>An account team can review whether an Account is ready for the next conversation without leaving the record page.</p>
+      <p><b>Example: Account Relationship &amp; Risk Health Check</b></p>
+      <p>An account team can review relationship strength, ownership, engagement, revenue coverage, and customer risk without leaving the record page.</p>
       <ul>
-        <li><b>Review the whole Account.</b> The Check Set evaluates the Account together with its Contacts, Opportunities, Cases, Contracts, and Activities.</li>
-        <li><b>Start with the summary.</b> The footer shows how many results Passed, Failed, raised a Warning or Info issue, or were Skipped.</li>
-        <li><b>Open the detail that matters.</b> Passed Rules remain compact. Other rows can explain the issue and severity, show what the Framework found and expected, or state why the Rule did not apply.</li>
-        <li><b>Go directly to the next step.</b> When an issue has a clear destination, a <b>Fix it</b> link can take the user there. In this example, it opens a report already filtered to the Account.</li>
+        <li><b>Review the whole relationship.</b> Rules evaluate the Account together with Opportunity Contact Roles, Contacts, Opportunities, Cases, Activities, ownership, and parent-account context.</li>
+        <li><b>See business evidence.</b> Found and Expected values explain results such as three reachable Executive Sponsors, six contacts missing email, four high-priority cases, and a dynamically calculated 75% revenue-coverage target.</li>
+        <li><b>Understand every outcome.</b> Passed Rules remain compact, issues include severity and corrective guidance, and skipped Rules explain the business reason they do not apply to this Account.</li>
+        <li><b>Act on the risk.</b> Remediation guidance directs the account team toward the ownership, relationship, pipeline, or service action that closes the gap.</li>
       </ul>
       <p><b>Administrators control the experience</b></p>
       <ul>
@@ -42,9 +42,16 @@ data that existed before the Rules were created, without writing to the record.
         <li>Custom Metadata defines what each Rule evaluates, when it applies, and whether the card runs when the page opens or when the user selects <b>Run</b>.</li>
         <li>The same component can be configured for any Salesforce object with a record page.</li>
       </ul>
+      <p><b>What this example demonstrates</b></p>
+      <ul>
+        <li><b>Formula checks</b> evaluate Account ownership and parent-account alignment.</li>
+        <li><b>Related-record and aggregate queries</b> measure executive sponsorship, contact reachability, pipeline coverage, and open customer issues.</li>
+        <li><b>Custom Apex</b> evaluates recent Tasks and Events within a configurable 90-day window.</li>
+        <li><b>Applicability rules</b> skip channel governance for a direct customer and explain why.</li>
+      </ul>
     </td>
     <td width="52%" valign="top">
-      <img src="assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
+      <img src="assets/img/Example_Account_Relationship_Risk_Screenshot.png" alt="Account Relationship and Risk Health Check showing executive sponsorship, ownership, engagement, revenue coverage, customer issues, descriptive Found and Expected values, and an intentional business-specific skip" width="100%" />
     </td>
   </tr>
 </table>
@@ -62,8 +69,9 @@ order.
 
 ## Install
 
-Start in a **sandbox**. The deployment installs the Framework, but it does not add example Check
-Sets, Rules, or Apex implementations to your org.
+Start in a **sandbox**. The deployment installs the Framework and the clearly prefixed `Example_`
+Check Set, Rules, and Apex evaluator. It does not create Acme demo records in an existing org;
+those deterministic records are provisioned only by the dedicated scratch-org setup script.
 
 > [!NOTE]
 > **Upgrading an existing installation?** This release uses updated Custom Metadata field API
