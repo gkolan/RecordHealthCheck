@@ -1,1 +1,0 @@
-RecordHealthCheckExhaustiveSmoke.report();

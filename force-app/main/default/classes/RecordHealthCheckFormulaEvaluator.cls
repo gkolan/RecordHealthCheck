@@ -145,7 +145,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
    * and formatted like Query checks. Blank leaves actualValue null (no Found
    * chip), matching the original behavior.
    * Expected: the resolved DisplayExpectedFormula__c single-value when populated
-   * otherwise the quoted PassConditionFormula__c text (original behavior).
+   * otherwise the unquoted PassConditionFormula__c text (original behavior).
    * Display is purely additive: pass/fail has already been decided by the
    * boolean PassConditionFormula__c. A single-value formula that fails to resolve (non-single-value
    * result, null traversal, FormulaEval budget) must never change the row's

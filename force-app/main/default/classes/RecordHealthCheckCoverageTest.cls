@@ -618,12 +618,12 @@ private class RecordHealthCheckCoverageTest {
     // A non-passing single-query result carries the actual value and the
     // operator-described expectation so the UI can show both.
     System.assertEquals(
-      '"' + accountRecord.BillingCity + '"',
+      accountRecord.BillingCity,
       notEqualsResult.actualValue,
-      'actualValue should reflect the queried record value (text is quoted)'
+      'actualValue should reflect the queried record value'
     );
     System.assertEquals(
-      'to not equal "' + accountRecord.BillingCity + '"',
+      'to not equal ' + accountRecord.BillingCity,
       notEqualsResult.expectedValue,
       'expectedValue should describe the operator and operand'
     );
@@ -2319,55 +2319,51 @@ private class RecordHealthCheckCoverageTest {
       RecordHealthCheckComparisonEngine.formatValue('   ')
     );
     System.assertEquals(
-      '"Technology"',
+      'Technology',
       RecordHealthCheckComparisonEngine.formatValue('Technology')
     );
-    // Numbers and Booleans are quoted too, so a mixed-type comparison such as
-    // a COUNT check reads consistently (Found "1" … at least "2").
-    System.assertEquals(
-      '"1"',
-      RecordHealthCheckComparisonEngine.formatValue(1)
-    );
+    // Values are unquoted because the UI chip visually distinguishes them.
+    System.assertEquals('1', RecordHealthCheckComparisonEngine.formatValue(1));
     // Booleans read Yes/No, whether they arrive as a typed Boolean (checkbox
     // field, boolean formula) or as a metadata operand string.
     System.assertEquals(
-      '"Yes"',
+      'Yes',
       RecordHealthCheckComparisonEngine.formatValue(true)
     );
     System.assertEquals(
-      '"No"',
+      'No',
       RecordHealthCheckComparisonEngine.formatValue(false)
     );
     System.assertEquals(
-      '"Yes"',
+      'Yes',
       RecordHealthCheckComparisonEngine.formatValue('true')
     );
     System.assertEquals(
-      '"No"',
+      'No',
       RecordHealthCheckComparisonEngine.formatValue('False')
     );
     // Bare numbers gain thousands separators; a Decimal's all-zero fraction is
     // dropped, a real fraction survives, and numeric operand strings are grouped
     // the same way so the two sides of a comparison stay consistent.
     System.assertEquals(
-      '"70,000"',
+      '70,000',
       RecordHealthCheckComparisonEngine.formatValue(70000.0)
     );
     System.assertEquals(
-      '"500,000"',
+      '500,000',
       RecordHealthCheckComparisonEngine.formatValue('500000')
     );
     System.assertEquals(
-      '"70,000.5"',
+      '70,000.5',
       RecordHealthCheckComparisonEngine.formatValue(70000.5)
     );
     System.assertEquals(
-      '"-1,234,567"',
+      '-1,234,567',
       RecordHealthCheckComparisonEngine.formatValue(-1234567)
     );
     // Multi-select picklist text (semicolon-delimited) reads comma-separated.
     System.assertEquals(
-      '"Hot, Warm, Cold"',
+      'Hot, Warm, Cold',
       RecordHealthCheckComparisonEngine.formatValue('Hot;Warm;Cold')
     );
     // Dates/datetimes render in the user's locale — assert the raw ISO shape is
@@ -2395,7 +2391,7 @@ private class RecordHealthCheckCoverageTest {
     );
     // Non-numeric, non-temporal text (letters, codes) is left exactly as-is.
     System.assertEquals(
-      '"1-800-CALL"',
+      '1-800-CALL',
       RecordHealthCheckComparisonEngine.formatValue('1-800-CALL')
     );
     System.assertEquals(
@@ -2403,7 +2399,7 @@ private class RecordHealthCheckCoverageTest {
       RecordHealthCheckComparisonEngine.formatList(new List<Object>())
     );
     System.assertEquals(
-      '["A", "B"]',
+      '[A, B]',
       RecordHealthCheckComparisonEngine.formatList(new List<Object>{ 'A', 'B' })
     );
     // Over the preview cap, the list is truncated with a total count
@@ -2416,7 +2412,7 @@ private class RecordHealthCheckCoverageTest {
       'Long lists should show a total count'
     );
     System.assertEquals(
-      'to equal "Technology"',
+      'to equal Technology',
       RecordHealthCheckComparisonEngine.describeExpected('EQUALS', 'Technology')
     );
     // Unary operators have no operand
@@ -2425,7 +2421,7 @@ private class RecordHealthCheckCoverageTest {
       RecordHealthCheckComparisonEngine.describeExpected('IS_NOT_BLANK', null)
     );
     System.assertEquals(
-      'to be one of ["North", "South"]',
+      'to be one of [North, South]',
       RecordHealthCheckComparisonEngine.describeExpectedList(
         'LIST_CONTAINS_ANY',
         new List<Object>{ 'North', 'South' }
