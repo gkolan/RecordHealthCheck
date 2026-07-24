@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Versioned response for one Check Set evaluated against one record. */
 public class RecordHealthCheckSetResult {
   @AuraEnabled

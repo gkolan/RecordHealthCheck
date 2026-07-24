@@ -23,6 +23,24 @@ private class RecordHealthCheckValueResolverTest {
   }
 
   @isTest
+  static void singleValueFromRowReadsAliasedAndUnaliasedAggregates() {
+    AggregateResult aliased = [SELECT COUNT(Id) total FROM Account];
+    AggregateResult unaliased = [SELECT COUNT(Id) FROM Account];
+    System.assertEquals(
+      aliased.get('total'),
+      RecordHealthCheckValueResolver.singleValueFromRow(aliased, null)
+    );
+    System.assertEquals(
+      unaliased.get('expr0'),
+      RecordHealthCheckValueResolver.singleValueFromRow(unaliased, null)
+    );
+    System.assertEquals(
+      aliased.get('total'),
+      RecordHealthCheckValueResolver.singleValueFromRow(aliased, 'total')
+    );
+  }
+
+  @isTest
   static void singleValueFromRowTraversesRelationshipPath() {
     // Build a nested SObject in memory via JSON so getSObject('Parent') resolves.
     Account a = (Account) JSON.deserialize(
@@ -53,18 +71,6 @@ private class RecordHealthCheckValueResolverTest {
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
       System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
-  }
-
-  @isTest
-  static void stringListIncludesNullAsEmpty() {
-    List<SObject> rows = new List<SObject>{
-      new Account(Name = 'A'),
-      new Account()
-    };
-    List<String> out = RecordHealthCheckValueResolver.stringList(rows, 'Name');
-    System.assertEquals(2, out.size());
-    System.assertEquals('A', out[0]);
-    System.assertEquals('', out[1], 'Null becomes empty string.');
   }
 
   // ─── Equality ──────────────────────────────────────────────────────────────
@@ -217,16 +223,6 @@ private class RecordHealthCheckValueResolverTest {
 
   @isTest
   static void remainingTypedBranchesAreCovered() {
-    try {
-      RecordHealthCheckValueResolver.stringList(
-        new List<SObject>{ new Account(Name = 'A') },
-        null
-      );
-      System.assert(false, 'Expected a required-field error.');
-    } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
-    }
-
     Datetime earlier = Datetime.newInstance(2026, 1, 1, 0, 0, 0);
     Datetime earlierGmt = Datetime.newInstanceGmt(2026, 1, 1, 0, 0, 0);
     Datetime later = earlier.addHours(1);

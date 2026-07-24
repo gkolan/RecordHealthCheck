@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @IsTest
 private class RecordHealthCheckCoverageThresholdTest {
   @TestSetup
@@ -81,16 +86,16 @@ private class RecordHealthCheckCoverageThresholdTest {
     List<Id> tooManyRecords = new List<Id>();
     for (
       Integer index = 0;
-      index <= RecordHealthCheck.MAX_RECORDS_PER_CALL;
+      index <= RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL;
       index++
     ) {
       tooManyRecords.add(accountRecord.Id);
     }
     try {
       RecordHealthCheck.runRule('Account_DQ_BillingCity', tooManyRecords);
-      System.assert(false, 'Expected the record limit to fail.');
+      System.assert(false, 'Expected the evaluation limit to fail.');
     } catch (RecordHealthCheck.RecordHealthCheckRequestException expected) {
-      System.assert(expected.getMessage().contains('at most'));
+      System.assert(expected.getMessage().contains('too many checks'));
     }
   }
 
@@ -103,10 +108,6 @@ private class RecordHealthCheckCoverageThresholdTest {
       ' '
     );
     System.assertEquals(false, blankAvailability.hasActive);
-    System.assertEquals(
-      true,
-      configService.hasActiveCheckSetForObject('Account')
-    );
     System.assertNotEquals(
       null,
       configService.loadRule('Account_DQ_BillingCity', 'Account_Data_Quality')
@@ -318,7 +319,7 @@ private class RecordHealthCheckCoverageThresholdTest {
     tooMany.clear();
     for (
       Integer index = 0;
-      index <= RecordHealthCheck.MAX_RECORDS_PER_CALL;
+      index <= RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL;
       index++
     ) {
       tooMany.add(request);
@@ -371,7 +372,7 @@ private class RecordHealthCheckCoverageThresholdTest {
     List<RecordHealthCheckRunSetFlowAction.Request> tooMany = new List<RecordHealthCheckRunSetFlowAction.Request>();
     for (
       Integer index = 0;
-      index <= RecordHealthCheck.MAX_RECORDS_PER_CALL;
+      index <= RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL;
       index++
     ) {
       tooMany.add(request);

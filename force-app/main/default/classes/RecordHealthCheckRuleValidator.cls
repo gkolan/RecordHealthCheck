@@ -8,18 +8,18 @@
  * The per-type query/compare-queries/applicability/formula/apex/MaxRows/empty-value validation
  * lives here once. Producers emit neutral Findings in a single canonical order
  * (= ConfigService's first-fail order). Each caller maps FindingCode to its own
- * output contract
- * ConfigService takes findings[0] (first failure) → toResult(...)
- * MetadataValidator collects every finding → toIssue(...)
+ * output contract:
+ * - ConfigService takes findings[0] (first failure) → toResult(...);
+ * - MetadataValidator collects every finding → toIssue(...).
  * The divergent reason codes / messages / field names live only in those two
  * mapping tables, never in the branching logic below.
- * Intentionally NOT shared (do not "consolidate" these)
- * The baseline checks (Label, Run Order, Message When Check Fails, Check Type,
+ * Intentionally not shared:
+ * - The baseline checks (Label, Run Order, Message When Check Fails, Check Type,
  * Severity, Applicability Mode) stay inline in each caller — divergent ordering
  * granularity (ConfigService combines Label+Priority into one message), and
  * short-circuit semantics (MetadataValidator validates Severity/Message before
  * its terminating bad-Check-Type return).
- * MaxRows and null/empty-behavior are standalone producers — ConfigService scopes
+ * - MaxRows and null/empty-behavior are standalone producers — ConfigService scopes
  * them to Query/CompareTwoQueries; MetadataValidator runs them once at top level
  * for all types. Keeping them separate avoids double-counting and adds no findings
  * on the runtime path.
@@ -88,8 +88,8 @@ public with sharing class RecordHealthCheckRuleValidator {
     APEX_PARAMS_INVALID,
     // Cross-type
     MAX_ROWS_INVALID,
-    NULL_BEHAVIOR_INVALID,
-    EMPTY_BEHAVIOR_INVALID
+    EMPTY_VALUE_HANDLING_INVALID,
+    NO_ROWS_RESULT_INVALID
   }
 
   /**
@@ -358,7 +358,7 @@ public with sharing class RecordHealthCheckRuleValidator {
       out.add(f(FindingCode.DUAL_MULTI_ROWS_INVALID));
     }
 
-    // Tier 9 (CompareAsLists) needs a list operator; Tier 7 (OneResult) must not use one.
+    // List-result mode needs a list operator; single-result mode must not use one.
     // The isNotBlank(Operator) guards mirror MetadataValidator so a blank operator yields only
     // DUAL_OPERATOR_MISSING; they are no-ops for the first-fail caller.
     if (
@@ -399,13 +399,15 @@ public with sharing class RecordHealthCheckRuleValidator {
       String.isNotBlank(rule.EmptyValueHandling__c) &&
       !VALID_NULL_BEHAVIORS.contains(rule.EmptyValueHandling__c)
     ) {
-      out.add(f(FindingCode.NULL_BEHAVIOR_INVALID, rule.EmptyValueHandling__c));
+      out.add(
+        f(FindingCode.EMPTY_VALUE_HANDLING_INVALID, rule.EmptyValueHandling__c)
+      );
     }
     if (
       String.isNotBlank(rule.NoRowsResult__c) &&
       !VALID_EMPTY_BEHAVIORS.contains(rule.NoRowsResult__c)
     ) {
-      out.add(f(FindingCode.EMPTY_BEHAVIOR_INVALID, rule.NoRowsResult__c));
+      out.add(f(FindingCode.NO_ROWS_RESULT_INVALID, rule.NoRowsResult__c));
     }
     return out;
   }

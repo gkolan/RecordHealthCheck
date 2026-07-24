@@ -11,17 +11,16 @@ private class RecordHealthCheckSecurityAndOpsTest {
     result.detailMessage = 'sensitive query detail';
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
-    // Troubleshooting detail now shares the single Advanced-tier grant with
-    // value source; canViewDebugDetails() delegates to canViewDetails().
+    // Troubleshooting detail shares the single Advanced-tier grant with value source.
     RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
-    System.assertEquals(false, RecordHealthCheckAccess.canViewDebugDetails());
+    System.assertEquals(false, RecordHealthCheckAccess.canViewDetails());
     System.assertEquals(
       null,
       engine.applyShowDiagnostics(result, true).adminDetailMessage
     );
 
     RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
-    System.assertEquals(true, RecordHealthCheckAccess.canViewDebugDetails());
+    System.assertEquals(true, RecordHealthCheckAccess.canViewDetails());
     System.assertEquals(
       'sensitive query detail',
       engine.applyShowDiagnostics(result, true).adminDetailMessage
@@ -29,7 +28,7 @@ private class RecordHealthCheckSecurityAndOpsTest {
     RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
     System.assertNotEquals(
       null,
-      RecordHealthCheckAccess.canViewDebugDetails(),
+      RecordHealthCheckAccess.canViewDetails(),
       'The platform permission check must always return a Boolean.'
     );
   }

@@ -2060,9 +2060,18 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
       value: 48
     });
 
+    let resizeCallback;
+    const animationFrame = jest
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        resizeCallback = callback;
+        return 1;
+      });
     window.dispatchEvent(new CustomEvent("resize"));
+    resizeCallback();
 
     expect(toggle.hidden).toBe(false);
+    animationFrame.mockRestore();
   });
 
   it("does not render the comparison block on a passing row", async () => {

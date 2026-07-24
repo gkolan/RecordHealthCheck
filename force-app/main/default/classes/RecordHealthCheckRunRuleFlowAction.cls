@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Flow action over RecordHealthCheck.runRule. */
 public with sharing class RecordHealthCheckRunRuleFlowAction {
   public class Request {
@@ -36,32 +41,36 @@ public with sharing class RecordHealthCheckRunRuleFlowAction {
     category='Record Health Check'
   )
   public static List<Response> runRule(List<Request> requests) {
-    if (requests == null)
-      return new List<Response>();
-    validateRequestCount(requests.size());
-    List<Response> responses = new List<Response>();
-    for (Request request : requests) {
-      RecordHealthCheckResult result = RecordHealthCheck.runRule(
-        request.ruleDeveloperName,
-        request.recordId,
-        null,
-        RecordHealthCheckLifecyclePublisher.SOURCE_FLOW
-      );
-      Response response = new Response();
-      response.contractVersion = result.contractVersion;
-      response.status = result.status;
-      response.reasonCode = result.reasonCode;
-      response.resultJson = JSON.serialize(result);
-      responses.add(response);
+    try {
+      if (requests == null)
+        return new List<Response>();
+      validateRequestCount(requests.size());
+      List<Response> responses = new List<Response>();
+      for (Request request : requests) {
+        RecordHealthCheckResult result = RecordHealthCheck.runRule(
+          request.ruleDeveloperName,
+          request.recordId,
+          null,
+          RecordHealthCheckLifecyclePublisher.SOURCE_FLOW
+        );
+        Response response = new Response();
+        response.contractVersion = result.contractVersion;
+        response.status = result.status;
+        response.reasonCode = result.reasonCode;
+        response.resultJson = JSON.serialize(result);
+        responses.add(response);
+      }
+      return responses;
+    } finally {
+      RecordHealthCheckLogger.flush();
     }
-    return responses;
   }
 
   private static void validateRequestCount(Integer count) {
-    if (count > RecordHealthCheck.MAX_RECORDS_PER_CALL) {
+    if (count > RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL) {
       throw new RecordHealthCheck.RecordHealthCheckRequestException(
         'A request can include at most ' +
-          RecordHealthCheck.MAX_RECORDS_PER_CALL +
+          RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL +
           ' records.'
       );
     }

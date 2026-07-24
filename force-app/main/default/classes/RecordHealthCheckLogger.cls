@@ -10,11 +10,11 @@
  * destination ("sink") can be changed in exactly one place. To adopt Nebula
  * Logger (or any other logging framework) later, replace the body of `emit`
  * with the equivalent Nebula calls; no other class needs to change.
- * Two things make a line useful for debugging
- * runId — a correlation id generated once per page load / run in the LWC and
+ * Two things make a line useful for debugging:
+ * - runId — a correlation id generated once per page load / run in the LWC and
  * threaded through every Apex call, so an admin can filter a debug
  * log down to a single user interaction.
- * user — captured automatically from UserInfo.getUserId(), so every line is
+ * - user — captured automatically from UserInfo.getUserId(), so every line is
  * attributable to the running user without any caller passing it in.
  * This is authoritative (it cannot be spoofed by the client) and means
  * "show me everything that happened for user X" is a simple log filter.
@@ -54,6 +54,8 @@ public with sharing class RecordHealthCheckLogger {
   // logging cannot republish onto the same bus.
   @TestVisible
   private static Boolean inSubscriberContext = false;
+  @TestVisible
+  private static Boolean debugEnabled = false;
   // Transaction-scoped buffer of ERROR events awaiting flush().
   private static final List<Record_Health_Check_Log__e> PENDING_EVENTS = new List<Record_Health_Check_Log__e>();
 
@@ -125,6 +127,8 @@ public with sharing class RecordHealthCheckLogger {
     Map<String, Object> fields,
     Exception ex
   ) {
+    if (lvl == Level.DEBUG && !debugEnabled)
+      return;
     String line = render(lvl, checkName, event, fields, ex);
 
     // The ONE place that decides where framework logs go. To switch to Nebula
@@ -211,11 +215,11 @@ public with sharing class RecordHealthCheckLogger {
   }
 
   private String newEventId(String code) {
-    return runId.left(50) +
-      '-' +
-      sanitize(code, 20) +
-      '-' +
-      String.valueOf(Math.abs(Crypto.getRandomInteger()));
+    return runId.left(50) + '-' + sanitize(code, 20) + '-' + randomSuffix();
+  }
+
+  private static String randomSuffix() {
+    return EncodingUtil.convertToHex(Crypto.generateAesKey(128)).left(8);
   }
 
   /**

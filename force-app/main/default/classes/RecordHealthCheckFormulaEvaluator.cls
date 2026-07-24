@@ -25,6 +25,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   private static Integer formulaEvalCallCount = 0;
   private static final Integer FORMULA_EVAL_TX_LIMIT = 100;
   private static final Integer FORMULA_EVAL_SAFETY_MARGIN = 5;
+  // Distinguishes a resolved null from a display formula that could not resolve.
+  private static final Object ABSENT = new Map<String, Object>();
 
   // evaluateFormulaAnyType probes up to 8 return types and every failed
   // attempt consumes a real, platform-counted FormulaEval call. When a caller
@@ -38,10 +40,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Evaluates a Formula check (EvaluationType__c = Formula).
-   * Also used internally by the SOQL evaluator for
-   * ApplicabilityFormula__c evaluation
-   * ExpectedRecordFormula__c (comparison-side resolution, Tier 5/8)
-   * FindInListFormula__c as primary single-value (Tier 6, ListContainsAny/ListDoesNotContainAny)
+   * Also used internally by the SOQL evaluator for:
+   * - ApplicabilityFormula__c evaluation;
+   * - ExpectedRecordFormula__c comparison-side resolution; and
+   * - FindInListFormula__c as the primary value for list-membership checks.
    */
   public RecordHealthCheckResult evaluate(
     Record_Health_Check_Rule__mdt rule,
@@ -210,11 +212,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     }
   }
 
-  // Sentinel distinguishing "resolved to null" (a real, displayable blank value)
-  // from "could not resolve" (leave the default in place). A plain null return
-  // would conflate the two.
-  private static final Object ABSENT = new Map<String, Object>();
-
   /**
    * Resolves a display-only single-value formula, returning ABSENT (not throwing) when
    * it cannot be evaluated, so a bad Found/Expected formula degrades to the
@@ -272,8 +269,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Resolves a formula expression to a single-value value for use as the primary
-   * operand in Tier 6 (ListContainsAny / ListDoesNotContainAny) checks
-   * or as the comparison value in Tier 5/8 checks.
+   * operand in list-membership checks or as a formula-derived comparison value.
    * Returns null if the formula resolves to null (blank parent traversal etc.).
    * Throws RecordHealthCheckFormulaException if the formula cannot be evaluated.
    */
@@ -390,17 +386,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       .evaluate(record);
   }
 
-  /**
-   * Attempts to evaluate a formula as any supported return type, trying each
-   * in order until one succeeds. Used by resolveFormulaSingleValue where the type is unknown.
-   */
-  private Object evaluateFormulaAnyType(
-    String formulaExpression,
-    SObject record
-  ) {
-    return evaluateFormulaAnyType(formulaExpression, record, null);
-  }
-
   private Object evaluateFormulaAnyType(
     String formulaExpression,
     SObject record,
@@ -478,8 +463,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Resolves {!record.FieldName} merge tokens in a message string using the record's
-   * field values. Unresolvable tokens are replaced with an empty string.
-   * A bad token never causes the result to change status.
+   * field values. Valid tokens whose field value is null render as an empty string;
+   * malformed or unsupported tokens are rejected during rule loading.
    */
   public String resolveMergeFields(String template, SObject record) {
     return RecordHealthCheckTemplateService.resolveDisplay(
@@ -532,22 +517,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         .withResult(result, true)
         .withRun(runContext)
     );
-  }
-
-  @TestVisible
-  private Object resolveFieldPath(SObject record, String fieldPath) {
-    if (!fieldPath.contains('.')) {
-      return record.get(fieldPath);
-    }
-    List<String> parts = fieldPath.split('\\.');
-    SObject current = record;
-    for (Integer i = 0; i < parts.size() - 1; i++) {
-      current = current.getSObject(parts[i]);
-      if (current == null) {
-        return null;
-      }
-    }
-    return current.get(parts[parts.size() - 1]);
   }
 
   @TestVisible

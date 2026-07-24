@@ -4,7 +4,10 @@
  */
 
 public with sharing class RecordHealthCheckSoqlEvaluator {
-  private static final Integer DEFAULT_MAX_ROWS = 2000;
+  private static final Pattern FROM_OBJECT_PATTERN = Pattern.compile(
+    '(?is)\\bFROM\\s+([A-Za-z0-9_]+)'
+  );
+  private static final Integer DEFAULT_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
 
   private RecordHealthCheckFormulaEvaluator formulaEvaluator = new RecordHealthCheckFormulaEvaluator();
 
@@ -84,7 +87,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     List<Object> primaryList = null;
 
     if (isListOperator) {
-      // Tier 6: primary side comes from FindInListFormula__c (single-value).
+      // List-membership mode: primary side comes from FindInListFormula__c.
       try {
         primaryValue = formulaEvaluator.resolveFormulaSingleValue(
           rule.FindInListFormula__c,
@@ -210,11 +213,12 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
 
     if (passed == null) {
-      // an indeterminate operator result has two distinct
-      // causes that must NOT be treated alike. A genuine zero-rows result is
-      // governed by NoRowsResult__c; a present-but-null value is governed by the
-      // empty-value handling (EmptyValueHandling__c) and resolves to SKIPPED — routing it
-      // through NoRowsResult__c made "null value + WhenZeroRows=Fail" wrongly FAIL.
+      // An indeterminate operator result has two distinct causes that must NOT
+      // be treated alike. A genuine zero-rows result is governed by
+      // NoRowsResult__c; a present-but-null value is governed by the empty-value
+      // handling (EmptyValueHandling__c) and resolves to SKIPPED. Routing the
+      // second through NoRowsResult__c makes "null value + no-rows = Fail"
+      // wrongly FAIL, so the two are separated below.
       Boolean zeroRows;
       if (isListOperator) {
         // List operator's comparison side is a query; the primary is a single-value.
@@ -231,7 +235,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       }
       return zeroRows
         ? buildEmptyOrNullResult(rule, result, primaryList)
-        : buildNullIndeterminateResult(rule, result);
+        : buildNullIndeterminateResult(result);
     }
 
     // Capture what the record produced vs what the rule required so the UI can
@@ -261,9 +265,10 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
             totalRows,
             record
           )
-        : RecordHealthCheckComparisonEngine.describeExpected(
+        : RecordHealthCheckComparisonEngine.describeExpectedForActual(
             rule.ComparisonOperator__c,
-            comparisonValue
+            comparisonValue,
+            firstDisplayValue(primaryValue, primaryList)
           );
     } else {
       String rawActualValue = primaryList != null
@@ -276,9 +281,10 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
           comparisonList
         );
       } else {
-        rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpected(
+        rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpectedForActual(
           rule.ComparisonOperator__c,
-          comparisonValue
+          comparisonValue,
+          firstDisplayValue(primaryValue, primaryList)
         );
       }
       result.actualValue = String.isNotBlank(rule.DisplayFoundText__c)
@@ -413,31 +419,49 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         soqlTemplate.substring(token.startIndex - 1, token.startIndex) ==
         '\'' &&
         soqlTemplate.substring(token.endIndex, token.endIndex + 1) == '\'';
+      Boolean insideStringLiteral = isInsideStringLiteral(
+        soqlTemplate,
+        token.startIndex
+      );
 
       // Safe substitution — each Apex type maps to the correct SOQL literal format.
       String unquotedReplacement;
       String quotedReplacement;
+      String embeddedLiteralReplacement;
       if (fieldValue == null) {
         // Quoted context strips the outer quotes so the literal is a bare SOQL null.
         unquotedReplacement = 'null';
         quotedReplacement = 'null';
+        embeddedLiteralReplacement = '';
       } else if (fieldValue instanceof Date) {
         // SOQL Date literals: yyyy-MM-dd — no quotes required or allowed
         unquotedReplacement = String.valueOf((Date) fieldValue);
         quotedReplacement = unquotedReplacement;
+        embeddedLiteralReplacement = String.escapeSingleQuotes(
+          unquotedReplacement
+        );
       } else if (fieldValue instanceof DateTime) {
         // SOQL DateTime literals: yyyy-MM-ddTHH:mm:ssZ — no quotes required or allowed
         unquotedReplacement = ((DateTime) fieldValue)
           .formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'');
         quotedReplacement = unquotedReplacement;
+        embeddedLiteralReplacement = String.escapeSingleQuotes(
+          unquotedReplacement
+        );
       } else if (fieldValue instanceof Time) {
         // SOQL Time literals: HH:mm:ss.SSSz — no quotes required or allowed
         unquotedReplacement = String.valueOf((Time) fieldValue);
         quotedReplacement = unquotedReplacement;
+        embeddedLiteralReplacement = String.escapeSingleQuotes(
+          unquotedReplacement
+        );
       } else if (fieldValue instanceof Boolean) {
         // SOQL Boolean literals: true / false — no quotes
         unquotedReplacement = String.valueOf((Boolean) fieldValue);
         quotedReplacement = unquotedReplacement;
+        embeddedLiteralReplacement = String.escapeSingleQuotes(
+          unquotedReplacement
+        );
       } else if (
         fieldValue instanceof Integer ||
         fieldValue instanceof Long ||
@@ -455,6 +479,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         // suitable for exact-match (=) or INCLUDES ('A;B') AND-semantics queries.
         String quotedStr = '\'' + String.escapeSingleQuotes(rawStr) + '\'';
         quotedReplacement = quotedStr;
+        embeddedLiteralReplacement = String.escapeSingleQuotes(rawStr);
         if (isMultiSelectPicklist(record, fieldPath) && rawStr.contains(';')) {
           // Multi-select picklist in UNQUOTED context
           // Template: WHERE Regions__c INCLUDES {!record.Regions__c}
@@ -478,6 +503,11 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
           soqlTemplate.substring(lastEnd, token.startIndex - 1) +
           quotedReplacement;
         lastEnd = token.endIndex + 1;
+      } else if (insideStringLiteral) {
+        bound +=
+          soqlTemplate.substring(lastEnd, token.startIndex) +
+          embeddedLiteralReplacement;
+        lastEnd = token.endIndex;
       } else {
         bound +=
           soqlTemplate.substring(lastEnd, token.startIndex) +
@@ -487,6 +517,19 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
 
     return bound + soqlTemplate.substring(lastEnd);
+  }
+
+  private static Boolean isInsideStringLiteral(String source, Integer indexAt) {
+    Boolean inQuote = false;
+    for (Integer i = 0; i < indexAt; i++) {
+      String ch = source.substring(i, i + 1);
+      if (ch == '\\' && inQuote && i + 1 < indexAt) {
+        i++;
+      } else if (ch == '\'') {
+        inQuote = !inQuote;
+      }
+    }
+    return inQuote;
   }
 
   /**
@@ -511,38 +554,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
 
   @TestVisible
   private List<SObject> runQuery(String soql, Integer maxRows) {
-    String queryToRun;
-    try {
-      queryToRun = RecordHealthCheckSoqlTemplate.prepareForExecution(
-        soql,
-        maxRows + 1
-      );
-    } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      throw new RecordHealthCheckEvaluatorException(
-        ex.reasonCode,
-        ex.getMessage()
-      );
-    }
-
-    List<SObject> rows;
-    try {
-      rows = Database.query(queryToRun);
-    } catch (System.QueryException qex) {
-      throw new RecordHealthCheckEvaluatorException(
-        RecordHealthCheckValueResolver.classifyQueryException(qex),
-        qex.getMessage()
-      );
-    }
-
-    if (rows.size() > maxRows) {
-      throw new RecordHealthCheckEvaluatorException(
-        'GOVERNOR_LIMIT_RISK',
-        'Query returned more than ' +
-          maxRows +
-          ' rows. Reduce scope or lower Max Rows Override.'
-      );
-    }
-    return rows;
+    return RecordHealthCheckQueryEvaluatorSupport.runQuery(soql, maxRows);
   }
 
   // ─── Value resolution helpers ─────────────────────────────────────────────
@@ -579,8 +591,8 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     RecordHealthCheckResult result,
     List<Object> primaryList
   ) {
-    // case: "Found 0" is ambiguous. Record that the value came from
-    // an empty result set (not a real zero) so the value source note reads e.g.
+    // A displayed "Found 0" is ambiguous: it could be a real zero or an empty
+    // result set. Record which one it was, so the value source note reads e.g.
     // "Contacts → 0 rows (query returned no matching rows)".
     result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       describePrimarySource(rule),
@@ -590,33 +602,15 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       'query returned no matching rows'
     );
 
-    String behavior = rule.NoRowsResult__c;
-    if (behavior == 'PASS' || behavior == 'Pass') {
-      result.status = 'PASS';
-    } else if (behavior == 'FAIL' || behavior == 'Fail') {
-      result.status = 'FAIL';
-      result.severity = rule.FailureSeverity__c;
-      result.message = String.isNotBlank(rule.FailureMessage__c)
-        ? rule.FailureMessage__c
-        : 'No matching records found.';
-    } else if (
-      behavior == 'UNABLE_TO_EVALUATE' ||
-      behavior == 'UnableToEvaluate'
-    ) {
-      result.status = 'UNABLE_TO_EVALUATE';
-      result.reasonCode = 'NO_ROWS_RETURNED';
-      result.message = safeCannotEvaluateMessage(rule);
-    } else {
-      // Skip — CMT field default
-      result.status = 'SKIPPED';
-      result.reasonCode = 'APPLICABILITY_NOT_MET';
-      result.message = 'Check skipped: no matching records.';
-    }
-    return result;
+    return RecordHealthCheckQueryEvaluatorSupport.buildEmptyResult(
+      rule,
+      result,
+      result.actualValueSource
+    );
   }
 
   /**
-   * result for a present-but-null value the operator could not
+   * Builds a result for a present-but-null value the operator could not
    * decide. Reaching this point means the empty-value handling (EmptyValueHandling__c)
    * resolved to Skip — Pass/Fail/Treat as not matching (AS_NO_MATCH) all yield a determinate
    * boolean earlier — so the check is reported as SKIPPED. This is deliberately
@@ -624,19 +618,15 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
    */
   @TestVisible
   private RecordHealthCheckResult buildNullIndeterminateResult(
-    Record_Health_Check_Rule__mdt rule,
     RecordHealthCheckResult result
   ) {
-    result.status = 'SKIPPED';
-    result.reasonCode = 'VALUE_IS_EMPTY';
-    result.message = 'Check skipped: the value under test was empty.';
-    return result;
+    return RecordHealthCheckQueryEvaluatorSupport.buildNullIndeterminateResult(
+      result
+    );
   }
 
   // ─── Value source helpers ───────────────────────────────────────────────────
 
-  // Names the source of the primary/"Found" value: the field read, or the
-  // single-value under test, or a generic query-result label when neither is set.
   // Derived Found summary for an "every record must pass" check when the admin
   // authored no override: "1 of 5 Contacts did not pass".
   private String deriveFoundSummary(
@@ -686,11 +676,11 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
 
   // Best-effort object label from the query's FROM clause, pluralized; falls back
   // to a generic noun when the object cannot be parsed.
+  @TestVisible
   private String pluralizeObject(Record_Health_Check_Rule__mdt rule) {
     String objectName;
     if (String.isNotBlank(rule.SourceQuery__c)) {
-      Matcher m = Pattern.compile('(?is)\\bFROM\\s+([A-Za-z0-9_]+)')
-        .matcher(rule.SourceQuery__c);
+      Matcher m = FROM_OBJECT_PATTERN.matcher(rule.SourceQuery__c);
       if (m.find()) {
         objectName = m.group(1);
       }
@@ -698,8 +688,14 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     if (String.isBlank(objectName)) {
       return 'records';
     }
+    Schema.SObjectType objectType = Schema.getGlobalDescribe().get(objectName);
+    if (objectType != null)
+      return objectType.getDescribe().getLabelPlural();
     String lower = objectName.toLowerCase();
-    if (lower.endsWith('y')) {
+    if (
+      lower.endsWith('y') &&
+      !'aeiou'.contains(lower.substring(lower.length() - 2, lower.length() - 1))
+    ) {
       return objectName.substring(0, objectName.length() - 1) + 'ies';
     }
     if (
@@ -714,6 +710,8 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     return objectName + 's';
   }
 
+  // Names the primary/Found source: a field, the value under test, or a generic
+  // query-result label when neither is configured.
   private String describePrimarySource(Record_Health_Check_Rule__mdt rule) {
     if (String.isNotBlank(rule.SourceQueryField__c)) {
       return rule.SourceQueryField__c;
@@ -725,6 +723,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
   }
 
   // Names the source of the "Expected" operand.
+  @TestVisible
   private String describeComparisonSource(Record_Health_Check_Rule__mdt rule) {
     if (rule.ExpectedValueSource__c == 'FIXED_VALUE') {
       return 'Fixed value';
@@ -748,11 +747,23 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     return value == null ? 'null' : String.valueOf(value);
   }
 
+  private Object firstDisplayValue(Object singleValue, List<Object> values) {
+    if (singleValue != null)
+      return singleValue;
+    if (values != null) {
+      for (Object value : values) {
+        if (value != null)
+          return value;
+      }
+    }
+    return null;
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   /**
    * Builds the parenthesized INCLUDES operand for an unquoted multi-select token.
-   * @TestVisible so BIND-04 can assert semicolon-only values without a live field.
+   * Test-visible so semicolon-only values can be verified without a live field.
    */
   @TestVisible
   private String buildMultiSelectIncludesClause(String rawStr) {
@@ -808,12 +819,13 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         .getReferenceTo();
       if (referenceTypes.isEmpty())
         return false;
-      currentType = referenceTypes[0];
+      currentType = selectReferenceType(referenceTypes, parts[i + 1]);
     }
     return false;
   }
 
   /** Converts an explicit SOQL-token fallback to the terminal field's native type. */
+  @TestVisible
   private Object coerceFallbackValue(
     SObject record,
     String fieldPath,
@@ -861,6 +873,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
   }
 
+  @TestVisible
   private Time parseTimeFallback(String value) {
     String normalized = value.endsWith('Z')
       ? value.substring(0, value.length() - 1)
@@ -889,6 +902,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     );
   }
 
+  @TestVisible
   private Schema.DisplayType terminalFieldType(
     SObject record,
     String fieldPath
@@ -926,9 +940,34 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         .getReferenceTo();
       if (referenceTypes.isEmpty())
         return Schema.DisplayType.STRING;
-      currentType = referenceTypes[0];
+      currentType = selectReferenceType(referenceTypes, parts[i + 1]);
     }
     return Schema.DisplayType.STRING;
+  }
+
+  private Schema.SObjectType selectReferenceType(
+    List<Schema.SObjectType> candidates,
+    String nextPathPart
+  ) {
+    for (Schema.SObjectType candidate : candidates) {
+      Map<String, Schema.SObjectField> fields = RecordHealthCheckDescribeCache.fieldMap(
+        candidate
+      );
+      if (fields.get(nextPathPart) != null)
+        return candidate;
+      for (Schema.SObjectField field : fields.values()) {
+        String relationshipName = RecordHealthCheckDescribeCache.describeField(
+            field
+          )
+          .getRelationshipName();
+        if (
+          relationshipName != null &&
+          relationshipName.equalsIgnoreCase(nextPathPart)
+        )
+          return candidate;
+      }
+    }
+    return candidates[0];
   }
 
   /**
@@ -955,8 +994,8 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
 
   @TestVisible
   private String safeCannotEvaluateMessage(Record_Health_Check_Rule__mdt rule) {
-    return String.isNotBlank(rule.UnableToEvaluateMessage__c)
-      ? rule.UnableToEvaluateMessage__c
-      : 'This check could not be evaluated. Contact your administrator.';
+    return RecordHealthCheckQueryEvaluatorSupport.safeCannotEvaluateMessage(
+      rule
+    );
   }
 }

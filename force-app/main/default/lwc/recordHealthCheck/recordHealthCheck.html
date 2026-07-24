@@ -1,3 +1,7 @@
+<!--
+  @author Gautam Kolan (https://github.com/gkolan)
+  SPDX-License-Identifier: Apache-2.0
+-->
 <template>
   <div class={themeClass}>
     <template if:true={hasComponentError}>
@@ -168,42 +172,18 @@
                   </template>
                   <template if:true={check.showInlineComparison}>
                     <span class="rhc-row__comparison">
-                      <template if:true={check.showActual}>
-                        <span class="rhc-cmp__pair">
+                      <template
+                        for:each={check.inlineComparisonValues}
+                        for:item="comparison"
+                      >
+                        <span key={comparison.key} class="rhc-cmp__pair">
                           <span class="rhc-cmp__main">
-                            <span class="rhc-cmp__key">Found</span>
+                            <span class="rhc-cmp__key">{comparison.label}</span>
                             <span class="rhc-cmp__value-wrap">
                               <span
                                 class="rhc-cmp__val rhc-cmp__val--clampable"
                                 data-clampval
-                                >{check.actualValue}</span
-                              >
-                              <button
-                                class="rhc-cmp__toggle"
-                                type="button"
-                                data-clamptoggle
-                                hidden
-                                aria-expanded="false"
-                                aria-label="Expand value"
-                                onclick={handleToggleValue}
-                              >
-                                +
-                              </button>
-                            </span>
-                          </span>
-                        </span>
-                      </template>
-                      <template if:true={check.showExpected}>
-                        <span class="rhc-cmp__pair">
-                          <span class="rhc-cmp__main">
-                            <span class="rhc-cmp__key"
-                              >{check.expectedKeyLabel}</span
-                            >
-                            <span class="rhc-cmp__value-wrap">
-                              <span
-                                class="rhc-cmp__val rhc-cmp__val--clampable"
-                                data-clampval
-                                >{check.expectedValue}</span
+                                >{comparison.value}</span
                               >
                               <button
                                 class="rhc-cmp__toggle"
@@ -224,42 +204,18 @@
                   </template>
                   <template if:true={check.detailExpanded}>
                     <div class="rhc-row__detail">
-                      <template if:true={check.showExpandedActual}>
-                        <span class="rhc-cmp__pair">
+                      <template
+                        for:each={check.expandedComparisonValues}
+                        for:item="comparison"
+                      >
+                        <span key={comparison.key} class="rhc-cmp__pair">
                           <span class="rhc-cmp__main">
-                            <span class="rhc-cmp__key">Found</span>
+                            <span class="rhc-cmp__key">{comparison.label}</span>
                             <span class="rhc-cmp__value-wrap">
                               <span
                                 class="rhc-cmp__val rhc-cmp__val--clampable"
                                 data-clampval
-                                >{check.actualValue}</span
-                              >
-                              <button
-                                class="rhc-cmp__toggle"
-                                type="button"
-                                data-clamptoggle
-                                hidden
-                                aria-expanded="false"
-                                aria-label="Expand value"
-                                onclick={handleToggleValue}
-                              >
-                                +
-                              </button>
-                            </span>
-                          </span>
-                        </span>
-                      </template>
-                      <template if:true={check.showExpandedExpected}>
-                        <span class="rhc-cmp__pair">
-                          <span class="rhc-cmp__main">
-                            <span class="rhc-cmp__key"
-                              >{check.expectedKeyLabel}</span
-                            >
-                            <span class="rhc-cmp__value-wrap">
-                              <span
-                                class="rhc-cmp__val rhc-cmp__val--clampable"
-                                data-clampval
-                                >{check.expectedValue}</span
+                                >{comparison.value}</span
                               >
                               <button
                                 class="rhc-cmp__toggle"
@@ -286,6 +242,7 @@
                       <span class="rhc-debug-detail__label"
                         >Troubleshooting detail</span
                       >
+                      <!-- Keep the value flush-left: whitespace inside pre is rendered. -->
                       <pre class="rhc-debug-detail__body">
 {check.adminDetailMessage}</pre
                       >

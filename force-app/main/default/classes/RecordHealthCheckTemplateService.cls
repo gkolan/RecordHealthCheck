@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Shared parser, validator, discovery, and resolver for namespaced merge tokens. */
 public class RecordHealthCheckTemplateService {
   public static final String SURFACE_DISPLAY = 'DISPLAY';
@@ -320,7 +325,9 @@ public class RecordHealthCheckTemplateService {
       return displayLabel(String.valueOf(rule.EvaluationType__c));
     if (property == 'failureSeverity')
       return displayLabel(String.valueOf(rule.FailureSeverity__c));
-    return rule.EvaluationOrder__c;
+    if (property == 'evaluationOrder')
+      return rule.EvaluationOrder__c;
+    return null;
   }
 
   private static Object setValue(SObject checkSet, String property) {
@@ -332,7 +339,9 @@ public class RecordHealthCheckTemplateService {
       return dynamicGet(checkSet, 'CardTitle__c');
     if (property == 'cardSubtitle')
       return dynamicGet(checkSet, 'CardSubtitle__c');
-    return dynamicGet(checkSet, 'ObjectApiName__c');
+    if (property == 'objectApiName')
+      return dynamicGet(checkSet, 'ObjectApiName__c');
+    return null;
   }
 
   private static Object resultValue(
@@ -359,7 +368,9 @@ public class RecordHealthCheckTemplateService {
       return context.failedRecordCount;
     if (property == 'totalRecordCount')
       return context.totalRecordCount;
-    return context.result.reasonCode;
+    if (property == 'reasonCode')
+      return context.result.reasonCode;
+    return null;
   }
 
   private static Object runValue(
@@ -374,7 +385,9 @@ public class RecordHealthCheckTemplateService {
       return run.startedAt;
     if (property == 'completedAt')
       return run.completedAt;
-    return run.durationMs;
+    if (property == 'durationMs')
+      return run.durationMs;
+    return null;
   }
 
   private static Object dynamicGet(SObject source, String fieldName) {
@@ -389,9 +402,12 @@ public class RecordHealthCheckTemplateService {
     if (String.isBlank(stored) || stored == 'null')
       return '';
     List<String> words = stored.toLowerCase().replace('_', ' ').split(' ');
-    for (Integer i = 0; i < words.size(); i++)
-      words[i] = words[i].left(1).toUpperCase() + words[i].substring(1);
-    return String.join(words, ' ');
+    List<String> labels = new List<String>();
+    for (String word : words) {
+      if (String.isNotBlank(word))
+        labels.add(word.left(1).toUpperCase() + word.substring(1));
+    }
+    return String.join(labels, ' ');
   }
 
   private static String formatValue(Object raw) {

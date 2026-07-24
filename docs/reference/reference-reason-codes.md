@@ -39,8 +39,13 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `NOT_APPLICABLE_BY_FORMULA` | `SKIPPED` | Applicability mode `WHEN_FORMULA_TRUE` returned false. |
 | `NOT_APPLICABLE_BY_COUNT` | `SKIPPED` | Applicability count gate was not met. |
 | `PREREQUISITE_NOT_MET` | `SKIPPED` | Prerequisite Rule did not return `PASS`. |
+| `STOPPED_AFTER_ERROR` | `SKIPPED` | Client stopped the remaining checks after a system error. |
+| `CLIENT_CALL_FAILED` | `ERROR` | The browser could not complete the Apex evaluation request. |
+| `MALFORMED_RESPONSE` | `ERROR` | Apex returned a result without the required shape. |
+| `UNKNOWN_RESULT_STATUS` | `ERROR` | Apex returned an unsupported result status. |
+| `MISSING_TOKEN_VALUE` | `UNABLE_TO_EVALUATE` | A required merge-token value was unavailable. |
 | `CIRCULAR_DEPENDENCY` | `UNABLE_TO_EVALUATE` | Prerequisite cycle detected (LWC may pre-seed without calling Apex). |
-| `DEPENDENCY_NOT_IN_RUN` | `SKIPPED` | LWC-only: prerequisite was omitted by the 25-Rule run cap. |
+| `DEPENDENCY_NOT_IN_RUN` | `SKIPPED` | LWC-only: prerequisite was omitted by the configured Framework run cap. |
 | `APPLICABILITY_NOT_MET` | `SKIPPED` | Query empty-result path chose skip via `NoRowsResult__c = SKIP` (distinct from applicability gates above). |
 | `VALUE_IS_EMPTY` | `SKIPPED` | Row comparison skipped because a compared field value was empty under `EmptyValueHandling__c = SKIP_RECORD`. |
 

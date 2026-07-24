@@ -248,4 +248,20 @@ private class RecordHealthCheckLoggerTest {
       'flush() on an empty buffer is a no-op and does not throw.'
     );
   }
+
+  @isTest
+  static void debugAndResetHooksRestoreLoggerState() {
+    RecordHealthCheckLogger.debugEnabled = true;
+    new RecordHealthCheckLogger('run-debug', 'Set', null)
+      .debug('Rule', 'DEBUG_BRANCH', null);
+    RecordHealthCheckLogger.publishErrorEvents = false;
+    RecordHealthCheckLogger.enterSubscriberContext();
+
+    RecordHealthCheckLogger.resetLogSinkForTest();
+
+    System.assertEquals(true, RecordHealthCheckLogger.publishErrorEvents);
+    System.assertEquals(false, RecordHealthCheckLogger.inSubscriberContext);
+    System.assertEquals(0, RecordHealthCheckLogger.pendingEventCount());
+    RecordHealthCheckLogger.debugEnabled = false;
+  }
 }

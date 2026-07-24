@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @isTest
 private class RecordHealthCheckLifecyclePublisherTest {
   private static RecordHealthCheckResult result(String name, String status) {
@@ -181,13 +186,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
     };
 
     Test.startTest();
-    RecordHealthCheckLifecyclePublisher.inspectedPublishFailures = 0;
     RecordHealthCheckLifecyclePublisher.publishRuleEvents(events);
-    System.assertEquals(
-      1,
-      RecordHealthCheckLifecyclePublisher.inspectedPublishFailures,
-      'A missing required event id must be inspected without changing evaluation.'
-    );
     Test.stopTest();
   }
 }

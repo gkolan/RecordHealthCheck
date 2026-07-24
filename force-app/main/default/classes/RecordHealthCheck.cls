@@ -7,18 +7,19 @@
  * One-line entry point to run a SINGLE Record Health Check from anywhere
  * Apex triggers, batch/queueable, scheduled jobs, anonymous Apex, other classes
  * or tests. This is the simplest adoption surface: no LWC, no record page.
- * RecordHealthCheckResult r = RecordHealthCheck.runRule(
- * 'Example_Account_Owner_Active', accountId);
- * if (r.status == 'FAIL') { ... }
+ * Example:
+ *   RecordHealthCheckResult r = RecordHealthCheck.runRule(
+ *     'Example_Account_Owner_Active', accountId);
+ *   if (r.status == 'FAIL') { ... }
  * Like the LWC path, the call is correlated by a generated `runId` and every
  * `[RHC]` log line is attributed to the actual running user.
  */
 public with sharing class RecordHealthCheck {
-  public static final Integer MAX_RECORDS_PER_CALL = 200;
+  public static final Integer MAX_FLOW_RECORDS_PER_CALL = 200;
   public static final Integer MAX_EVALUATIONS_PER_CALL = 15;
   @TestVisible
   private static RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
-  private static Boolean deferPublication = false;
+  private static Integer publicationDeferralDepth = 0;
 
   /**
    * Run one check. The headline one-liner.
@@ -41,7 +42,7 @@ public with sharing class RecordHealthCheck {
     validateEvaluationCount(recordIds.size());
     List<RecordHealthCheckResult> responses = new List<RecordHealthCheckResult>();
     String checkSetDeveloperName = findCheckSetDeveloperName(ruleDeveloperName);
-    deferPublication = true;
+    publicationDeferralDepth++;
     try {
       for (Id recordId : recordIds) {
         responses.add(
@@ -55,7 +56,7 @@ public with sharing class RecordHealthCheck {
         );
       }
     } finally {
-      deferPublication = false;
+      publicationDeferralDepth--;
       RecordHealthCheckLogger.flush();
     }
     RecordHealthCheckLifecyclePublisher.publishRuleResults(
@@ -97,7 +98,7 @@ public with sharing class RecordHealthCheck {
     try {
       return runSetResolved(checkSetDeveloperName, recordId, runId, source);
     } finally {
-      if (!deferPublication) {
+      if (publicationDeferralDepth == 0) {
         RecordHealthCheckLogger.flush();
       }
     }
@@ -130,7 +131,7 @@ public with sharing class RecordHealthCheck {
       response.add(result);
     }
     response.finish();
-    if (!deferPublication) {
+    if (publicationDeferralDepth == 0) {
       RecordHealthCheckLifecyclePublisher.publishRuleResults(
         checkSetDeveloperName,
         effectiveRunId,
@@ -154,12 +155,12 @@ public with sharing class RecordHealthCheck {
       .getDefinitionResponse(checkSetDeveloperName, recordIds[0]);
     validateEvaluationCount(recordIds.size() * definitions.checks.size());
     List<RecordHealthCheckSetResult> responses = new List<RecordHealthCheckSetResult>();
-    deferPublication = true;
+    publicationDeferralDepth++;
     try {
       for (Id recordId : recordIds)
         responses.add(runSet(checkSetDeveloperName, recordId));
     } finally {
-      deferPublication = false;
+      publicationDeferralDepth--;
       RecordHealthCheckLogger.flush();
     }
     for (RecordHealthCheckSetResult response : responses) {
@@ -180,11 +181,6 @@ public with sharing class RecordHealthCheck {
   private static void validateRecordCount(List<Id> recordIds) {
     if (recordIds == null) {
       throw new RecordHealthCheckRequestException('Record IDs are required.');
-    }
-    if (recordIds.size() > MAX_RECORDS_PER_CALL) {
-      throw new RecordHealthCheckRequestException(
-        'A request can include at most ' + MAX_RECORDS_PER_CALL + ' records.'
-      );
     }
   }
 
@@ -277,7 +273,7 @@ public with sharing class RecordHealthCheck {
         null
       );
 
-      if (!deferPublication) {
+      if (publicationDeferralDepth == 0) {
         RecordHealthCheckLifecyclePublisher.publishRuleResults(
           checkSetDeveloperName,
           effectiveRunId,
@@ -287,7 +283,7 @@ public with sharing class RecordHealthCheck {
       }
       return result;
     } finally {
-      if (!deferPublication) {
+      if (publicationDeferralDepth == 0) {
         RecordHealthCheckLogger.flush();
       }
     }

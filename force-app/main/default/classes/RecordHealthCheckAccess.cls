@@ -23,12 +23,4 @@ public with sharing class RecordHealthCheckAccess {
       'Record_Health_Check_View_Diagnostics'
     );
   }
-
-  /**
-   * Raw troubleshooting detail. Same grant as canViewDetails(); callers pair it
-   * with the Check Set's ShowDiagnostics__c so internals never surface in production.
-   */
-  public static Boolean canViewDebugDetails() {
-    return canViewDetails();
-  }
 }

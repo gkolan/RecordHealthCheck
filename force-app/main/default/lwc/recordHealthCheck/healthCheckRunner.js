@@ -122,7 +122,11 @@ export class HealthCheckRunner {
     const runCheck = this._makeRunCheck(taskMap, checkMap, cycleNames, token);
 
     for (const check of this.host.checks) {
-      runCheck(check);
+      runCheck(check).catch(() => {
+        if (token === this._runToken) {
+          this._runInProgress = false;
+        }
+      });
     }
   }
 
@@ -211,7 +215,7 @@ export class HealthCheckRunner {
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
-          "DEPENDENCY_NOT_PASSED",
+          "PREREQUISITE_NOT_MET",
           `Skipped because "${prereqLabel}" did not pass.`
         );
         this._resultBuffer[check.developerName] = skipped;

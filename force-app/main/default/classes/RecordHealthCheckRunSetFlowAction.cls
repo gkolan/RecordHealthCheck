@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Flow action over RecordHealthCheck.runSet. */
 public with sharing class RecordHealthCheckRunSetFlowAction {
   public class Request {
@@ -46,10 +51,10 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
   public static List<Response> runSet(List<Request> requests) {
     if (requests == null)
       return new List<Response>();
-    if (requests.size() > RecordHealthCheck.MAX_RECORDS_PER_CALL) {
+    if (requests.size() > RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL) {
       throw new RecordHealthCheck.RecordHealthCheckRequestException(
         'A request can include at most ' +
-          RecordHealthCheck.MAX_RECORDS_PER_CALL +
+          RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL +
           ' records.'
       );
     }
