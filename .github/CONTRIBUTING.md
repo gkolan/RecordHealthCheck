@@ -85,7 +85,7 @@ feedback by pushing more commits to the same branch.
   validation, reason-code documentation, and both positive and misconfiguration
   tests. Do not add another parser or comparison operator copy: extend the shared modules.
 
-See [`docs/reference/reference-architecture-map.md`](../docs/reference/reference-architecture-map.md)
+See [`docs/reference/reference-architecture.md`](../docs/reference/reference-architecture.md)
 for the published Framework architecture and to find where things live.
 
 ## Integration-test fixtures
@@ -104,6 +104,6 @@ Docs must match the code at the same commit. Follow these authoring standards:
 - **Code blocks**: introduce every block with a sentence ending in a colon; use fenced blocks with a language identifier (`bash`, `apex`, `sql`, `json`).
 - **No em-dashes**: replace each em-dash by hand with a period, comma, or parentheses, never a blanket swap to a colon.
 
-The public [architecture document](../docs/reference/reference-architecture-map.md) is the
+The public [architecture document](../docs/reference/reference-architecture.md) is the
 contributor-facing source of truth for Framework architecture and where code and docs live.
 Maintainer release steps are in [`RELEASING.md`](RELEASING.md).

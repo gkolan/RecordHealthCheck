@@ -85,7 +85,7 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 | [Reason Codes](reference/reference-reason-codes.md) | Stable explanations for skipped, unable-to-evaluate, and error outcomes |
 | [Platform Event metadata](metadata/README.md#choose-a-platform-event-reference) | Fields and usage for Set Run, Rule Result, and Log events |
 | [Field limits](reference/reference-fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
-| [Architecture](reference/reference-architecture-map.md) | Published Framework architecture: principles, layers, runtime, security, limits, ownership |
+| [Architecture](reference/reference-architecture.md) | Published Framework architecture: principles, layers, runtime, security, limits, ownership |
 
 ## Important behavior to know
 

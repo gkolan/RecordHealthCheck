@@ -201,7 +201,7 @@ lines += [
     "- [Check Set fields](../metadata/fields-check-set.md)",
     "- [Rule fields](../metadata/fields-check-rule.md)",
     "- [Configuration guide](../guides/configure-check-sets-and-rules.md)",
-    "- [Architecture](reference-architecture-map.md)",
+    "- [Architecture](reference-architecture.md)",
     "",
 ]
 content = "\n".join(lines)

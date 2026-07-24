@@ -3,7 +3,7 @@
 [![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE)
 [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
+[![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
 > **Make informed decisions before taking action on Salesforce data.**
 >
