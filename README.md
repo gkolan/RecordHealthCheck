@@ -1,7 +1,7 @@
 # Record Health Check
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Salesforce API](https://img.shields.io/badge/Salesforce%20API-66.0-00A1E0.svg)](sfdx-project.json)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-lightgrey.svg)](LICENSE)
+[![Salesforce API](https://img.shields.io/badge/Salesforce%20API-66.0-lightgrey.svg)](sfdx-project.json)
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
 [![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
@@ -125,7 +125,7 @@ without leaving the Salesforce record page.
 
 ## Contributing
 
-Planning to contribute? See [Contributing](CONTRIBUTING.md) for local checks, testing requirements,
+Planning to contribute? See [Contributing](.github/CONTRIBUTING.md) for local checks, testing requirements,
 and pull request guidance.
 
 ## License

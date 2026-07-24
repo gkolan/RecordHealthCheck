@@ -12,9 +12,12 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Removed standard-object list view overrides from `integration-tests/` so fixture deploys cannot
   overwrite org `AllAccounts` / `AllOpenCases` / similar views.
 
-### Fixed
+### Changed
 
-- Documented demo setup now ships `scripts/setup-demo.sh` and the Apex scripts it runs.
+- Moved contributor/community docs (`CONTRIBUTING`, `SECURITY`, `CODE_OF_CONDUCT`,
+  `CODEOWNERS`, `RELEASING`) under `.github/` so the repository root stays product-focused.
+  GitHub still discovers these paths automatically.
+- Softened License and Salesforce API README badges to grey so the Deploy action stands out.
 - Install manifest includes the `Examples` Custom Metadata list views.
 - Contributor and PR template links/instructions no longer point at local-only paths.
 - `integration-tests/` is no longer a `packageDirectories` entry, so a bare

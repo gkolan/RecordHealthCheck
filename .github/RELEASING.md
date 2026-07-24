@@ -23,7 +23,7 @@ This project follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PA
 | **MINOR** | New backward-compatible feature (new Check Method, new field)  | `1.0.0 → 1.1.0` |
 | **MAJOR** | A change that breaks existing Check Sets/Rules or the Apex API | `1.x → 2.0.0`   |
 
-The current version lives in [`package.json`](package.json) (`"version"`).
+The current version lives in [`package.json`](../package.json) (`"version"`).
 
 ## Step 1: Make sure `main` is green
 
@@ -58,7 +58,7 @@ replace `X.Y.Z` with your chosen number (no leading `v` for `package.json`).
    (`--no-git-tag-version` just edits the file; you will tag manually in Step 5
    so the changelog commit and the tag stay together.)
 
-2. In [`CHANGELOG.md`](CHANGELOG.md), rename the **`## Unreleased`** heading to
+2. In [`CHANGELOG.md`](../CHANGELOG.md), rename the **`## Unreleased`** heading to
    **`## [X.Y.Z] - YYYY-MM-DD`** and add a fresh empty `## Unreleased` section
    above it for future work. Keep the compare links at the bottom of the file in
    sync with the new version.
@@ -103,7 +103,7 @@ Or, to write richer notes interactively, omit `--notes` and `gh` opens an editor
 Point people at the release page:
 `https://github.com/gkolan/RecordHealthCheck/releases/tag/vX.Y.Z`.
 Non-technical teammates keep using the one-click Deploy button in the
-[README](README.md), which always installs the latest `main`.
+[README](../README.md), which always installs the latest `main`.
 
 ## Rolling back
 

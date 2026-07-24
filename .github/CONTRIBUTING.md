@@ -6,7 +6,7 @@ that someone new to the project can follow it step by step.
 
 Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before participating. By
 contributing, you agree that your contributions are licensed under the
-[Apache License, Version 2.0](LICENSE).
+[Apache License, Version 2.0](../LICENSE).
 
 ## Ways to contribute
 
@@ -28,7 +28,7 @@ contributing, you agree that your contributions are licensed under the
    - The **Check Set** and **Rule** Developer Names involved (not screenshots of labels only).
    - The object and a sketch of the field/query values that triggered it.
    - Whether **Show Diagnostics** was on, and the `[RHC]` summary from the browser console
-     (see [Troubleshoot with Show Diagnostics](docs/guides/troubleshoot-with-show-diagnostics.md)). **Redact record data and Org IDs.**
+     (see [Troubleshoot with Show Diagnostics](../docs/guides/troubleshoot-with-show-diagnostics.md)). **Redact record data and Org IDs.**
    - Org type (Production / Sandbox / Scratch) and API version.
 4. Submit. A maintainer will triage and may ask for a minimal reproduction.
 
@@ -62,7 +62,7 @@ record data into an issue.
    ```
 6. **Open the PR** against `main`. The PR template will prompt you for a summary,
    testing notes, and a checklist. Link the issue it closes (e.g. `Closes #12`).
-7. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs prettier, lint,
+7. CI ([`workflows/ci.yml`](workflows/ci.yml)) runs prettier, lint,
    Jest with coverage, and XML validation on every PR. Keep it green.
 
 A maintainer ([CODEOWNERS](CODEOWNERS) is auto-requested) will review. Address
@@ -73,7 +73,7 @@ feedback by pushing more commits to the same branch.
 - **Tests are required** for every behavior change: both a positive test and a
   misconfiguration/negative test where applicable.
 - **Coverage thresholds** are enforced by `coverageThreshold` in
-  [`jest.config.js`](jest.config.js). `npm run test:unit:coverage` exits non-zero if
+  [`jest.config.js`](../jest.config.js). `npm run test:unit:coverage` exits non-zero if
   they are not met.
 - **Apex changes** must also pass the project Apex test suite and a validation
   deployment (`sf project deploy validate`) with `RunLocalTests` in a clean
@@ -85,14 +85,14 @@ feedback by pushing more commits to the same branch.
   validation, reason-code documentation, and both positive and misconfiguration
   tests. Do not add another parser or comparison operator copy: extend the shared modules.
 
-See [`docs/reference/reference-architecture-map.md`](docs/reference/reference-architecture-map.md) to find where things live.
+See [`docs/reference/reference-architecture-map.md`](../docs/reference/reference-architecture-map.md) to find where things live.
 
 ## Integration-test fixtures
 
-[`integration-tests/`](integration-tests/) holds CI-only fixture metadata and is **not** part of
+[`integration-tests/`](../integration-tests/) holds CI-only fixture metadata and is **not** part of
 the product install. Do not add it to `sfdx-project.json` `packageDirectories`. The release
 gate deploys it with an explicit `--source-dir integration-tests` after Core. See
-[`integration-tests/README.md`](integration-tests/README.md).
+[`integration-tests/README.md`](../integration-tests/README.md).
 
 ## Documentation changes
 
