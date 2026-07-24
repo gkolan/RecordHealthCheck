@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate docs/reference/fields-limits.md from shipped CMDT XML.
+"""Generate docs/reference/reference-fields-limits.md from shipped CMDT XML.
 
 Run from the repository root with:
   python3 scripts/release/generate_field_size_registry.py
@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 OBJECTS = ROOT / "force-app/main/default/objects"
-OUTPUT = ROOT / "docs/reference/fields-limits.md"
+OUTPUT = ROOT / "docs/reference/reference-fields-limits.md"
 NS = {"m": "http://soap.sforce.com/2006/04/metadata"}
 
 
@@ -51,7 +51,7 @@ def field_link(object_name, label, field):
     page = (
         "../metadata/fields-check-set.md"
         if object_name == "Record_Health_Check_Set__mdt"
-        else "../metadata/fields-rule.md"
+        else "../metadata/fields-check-rule.md"
     )
     anchor = github_anchor(f"{label} ({field})")
     return f"[`{field}`]({page}#{anchor})"
@@ -127,12 +127,10 @@ def append_non_text_groups(lines, selected_rows):
         lines.append(f"| {owner} | {display_type} | {constraint} | {', '.join(links)} |")
 
 lines = [
-    "# Field limits",
+    "# Reference: Field limits",
     "",
     "> [!NOTE]",
-    "> **On this page**",
-    ">",
-    "> Find the limit for a Check Set or Rule field and understand what to do when Salesforce rejects a value or a Rule returns `ERROR`.",
+    "> On this page, distinguish what Salesforce can store from what the Framework can safely resolve, then fix the field, completed text, or action URL responsible for a rejected value or `ERROR`.",
     "",
     "<!-- Generated from shipped Salesforce metadata by scripts/release/generate_field_size_registry.py. -->",
     "",
@@ -196,9 +194,9 @@ lines += [
     "## Related",
     "",
     "- [Check Set fields](../metadata/fields-check-set.md)",
-    "- [Rule fields](../metadata/fields-rule.md)",
-    "- [Configuration guide](../guides/configuration-guide.md)",
-    "- [Design specification](record-health-check-design-spec.md)",
+    "- [Rule fields](../metadata/fields-check-rule.md)",
+    "- [Configuration guide](../guides/configure-check-sets-and-rules.md)",
+    "- [Architecture map](reference-architecture-map.md)",
     "",
 ]
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)

@@ -9,15 +9,19 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>COMPLETENESS</fullName><default
-        >false</default></value><value><fullName>CONSISTENCY</fullName><default
-        >false</default></value><value><fullName>TIMELINESS</fullName><default
-        >false</default></value><value><fullName>ELIGIBILITY</fullName><default
-        >false</default></value><value><fullName>READINESS</fullName><default
-        >false</default></value><value><fullName>RISK</fullName><default
-        >false</default></value><value><fullName>COMPLIANCE</fullName><default
-        >false</default></value><value><fullName
-        >RELATIONSHIP_COVERAGE</fullName><default
+            <value><fullName>COMPLETENESS</fullName><label
+        >Completeness</label><default>false</default></value><value><fullName
+        >CONSISTENCY</fullName><label>Consistency</label><default
+        >false</default></value><value><fullName>TIMELINESS</fullName><label
+        >Timeliness</label><default>false</default></value><value><fullName
+        >ELIGIBILITY</fullName><label>Eligibility</label><default
+        >false</default></value><value><fullName>READINESS</fullName><label
+        >Readiness</label><default>false</default></value><value><fullName
+        >RISK</fullName><label>Risk</label><default
+        >false</default></value><value><fullName>COMPLIANCE</fullName><label
+        >Compliance</label><default>false</default></value><value><fullName
+        >RELATIONSHIP_COVERAGE</fullName><label
+        >Relationship coverage</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
     <inlineHelpText

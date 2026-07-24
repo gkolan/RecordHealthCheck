@@ -9,11 +9,14 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>ONE_RESULT</fullName><default
-        >true</default></value><value><fullName
-        >ANY_ROW_PASSES</fullName><default>false</default></value><value
-      ><fullName>ALL_ROWS_PASS</fullName><default>false</default></value><value
-      ><fullName>COMPARE_AS_LISTS</fullName><default
+            <value><fullName>ONE_RESULT</fullName><label
+        >One row or aggregate</label><default>true</default></value><value
+      ><fullName>ANY_ROW_PASSES</fullName><label
+        >Any record passes</label><default>false</default></value><value
+      ><fullName>ALL_ROWS_PASS</fullName><label
+        >Every record passes</label><default>false</default></value><value
+      ><fullName>COMPARE_AS_LISTS</fullName><label
+        >Compare as lists</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

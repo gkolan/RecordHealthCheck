@@ -321,7 +321,10 @@ public with sharing class RecordHealthCheckConfigService {
     String recordObjectType = RecordHealthCheckDescribeCache.objectApiName(
       recordId
     );
-    if (!recordObjectType.equalsIgnoreCase(checkSet.ObjectApiName__c)) {
+    if (
+      String.isBlank(recordObjectType) ||
+      !recordObjectType.equalsIgnoreCase(checkSet.ObjectApiName__c)
+    ) {
       throw new ConfigException(
         'Check Set "' +
           checkSetDeveloperName +
@@ -562,6 +565,7 @@ public with sharing class RecordHealthCheckConfigService {
         PrerequisiteRule__c,
         ApplicabilityMode__c,
         ApplicabilityFormula__c,
+        ApplicabilityNotMetMessage__c,
         ApplicabilityCountQuery__c,
         ApplicabilityCountOperator__c,
         ApplicabilityCountThreshold__c,

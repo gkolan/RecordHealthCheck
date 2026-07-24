@@ -26,19 +26,20 @@ private class RecordHealthCheckSetPicklistTest {
       rows.size(),
       'One row per active Check Set scoped to the page object'
     );
-    // Account ships with several active Check Sets, so there is no single
-    // obvious choice — getDefaultValue stays null and the admin picks explicitly.
-    // (The auto-select branch fires only when exactly one set matches the object;
-    // the sample data has no single-set object to exercise it via data.)
-    System.assert(
-      activeAccountSets != 1,
-      'Fixture assumption: Account has multiple active Check Sets'
-    );
-    System.assertEquals(
-      null,
-      picklist.getDefaultValue(),
-      'With several matches there is no auto-default'
-    );
+    VisualEditor.DataRow defaultValue = picklist.getDefaultValue();
+    if (activeAccountSets == 1) {
+      System.assertNotEquals(
+        null,
+        defaultValue,
+        'The sole active Check Set should be selected automatically'
+      );
+    } else {
+      System.assertEquals(
+        null,
+        defaultValue,
+        'With zero or several matches there is no auto-default'
+      );
+    }
   }
 
   @isTest

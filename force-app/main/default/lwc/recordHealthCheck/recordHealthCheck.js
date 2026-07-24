@@ -141,6 +141,7 @@ export default class RecordHealthCheck extends LightningElement {
 
   connectedCallback() {
     this._connected = true;
+    window.addEventListener("resize", this._handleViewportResize);
     // Defer one macrotask so the record page frame finishes its initial render
     // before we fire Apex calls. Without this, Automatic mode sends up to 25
     // concurrent requests while the page is still mounting other components.
@@ -150,6 +151,7 @@ export default class RecordHealthCheck extends LightningElement {
 
   disconnectedCallback() {
     this._connected = false;
+    window.removeEventListener("resize", this._handleViewportResize);
     this._loadToken++;
     if (this._initialLoadTimer) {
       clearTimeout(this._initialLoadTimer);
@@ -641,6 +643,13 @@ export default class RecordHealthCheck extends LightningElement {
     }
   }
 
+  // Resizing a Lightning region can change wrapping without causing an LWC
+  // render. Re-measure explicitly so a newly overflowing value gains its +/-
+  // affordance (and a value that now fits loses it) immediately.
+  _handleViewportResize = () => {
+    this._measureClampedValues();
+  };
+
   // Expand or re-clamp a single value chip in place. Imperative because the
   // clamp/expand state is purely presentational and per-chip — threading it
   // through the annotateCheck pipeline would need a stable key per chip for no
@@ -653,9 +662,12 @@ export default class RecordHealthCheck extends LightningElement {
       return;
     }
     const expanded = chip.classList.toggle("rhc-cmp__val--expanded");
-    toggle.textContent = expanded ? "less" : "...";
+    toggle.textContent = expanded ? "−" : "+";
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-    toggle.setAttribute("aria-label", expanded ? "Show less" : "Show more");
+    toggle.setAttribute(
+      "aria-label",
+      expanded ? "Collapse value" : "Expand value"
+    );
   }
 
   get checkCountLabel() {

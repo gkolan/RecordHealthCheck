@@ -318,7 +318,6 @@ export class HealthCheckRunner {
         completeRun({
           checkSetDeveloperName: this.host.checkSetName,
           runId: this._runId,
-          results: this.host.checks.map((c) => c.result),
           source: this._source,
           recordId: this.host.recordId
         }).catch(() => {

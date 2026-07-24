@@ -3,12 +3,13 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-66.0-00A1E0.svg)](sfdx-project.json)
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)
+[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
-> **Can users trust this Salesforce record enough to move forward?**
+> **Make informed decisions before taking action on Salesforce data.**
 >
-> _Record Health Check answers that question on the record page, then shows the user what needs
-> attention, why it matters, and how to act._
+> Record Health Check evaluates Salesforce records directly on the record page, surfacing what
+> needs attention, why it matters, and how to resolve it without modifying the record or blocking
+> users.
 
 Every Rule returns **Pass**, **Fail**, **Skipped**, or **Unable to Check**. When a record needs
 attention, the card can show its **Critical**, **Warning**, or **Info** severity; explain what was
@@ -27,13 +28,13 @@ data that existed before the Rules were created, without writing to the record.
 <table>
   <tr>
     <td width="48%" valign="top">
-      <p><b>Example: Account 360 Health Check</b><br />▶ <a href="https://github.com/gkolan/RecordHealthCheck/blob/main/assets/img/Account_Health_Check_Quick_Demo.gif" target="_blank">Animated GIF</a></p>
-      <p>An account team can review whether an Account is ready for the next conversation without leaving the record page.</p>
+      <p><b>Example:</b><br /><b>Account Relationship &amp; Risk Health Check</b></p>
+      <p>An account team can review relationship strength, ownership, engagement, revenue coverage, and customer risk without leaving the record page.</p>
       <ul>
-        <li><b>Review the whole Account.</b> The Check Set evaluates the Account together with its Contacts, Opportunities, Cases, Contracts, and Activities.</li>
-        <li><b>Start with the summary.</b> The footer shows how many results Passed, Failed, raised a Warning or Info issue, or were Skipped.</li>
-        <li><b>Open the detail that matters.</b> Passed Rules remain compact. Other rows can explain the issue and severity, show what the Framework found and expected, or state why the Rule did not apply.</li>
-        <li><b>Go directly to the next step.</b> When an issue has a clear destination, a <b>Fix it</b> link can take the user there. In this example, it opens a report already filtered to the Account.</li>
+        <li><b>Review the whole relationship.</b> Rules evaluate the Account together with Opportunity Contact Roles, Contacts, Opportunities, Cases, Activities, ownership, and parent-account context.</li>
+        <li><b>See business evidence.</b> Found and Expected values explain results such as three reachable Executive Sponsors, six contacts missing email, four high-priority cases, and a dynamically calculated 75% revenue-coverage target.</li>
+        <li><b>Understand every outcome.</b> Passed Rules remain compact, issues include severity and corrective guidance, and skipped Rules explain the business reason they do not apply to this Account.</li>
+        <li><b>Act on the risk.</b> Remediation guidance directs the account team toward the ownership, relationship, pipeline, or service action that closes the gap.</li>
       </ul>
       <p><b>Administrators control the experience</b></p>
       <ul>
@@ -43,10 +44,18 @@ data that existed before the Rules were created, without writing to the record.
       </ul>
     </td>
     <td width="52%" valign="top">
-      <img src="assets/img/Account_Health_Check.png" alt="Record Health Check card on an Account record page, showing passed, failed, warning, and skipped checks with Found/Expected details and Fix it links" width="100%" />
+      <img src="assets/img/Example_Account_Relationship_Risk_Screenshot.png" alt="Account Relationship and Risk Health Check showing executive sponsorship, ownership, engagement, revenue coverage, customer issues, descriptive Found and Expected values, and an intentional business-specific skip" width="100%" />
     </td>
   </tr>
 </table>
+
+### What this example demonstrates
+
+- **Formula checks** evaluate Account ownership and parent-account alignment.
+- **Related-record and aggregate queries** measure executive sponsorship, contact reachability,
+  pipeline coverage, and open customer issues.
+- **Custom Apex** evaluates recent Tasks and Events within a configurable 90-day window.
+- **Applicability rules** skip channel governance for a direct customer and explain why.
 
 ## Start here
 
@@ -61,8 +70,9 @@ order.
 
 ## Install
 
-Start in a **sandbox**. The deployment installs the Framework, but it does not add example Check
-Sets, Rules, or Apex implementations to your org.
+Start in a **sandbox**. The deployment installs the Framework and the clearly prefixed `Example_`
+Check Set, Rules, and Apex evaluator. It does not create Acme demo records in an existing org;
+those deterministic records are provisioned only by the dedicated scratch-org setup script.
 
 > [!NOTE]
 > **Upgrading an existing installation?** This release uses updated Custom Metadata field API
@@ -71,7 +81,7 @@ Sets, Rules, or Apex implementations to your org.
 
 ### Deploy to a sandbox
 
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)
+[![Deploy to Sandbox](https://img.shields.io/badge/Deploy%20to-Sandbox-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
 The button opens Salesforce authentication and starts the deployment. Prefer the Salesforce CLI?
 
@@ -88,6 +98,8 @@ sf project deploy start --manifest manifest/package.xml
    Salesforce Setup.
 3. Add the **recordHealthCheck** component to a Lightning record page.
 4. Select the Check Set in Lightning App Builder, save the page, and activate it.
+
+For the complete first-run demo used by this project, follow [Create the demo scratch org](docs/installation/05-create-rhc-scratch-org.md).
 
 For permissions, verification, and other deployment methods, follow
 [Install and verify](docs/installation/02-install-and-verify.md).

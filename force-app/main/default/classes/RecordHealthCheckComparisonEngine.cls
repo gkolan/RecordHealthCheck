@@ -352,16 +352,11 @@ public with sharing class RecordHealthCheckComparisonEngine {
   }
 
   /**
-   * Renders a single value for display; null/blank shows as "(blank)". Every
-   * non-blank value — text, numeric, Boolean, or date/time — is wrapped in
-   * double quotes so the comparison reads consistently regardless of type. This
-   * matters because the two sides of one comparison can be different Apex types
-   * a COUNT check yields an Integer actual (1) but a String operand ("2") from
-   * metadata, and leaving numbers bare produced the jarring `Found 1 … at least
-   * "2"`. Uniform quoting renders that as `Found "1" … at least "2"`, and also
-   * delimits values with surrounding spaces or embedded punctuation.
+   * Renders a single value for display; null/blank shows as "(blank)". Non-blank
+   * values are returned without decorative quotes because the comparison chip's
+   * background and horizontal padding already distinguish values from prose.
    *
-   * Before quoting, values are humanized for readability: numbers gain thousands
+   * Values are humanized for readability: numbers gain thousands
    * separators, Booleans read Yes/No, and dates/datetimes render in the running
    * user's locale and time zone. Typed values (a checkbox or datetime field, a
    * single-value formula) are converted directly; the same shapes arriving as metadata
@@ -375,15 +370,15 @@ public with sharing class RecordHealthCheckComparisonEngine {
     // Typed values carry their Apex type here, so humanize them before
     // String.valueOf flattens them into a raw, unformatted string.
     if (value instanceof Boolean) {
-      return '"' + (((Boolean) value) ? 'Yes' : 'No') + '"';
+      return ((Boolean) value) ? 'Yes' : 'No';
     }
     if (value instanceof Date) {
-      return '"' + ((Date) value).format() + '"';
+      return ((Date) value).format();
     }
     if (value instanceof Datetime) {
       // .format() honors the user's locale and time zone; String.valueOf would
       // emit a raw GMT "2026-07-04 17:30:00".
-      return '"' + ((Datetime) value).format() + '"';
+      return ((Datetime) value).format();
     }
 
     String s = String.valueOf(value);
@@ -392,7 +387,7 @@ public with sharing class RecordHealthCheckComparisonEngine {
     String humanized = humanizeString(s);
     if (humanized != null)
       s = humanized;
-    return '"' + s + '"';
+    return s;
   }
 
   /**

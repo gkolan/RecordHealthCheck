@@ -63,7 +63,7 @@ Run a complete Check Set:
 
 ```apex
 RecordHealthCheckSetResult result = RecordHealthCheck.runSet(
-  'Example_Account_360_Health_Check',
+  'Example_Account_Relationship_Risk',
   accountId
 );
 
@@ -91,7 +91,7 @@ Run one specific Rule only when the process does not need the rest of its Set:
 
 ```apex
 RecordHealthCheckResult result = RecordHealthCheck.runRule(
-  'Example_Recent_Activity',
+  'Example_Customer_Engagement_Current',
   accountId
 );
 ```

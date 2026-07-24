@@ -33,5 +33,5 @@ For every Formula setting, outcome, security rule, and limit, use
 
 - [All practical examples](../README.md)
 - [Reference: Formula](../../reference/reference-formula.md)
-- [Rule fields](../../metadata/fields-rule.md)
+- [Rule fields](../../metadata/fields-check-rule.md)
 - [Create your first Rule](../../installation/03-create-your-first-rule.md)

@@ -7,6 +7,7 @@
 .sfdx/
 .localdevserver/
 deploy-options.json
+/config/
 .claude/
 /CLAUDE.md
 .playwright-mcp/
@@ -112,12 +113,17 @@ scripts/*
 # Release-gate scripts used by package.json and CI are public and tracked.
 !scripts/release/
 !scripts/release/**
+# Reproducible V2 demo scratch-org provisioning.
+!scripts/setup-v2-demo.sh
 # Exception: the metadata validator is a release-gate dependency referenced by
 # .github/workflows/salesforce-validate.yml and the V2 upgrade docs, so it must
 # be tracked. Everything else under scripts/ stays local.
 !scripts/apex/
 scripts/apex/*
 !scripts/apex/validateMetadata.apex
+!scripts/apex/*V2Demo*.apex
+!scripts/demo/
+!scripts/demo/**
 
 # Internal planning / roadmap docs — kept local, not published with the project.
 docs/spec/

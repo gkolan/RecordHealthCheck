@@ -9,13 +9,15 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>AUTO</fullName><default
-        >true</default></value><value><fullName>BOOLEAN</fullName><default
-        >false</default></value><value><fullName>NUMBER</fullName><default
-        >false</default></value><value><fullName>DATE</fullName><default
-        >false</default></value><value><fullName>DATETIME</fullName><default
-        >false</default></value><value><fullName>TEXT</fullName><default
-        >false</default></value></valueSetDefinition>
+            <value><fullName>AUTO</fullName><label>Auto</label><default
+        >true</default></value><value><fullName>BOOLEAN</fullName><label
+        >Checkbox</label><default>false</default></value><value><fullName
+        >NUMBER</fullName><label>Number</label><default
+        >false</default></value><value><fullName>DATE</fullName><label
+        >Date</label><default>false</default></value><value><fullName
+        >DATETIME</fullName><label>Date/Time</label><default
+        >false</default></value><value><fullName>TEXT</fullName><label
+        >Text</label><default>false</default></value></valueSetDefinition>
     </valueSet>
     <inlineHelpText
   >The type your formulas return. Applies to every formula in the check (the list/expected value formulas and the display formulas). Leave "Auto" unless you know the type - "Auto" always works but uses more formula calls.</inlineHelpText>

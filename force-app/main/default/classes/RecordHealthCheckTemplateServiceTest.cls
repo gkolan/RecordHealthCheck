@@ -2,18 +2,90 @@
 private class RecordHealthCheckTemplateServiceTest {
   @IsTest
   static void parsesCanonicalNamespacesAndSpans() {
-    String template = '{!record.Name} {!rhcRule.checkTitle}';
+    String template = '{!record.Name|Unnamed account} {!rhcRule.checkTitle}';
     List<RecordHealthCheckToken> tokens = RecordHealthCheckTemplateService.parse(
       template
     );
     System.assertEquals(2, tokens.size());
     System.assertEquals('record', tokens[0].namespaceName);
     System.assertEquals('Name', tokens[0].propertyPath);
+    System.assertEquals('Unnamed account', tokens[0].fallbackValue);
     System.assertEquals(
-      '{!record.Name}',
+      '{!record.Name|Unnamed account}',
       template.substring(tokens[0].startIndex, tokens[0].endIndex)
     );
     System.assertEquals('rhcRule', tokens[1].namespaceName);
+  }
+
+  @IsTest
+  static void resolvesExplicitFallbacksForBlankValuesAndNullRelationships() {
+    Account record = new Account(Name = '   ', NumberOfEmployees = 0);
+    Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
+      CheckDescription__c = null
+    );
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.actualValue = null;
+    RecordHealthCheckMergeContext context = new RecordHealthCheckMergeContext()
+      .withRecord(record)
+      .withRule(rule)
+      .withResult(result, true);
+
+    System.assertEquals(
+      'Unnamed account | Independent account | No description | Not measured',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!record.Name|Unnamed account} | {!record.Parent.Name|Independent account} | {!rhcRule.checkDescription|No description} | {!rhcResult.foundValue|Not measured}',
+        context
+      )
+    );
+    System.assertEquals(
+      'A | B|C | record.Name',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!record.Name|A} | {!record.Name|B|C} | {!record.Name|record.Name}',
+        context
+      ),
+      'Fallbacks may contain additional pipe characters and are inserted literally.'
+    );
+    System.assertEquals(
+      '0',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!record.NumberOfEmployees|100}',
+        context
+      ),
+      'Zero is a populated value and must never trigger a fallback.'
+    );
+  }
+
+  @IsTest
+  static void preservesExistingBlankBehaviorAndEncodesUrlFallbacks() {
+    RecordHealthCheckMergeContext context = new RecordHealthCheckMergeContext()
+      .withRecord(new Account(Name = null));
+    System.assertEquals(
+      'Name: ',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        'Name: {!record.Name}',
+        context
+      )
+    );
+    System.assertEquals(
+      '/find?q=Needs+review+%26+approval',
+      RecordHealthCheckTemplateService.resolveUrl(
+        '/find?q={!record.Name|Needs review & approval}',
+        context
+      )
+    );
+    try {
+      RecordHealthCheckTemplateService.resolveUrl(
+        '/find?q={!record.Name}',
+        context
+      );
+      System.assert(
+        false,
+        'Expected a blank URL token without fallback to fail.'
+      );
+    } catch (RecordHealthCheckTemplateService.TemplateException ex) {
+      System.assertEquals('MISSING_TOKEN_VALUE', ex.reasonCode);
+      System.assertEquals('{!record.Name}', ex.token);
+    }
   }
 
   @IsTest
@@ -144,6 +216,23 @@ private class RecordHealthCheckTemplateServiceTest {
     System.assert(resolved.contains('Found|Expected|MISMATCH'));
     System.assert(resolved.contains('run-456|FLOW|2026-07-14T01:02:03.000Z'));
     System.assert(resolved.endsWith('|1000'));
+
+    result.actualValue = '1';
+    System.assertEquals(
+      '1 Sponsor',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!rhcResult.foundValue} Sponsor{!rhcResult.foundValuePluralSuffix}',
+        context
+      )
+    );
+    result.actualValue = '3';
+    System.assertEquals(
+      '3 Sponsors',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!rhcResult.foundValue} Sponsor{!rhcResult.foundValuePluralSuffix}',
+        context
+      )
+    );
   }
 
   @IsTest
@@ -154,6 +243,11 @@ private class RecordHealthCheckTemplateServiceTest {
     }
     assertIssue(tooManyTokens, 'DISPLAY', 'TOKEN_LIMIT_EXCEEDED');
     assertIssue('{!record.Name', 'DISPLAY', 'MALFORMED_TOKEN');
+    assertIssue('{!record.Name|}}', 'DISPLAY', 'MALFORMED_TOKEN');
+    assertIssue('{{!record.Name|}}', 'DISPLAY', 'MALFORMED_TOKEN');
+    assertIssue('{{!record.Name|}', 'DISPLAY', 'MALFORMED_TOKEN');
+    assertIssue('{ {!record.Name|Unknown} }', 'DISPLAY', 'MALFORMED_TOKEN');
+    assertIssue('Value } {!record.Name|Unknown}', 'DISPLAY', 'MALFORMED_TOKEN');
     assertIssue('{!rhcResult.status}', 'URL', 'TOKEN_NOT_ALLOWED_ON_SURFACE');
 
     Account accountRecord = new Account(Name = null);

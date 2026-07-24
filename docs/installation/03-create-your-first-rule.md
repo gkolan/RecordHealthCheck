@@ -53,17 +53,17 @@ Manual execution makes the first test easier to follow because the card waits fo
 
 | Setup field | API name | Value |
 | --- | --- | --- |
-| **Label** | [`MasterLabel`](../metadata/fields-rule.md#label-masterlabel) | Billing City Is Populated |
-| **Developer Name** | [`DeveloperName`](../metadata/fields-rule.md#developer-name-developername) | `Billing_City_Is_Populated` |
-| **Check Set** | [`Record_Health_Check_Set__c`](../metadata/fields-rule.md#check-set-record_health_check_set__c) | `Account_Readiness` |
-| **Check Title** | [`CheckTitle__c`](../metadata/fields-rule.md#check-title-checktitle__c) | Billing City is populated |
-| **Evaluation Type** | [`EvaluationType__c`](../metadata/fields-rule.md#evaluation-type-evaluationtype__c) | **Verify with a formula** (`FORMULA`) |
-| **Pass Condition** | [`PassConditionFormula__c`](../metadata/fields-rule.md#pass-condition-passconditionformula__c) | `NOT(ISBLANK(BillingCity))` |
-| **Failure Severity** | [`FailureSeverity__c`](../metadata/fields-rule.md#failure-severity-failureseverity__c) | **Warning** (`WARNING`) |
-| **Message When Failed** | [`FailureMessage__c`](../metadata/fields-rule.md#message-when-failed-failuremessage__c) | Billing City is missing. Add it before the Account review. |
-| **Fix Message** | [`FixMessage__c`](../metadata/fields-rule.md#fix-message-fixmessage__c) | Edit the Account billing address and rerun the check. |
-| **Evaluation Order** | [`EvaluationOrder__c`](../metadata/fields-rule.md#evaluation-order-evaluationorder__c) | `100` |
-| **Active** | [`IsActive__c`](../metadata/fields-rule.md#active-isactive__c) | Checked |
+| **Label** | [`MasterLabel`](../metadata/fields-check-rule.md#label-masterlabel) | Billing City Is Populated |
+| **Developer Name** | [`DeveloperName`](../metadata/fields-check-rule.md#developer-name-developername) | `Billing_City_Is_Populated` |
+| **Check Set** | [`Record_Health_Check_Set__c`](../metadata/fields-check-rule.md#check-set-record_health_check_set__c) | `Account_Readiness` |
+| **Check Title** | [`CheckTitle__c`](../metadata/fields-check-rule.md#check-title-checktitle__c) | Billing City is populated |
+| **Evaluation Type** | [`EvaluationType__c`](../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c) | **Verify with a formula** (`FORMULA`) |
+| **Pass Condition** | [`PassConditionFormula__c`](../metadata/fields-check-rule.md#pass-condition-passconditionformula__c) | `NOT(ISBLANK(BillingCity))` |
+| **Failure Severity** | [`FailureSeverity__c`](../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | **Warning** (`WARNING`) |
+| **Message When Failed** | [`FailureMessage__c`](../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | Billing City is missing. Add it before the Account review. |
+| **Fix Message** | [`FixMessage__c`](../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Edit the Account billing address and rerun the check. |
+| **Evaluation Order** | [`EvaluationOrder__c`](../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `100` |
+| **Active** | [`IsActive__c`](../metadata/fields-check-rule.md#active-isactive__c) | Checked |
 
 5. Select **Save**.
 
@@ -119,4 +119,4 @@ For authorized troubleshooting details, use [Troubleshoot with Show Diagnostics]
 - [Examples library](../examples/README.md)
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
 - [Check Set fields](../metadata/fields-check-set.md)
-- [Rule fields](../metadata/fields-rule.md)
+- [Rule fields](../metadata/fields-check-rule.md)

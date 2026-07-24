@@ -116,7 +116,7 @@ The evaluation path is **read-only** (`with sharing`, `WITH USER_MODE`).
 
 | Need | Doc |
 | ---- | --- |
-| Field reference | [Check Set fields](../metadata/fields-check-set.md), [Rule fields](../metadata/fields-rule.md) |
+| Field reference | [Check Set fields](../metadata/fields-check-set.md), [Rule fields](../metadata/fields-check-rule.md) |
 | Apex callers | [Apex API](../reference/reference-apex-api.md) |
 | Flow callers | [Flow actions](../integration/flow-actions.md) |
 | Lightning component | [Lightning component](../integration/lightning-component.md) |

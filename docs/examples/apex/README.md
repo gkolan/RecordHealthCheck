@@ -31,4 +31,4 @@ use [Reference: Apex](../../reference/reference-apex.md).
 - [All practical examples](../README.md)
 - [Reference: Apex](../../reference/reference-apex.md)
 - [Apex API](../../reference/reference-apex-api.md)
-- [Rule fields](../../metadata/fields-rule.md)
+- [Rule fields](../../metadata/fields-check-rule.md)

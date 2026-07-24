@@ -4,7 +4,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>1. Basics</label>
+        <label>1. Identity &amp; Placement</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -43,7 +43,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>2. What Users See</label>
+        <label>2. User-Facing Content &amp; Remediation</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -90,7 +90,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>3. Check Type</label>
+        <label>3. Evaluation Type</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -104,7 +104,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>4. Check Fields On This Record</label>
+        <label>4. Record Formula — Found (Left) vs Expected (Right)</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -131,7 +131,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>5. Query Sources</label>
+        <label>5. Query Values — Found (Left) vs Expected (Right)</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -145,6 +145,10 @@
                 <behavior>Edit</behavior>
                 <field>FindInListFormula__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>DisplayFoundText__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
@@ -155,75 +159,6 @@
                 <behavior>Edit</behavior>
                 <field>ComparisonQueryField__c</field>
             </layoutItems>
-        </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
-    </layoutSections>
-    <layoutSections>
-        <customLabel>true</customLabel>
-        <detailHeading>true</detailHeading>
-        <editHeading>true</editHeading>
-        <label>6. Query Comparison</label>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ComparisonOperator__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ExpectedFixedValue__c</field>
-            </layoutItems>
-        </layoutColumns>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ExpectedValueSource__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ExpectedRecordFormula__c</field>
-            </layoutItems>
-        </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
-    </layoutSections>
-    <layoutSections>
-        <customLabel>true</customLabel>
-        <detailHeading>true</detailHeading>
-        <editHeading>true</editHeading>
-        <label>7. Advanced Query Behavior</label>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>QueryResultHandling__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>NoRowsResult__c</field>
-            </layoutItems>
-        </layoutColumns>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>EmptyValueHandling__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>MaxQueryRows__c</field>
-            </layoutItems>
-        </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
-    </layoutSections>
-    <layoutSections>
-        <customLabel>true</customLabel>
-        <detailHeading>true</detailHeading>
-        <editHeading>true</editHeading>
-        <label>8. Advanced Display Text</label>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>DisplayFoundText__c</field>
-            </layoutItems>
-        </layoutColumns>
-        <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>DisplayExpectedText__c</field>
@@ -235,7 +170,50 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>9. When This Check Applies</label>
+        <label>6. Comparison &amp; Query Behavior</label>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ComparisonOperator__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>QueryResultHandling__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>NoRowsResult__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>MaxQueryRows__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ExpectedValueSource__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ExpectedFixedValue__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ExpectedRecordFormula__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>EmptyValueHandling__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsLeftToRight</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>7. Applicability &amp; Dependencies</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
@@ -248,6 +226,10 @@
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>ApplicabilityCountOperator__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ApplicabilityNotMetMessage__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
@@ -270,7 +252,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>10. Custom Apex</label>
+        <label>8. Custom Apex</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -289,7 +271,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>8. Lifecycle Events</label>
+        <label>9. Lifecycle Events</label>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field
         >PublishResultEvent__c</field></layoutItems>

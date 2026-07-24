@@ -9,10 +9,12 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>ALL_RECORDS</fullName><default
-        >true</default></value><value><fullName
-        >WHEN_FORMULA_TRUE</fullName><default>false</default></value><value
-      ><fullName>WHEN_COUNT_QUERY_MATCHES</fullName><default
+            <value><fullName>ALL_RECORDS</fullName><label
+        >All records</label><default>true</default></value><value><fullName
+        >WHEN_FORMULA_TRUE</fullName><label
+        >When a formula is true</label><default>false</default></value><value
+      ><fullName>WHEN_COUNT_QUERY_MATCHES</fullName><label
+        >When a count query matches</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

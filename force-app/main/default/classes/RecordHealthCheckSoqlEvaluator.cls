@@ -266,20 +266,37 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
             comparisonValue
           );
     } else {
-      result.actualValue = primaryList != null
+      String rawActualValue = primaryList != null
         ? RecordHealthCheckComparisonEngine.formatList(primaryList)
         : RecordHealthCheckComparisonEngine.formatValue(primaryValue);
+      String rawExpectedValue;
       if (isListOperator) {
-        result.expectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
+        rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
           rule.ComparisonOperator__c,
           comparisonList
         );
       } else {
-        result.expectedValue = RecordHealthCheckComparisonEngine.describeExpected(
+        rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpected(
           rule.ComparisonOperator__c,
           comparisonValue
         );
       }
+      result.actualValue = String.isNotBlank(rule.DisplayFoundText__c)
+        ? resolveSingleValueTemplate(
+            rule.DisplayFoundText__c,
+            rawActualValue,
+            rawExpectedValue,
+            record
+          )
+        : rawActualValue;
+      result.expectedValue = String.isNotBlank(rule.DisplayExpectedText__c)
+        ? resolveSingleValueTemplate(
+            rule.DisplayExpectedText__c,
+            rawActualValue,
+            rawExpectedValue,
+            record
+          )
+        : rawExpectedValue;
     }
 
     // Value source — where each side came from and its raw value/row count, so an
@@ -371,6 +388,17 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         throw new RecordHealthCheckEvaluatorException(
           'MISSING_BIND_VALUE',
           'Field "' + fieldPath + '" could not be resolved on the record.'
+        );
+      }
+      if (
+        (fieldValue == null ||
+        (fieldValue instanceof String &&
+        String.isBlank((String) fieldValue))) && token.fallbackValue != null
+      ) {
+        fieldValue = coerceFallbackValue(
+          record,
+          fieldPath,
+          token.fallbackValue
         );
       }
 
@@ -639,6 +667,23 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     return RecordHealthCheckTemplateService.resolveDisplay(template, context);
   }
 
+  // Applies business-facing labels to a single query value while preserving the
+  // raw values in the merge context and in diagnostic value-source details.
+  private String resolveSingleValueTemplate(
+    String template,
+    String foundValue,
+    String expectedValue,
+    SObject record
+  ) {
+    RecordHealthCheckResult rawResult = new RecordHealthCheckResult();
+    rawResult.actualValue = foundValue;
+    rawResult.expectedValue = expectedValue;
+    RecordHealthCheckMergeContext context = new RecordHealthCheckMergeContext()
+      .withRecord(record)
+      .withResult(rawResult, true);
+    return RecordHealthCheckTemplateService.resolveDisplay(template, context);
+  }
+
   // Best-effort object label from the query's FROM clause, pluralized; falls back
   // to a generic noun when the object cannot be parsed.
   private String pluralizeObject(Record_Health_Check_Rule__mdt rule) {
@@ -766,6 +811,124 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
       currentType = referenceTypes[0];
     }
     return false;
+  }
+
+  /** Converts an explicit SOQL-token fallback to the terminal field's native type. */
+  private Object coerceFallbackValue(
+    SObject record,
+    String fieldPath,
+    String fallbackValue
+  ) {
+    if (String.isBlank(fallbackValue))
+      return null;
+    Schema.DisplayType fieldType = terminalFieldType(record, fieldPath);
+    String trimmed = fallbackValue.trim();
+    try {
+      if (fieldType == Schema.DisplayType.BOOLEAN) {
+        if (trimmed.toLowerCase() != 'true' && trimmed.toLowerCase() != 'false')
+          throw new RecordHealthCheckEvaluatorException(
+            'MISSING_BIND_VALUE',
+            'Boolean fallback must be true or false.'
+          );
+        return Boolean.valueOf(trimmed);
+      }
+      if (fieldType == Schema.DisplayType.DATE)
+        return Date.valueOf(trimmed);
+      if (fieldType == Schema.DisplayType.DATETIME) {
+        String normalized = trimmed.replace('T', ' ').replace('Z', '');
+        return Datetime.valueOfGmt(normalized);
+      }
+      if (fieldType == Schema.DisplayType.TIME)
+        return parseTimeFallback(trimmed);
+      if (fieldType == Schema.DisplayType.INTEGER)
+        return Integer.valueOf(trimmed);
+      if (
+        fieldType == Schema.DisplayType.CURRENCY ||
+        fieldType == Schema.DisplayType.DOUBLE ||
+        fieldType == Schema.DisplayType.PERCENT
+      )
+        return Decimal.valueOf(trimmed);
+      return fallbackValue;
+    } catch (Exception ex) {
+      throw new RecordHealthCheckEvaluatorException(
+        'MISSING_BIND_VALUE',
+        'Fallback "' +
+          fallbackValue +
+          '" is not valid for field "' +
+          fieldPath +
+          '".'
+      );
+    }
+  }
+
+  private Time parseTimeFallback(String value) {
+    String normalized = value.endsWith('Z')
+      ? value.substring(0, value.length() - 1)
+      : value;
+    List<String> parts = normalized.split(':');
+    if (parts.size() != 3)
+      throw new RecordHealthCheckEvaluatorException(
+        'MISSING_BIND_VALUE',
+        'Time fallback must use HH:mm:ss or HH:mm:ss.SSS.'
+      );
+    List<String> secondParts = parts[2].split('\\.');
+    Integer milliseconds = 0;
+    if (secondParts.size() > 1) {
+      String fraction = secondParts[1];
+      while (fraction.length() < 3)
+        fraction += '0';
+      if (fraction.length() > 3)
+        fraction = fraction.substring(0, 3);
+      milliseconds = Integer.valueOf(fraction);
+    }
+    return Time.newInstance(
+      Integer.valueOf(parts[0]),
+      Integer.valueOf(parts[1]),
+      Integer.valueOf(secondParts[0]),
+      milliseconds
+    );
+  }
+
+  private Schema.DisplayType terminalFieldType(
+    SObject record,
+    String fieldPath
+  ) {
+    List<String> parts = fieldPath.split('\\.');
+    Schema.SObjectType currentType = record.getSObjectType();
+    for (Integer i = 0; i < parts.size(); i++) {
+      Map<String, Schema.SObjectField> fieldMap = RecordHealthCheckDescribeCache.fieldMap(
+        currentType
+      );
+      if (i == parts.size() - 1) {
+        Schema.SObjectField terminal = fieldMap.get(parts[i]);
+        return terminal == null
+          ? Schema.DisplayType.STRING
+          : RecordHealthCheckDescribeCache.describeField(terminal).getType();
+      }
+      Schema.SObjectField relationshipField;
+      for (Schema.SObjectField candidate : fieldMap.values()) {
+        Schema.DescribeFieldResult description = RecordHealthCheckDescribeCache.describeField(
+          candidate
+        );
+        if (
+          description.getRelationshipName() != null &&
+          description.getRelationshipName().equalsIgnoreCase(parts[i])
+        ) {
+          relationshipField = candidate;
+          break;
+        }
+      }
+      if (relationshipField == null)
+        return Schema.DisplayType.STRING;
+      List<Schema.SObjectType> referenceTypes = RecordHealthCheckDescribeCache.describeField(
+          relationshipField
+        )
+        .getReferenceTo();
+      if (referenceTypes.isEmpty())
+        return Schema.DisplayType.STRING;
+      currentType = referenceTypes[0];
+    }
+    return Schema.DisplayType.STRING;
   }
 
   /**

@@ -9,13 +9,15 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>EQUALS</fullName><default
-        >false</default></value><value><fullName>NOT_EQUALS</fullName><default
-        >false</default></value><value><fullName>GREATER_THAN</fullName><default
+            <value><fullName>EQUALS</fullName><label>Equal to</label><default
+        >false</default></value><value><fullName>NOT_EQUALS</fullName><label
+        >Not equal to</label><default>false</default></value><value><fullName
+        >GREATER_THAN</fullName><label>Greater than</label><default
         >false</default></value><value><fullName
-        >GREATER_THAN_OR_EQUAL</fullName><default>false</default></value><value
-      ><fullName>LESS_THAN</fullName><default>false</default></value><value
-      ><fullName>LESS_THAN_OR_EQUAL</fullName><default
+        >GREATER_THAN_OR_EQUAL</fullName><label>At least</label><default
+        >false</default></value><value><fullName>LESS_THAN</fullName><label
+        >Less than</label><default>false</default></value><value><fullName
+        >LESS_THAN_OR_EQUAL</fullName><label>At most</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

@@ -112,7 +112,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 
 | Code | Typical status | Meaning |
 | --- | --- | --- |
-| `LEGACY_FLAT_TOKEN` | `UNABLE_TO_EVALUATE` | Legacy `{!Id}`-style token rejected under strict namespaced syntax. <!-- legacy-token-ok --> |
+| `LEGACY_FLAT_TOKEN` | `UNABLE_TO_EVALUATE` | Legacy `{!Id\|not available}`-style token rejected under strict namespaced syntax. <!-- legacy-token-ok --> |
 | `UNSUPPORTED_TOKEN_NAMESPACE` | `UNABLE_TO_EVALUATE` | Token namespace is not allowlisted. |
 | `UNKNOWN_TOKEN_PROPERTY` | `UNABLE_TO_EVALUATE` | Token property path is not recognized. |
 | `TOKEN_NOT_ALLOWED_ON_SURFACE` | `UNABLE_TO_EVALUATE` | Token used on a message/query surface that forbids it. |

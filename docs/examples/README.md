@@ -132,5 +132,5 @@ for every possible picklist value.
 
 - [Create your first Rule](../installation/03-create-your-first-rule.md)
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
-- [Rule fields](../metadata/fields-rule.md)
+- [Rule fields](../metadata/fields-check-rule.md)
 - [Check Set fields](../metadata/fields-check-set.md)

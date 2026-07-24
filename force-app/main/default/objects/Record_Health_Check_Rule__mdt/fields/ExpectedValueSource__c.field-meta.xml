@@ -9,10 +9,11 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>FIXED_VALUE</fullName><default
+            <value><fullName>FIXED_VALUE</fullName><label
+        >Fixed value</label><default>false</default></value><value><fullName
+        >RECORD_FORMULA</fullName><label>Record formula</label><default
         >false</default></value><value><fullName
-        >RECORD_FORMULA</fullName><default>false</default></value><value
-      ><fullName>COMPARISON_QUERY</fullName><default
+        >COMPARISON_QUERY</fullName><label>Comparison query</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

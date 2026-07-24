@@ -1,8 +1,5 @@
 # Check Set Run Platform Event (`Record_Health_Check_Set_Run__e`)
 
-> [!NOTE]
-> On this page, design a secure Check Set Run subscriber that receives one after-commit summary and uses its outcome counts for history, monitoring, analytics, or downstream automation.
-
 `Record_Health_Check_Set_Run__e` contains one completion summary for a deliberately initiated Check
 Set run. It is a high-volume Salesforce Platform Event with **Publish After Commit** behavior.
 
@@ -28,12 +25,13 @@ response instead.
 
 ## Publication conditions
 
-The Framework publishes this event only when all conditions are true:
+The Framework publishes this event only when every condition is true:
 
-1. The Check Set has **Publish Run Event** (`PublishRunEvent__c`) checked.
-2. The run completes through an allowed deliberate source: `APEX_API`, `FLOW`, `USER_INITIATED`,
-   `SCHEDULED`, or `BATCH`.
-3. The Salesforce transaction commits.
+| Required condition | What to verify |
+| --- | --- |
+| Publication is enabled | **Publish Run Event** (`PublishRunEvent__c`) is checked on the Check Set. |
+| The source is allowed | The completed run came from `APEX_API`, `FLOW`, `USER_INITIATED`, `SCHEDULED`, or `BATCH`. |
+| Work is committed | The Salesforce transaction commits. |
 
 Automatic Lightning record-page evaluation (`RUN_ON_LOAD`) never publishes. Subscriber context
 (`SUBSCRIBER`), blank sources, and unknown sources are blocked to prevent feedback loops.
@@ -98,12 +96,14 @@ Values are illustrative. Subscribers must tolerate additive fields within contra
 
 ## Subscriber design
 
-- Deduplicate side effects with `EventId__c`; use the Salesforce replay ID for replay position.
-- Treat delivery as at least once. A subscriber retry can deliver the same logical event again.
-- Persist the event if history beyond Salesforce Platform Event retention is required.
-- Join to business data under the subscriber's own sharing and field-access model.
-- Do not assume `RecordId__c` is populated for every future invocation shape.
-- Do not infer Rule-level causes from counts. Subscribe to the Rule Result event when details are required.
+| Concern | Subscriber responsibility |
+| --- | --- |
+| Duplicate delivery | Deduplicate side effects with `EventId__c`; use the Salesforce replay ID for replay position. |
+| Retries | Treat delivery as at least once and make processing safe to repeat. |
+| Retention | Persist the event when history beyond Platform Event retention is required. |
+| Business data | Join under the subscriber's own sharing and field-access model. |
+| Missing Record ID | Allow `RecordId__c` to be blank for future invocation shapes. |
+| Rule-level causes | Do not infer them from counts; subscribe to Rule Result when details are required. |
 
 ## Limits and security
 

@@ -61,6 +61,13 @@
   overflow: visible;
 }
 
+/* Keep the SLDS 1 card shell, but let SLDS 2 sit flat on its container.
+   Important guards against theme stylesheet injection order in Lightning. */
+.rhc-theme--slds2 .rhc-card {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
 .rhc-body > :last-child {
   border-bottom-left-radius: var(--rhc-theme-card-radius);
   border-bottom-right-radius: var(--rhc-theme-card-radius);
@@ -603,7 +610,7 @@
   height: 0;
   margin: 0.5rem 0 0.1rem;
   border: 0;
-  border-top: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+  border-top: 1px solid #e5e5e5;
 }
 
 /* ── Found / expected comparison ────────────────────────────────────────────── */
@@ -613,7 +620,8 @@
 .rhc-row__comparison {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
+  width: 100%;
   gap: 0.25rem;
   margin-top: 0.3rem;
   /* SLDS body_regular (13px). */
@@ -624,52 +632,48 @@
 /* One clause: caption + value, with an optional muted source note directly
    beneath it. */
 .rhc-cmp__pair {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.12rem;
+  display: block;
+  width: 100%;
   min-width: 0;
-  max-width: 100%;
 }
 
 .rhc-cmp__main {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
   min-width: 0;
-  max-width: 100%;
 }
 
-/* Caption ("Found" / "Expected") — small uppercase label that de-emphasizes the
-   connective words so the eye lands on the value chip beside it. */
+/* Caption ("Found" / "Expected") — uppercase label aligned with the value text. */
 .rhc-cmp__key {
-  /* SLDS text-title (12px) — the caption tier: uppercase, weak, one step below
-     body so it labels the value without competing with it. */
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--slds-g-color-neutral-base-50, #706e6b);
 }
 
-/* The actual/expected value, shown monospaced in a subtle chip so quoted
-   values and operators read as data rather than prose. */
+/* The value fills the shared second grid column, so Found and Expected boxes
+   always align. */
+.rhc-cmp__value-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
 .rhc-cmp__val {
-  font-family: var(
-    --slds-g-font-family-monospace,
-    "SF Mono",
-    sfmono-regular,
-    ui-monospace,
-    menlo,
-    consolas,
-    monospace
-  );
-  /* Monospace by design (values read as data), sized to the SLDS body tier (13px)
-     so it aligns with the surrounding text rather than sitting a step below. */
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
   font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--slds-g-color-neutral-base-20, #2b2826);
-  background: var(--slds-g-color-neutral-base-95, #f3f3f3);
-  padding: 0.05rem 0.3rem;
+  background: var(--slds-g-color-neutral-base-100, #fff);
+  padding: 0.2rem 1.7rem 0.2rem 0.45rem;
   border-radius: 0.2rem;
   word-break: break-word;
 }
@@ -688,36 +692,52 @@
 
 /* Toggled open: drop the clamp and let the chip grow to its natural height. */
 .rhc-cmp__val--expanded {
-  display: inline;
+  display: block;
   -webkit-line-clamp: none;
   line-clamp: none;
   overflow: visible;
 }
 
-/* Quiet inline "..." / "less" control sitting under a clamped value.
-   Reads as a text link, not a button, to stay subordinate to the value itself. */
+/* Compact +/- disclosure anchored inside the value's top-right corner. */
 .rhc-cmp__toggle {
-  /* Right-aligned to the end of the value block it expands (not the card edge)
-     so the affordance reads as "more of this value". */
-  align-self: flex-end;
-  margin-top: 0.05rem;
+  position: absolute;
+  top: 0.15rem;
+  right: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
   padding: 0;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: 0.2rem;
   background: transparent;
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1;
   color: var(--slds-g-color-brand-base-50, #0176d3);
+}
+
+/* Keep a comfortable pointer/touch target without enlarging the visible box. */
+.rhc-cmp__toggle::before {
+  position: absolute;
+  inset: -0.25rem;
+  content: "";
 }
 
 .rhc-cmp__toggle[hidden] {
   display: none;
 }
 
-.rhc-cmp__toggle:hover,
+.rhc-cmp__toggle:hover {
+  border-color: var(--slds-g-color-border-base-4, #939393);
+  background: var(--slds-g-color-neutral-base-90, #e5e5e5);
+}
+
 .rhc-cmp__toggle:focus-visible {
-  text-decoration: underline;
+  outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
+  outline-offset: 1px;
 }
 
 /* ── Comparison disclosure caret ───────────────────────────────────────────── */
@@ -766,7 +786,8 @@
 .rhc-row__detail {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
+  width: 100%;
   gap: 0.25rem;
   margin-top: 0.55rem;
   /* SLDS body_regular (13px). */

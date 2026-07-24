@@ -12,6 +12,7 @@ Flow integration exists.
 | Your starting point | Follow this path | What you will accomplish |
 | --- | --- | --- |
 | Record Health Check is new to the org | [How it works](01-how-it-works.md) → [Install and verify](02-install-and-verify.md) → [Create your first Rule](03-create-your-first-rule.md) | Understand the Framework, deploy Core, place the Lightning card, and evaluate a Formula Rule |
+| You want the complete project demo | [Create the demo scratch org](05-create-rhc-scratch-org.md) | Reproduce the maintained demo org, data, record page, permissions, and verified outcomes |
 | The org uses an earlier release | [Upgrading Record Health Check](04-upgrading.md) | Back up the existing configuration, map earlier fields to current fields, deploy, verify integrations, and retain a rollback path |
 | Core is installed and you want another Rule | [Examples library](../examples/README.md) | Choose an Evaluation Type and adapt a distinct, tested configuration pattern |
 

@@ -921,6 +921,7 @@ public with sharing class RecordHealthCheckEngine {
     // turns them into blanks and they must never make record loading fail.
     addMergeFields(fields, objectType, rule.FailureMessage__c);
     addMergeFields(fields, objectType, rule.UnableToEvaluateMessage__c);
+    addMergeFields(fields, objectType, rule.ApplicabilityNotMetMessage__c);
     // Remediation link fields may carry {!record.FieldName} tokens (including relationship
     // paths like {!record.Owner.ManagerId}); load their fields so the token resolves.
     addMergeFields(fields, objectType, rule.ActionUrl__c);
@@ -1287,7 +1288,9 @@ public with sharing class RecordHealthCheckEngine {
     r.reasonCode = rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE'
       ? RecordHealthCheckReasonCodes.NOT_APPLICABLE_BY_FORMULA
       : RecordHealthCheckReasonCodes.NOT_APPLICABLE_BY_COUNT;
-    if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
+    if (String.isNotBlank(rule.ApplicabilityNotMetMessage__c)) {
+      r.message = rule.ApplicabilityNotMetMessage__c;
+    } else if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
       r.message = 'This check does not apply because its formula applicability condition evaluated to false.';
     } else if (rule.ApplicabilityMode__c == 'WHEN_COUNT_QUERY_MATCHES') {
       r.message = 'This check does not apply because its SOQL applicability query did not meet the configured threshold.';
@@ -1384,12 +1387,24 @@ public with sharing class RecordHealthCheckEngine {
       return;
     }
 
-    String resolvedUrl = formulaEvaluator.resolveUrlMergeFields(
-      rule.ActionUrl__c,
-      record,
-      rule,
-      result
-    );
+    String resolvedUrl;
+    try {
+      resolvedUrl = formulaEvaluator.resolveUrlMergeFields(
+        rule.ActionUrl__c,
+        record,
+        rule,
+        result
+      );
+    } catch (RecordHealthCheckTemplateService.TemplateException ex) {
+      if (String.isBlank(result.detailMessage)) {
+        result.detailMessage =
+          'Remediation link suppressed (' +
+          ex.reasonCode +
+          '): ' +
+          ex.getMessage();
+      }
+      return;
+    }
     String safeUrl = sanitizeActionUrl(resolvedUrl);
     if (safeUrl == null) {
       // Suppress the link but leave a breadcrumb in the admin-only detail channel.

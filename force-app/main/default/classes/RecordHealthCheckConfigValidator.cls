@@ -20,6 +20,10 @@ public with sharing class RecordHealthCheckConfigValidator {
         RecordHealthCheckTemplateService.SURFACE_DISPLAY
       },
       new List<Object>{
+        rule.ApplicabilityNotMetMessage__c,
+        RecordHealthCheckTemplateService.SURFACE_DISPLAY
+      },
+      new List<Object>{
         rule.FixMessage__c,
         RecordHealthCheckTemplateService.SURFACE_DISPLAY
       },

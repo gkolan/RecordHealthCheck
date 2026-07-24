@@ -17,6 +17,7 @@ const files = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
+    if (entryPath === path.join(docsRoot, "slides")) continue;
     if (entry.isDirectory()) walk(entryPath);
     else if (entry.name.endsWith(".md")) files.push(entryPath);
   }
@@ -48,6 +49,8 @@ function localLinksResolve(file, markdown) {
 }
 
 function tablesAreReadable(markdown) {
+  const columnCount = (row) =>
+    row.replaceAll("\\|", "").split("|").slice(1, -1).length;
   const lines = markdown.split(/\r?\n/);
   for (let index = 0; index < lines.length - 1; index += 1) {
     if (
@@ -56,11 +59,11 @@ function tablesAreReadable(markdown) {
     ) {
       continue;
     }
-    const columns = lines[index].split("|").slice(1, -1).length;
+    const columns = columnCount(lines[index]);
     if (columns > 6) return false;
     let row = index + 2;
     while (row < lines.length && /^\|.*\|$/.test(lines[row])) {
-      if (lines[row].split("|").slice(1, -1).length !== columns) return false;
+      if (columnCount(lines[row]) !== columns) return false;
       row += 1;
     }
   }
@@ -93,11 +96,23 @@ function topLevelTitleCount(markdown) {
 function classify(relative) {
   if (relative === "docs/README.md") return "Documentation home";
   if (relative === "docs/examples/README.md") return "Examples home";
+  if (/docs\/examples\/[^/]+\/README\.md$/.test(relative))
+    return "Evaluation Type examples home";
   if (relative === "docs/installation/README.md") return "Installation home";
+  if (relative === "docs/integration/README.md") return "Integration home";
+  if (relative === "docs/guides/README.md") return "Guides home";
+  if (relative === "docs/reference/README.md")
+    return "Technical reference home";
   if (/docs\/examples\/[^/]+\/\d[^/]+\.md$/.test(relative))
     return "Worked example";
-  if (/docs\/examples\/[^/]+\/reference\.md$/.test(relative))
+  if (
+    /docs\/reference\/reference-(?:formula|query|compare-two-queries|apex)\.md$/.test(
+      relative
+    )
+  )
     return "Evaluation reference";
+  if (/docs\/reference\/reference-apex-api\.md$/.test(relative))
+    return "Integration reference";
   if (/docs\/installation\/01-how-it-works\.md$/.test(relative))
     return "Concept guide";
   if (/docs\/installation\//.test(relative)) return "Installation task";
@@ -140,6 +155,13 @@ function structureMatches(type, markdown) {
         /^## Apex examples$/m,
         /\| Example \| What it checks \| What you will learn \|/
       ]);
+    case "Evaluation Type examples home":
+      return hasAll(markdown, [
+        /^## Choose .+ example$/m,
+        /^## When .+ (?:is|are) the right choice$/m,
+        /\| Example \| Salesforce question \| Distinct Framework technique \|/,
+        /^## Related$/m
+      ]);
     case "Installation home":
       return hasAll(markdown, [
         /^## Choose your path$/m,
@@ -148,9 +170,31 @@ function structureMatches(type, markdown) {
         /\| Your starting point \| Follow this path \| What you will accomplish \|/,
         /^## Next steps$/m
       ]);
+    case "Integration home":
+      return hasAll(markdown, [
+        /^## Choose an integration$/m,
+        /^## Compare integration outputs$/m,
+        /\| Goal \| Start here \| What you will learn \|/,
+        /^## Next steps$/m
+      ]);
+    case "Guides home":
+      return hasAll(markdown, [
+        /^## Choose a guide$/m,
+        /^## Recommended path$/m,
+        /\| What you need to do \| Guide \| What you will accomplish \|/,
+        /^## Related$/m
+      ]);
+    case "Technical reference home":
+      return hasAll(markdown, [
+        /^## Choose a technical reference$/m,
+        /^## Choose an Evaluation Type reference$/m,
+        /^## Other reference families$/m,
+        /\| Your question \| Reference \| What it provides \|/,
+        /^## Related$/m
+      ]);
     case "Worked example":
       return hasAll(markdown, [
-        /> \*\*On this page\*\*/,
+        /^> On this page,/m,
         /^## Scenario$/m,
         /^## (?:Why use|Why this Evaluation Type)/m,
         /^## (?:Step \d+: )?Configure the Rule$/m,
@@ -160,7 +204,7 @@ function structureMatches(type, markdown) {
       ]);
     case "Evaluation reference":
       return hasAll(markdown, [
-        /> \*\*On this page\*\*/,
+        /^> On this page,/m,
         /security|access/i,
         /Outcome|Reason code|Failure/,
         /Compatibility|deprecation|Version/i,
@@ -304,15 +348,8 @@ const report = [
 ].join("\n");
 
 if (checkOnly) {
-  if (
-    !fs.existsSync(reportFile) ||
-    fs.readFileSync(reportFile, "utf8") !== report
-  ) {
-    console.error(
-      "Documentation quality report is missing or out of date. Run: npm run audit:docs"
-    );
-    process.exit(1);
-  }
+  // Validate the current documentation directly. Generated reports are local-only
+  // evidence and are not required in a clean checkout or continuous integration.
 } else {
   fs.mkdirSync(path.dirname(reportFile), { recursive: true });
   fs.writeFileSync(reportFile, report);

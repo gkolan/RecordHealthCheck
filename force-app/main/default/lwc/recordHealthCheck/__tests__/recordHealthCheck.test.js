@@ -11,6 +11,7 @@ import {
   splitMessageLines,
   safeActionUrl
 } from "../healthCheckPresentation";
+import { HealthCheckRunner } from "../healthCheckRunner";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
 import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
 import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
@@ -152,6 +153,20 @@ function createComponent() {
   el.checkSetName = "Account_Data_Quality";
   el.recordId = "001000000000001AAA";
   return el;
+}
+
+function makeRunnerHost(checks = []) {
+  return {
+    checks,
+    completedCheckCount: 0,
+    runComplete: false,
+    hasCompletedRunOnce: false,
+    stopOnFirstError: false,
+    showDiagnostics: false,
+    checkSetName: "Account_Data_Quality",
+    recordId: "001000000000001AAA",
+    _logRunDiagnostics: jest.fn()
+  };
 }
 
 describe("c-record-health-check — design theme", () => {
@@ -529,6 +544,7 @@ describe("c-record-health-check — run orchestration", () => {
     expect(completeRun).toHaveBeenCalledWith(
       expect.objectContaining({ source: "USER_INITIATED" })
     );
+    expect(completeRun.mock.calls[0][0]).not.toHaveProperty("results");
   });
 
   it("threads a correlation runId into both Apex calls", async () => {
@@ -883,6 +899,28 @@ describe("c-record-health-check — success display modes", () => {
     // Diagnostics overrides count-only: every passed row is expanded (§2.11).
     const rows = element.shadowRoot.querySelectorAll(".rhc-row--pass");
     expect(rows).toHaveLength(2);
+  });
+
+  it("explains when a mix of passed and skipped rows is hidden", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        successDisplayMode: "Hide",
+        skippedDisplayMode: "Hide"
+      })
+    );
+    evaluateCheck.mockImplementation(({ ruleDeveloperName }) =>
+      Promise.resolve(
+        ruleDeveloperName === "Check_A"
+          ? PASS_RESULT(ruleDeveloperName)
+          : SKIPPED_RESULT(ruleDeveloperName)
+      )
+    );
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(element.shadowRoot.textContent).toContain(
+      "All checks passed or were skipped. Details are hidden."
+    );
   });
 });
 
@@ -1762,6 +1800,33 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     table.mockRestore();
     groupEnd.mockRestore();
   });
+
+  it("includes system errors and elapsed time in the diagnostics summary", async () => {
+    const group = jest.spyOn(console, "group").mockImplementation(() => {});
+    const log = jest.spyOn(console, "log").mockImplementation(() => {});
+    const table = jest.spyOn(console, "table").mockImplementation(() => {});
+    const groupEnd = jest
+      .spyOn(console, "groupEnd")
+      .mockImplementation(() => {});
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        showDiagnostics: true,
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue({
+      ...ERROR_RESULT("Check_A"),
+      durationMs: 17
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(log).toHaveBeenCalledWith("1 Error · 17ms total");
+    group.mockRestore();
+    log.mockRestore();
+    table.mockRestore();
+    groupEnd.mockRestore();
+  });
 });
 
 describe("c-record-health-check — FAIL styling and accessibility", () => {
@@ -1825,8 +1890,8 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     );
     evaluateCheck.mockResolvedValue({
       ...FAIL_NO_SEVERITY("Check_A"),
-      actualValue: '"Finance"',
-      expectedValue: 'to equal "Technology"'
+      actualValue: "Finance",
+      expectedValue: "to equal Technology"
     });
     await appendAndLoad(element);
     await clickRun(element);
@@ -1840,12 +1905,12 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
       n.textContent.trim()
     );
     expect(keys).toEqual(["Found", "Expected"]);
-    expect(vals).toEqual(['"Finance"', 'to equal "Technology"']);
+    expect(vals).toEqual(["Finance", "to equal Technology"]);
 
     const row = element.shadowRoot.querySelector("li[aria-label]");
-    expect(row.getAttribute("aria-label")).toContain('Found "Finance"');
+    expect(row.getAttribute("aria-label")).toContain("Found Finance");
     expect(row.getAttribute("aria-label")).toContain(
-      'Expected to equal "Technology"'
+      "Expected to equal Technology"
     );
   });
 
@@ -1954,22 +2019,50 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(chip).not.toBeNull();
     const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
     expect(toggle).not.toBeNull();
-    expect(toggle.textContent.trim()).toBe("...");
-    expect(toggle.getAttribute("aria-label")).toBe("Show more");
+    expect(toggle.textContent.trim()).toBe("+");
+    expect(toggle.getAttribute("aria-label")).toBe("Expand value");
 
     toggle.click();
     await Promise.resolve();
     expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(true);
-    expect(toggle.textContent.trim()).toBe("less");
+    expect(toggle.textContent.trim()).toBe("−");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(toggle.getAttribute("aria-label")).toBe("Show less");
+    expect(toggle.getAttribute("aria-label")).toBe("Collapse value");
 
     toggle.click();
     await Promise.resolve();
     expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(false);
-    expect(toggle.textContent.trim()).toBe("...");
+    expect(toggle.textContent.trim()).toBe("+");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(toggle.getAttribute("aria-label")).toBe("Show more");
+    expect(toggle.getAttribute("aria-label")).toBe("Expand value");
+  });
+
+  it("remeasures clamped values when the viewport is resized", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ...FAIL_NO_SEVERITY("Check_A"),
+      actualValue: "A value that starts fitting and later wraps",
+      expectedValue: null
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const chip = element.shadowRoot.querySelector("[data-clampval]");
+    const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
+    Object.defineProperty(chip, "clientHeight", {
+      configurable: true,
+      value: 20
+    });
+    Object.defineProperty(chip, "scrollHeight", {
+      configurable: true,
+      value: 48
+    });
+
+    window.dispatchEvent(new CustomEvent("resize"));
+
+    expect(toggle.hidden).toBe(false);
   });
 
   it("does not render the comparison block on a passing row", async () => {
@@ -2391,6 +2484,29 @@ describe("buildSummaryStats — label pluralization", () => {
     ).toBe("2 Warnings");
   });
 
+  it("labels informational failures and ignores unknown outcomes", () => {
+    const checks = [
+      {
+        label: "Informational",
+        uiState: "RESOLVED",
+        result: { status: "FAIL", severity: "Info" }
+      },
+      {
+        label: "Future status",
+        uiState: "RESOLVED",
+        result: { status: "FUTURE_STATUS", severity: null }
+      }
+    ];
+
+    expect(buildSummaryStats(checks).map((stat) => stat.label)).toEqual([
+      "1 Info",
+      "1 Unable"
+    ]);
+    expect(annotateCheck(checks[1], false, "OnDemand", false).statusLabel).toBe(
+      ""
+    );
+  });
+
   it("leaves visible buckets as plain summary pills without tooltips", () => {
     const passes = ["A", "B"].map((n) => resolved(n, "PASS", null));
     const stat = buildSummaryStats(passes).find((s) => s.key === "pass");
@@ -2680,5 +2796,127 @@ describe("safeActionUrl — client-side scheme guard (HI-3)", () => {
     // The instructions survive independently so the user isn't left stranded.
     expect(a.showFixInstructions).toBe(true);
     expect(a.showActionBlock).toBe(true);
+  });
+});
+
+describe("HealthCheckRunner — defensive orchestration branches", () => {
+  it("does not start a second run while one is already active", () => {
+    const host = makeRunnerHost([
+      { developerName: "A", dependsOnRuleDeveloperName: null }
+    ]);
+    const runner = new HealthCheckRunner(host);
+    runner._runInProgress = true;
+    const callCount = evaluateCheck.mock.calls.length;
+
+    runner.run();
+
+    expect(evaluateCheck).toHaveBeenCalledTimes(callCount);
+    expect(host.checks[0].uiState).toBeUndefined();
+  });
+
+  it("reuses a memoized task when multiple dependents request one prerequisite", async () => {
+    const prerequisite = {
+      developerName: "Prerequisite",
+      dependsOnRuleDeveloperName: null
+    };
+    const runner = new HealthCheckRunner(makeRunnerHost([prerequisite]));
+    const taskMap = {};
+    runner._runToken = 1;
+    runner._runOneCheck = jest.fn().mockResolvedValue();
+    const runCheck = runner._makeRunCheck(
+      taskMap,
+      { Prerequisite: prerequisite },
+      new Set(),
+      1
+    );
+
+    const first = runCheck(prerequisite);
+    const second = runCheck(prerequisite);
+    await first;
+
+    expect(second).toBe(first);
+    expect(runner._runOneCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it("launches a prerequisite that appears later in the run list", async () => {
+    const dependency = {
+      developerName: "Prerequisite",
+      label: "Prerequisite",
+      dependsOnRuleDeveloperName: null
+    };
+    const dependent = {
+      developerName: "Dependent",
+      label: "Dependent",
+      dependsOnRuleDeveloperName: "Prerequisite"
+    };
+    const host = makeRunnerHost([dependent, dependency]);
+    const runner = new HealthCheckRunner(host);
+    evaluateCheck.mockClear();
+    runner._runToken = 1;
+    runner._runId = "run-1";
+    evaluateCheck.mockImplementation(({ ruleDeveloperName }) =>
+      Promise.resolve(PASS_RESULT(ruleDeveloperName))
+    );
+    const taskMap = {};
+    const runCheck = runner._makeRunCheck(
+      taskMap,
+      { Dependent: dependent, Prerequisite: dependency },
+      new Set(),
+      1
+    );
+
+    await runCheck(dependent);
+
+    expect(evaluateCheck).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ ruleDeveloperName: "Prerequisite" })
+    );
+    expect(evaluateCheck).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ ruleDeveloperName: "Dependent" })
+    );
+  });
+
+  it("rejects stale queued evaluation slots and releases an acquired stale slot", async () => {
+    const runner = new HealthCheckRunner(makeRunnerHost());
+    runner._runToken = 2;
+
+    await expect(runner._acquireEvaluationSlot(1)).resolves.toBe(false);
+
+    runner._activeEvaluations = 5;
+    const queued = runner._acquireEvaluationSlot(2);
+    runner._runToken = 3;
+    runner._releaseEvaluationSlot();
+
+    await expect(queued).resolves.toBe(false);
+    expect(runner._activeEvaluations).toBe(4);
+  });
+
+  it("clears the running flag when a sequential launcher rejects", async () => {
+    const host = makeRunnerHost([
+      { developerName: "A", dependsOnRuleDeveloperName: null }
+    ]);
+    host.stopOnFirstError = true;
+    const runner = new HealthCheckRunner(host);
+    runner._runChecksSequentially = jest
+      .fn()
+      .mockRejectedValue(new Error("unexpected launcher failure"));
+
+    runner.run();
+    await flushPromises();
+
+    expect(runner.isRunning).toBe(false);
+  });
+
+  it("clears an incomplete sequential run in the finally guard", async () => {
+    const check = { developerName: "A", dependsOnRuleDeveloperName: null };
+    const runner = new HealthCheckRunner(makeRunnerHost([check]));
+    runner._runToken = 7;
+    runner._runInProgress = true;
+    runner._makeRunCheck = jest.fn(() => jest.fn().mockResolvedValue());
+
+    await runner._runChecksSequentially({ A: check }, new Set(), 7);
+
+    expect(runner.isRunning).toBe(false);
   });
 });

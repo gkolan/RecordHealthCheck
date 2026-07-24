@@ -72,11 +72,11 @@ The engine loads only fields it knows the Rule needs:
 
 | Source on the Rule | Fields added to `context.record` |
 | ------------------ | -------------------------------- |
-| `{!record.Field}` merge tokens in **Message When Failed** / **Message When Unable To Evaluate** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
+| `{!record.Field\|Fallback value}` merge tokens in **Message When Failed** / **Message When Unable To Evaluate** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
 | **Applies When (Formula)** | Fields referenced in that formula |
 | SOQL templates on Query rules | Merge tokens in those queries |
 
-For a typical **Apex** Rule with applicability **Always** and message `{!record.Name} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
+For a typical **Apex** Rule with applicability **Always** and message `{!record.Name|this record} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
 
 `BillingCity`, custom fields, or `Parent.BillingCity` are **not** guaranteed on `context.record` unless they appear in merge tokens or applicability formulas on that Rule.
 
@@ -149,7 +149,7 @@ if (parent != null) {
 }
 ```
 
-This only works when the engine **pre-loaded** `Parent.BillingCity` on `context.record` (uncommon for Apex Rules unless `{!record.Parent.BillingCity}` appears in a message token).
+This only works when the engine **pre-loaded** `Parent.BillingCity` on `context.record` (uncommon for Apex Rules unless `{!record.Parent.BillingCity|the account city}` appears in a message token).
 
 ### Custom lookup to another record
 
@@ -186,7 +186,7 @@ On the Rule record in Custom Metadata:
 
 | Setup label | API name | Example |
 | ----------- | -------- | ------- |
-| Apex Parameters (JSON) | [`ApexParametersJson__c`](../metadata/fields-rule.md#apex-parameters-json-apexparametersjson__c) | `{"daysBack": 90, "minScore": 80}` |
+| Apex Parameters (JSON) | [`ApexParametersJson__c`](../metadata/fields-check-rule.md#apex-parameters-json-apexparametersjson__c) | `{"daysBack": 90, "minScore": 80}` |
 
 The evaluator parses this **before** calling the plugin and passes it as `context.parameters` (`Map<String, Object>`). When the field is blank, `context.parameters` is an **empty map** (not null).
 
@@ -336,7 +336,7 @@ return result;
 On **`FAIL`**, the evaluator sets:
 
 - **`severity`** from Rule `FailureSeverity__c` (not set by the plugin)
-- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field}` merge tokens resolved
+- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field|Fallback value}` merge tokens resolved
 
 ### Found / Expected (required for PASS / FAIL)
 
@@ -358,7 +358,7 @@ result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
 );
 ```
 
-See the [Rule field reference](../metadata/fields-rule.md) for comparison display fields and behavior.
+See the [Rule field reference](../metadata/fields-check-rule.md) for comparison display fields and behavior.
 
 ### Diagnostic detail (optional)
 
