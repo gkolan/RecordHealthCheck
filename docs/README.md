@@ -85,7 +85,7 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 | [Reason Codes](reference/reference-reason-codes.md) | Stable explanations for skipped, unable-to-evaluate, and error outcomes |
 | [Platform Event metadata](metadata/README.md#choose-a-platform-event-reference) | Fields and usage for Set Run, Rule Result, and Log events |
 | [Field limits](reference/reference-fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
-| [Architecture map](reference/reference-architecture-map.md) | Source files and their responsibilities |
+| [Architecture](reference/reference-architecture-map.md) | Published Framework architecture: principles, layers, runtime, security, limits, ownership |
 
 ## Important behavior to know
 
@@ -93,8 +93,8 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 - A normal business issue returns `FAIL`. An unexpected execution problem returns `ERROR`.
 - Formula and query evaluation uses the running user's Salesforce access.
 - Lifecycle-event publication is optional and off by default.
-- Core contains the Framework but no example Custom Metadata. Use the local
-  [examples library](examples/README.md) to create and adapt Rules in Salesforce Setup.
+- Core ships the Framework plus a clearly prefixed `Example_` Check Set and Rules. Use the
+  [examples library](examples/README.md) for additional Formula, Query, Compare two queries, and Apex patterns.
 
 ## Related
 

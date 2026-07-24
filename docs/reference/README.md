@@ -11,7 +11,7 @@ guided configuration path, begin with the [documentation home](../README.md) or
 
 | Your question | Reference | What it provides |
 | --- | --- | --- |
-| Which class, Lightning Web Component, or metadata definition owns this behavior? | [Reference: Architecture map](reference-architecture-map.md) | Framework layers, production files, and ownership boundaries |
+| Which class, Lightning Web Component, or metadata definition owns this behavior? | [Reference: Architecture](reference-architecture-map.md) | Full published architecture: principles, layers, runtime, security, limits, and ownership |
 | Why was a value rejected or completed text returned `UNABLE_TO_EVALUATE`? | [Reference: Field limits](reference-fields-limits.md) | Salesforce storage limits, Framework resolved limits, and remedies |
 | Which merge-token namespaces, surfaces, and limits apply? | [Reference: Merge tokens](reference-merge-tokens.md) | Strict syntax, availability, fallback behavior, and limits |
 | What does this stable result code mean? | [Reference: Reason Codes](reference-reason-codes.md) | Status meanings and the first useful investigation for each code |

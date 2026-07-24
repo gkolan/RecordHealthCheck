@@ -570,4 +570,4 @@ must receive one Rule result before it can decide whether starting the next Rule
 
 - [Create your first Rule](../installation/03-create-your-first-rule.md): first install and first Rule
 - [Examples library](../examples/README.md): practical patterns by Evaluation Type
-- [Architecture map](../reference/reference-architecture-map.md): Framework source ownership
+- [Architecture](../reference/reference-architecture-map.md): published Framework architecture and source ownership
