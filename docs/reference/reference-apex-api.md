@@ -129,7 +129,7 @@ returns its own typed result:
 | `checkSetDeveloperName` | `String` | Yes for `runSet` | Exact Check Set `DeveloperName` visible to the caller |
 | `ruleDeveloperName` | `String` | Yes for `runRule` | Exact Rule `DeveloperName`; resolves its parent Check Set |
 | `recordId` | `Id` | Yes | Record evaluated in the running user's access context |
-| `recordIds` | `List<Id>` | Yes | Up to 200 IDs; results preserve input order |
+| `recordIds` | `List<Id>` | Yes | Results preserve input order; the planned-evaluation cap below determines the usable batch size |
 | `runId` | `String` | No | Caller correlation value; blank values are replaced with a generated ID |
 | `source` | `String` | Source-aware overloads only | One documented lifecycle source constant; blank or unknown values prevent publication |
 
@@ -164,17 +164,15 @@ blocked.
 
 | Limit | Value |
 | --- | --- |
-| Records per public call | 200 |
 | Planned Rule evaluations per call | 15 |
 
 Planned Set evaluations equal active Rules × records. Exceeding a cap throws
 `RecordHealthCheck.RecordHealthCheckRequestException`.
 
-The two caps protect different parts of the Salesforce transaction. The 200-record cap prevents an
-unbounded request collection from entering the Framework. The 15-evaluation cap limits the actual
-health-check work after the Framework expands a Check Set into Rules. One record evaluated against
-10 active Rules therefore plans 10 evaluations; two records plan 20 and are rejected before the
-Framework starts partial work.
+The evaluation cap limits health-check work after the Framework expands a Check Set into Rules.
+One record evaluated against 10 active Rules therefore plans 10 evaluations; two records plan 20
+and are rejected before the Framework starts partial work. The public Apex collection overloads do
+not impose a separate 200-record cap; the Flow invocable transport does.
 
 The Framework stops at a predictable boundary because each evaluation can read fields, execute a
 formula or SOQL, call custom Apex, and create a result. Allowing a caller to consume the remaining
@@ -199,7 +197,6 @@ usable response was returned for that invocation.
 | Symptom | Likely cause | What to investigate |
 | --- | --- | --- |
 | `RecordHealthCheckRequestException: Record IDs are required.` | A collection overload received `null` | Pass a non-null `List<Id>`; use an empty list only when no work is intended |
-| `RecordHealthCheckRequestException: A request can include at most 200 records.` | The collection exceeds the public record cap | Split the records into smaller transactions while also observing the evaluation cap |
 | `RecordHealthCheckRequestException: This request would run too many checks...` | Planned evaluations exceed 15 | Reduce records, use a smaller Check Set, or distribute work across transactions |
 | Configuration lookup exception | The API name is blank, misspelled, inactive, or unavailable to the caller | Verify the exact metadata `DeveloperName`, activation, and caller access |
 | Salesforce access exception or an `UNABLE_TO_EVALUATE` response | The running user cannot read the record, object, or required field | Grant only the required record/object/field access, then rerun as that user |

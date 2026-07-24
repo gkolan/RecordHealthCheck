@@ -8,6 +8,10 @@ one Rule or a complete Check Set, then use a Decision element to respond to the 
 
 Start with the Check Set action unless your Flow intentionally needs only one specific Rule.
 
+Salesforce can bulk an invocable action into one transaction. Each packaged action accepts at most
+200 request records per invocation (`RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL`); the Framework's
+15 planned-evaluation cap still applies to the health-check work inside each request.
+
 ## Choose the right Flow action
 
 | What does your Flow need? | Action | What you will receive |

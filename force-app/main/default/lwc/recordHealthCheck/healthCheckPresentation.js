@@ -16,7 +16,13 @@ export function safeActionUrl(url) {
     return null;
   }
   const trimmed = url.trim();
-  if (trimmed === "" || trimmed.startsWith("//")) {
+  if (
+    trimmed === "" ||
+    trimmed.length > 2000 ||
+    trimmed.startsWith("//") ||
+    trimmed.includes("\\") ||
+    /[\r\n\t]/.test(trimmed)
+  ) {
     return null;
   }
   if (trimmed.startsWith("/")) {
@@ -202,6 +208,24 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
     detailExpanded && valuesBehindCaret && actualValue != null;
   const showExpandedExpected =
     detailExpanded && valuesBehindCaret && expectedValue != null;
+  const inlineComparisonValues = [
+    showActual ? { key: "found", label: "Found", value: actualValue } : null,
+    showExpected
+      ? { key: "expected", label: expectedKeyLabel, value: expectedValue }
+      : null
+  ].filter(Boolean);
+  const expandedComparisonValues = [
+    showExpandedActual
+      ? { key: "found-expanded", label: "Found", value: actualValue }
+      : null,
+    showExpandedExpected
+      ? {
+          key: "expected-expanded",
+          label: expectedKeyLabel,
+          value: expectedValue
+        }
+      : null
+  ].filter(Boolean);
 
   // Guided remediation: a read-only deep link and/or fix instructions the server
   // populates only on FAIL (actionUrl is blank on any other status). Instructions
@@ -254,14 +278,13 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
     (isResolved && c.result && c.result.adminDetailMessage) || null;
   const showAdminDetail = showDiagnostics && !!adminDetailMessage;
 
-  const r = c.result || {};
   const diagnosticsMeta =
     showDiagnostics && isResolved
       ? [
-          r.status,
-          r.reasonCode,
-          r.durationMs != null ? `${r.durationMs}ms` : null,
-          r.evaluatorType
+          result.status,
+          result.reasonCode,
+          result.durationMs != null ? `${result.durationMs}ms` : null,
+          result.evaluatorType
         ]
           .filter(Boolean)
           .join(" · ")
@@ -303,6 +326,8 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
     detailExpanded,
     showExpandedActual,
     showExpandedExpected,
+    inlineComparisonValues,
+    expandedComparisonValues,
     adminDetailMessage,
     showAdminDetail,
     diagnosticsMeta,
@@ -348,14 +373,10 @@ export function buildSummaryStats(checks, tooltipKeys = new Set()) {
         cssClass: hasTooltip
           ? `${baseClass} rhc-tooltip-anchor rhc-tooltip-anchor--footer rhc-tooltip-anchor--stat`
           : baseClass,
-        tooltip: hasTooltip ? `${label}: ${tooltipNames(names)}` : null,
+        tooltip: hasTooltip ? `${label}: ${names.join(", ")}` : null,
         tabIndex: hasTooltip ? "0" : null,
         iconClass: `rhc-status-icon rhc-status-icon--${row.suffix}`
       };
     }
   );
-}
-
-function tooltipNames(names) {
-  return names.join(", ");
 }

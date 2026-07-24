@@ -23,6 +23,8 @@ public class RecordHealthCheckDefinitionResponse {
   @AuraEnabled
   public Integer totalAvailableCheckCount; // active checks before framework cap truncation
   @AuraEnabled
+  public Integer frameworkMaxChecks;
+  @AuraEnabled
   public Boolean checksOmittedByLimit; // true when active checks were omitted
   @AuraEnabled
   public Integer inactiveRuleCount; // inactive Rules on the Check Set (not run)

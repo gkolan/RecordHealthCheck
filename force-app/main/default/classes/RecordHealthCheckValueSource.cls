@@ -15,16 +15,19 @@
 public class RecordHealthCheckValueSource {
   /**
    * One side's value source facts.
-   * sourceLabel: where the value came from — a field API name, a plain-English
+   * - sourceLabel: where the value came from — a field API name, a plain-English
    * query description, or a operator phrase.
-   * rawValueLabel: the raw value or row count before any coercion.
-   * coercionLabel: the coercion/interpretation applied, if any
+   * - rawValueLabel: the raw value or row count before any coercion.
+   * - coercionLabel: the coercion/interpretation applied, if any
    * (e.g. "blank treated as 0", "null rows skipped"). Null when none applies.
    */
   public class Detail {
     public String sourceLabel;
     public String rawValueLabel;
     public String coercionLabel;
+
+    public Detail() {
+    }
 
     public Detail(
       String sourceLabel,

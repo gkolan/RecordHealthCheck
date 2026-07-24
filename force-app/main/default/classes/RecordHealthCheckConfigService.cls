@@ -4,6 +4,7 @@
  */
 
 public with sharing class RecordHealthCheckConfigService {
+  private static Map<String, Boolean> rulePublicationCache = new Map<String, Boolean>();
   // ─── Reason codes ──────────────────────────────────────────
 
   public static final String RC_CONFIG_NOT_FOUND = 'CONFIG_NOT_FOUND';
@@ -101,16 +102,8 @@ public with sharing class RecordHealthCheckConfigService {
   }
 
   /**
-   * @deprecated Prefer getCheckSetAvailabilityForObject; kept for callers that
-   * only need the active-set boolean.
-   */
-  public Boolean hasActiveCheckSetForObject(String objectApiName) {
-    return getCheckSetAvailabilityForObject(objectApiName).hasActive;
-  }
-
-  /**
    * Loads and validates a Check Set and its active rules.
-   * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND
+   * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND,
    * CONFIG_INACTIVE, OBJECT_MISMATCH, NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS).
    * Returns a fully populated RecordHealthCheckDefinitionResponse on success.
    */
@@ -227,8 +220,9 @@ public with sharing class RecordHealthCheckConfigService {
     response.stopOnFirstError = checkSet.StopOnSystemError__c;
     response.showDiagnostics =
       checkSet.ShowDiagnostics__c == true &&
-      RecordHealthCheckAccess.canViewDebugDetails();
+      RecordHealthCheckAccess.canViewDetails();
     response.totalAvailableCheckCount = totalAvailable;
+    response.frameworkMaxChecks = RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS;
     response.checksOmittedByLimit = checksOmitted;
     response.inactiveRuleCount = inactiveRuleCount;
 
@@ -293,9 +287,8 @@ public with sharing class RecordHealthCheckConfigService {
     }
 
     if (String.isBlank(checkSet.ObjectApiName__c)) {
-      // A blank Base Object is a misconfiguration of an existing Check Set, not a
-      // missing Check Set — classify it as INVALID_CONFIG for consistency with the
-      // Blank object name is INVALID_CONFIG, not CONFIG_NOT_FOUND.
+      // A blank Base Object misconfigures an existing Check Set; it does not mean
+      // the Check Set is missing, so classify it as INVALID_CONFIG.
       throw new ConfigException(
         'Check Set "' +
           checkSetDeveloperName +
@@ -466,7 +459,7 @@ public with sharing class RecordHealthCheckConfigService {
       return buildUnableResult(
         rule,
         RC_INVALID_CONFIG,
-        'Severity must be Error, Warning, or Info.'
+        'Severity must be CRITICAL, WARNING, or INFO.'
       );
     }
 
@@ -569,6 +562,7 @@ public with sharing class RecordHealthCheckConfigService {
         ApplicabilityCountQuery__c,
         ApplicabilityCountOperator__c,
         ApplicabilityCountThreshold__c,
+        PublishResultEvent__c,
         Record_Health_Check_Set__c,
         Record_Health_Check_Set__r.DeveloperName,
         Record_Health_Check_Set__r.MasterLabel,
@@ -602,7 +596,24 @@ public with sharing class RecordHealthCheckConfigService {
         tokenIssue.reasonCode
       );
     }
+    rulePublicationCache.put(
+      checkSetDeveloperName + ':' + ruleDeveloperName,
+      rule.PublishResultEvent__c == true
+    );
     return rule;
+  }
+
+  public static Map<String, Boolean> cachedRulePublicationSettings(
+    String checkSetDeveloperName,
+    Set<String> ruleDeveloperNames
+  ) {
+    Map<String, Boolean> found = new Map<String, Boolean>();
+    for (String ruleName : ruleDeveloperNames) {
+      String key = checkSetDeveloperName + ':' + ruleName;
+      if (rulePublicationCache.containsKey(key))
+        found.put(ruleName, rulePublicationCache.get(key));
+    }
+    return found;
   }
 
   // ─── Per-type validation — first-fail adapter over RecordHealthCheckRuleValidator ───
@@ -793,7 +804,7 @@ public with sharing class RecordHealthCheckConfigService {
       when MULTI_ROWS_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'How To Interpret Query Results is required for Query checks.'
         );
       }
@@ -814,7 +825,7 @@ public with sharing class RecordHealthCheckConfigService {
       when COMPARE_AGAINST_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'Expected Value Comes From is required for Query checks except IsBlank/IsNotBlank.'
         );
       }
@@ -828,7 +839,7 @@ public with sharing class RecordHealthCheckConfigService {
       when FIXED_VALUE_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'Expected Value is required when Expected Value Comes From is A fixed value.'
         );
       }
@@ -899,7 +910,7 @@ public with sharing class RecordHealthCheckConfigService {
       when DUAL_MULTI_ROWS_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'How To Interpret Query Results is required for Compare two queries checks.'
         );
       }
@@ -956,7 +967,7 @@ public with sharing class RecordHealthCheckConfigService {
             '.'
         );
       }
-      when NULL_BEHAVIOR_INVALID {
+      when EMPTY_VALUE_HANDLING_INVALID {
         return buildUnableResult(
           rule,
           'INVALID_CONFIG',
@@ -965,7 +976,7 @@ public with sharing class RecordHealthCheckConfigService {
             '" is not recognized. Valid values: Ignore the record, Treat as blank, Treat as not matching.'
         );
       }
-      when EMPTY_BEHAVIOR_INVALID {
+      when NO_ROWS_RESULT_INVALID {
         return buildUnableResult(
           rule,
           'INVALID_CONFIG',

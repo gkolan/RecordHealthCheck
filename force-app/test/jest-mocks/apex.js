@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // Generic stub for @salesforce/apex/* imports in Jest.
 // Each import becomes an independent jest.fn() via jest.genMockFromModule,
 // but since this module just exports a function, tests must call

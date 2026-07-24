@@ -117,13 +117,13 @@ public with sharing class RecordHealthCheckMetadataValidator {
         DeveloperName ASC
     ];
 
-    return validateRecordsForTest(checkSets, allRules);
+    return validateRecords(checkSets, allRules);
   }
 
   /**
    * Machine-readable entry point for setup tooling and CI.
    *
-   * Deliberately NOT `@AuraEnabled` (HI-2): this serializes the full validation
+   * Deliberately not `@AuraEnabled`: this serializes the full validation
    * of every Check Set and Rule — query, Apex class, and formula surfaces —
    * which is admin/setup information, not per-record data. Exposing it to the
    * LWC/Aura surface would hand that config detail to any user who can invoke
@@ -136,7 +136,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   }
 
   @TestVisible
-  private List<ValidationIssue> validateRecordsForTest(
+  private List<ValidationIssue> validateRecords(
     List<Record_Health_Check_Set__mdt> checkSets,
     List<Record_Health_Check_Rule__mdt> allRules
   ) {
@@ -202,7 +202,9 @@ public with sharing class RecordHealthCheckMetadataValidator {
                 'WARNING',
                 includedRule.DeveloperName,
                 'PrerequisiteRule__c',
-                'The dependency is outside the first-25 execution window, so this rule will be skipped.',
+                'The dependency is outside the first-' +
+                  RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS +
+                  ' execution window, so this rule will be skipped.',
                 'DEPENDENCY_NOT_IN_RUN'
               )
             );
@@ -381,7 +383,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         err(
           rule,
           'FailureSeverity__c',
-          'Severity must be Error, Warning, or Info.',
+          'Severity must be CRITICAL, WARNING, or INFO.',
           'INVALID_CONFIG'
         )
       );
@@ -858,7 +860,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'INVALID_CONFIG'
         );
       }
-      when NULL_BEHAVIOR_INVALID {
+      when EMPTY_VALUE_HANDLING_INVALID {
         return err(
           rule,
           'EmptyValueHandling__c',
@@ -868,7 +870,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'INVALID_CONFIG'
         );
       }
-      when EMPTY_BEHAVIOR_INVALID {
+      when NO_ROWS_RESULT_INVALID {
         return err(
           rule,
           'NoRowsResult__c',

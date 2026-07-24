@@ -29,6 +29,7 @@ const RHC_DIAG_TABLE_COLUMNS = [
 // Pointer hover waits before the tooltip fades in so quick row scans do not flash
 // popovers. Keyboard focus keeps a shorter CSS dwell (see recordHealthCheck.css).
 const TOOLTIP_HOVER_DWELL_MS = 600;
+const ESTIMATED_TOOLTIP_HEIGHT = 180;
 
 const SETUP_ERROR_CODES = new Set([
   "SETUP_REQUIRED",
@@ -106,6 +107,7 @@ export default class RecordHealthCheck extends LightningElement {
   @track showDiagnostics = false;
   @track totalCheckCount = 0;
   @track totalAvailableCheckCount = 0;
+  @track frameworkMaxChecks = 25;
   @track inactiveRuleCount = 0;
   @track completedCheckCount = 0;
   @track runComplete = false;
@@ -138,6 +140,10 @@ export default class RecordHealthCheck extends LightningElement {
   _summaryStatsSource = null;
   _summaryStatsTooltipSignature = "";
   _summaryStatsCache = [];
+  _visibleChecksSource = null;
+  _visibleChecksSignature = "";
+  _visibleChecksCache = [];
+  _resizeFrame;
 
   connectedCallback() {
     this._connected = true;
@@ -152,6 +158,10 @@ export default class RecordHealthCheck extends LightningElement {
   disconnectedCallback() {
     this._connected = false;
     window.removeEventListener("resize", this._handleViewportResize);
+    if (this._resizeFrame) {
+      cancelAnimationFrame(this._resizeFrame);
+      this._resizeFrame = null;
+    }
     this._loadToken++;
     if (this._initialLoadTimer) {
       clearTimeout(this._initialLoadTimer);
@@ -238,7 +248,6 @@ export default class RecordHealthCheck extends LightningElement {
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
     // Roomy enough for the multi-line summary/rule bubbles; below this we flip.
-    const ESTIMATED_TOOLTIP_HEIGHT = 180;
     const flipUp =
       spaceBelow < ESTIMATED_TOOLTIP_HEIGHT && spaceAbove > spaceBelow;
     anchor.classList.toggle("rhc-tooltip-anchor--flip-up", flipUp);
@@ -412,6 +421,10 @@ export default class RecordHealthCheck extends LightningElement {
         typeof response.totalAvailableCheckCount === "number"
           ? response.totalAvailableCheckCount
           : response.checks.length;
+      this.frameworkMaxChecks =
+        typeof response.frameworkMaxChecks === "number"
+          ? response.frameworkMaxChecks
+          : 25;
       this.inactiveRuleCount =
         typeof response.inactiveRuleCount === "number"
           ? response.inactiveRuleCount
@@ -554,6 +567,21 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   get visibleChecks() {
+    const signature = JSON.stringify([
+      this.revealMode,
+      this.successDisplayMode,
+      this.skippedDisplayMode,
+      this.showDiagnostics,
+      this.comparisonDisplay,
+      this._expandedNames,
+      this._runner.isRunning
+    ]);
+    if (
+      this._visibleChecksSource === this.checks &&
+      this._visibleChecksSignature === signature
+    ) {
+      return this._visibleChecksCache;
+    }
     let filtered;
     if (this.isAllAtOnce) {
       filtered = this.checks.filter((c) => {
@@ -587,7 +615,9 @@ export default class RecordHealthCheck extends LightningElement {
       });
     }
     // Annotate each check with computed display properties for the template
-    return filtered.map((c) =>
+    this._visibleChecksSource = this.checks;
+    this._visibleChecksSignature = signature;
+    this._visibleChecksCache = filtered.map((c) =>
       annotateCheck(
         c,
         this.showDiagnostics,
@@ -595,6 +625,7 @@ export default class RecordHealthCheck extends LightningElement {
         this._isRowExpanded(c.developerName)
       )
     );
+    return this._visibleChecksCache;
   }
 
   // Whether a row's comparison detail is currently expanded. Carets default to
@@ -647,7 +678,14 @@ export default class RecordHealthCheck extends LightningElement {
   // render. Re-measure explicitly so a newly overflowing value gains its +/-
   // affordance (and a value that now fits loses it) immediately.
   _handleViewportResize = () => {
-    this._measureClampedValues();
+    if (this._resizeFrame) {
+      return;
+    }
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this._resizeFrame = requestAnimationFrame(() => {
+      this._resizeFrame = null;
+      this._measureClampedValues();
+    });
   };
 
   // Expand or re-clamp a single value chip in place. Imperative because the
@@ -680,18 +718,18 @@ export default class RecordHealthCheck extends LightningElement {
   // limit badge).
   get checkCountPhrase() {
     if (this.checksOmittedByLimit) {
-      return `the first 25 of ${this.totalAvailableCheckCount} checks`;
+      return `the first ${this.frameworkMaxChecks} of ${this.totalAvailableCheckCount} checks`;
     }
     const n = this.totalCheckCount;
     return `${n} ${n === 1 ? "check" : "checks"}`;
   }
 
   get limitNoticeLabel() {
-    return `First 25 of ${this.totalAvailableCheckCount} shown`;
+    return `First ${this.frameworkMaxChecks} of ${this.totalAvailableCheckCount} shown`;
   }
 
   get limitNoticeTitle() {
-    return `Showing the first 25 of ${this.totalAvailableCheckCount} active rules.`;
+    return `Showing the first ${this.frameworkMaxChecks} of ${this.totalAvailableCheckCount} active rules.`;
   }
 
   get showActionButton() {

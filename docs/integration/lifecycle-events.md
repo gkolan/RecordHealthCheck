@@ -97,6 +97,13 @@ enable only the summary or per-Rule detail that a reviewed subscriber actually u
 
 Page-load card evaluations never publish even if these checkboxes are on.
 
+For a user-initiated Lightning run with **Publish Run Event** enabled, the completion call
+re-evaluates the Check Set server-side before publishing authoritative aggregate counts; it does not
+trust browser-supplied statuses. Each Rule therefore runs once for the progressive card result and
+again in the completion transaction. Keep opted-in Check Sets focused, especially when they use
+FormulaEval or expensive queries. When the switch is off, the completion call returns before this
+second pass.
+
 ## Contract versions on events
 
 | Field | Value | Meaning |

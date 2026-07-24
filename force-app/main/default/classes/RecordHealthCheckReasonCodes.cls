@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Stable, additive reason-code contract for non-pass/fail outcomes. */
 public class RecordHealthCheckReasonCodes {
   public static final String CANNOT_EVALUATE = 'CANNOT_EVALUATE';

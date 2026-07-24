@@ -300,7 +300,8 @@ Set **Prerequisite Rule** to the prerequisite `DeveloperName`. Use sparingly for
 ## 11. Merge tokens
 
 Merge tokens let one Rule speak about the record, its configuration, and its result without hard-coding those
-values. Use the namespace and property exactly as shown.
+values. Use the namespace and property exactly as shown. For the complete namespace, surface,
+fallback, and limit contract, see the [Merge-token reference](../reference/reference-merge-tokens.md).
 
 The fallback is optional. A token without one inserts the resolved value when populated and inserts blank text when
 the value is null, empty, or whitespace-only:
@@ -471,8 +472,8 @@ Contact Finance to reconcile.
 | System Error | Apex or framework exception | Apex class, Salesforce logs, and Show Diagnostics. |
 | Stale results after metadata edit | Component not reloaded | Refresh the record page. |
 | Stale results after inline edit | No auto-rerun on record save | Click **Rerun** or refresh the page. |
-| Prerequisite skipped | 25-check cap | Lower the prerequisite's Evaluation Order so it runs within the first 25, or reduce active Rules. |
-| Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Stay within `MAX_RECORDS_PER_CALL` (200) and `MAX_EVALUATIONS_PER_CALL` (15); prefer `runSet` with a focused Check Set; see [Apex API](../reference/reference-apex-api.md) or [Flow actions](../integration/flow-actions.md). |
+| Prerequisite skipped | Framework run cap | Lower the prerequisite's Evaluation Order so it falls within the configured execution window, or reduce active Rules. |
+| Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Keep Apex calls within `MAX_EVALUATIONS_PER_CALL` (15); Flow invocations also accept at most `MAX_FLOW_RECORDS_PER_CALL` (200) requests. Prefer `runSet` with a focused Check Set; see [Apex API](../reference/reference-apex-api.md) or [Flow actions](../integration/flow-actions.md). |
 | Check passes in UI but fails from custom automation | Different running user (FLS) | Automation runs as the integration or invoking user: verify field access. |
 | Expected a lifecycle event but none arrived | Publishing is off, the run was automatic page load, or the transaction rolled back | Enable **Publish Run Event** or **Publish Result Event**; use explicit Run/Rerun, Apex, or Flow; confirm the transaction committed; see [Platform events](../integration/lifecycle-events.md). |
 
@@ -538,7 +539,8 @@ Automation uses the public `RecordHealthCheck` Apex class or the separate Rule a
 - Read-only evaluation: no record mutations from checks.
 - Formula checks require API v63.0+ (FormulaEval). Package source API version is 66.0.
 - Up to **5** concurrent Apex evaluations per LWC run (queued beyond that) when Stop after a system error is off; fully sequential when it is on.
-- Apex and Flow callers must stay within 200 records and 15 Rule evaluations per request.
+- Apex callers must stay within 15 planned Rule evaluations per request. Flow invocations also
+  accept at most 200 request records per transaction.
 - `recordId` changes after connect reload definitions; record-save does not auto-rerun checks.
 - Server-side dependency gate re-evaluates prerequisites (safe for direct Apex calls; may duplicate work from the LWC path).
 - Unsupported Apex plugin status strings are rejected with `APEX_EVALUATOR_ERROR`.
@@ -559,7 +561,7 @@ must receive one Rule result before it can decide whether starting the next Rule
 | Semicolon-only multi-select bind | Value `;` alone can produce invalid `INCLUDES ()` SOQL: avoid blank multi-select values in bind tokens |
 | Apex plugin `context.record` | Engine loads merge/formula fields referenced in messages and applicability; plugins needing other fields must query by `context.recordId` |
 | Managed-package Apex class names | `Type.forName` without namespace may not resolve classes in a managed namespace: use fully qualified API names when required |
-| Prerequisite Rule outside the 25-check cap | Dependents skip with `DEPENDENCY_NOT_IN_RUN` (LWC only) |
+| Prerequisite Rule outside the Framework run cap | Dependents skip with `DEPENDENCY_NOT_IN_RUN` (LWC only) |
 | Stop after a system error | Stops only on `ERROR`, not `FAIL` or `UNABLE_TO_EVALUATE` |
 | Empty multi-row query result | Requires an explicit `NoRowsResult__c` value (`PASS` / `FAIL` / `SKIP` / `UNABLE_TO_EVALUATE`) |
 | Static comparison values with locale formatting | Untyped text: may fall through to string comparison |

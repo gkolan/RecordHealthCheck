@@ -37,8 +37,8 @@ public with sharing class RecordHealthCheckController {
    * Returns Check Set display settings and ordered check definitions.
    * Not cacheable: metadata edits to Check Sets/Rules appear on the next
    * component load without requiring a page refresh.
-   * Throws AuraHandledException for all component-level failures
-   * CONFIG_NOT_FOUND, CONFIG_INACTIVE, OBJECT_MISMATCH
+   * Throws AuraHandledException for all component-level failures:
+   * CONFIG_NOT_FOUND, CONFIG_INACTIVE, OBJECT_MISMATCH,
    * NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS, and LOAD_FAILED for any
    * unexpected (non-ConfigException) error.
    */
@@ -182,17 +182,20 @@ public with sharing class RecordHealthCheckController {
   ) {
     try {
       String effectiveSource = normalizeLwcSource(source);
-      if (
-        effectiveSource !=
-        RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED ||
-        recordId == null
-      ) {
-        return;
-      }
       String effectiveCheckSetName = RecordHealthCheckLogger.normalizeIdentifier(
         checkSetDeveloperName,
         80
       );
+      if (
+        effectiveSource !=
+        RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED ||
+        recordId == null ||
+        !RecordHealthCheckLifecyclePublisher.isRunPublicationEnabled(
+          effectiveCheckSetName
+        )
+      ) {
+        return;
+      }
       String effectiveRunId = RecordHealthCheckLogger.normalizeIdentifier(
         runId,
         120
@@ -242,7 +245,7 @@ public with sharing class RecordHealthCheckController {
     String message
   ) {
     // Surface a safe message to the LWC; reasonCode is embedded for diagnostic use.
-    // Raw internal details are never passed through (Default Evaluation Rule 14).
+    // Raw internal details are never passed through this public boundary.
     AuraHandledException ex = new AuraHandledException(message);
     ex.setMessage(
       JSON.serialize(

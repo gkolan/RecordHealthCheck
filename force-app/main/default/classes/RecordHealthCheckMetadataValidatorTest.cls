@@ -15,7 +15,7 @@ private class RecordHealthCheckMetadataValidatorTest {
     System.assertNotEquals(null, issues);
   }
 
-  // validateAsJson() is the Apex/CI entry point (no longer @AuraEnabled, HI-2).
+  // validateAsJson() is the Apex/CI entry point and is intentionally not Aura-enabled.
   // It must still return well-formed JSON for setup tooling and CI.
   @isTest
   static void validateAsJsonReturnsSerializedIssues() {
@@ -96,7 +96,7 @@ private class RecordHealthCheckMetadataValidatorTest {
     );
 
     List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = new RecordHealthCheckMetadataValidator()
-      .validateRecordsForTest(
+      .validateRecords(
         new List<Record_Health_Check_Set__mdt>{ checkSet },
         new List<Record_Health_Check_Rule__mdt>()
       );
