@@ -38,11 +38,16 @@ def replacement(body: str) -> str | None:
     return "{!" + COMPUTED.get(body, "record." + body) + "}"
 
 
+SLIDES = ROOT / "docs" / "slides"
+
+
 def files():
     for target in TARGETS:
         for path in target.rglob("*"):
             if ARCHIVE == path or ARCHIVE in path.parents:
                 continue  # frozen v1 archive keeps its original flat-token syntax
+            if SLIDES == path or SLIDES in path.parents:
+                continue  # local slide drafts; not part of the published product docs
             if path == MIGRATION_MAP:
                 continue  # the before/after contract intentionally documents legacy tokens
             if path.is_file() and path.suffix in {
