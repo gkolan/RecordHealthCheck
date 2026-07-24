@@ -223,5 +223,10 @@
     >Record_Health_Check_Set__mdt-Record Health Check Set Layout</members>
         <name>Layout</name>
     </types>
+    <types>
+        <members>Record_Health_Check_Rule__mdt.Examples</members>
+        <members>Record_Health_Check_Set__mdt.Examples</members>
+        <name>ListView</name>
+    </types>
     <version>66.0</version>
 </Package>

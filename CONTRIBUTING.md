@@ -27,8 +27,8 @@ contributing, you agree that your contributions are licensed under the
    - What you expected vs. what happened.
    - The **Check Set** and **Rule** Developer Names involved (not screenshots of labels only).
    - The object and a sketch of the field/query values that triggered it.
-   - Whether **Show Troubleshooting Details** was on, and the `[RHC]` summary from the browser console
-     (see [Troubleshooting Details](docs/guides/show-diagnostics.md)). **Redact record data and Org IDs.**
+   - Whether **Show Diagnostics** was on, and the `[RHC]` summary from the browser console
+     (see [Troubleshoot with Show Diagnostics](docs/guides/troubleshoot-with-show-diagnostics.md)). **Redact record data and Org IDs.**
    - Org type (Production / Sandbox / Scratch) and API version.
 4. Submit. A maintainer will triage and may ask for a minimal reproduction.
 
@@ -73,8 +73,7 @@ feedback by pushing more commits to the same branch.
 - **Tests are required** for every behavior change: both a positive test and a
   misconfiguration/negative test where applicable.
 - **Coverage thresholds** are enforced by `coverageThreshold` in
-  [`jest.config.js`](jest.config.js): statements **85**, branches **75**,
-  functions **90**, lines **85**. `npm run test:unit:coverage` exits non-zero if
+  [`jest.config.js`](jest.config.js). `npm run test:unit:coverage` exits non-zero if
   they are not met.
 - **Apex changes** must also pass the project Apex test suite and a validation
   deployment (`sf project deploy validate`) with `RunLocalTests` in a clean
@@ -86,7 +85,7 @@ feedback by pushing more commits to the same branch.
   validation, reason-code documentation, and both positive and misconfiguration
   tests. Do not add another parser or comparison operator copy: extend the shared modules.
 
-See [`docs/reference/architecture-map.md`](docs/reference/architecture-map.md) to find where things live.
+See [`docs/reference/reference-architecture-map.md`](docs/reference/reference-architecture-map.md) to find where things live.
 
 ## Documentation changes
 
@@ -97,5 +96,5 @@ Docs must match the code at the same commit. Follow these authoring standards:
 - **Code blocks**: introduce every block with a sentence ending in a colon; use fenced blocks with a language identifier (`bash`, `apex`, `sql`, `json`).
 - **No em-dashes**: replace each em-dash by hand with a period, comma, or parentheses, never a blanket swap to a colon.
 
-The design specification is canonical
-in [`docs/reference/record-health-check-design-spec.md`](docs/reference/record-health-check-design-spec.md).
+The public architecture map above is the contributor-facing source of truth for where
+code and docs live. Maintainer release steps are in [`RELEASING.md`](RELEASING.md).

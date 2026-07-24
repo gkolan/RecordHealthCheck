@@ -2,6 +2,20 @@
 
 This project follows [Semantic Versioning](https://semver.org/). Notable changes are documented here starting with the first public release.
 
+## Unreleased
+
+### Removed
+
+- Removed a sample report that hardcoded a real Account Id, and removed personal DevHub
+  backup manifests that did not belong in the product repository.
+- Removed an unused root stylesheet left over from an unpublished docs site scaffold.
+
+### Fixed
+
+- Documented demo setup now ships `scripts/setup-demo.sh` and the Apex scripts it runs.
+- Install manifest includes the `Examples` Custom Metadata list views.
+- Contributor and PR template links/instructions no longer point at local-only paths.
+
 ## [2.0.0] - 2026-07-15
 
 ### Breaking changes
