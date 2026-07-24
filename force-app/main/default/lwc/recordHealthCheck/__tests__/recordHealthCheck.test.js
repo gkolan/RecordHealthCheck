@@ -729,15 +729,67 @@ describe("c-record-health-check — run orchestration", () => {
     expect(element.shadowRoot.querySelector(".rhc-stats-bar")).not.toBeNull();
   });
 
-  it("mentions inactive rules that are omitted from the run", async () => {
+  it("keeps inactive rules out of the card for a regular user", async () => {
     getCheckDefinitions.mockResolvedValue(
-      makeDefinitions({ inactiveRuleCount: 2 })
+      makeDefinitions({ triggerMode: "Automatic", inactiveRuleCount: 2 })
     );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
     await appendAndLoad(element);
+    jest.runOnlyPendingTimers();
+    await flushPromises();
+    await flushPromises();
 
-    const notice = element.shadowRoot.querySelector(".rhc-inactive-rules");
-    expect(notice).not.toBeNull();
-    expect(notice.textContent).toContain("2 inactive rules omitted");
+    expect(element.shadowRoot.querySelector(".rhc-inactive-rules")).toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-stat--inactive")).toBeNull();
+    expect(element.shadowRoot.textContent).not.toContain("Inactive");
+  });
+
+  it("leads the diagnostics stats bar with an inactive pill naming the omitted rules", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        triggerMode: "Automatic",
+        showDiagnostics: true,
+        inactiveRuleCount: 2,
+        inactiveRuleLabels: ["Retired Owner Check", "Legacy Phone Check"]
+      })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    await appendAndLoad(element);
+    jest.runOnlyPendingTimers();
+    await flushPromises();
+    await flushPromises();
+
+    const stats = element.shadowRoot.querySelectorAll(
+      ".rhc-stats-bar .rhc-stat"
+    );
+    expect(stats.length).toBeGreaterThan(1);
+    expect(stats[0].classList).toContain("rhc-stat--inactive");
+    expect(stats[0].textContent).toContain("2 Inactive");
+    expect(stats[0].dataset.tooltip).toBe(
+      "2 inactive rules omitted: Retired Owner Check, Legacy Phone Check"
+    );
+    expect(stats[0].getAttribute("tabindex")).toBe("0");
+  });
+
+  it("summarizes undisclosed inactive rule names in the pill tooltip", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        triggerMode: "Automatic",
+        showDiagnostics: true,
+        inactiveRuleCount: 3,
+        inactiveRuleLabels: ["Retired Owner Check"]
+      })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    await appendAndLoad(element);
+    jest.runOnlyPendingTimers();
+    await flushPromises();
+    await flushPromises();
+
+    const pill = element.shadowRoot.querySelector(".rhc-stat--inactive");
+    expect(pill.dataset.tooltip).toBe(
+      "3 inactive rules omitted: Retired Owner Check, +2 more"
+    );
   });
 
   it("styles system ERROR rows differently from Unable to Check", async () => {

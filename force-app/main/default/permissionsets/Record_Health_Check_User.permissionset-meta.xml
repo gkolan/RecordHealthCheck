@@ -2,7 +2,7 @@
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>Record Health Check User</label>
     <description
-  >Least-privilege access to run Record Health Checks from the Lightning component. Grants Apex access to the controller and public API entry points only, plus create/read on the Set Run and Rule Result lifecycle platform events. Assign to any user who should see or run the component. Does not grant access to the diagnostics log event.</description>
+  >Least-privilege access to run Record Health Checks from the Lightning component. Grants Apex for the controller and public API, plus create/read on Set Run and Rule Result platform events. Does not grant diagnostics log access.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <classAccesses>
         <apexClass>RecordHealthCheckController</apexClass>

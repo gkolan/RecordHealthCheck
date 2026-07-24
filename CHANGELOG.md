@@ -14,6 +14,9 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 
 ### Changed
 
+- Inactive Rules are no longer noted in the card header, where a regular user could not act on
+  them. Under diagnostics the count now leads the summary stats bar as an `N Inactive` pill whose
+  hover lists the omitted Rule names (names are sent only to the diagnostics audience).
 - Moved contributor/community docs (`CONTRIBUTING`, `SECURITY`, `CODE_OF_CONDUCT`,
   `CODEOWNERS`, `RELEASING`) under `.github/` so the repository root stays product-focused.
   GitHub still discovers these paths automatically.

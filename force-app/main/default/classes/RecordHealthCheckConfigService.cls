@@ -225,6 +225,12 @@ public with sharing class RecordHealthCheckConfigService {
     response.frameworkMaxChecks = RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS;
     response.checksOmittedByLimit = checksOmitted;
     response.inactiveRuleCount = inactiveRuleCount;
+    // Rule names are configuration detail, so they ride along only for the
+    // diagnostics audience that already sees troubleshooting fields.
+    response.inactiveRuleLabels = (response.showDiagnostics == true &&
+      inactiveRuleCount > 0)
+      ? inactiveRuleLabels(checkSetDeveloperName)
+      : new List<String>();
 
     // Emit WARN when active rules exceed FRAMEWORK_MAX_CHECKS, so truncation is
     // visible server-side and not only in the LWC "First 25 of N shown" badge.
@@ -406,6 +412,36 @@ public with sharing class RecordHealthCheckConfigService {
         Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
         AND IsActive__c = FALSE
     ];
+  }
+
+  /**
+   * Display names of the inactive Rules, for the diagnostics "N Inactive"
+   * tooltip. Capped at the framework check limit so a long-neglected Check Set
+   * cannot grow an unbounded tooltip; the pill still shows the exact count.
+   */
+  @TestVisible
+  private List<String> inactiveRuleLabels(String checkSetDeveloperName) {
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
+    List<Record_Health_Check_Rule__mdt> inactiveRules = [
+      SELECT DeveloperName, MasterLabel, CheckTitle__c
+      FROM Record_Health_Check_Rule__mdt
+      WHERE
+        Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
+        AND IsActive__c = FALSE
+      ORDER BY EvaluationOrder__c ASC NULLS LAST, DeveloperName ASC
+      LIMIT :FRAMEWORK_MAX_CHECKS
+    ];
+    List<String> labels = new List<String>();
+    for (Record_Health_Check_Rule__mdt rule : inactiveRules) {
+      labels.add(
+        String.isNotBlank(rule.CheckTitle__c)
+          ? rule.CheckTitle__c
+          : (String.isNotBlank(rule.MasterLabel)
+              ? rule.MasterLabel
+              : rule.DeveloperName)
+      );
+    }
+    return labels;
   }
 
   @TestVisible

@@ -29,6 +29,8 @@ public class RecordHealthCheckDefinitionResponse {
   @AuraEnabled
   public Integer inactiveRuleCount; // inactive Rules on the Check Set (not run)
   @AuraEnabled
+  public List<String> inactiveRuleLabels; // names behind inactiveRuleCount — diagnostics only
+  @AuraEnabled
   public Boolean showDiagnostics; // mirrors ShowDiagnostics__c — tells LWC to show adminDetailMessage
   @AuraEnabled
   public List<RecordHealthCheckDefinition> checks;

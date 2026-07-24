@@ -109,6 +109,7 @@ export default class RecordHealthCheck extends LightningElement {
   @track totalAvailableCheckCount = 0;
   @track frameworkMaxChecks = 25;
   @track inactiveRuleCount = 0;
+  @track inactiveRuleLabels = [];
   @track completedCheckCount = 0;
   @track runComplete = false;
   /** Stays true after the first completed run until definitions reload — drives
@@ -139,6 +140,7 @@ export default class RecordHealthCheck extends LightningElement {
   _pendingTooltipAnchors = new Set();
   _summaryStatsSource = null;
   _summaryStatsTooltipSignature = "";
+  _inactiveStatSignature = "";
   _summaryStatsCache = [];
   _visibleChecksSource = null;
   _visibleChecksSignature = "";
@@ -429,6 +431,11 @@ export default class RecordHealthCheck extends LightningElement {
         typeof response.inactiveRuleCount === "number"
           ? response.inactiveRuleCount
           : 0;
+      // Names arrive only for the diagnostics audience; without them the pill
+      // still renders, just without a hover list.
+      this.inactiveRuleLabels = Array.isArray(response.inactiveRuleLabels)
+        ? response.inactiveRuleLabels.filter((name) => !!name)
+        : [];
       this.checksOmittedByLimit = response.checksOmittedByLimit || false;
 
       // Build per-check rows — all start PENDING
@@ -753,17 +760,6 @@ export default class RecordHealthCheck extends LightningElement {
     return `Click Run to evaluate ${this.checkCountPhrase}.`;
   }
 
-  get showInactiveRulesNotice() {
-    return (
-      !this.isLoading && !this.hasComponentError && this.inactiveRuleCount > 0
-    );
-  }
-
-  get inactiveRulesNotice() {
-    const n = this.inactiveRuleCount;
-    return `${n} inactive ${n === 1 ? "rule" : "rules"} omitted.`;
-  }
-
   get showSummaryStats() {
     return this.runComplete && this.summaryStats.length > 0;
   }
@@ -842,18 +838,52 @@ export default class RecordHealthCheck extends LightningElement {
   get summaryStats() {
     const tooltipKeys = this._summaryTooltipKeys();
     const tooltipSignature = tooltipKeys.join("|");
+    const inactiveStat = this._inactiveRuleStat();
+    const inactiveSignature = inactiveStat
+      ? `${inactiveStat.label}|${inactiveStat.tooltip}`
+      : "";
     if (
       this._summaryStatsSource !== this.checks ||
-      this._summaryStatsTooltipSignature !== tooltipSignature
+      this._summaryStatsTooltipSignature !== tooltipSignature ||
+      this._inactiveStatSignature !== inactiveSignature
     ) {
       this._summaryStatsSource = this.checks;
       this._summaryStatsTooltipSignature = tooltipSignature;
-      this._summaryStatsCache = buildSummaryStats(
-        this.checks,
-        new Set(tooltipKeys)
-      );
+      this._inactiveStatSignature = inactiveSignature;
+      const stats = buildSummaryStats(this.checks, new Set(tooltipKeys));
+      this._summaryStatsCache = inactiveStat ? [inactiveStat, ...stats] : stats;
     }
     return this._summaryStatsCache;
+  }
+
+  /**
+   * Inactive rules are configuration housekeeping a regular user cannot act on,
+   * so the count no longer sits in the card header. Under diagnostics it leads
+   * the stats bar as a neutral pill whose hover lists the omitted rule names,
+   * matching how the Passed/Skipped pills reveal their rows.
+   */
+  _inactiveRuleStat() {
+    if (!this.showDiagnostics || this.inactiveRuleCount < 1) return null;
+    const n = this.inactiveRuleCount;
+    const names = this.inactiveRuleLabels || [];
+    const undisclosed = n - names.length;
+    const listed = undisclosed > 0 ? [...names, `+${undisclosed} more`] : names;
+    const hasTooltip = names.length > 0;
+    const baseClass = "rhc-stat rhc-stat--inactive";
+    return {
+      key: "inactive",
+      label: `${n} Inactive`,
+      cssClass: hasTooltip
+        ? `${baseClass} rhc-tooltip-anchor rhc-tooltip-anchor--footer rhc-tooltip-anchor--stat`
+        : baseClass,
+      tooltip: hasTooltip
+        ? `${n} inactive ${n === 1 ? "rule" : "rules"} omitted: ${listed.join(
+            ", "
+          )}`
+        : null,
+      tabIndex: hasTooltip ? "0" : null,
+      iconClass: "rhc-status-icon rhc-status-icon--inactive"
+    };
   }
 
   get showLimitNotice() {
