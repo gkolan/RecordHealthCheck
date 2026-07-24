@@ -1,8 +1,5 @@
 # Rule Result Platform Event (`Record_Health_Check_Rule_Result__e`)
 
-> [!NOTE]
-> On this page, design a secure Rule Result subscriber that receives one finalized Rule outcome after commit and uses its fields responsibly for history, routing, alerts, or analytics.
-
 `Record_Health_Check_Rule_Result__e` contains the finalized public outcome of one Rule in a
 deliberately initiated run. It is a high-volume Salesforce Platform Event with **Publish After
 Commit** behavior.
@@ -27,12 +24,14 @@ when the current transaction must branch immediately.
 
 ## Publication conditions
 
-The Framework publishes one event for a Rule only when all conditions are true:
+The Framework publishes one event for a Rule only when every condition is true:
 
-1. The Rule has **Publish Result Event** (`PublishResultEvent__c`) checked.
-2. The Rule has a finalized result in a deliberate Check Set or Rule run.
-3. The source is `APEX_API`, `FLOW`, `USER_INITIATED`, `SCHEDULED`, or `BATCH`.
-4. The Salesforce transaction commits.
+| Required condition | What to verify |
+| --- | --- |
+| Publication is enabled | **Publish Result Event** (`PublishResultEvent__c`) is checked on the Rule. |
+| The result is final | The Rule finished during a deliberate Rule or Check Set run. |
+| The source is allowed | Source is `APEX_API`, `FLOW`, `USER_INITIATED`, `SCHEDULED`, or `BATCH`. |
+| Work is committed | The Salesforce transaction commits. |
 
 Automatic Lightning record-page evaluation, subscriber context, blank sources, and unknown sources
 do not publish.
@@ -103,13 +102,15 @@ intentionally absent from this contract.
 
 ## Subscriber design
 
-- Deduplicate with `EventId__c` and make side effects safe to repeat.
-- Route using API values, not translated labels or administrator-authored text.
-- Allow unknown additive Reason Codes and statuses to enter a safe review path.
-- Use `RunId__c` to group Rule Result events with their Set Run summary.
-- Persist events when history beyond Platform Event retention is required.
-- Query additional Salesforce data only under the subscriber's own security context.
-- Do not treat `ContainsRestrictedDetail__c = true` as permission to expose diagnostics.
+| Concern | Subscriber responsibility |
+| --- | --- |
+| Duplicate delivery | Deduplicate with `EventId__c` and make side effects safe to repeat. |
+| Routing | Use API values, not translated labels or administrator-authored text. |
+| Future values | Send unknown additive Reason Codes and statuses to a safe review path. |
+| Run correlation | Use `RunId__c` to group Rule Result events with their Set Run summary. |
+| Retention | Persist events when history beyond Platform Event retention is required. |
+| Additional data | Query under the subscriber's own security context. |
+| Restricted detail | Do not treat `ContainsRestrictedDetail__c = true` as permission to expose diagnostics. |
 
 ## Limits and security
 
@@ -126,5 +127,5 @@ not change the finalized Rule status.
 - [Lifecycle-events overview](../integration/lifecycle-events.md)
 - [Check Set Run Platform Event](event-set-run.md)
 - [Log Platform Event](event-log.md)
-- [Rule fields](fields-rule.md): **Publish Result Event**
+- [Rule fields](fields-check-rule.md): **Publish Result Event**
 - [Reason Codes](../reference/reference-reason-codes.md)

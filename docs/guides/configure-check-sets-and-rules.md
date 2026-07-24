@@ -25,9 +25,6 @@ Lightning Web Component.
 | Diagnose a problem before release | [Troubleshooting](#13-troubleshooting) | Investigate configuration, access, query, formula, Apex, and component issues |
 | Review production readiness | [Review checklist](#14-review-checklist) | Confirm security, behavior, messages, limits, and representative test coverage |
 
-> [!NOTE]
-> **Setup labels vs API names:** Each table lists the **Setup label** you see in the metadata editor, the **API name** (`__c` or `DeveloperName`), and what to enter. Use the Setup label in conversation and checklists: for example **Evaluation Type**, not informal terms like “check type.”
-
 ## Contents
 
 | Section | What it covers |
@@ -35,14 +32,14 @@ Lightning Web Component.
 | [1. Mental model](#1-mental-model) | Check Set, Rule, and component wiring |
 | [2. What it can check](#2-what-it-can-check) | Choosing the right Evaluation Type |
 | [3. Check Set fields](#3-check-set-fields) | Link to [Check Set field reference](../metadata/fields-check-set.md) |
-| [4. Rule fields](#4-rule-fields) | Link to [Rule field reference](../metadata/fields-rule.md) and action links |
+| [4. Rule fields](#4-rule-fields) | Link to [Rule field reference](../metadata/fields-check-rule.md) and action links |
 | [5. Result meanings](#5-result-meanings) | Status and severity |
 | [6. Formula rules](#6-formula-rules) | Record-formula patterns |
 | [7. Verify with a query Rules](#7-verify-with-a-query-rules) | Single-query patterns |
 | [8. Compare two queries Rules](#8-compare-two-queries-rules) | Dual-query patterns |
 | [9. Apex rules](#9-apex-rules) | Custom Apex patterns |
 | [10. Applicability and dependencies](#10-applicability-and-dependencies) | Gating and prerequisites |
-| [11. Merge tokens](#11-merge-tokens) | `{!record.Field}` in messages and SOQL |
+| [11. Merge tokens](#11-merge-tokens) | `{!record.Field}` in messages and SOQL <!-- merge-fallback-optional-example --> |
 | [12. Security and guardrails](#12-security-and-guardrails) | SOQL safety and permissions |
 | [13. Troubleshooting](#13-troubleshooting) | Symptoms, causes, and fixes |
 | [14. Review checklist](#14-review-checklist) | Pre-activation validation |
@@ -102,7 +99,7 @@ Every field on `Record_Health_Check_Set__mdt`: including picklist values for **W
 
 ## 4. Rule fields
 
-Every field on `Record_Health_Check_Rule__mdt` is documented in **[Rule fields](../metadata/fields-rule.md)**. Optional **Category** is metadata-only for now; the current card does not group rows by it. Optional **Fix Message**, **Action Label**, and **Action URL** fields render guidance and navigation on failed checks. Examples: [Configure action links](configure-action-links.md).
+Every field on `Record_Health_Check_Rule__mdt` is documented in **[Rule fields](../metadata/fields-check-rule.md)**. Optional **Category** is metadata-only for now; the current card does not group rows by it. Optional **Fix Message**, **Action Label**, and **Action URL** fields render guidance and navigation on failed checks. Examples: [Configure action links](configure-action-links.md).
 
 ## 5. Result meanings
 
@@ -128,25 +125,31 @@ Use Formula when the result is expressible with Salesforce formula syntax on the
 its parent relationships. Start with [Seller research readiness](../examples/formula/01-account-research-ready.md); use the
 [Formula reference](../reference/reference-formula.md) for the complete contract.
 
-- `null` formula result (for example, `Parent.Field` with no parent) → **Unable To Evaluate**, not Fail.
-- Only explicit `false` fails the check.
+| Formula result | Rule status |
+| --- | --- |
+| `true` | Pass |
+| `false` | Fail |
+| `null`, including an unavailable parent relationship such as `Parent.Field` with no parent | Unable to Evaluate |
 
 Use this one example as the model for a meaningful Formula Rule. It combines three business
 requirements and traverses two parent levels. The Account passes when it has a contact channel, has
 a billing country, and its revenue is at least 10% of the top-level portfolio Account's revenue.
 
-```text
-EvaluationType__c: FORMULA
-PassConditionFormula__c: AND(
+<table>
+  <thead><tr><th>Setup field</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Evaluation Type</td><td><code>FORMULA</code></td></tr>
+    <tr><td>Pass Condition</td><td><pre><code>AND(
   OR(NOT(ISBLANK(Phone)), NOT(ISBLANK(Website))),
   NOT(ISBLANK(BillingCountry)),
-  AnnualRevenue >= Parent.Parent.AnnualRevenue * 0.10
-)
-DisplayFoundFormula__c: AnnualRevenue
-DisplayExpectedFormula__c: Parent.Parent.AnnualRevenue * 0.10
-FormulaResultType__c: NUMBER
-FailureMessage__c: {!record.Name} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.
-```
+  AnnualRevenue &gt;= Parent.Parent.AnnualRevenue * 0.10
+)</code></pre></td></tr>
+    <tr><td>Display Found Formula</td><td><code>AnnualRevenue</code></td></tr>
+    <tr><td>Display Expected Formula</td><td><code>Parent.Parent.AnnualRevenue * 0.10</code></td></tr>
+    <tr><td>Formula Result Type</td><td><code>NUMBER</code></td></tr>
+    <tr><td>Message When Failed</td><td><code>{!record.Name|this record} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.</code></td></tr>
+  </tbody>
+</table>
 
 If either parent relationship or a required revenue value is unavailable, the Rule cannot reach a
 reliable conclusion and returns **Unable to Evaluate**. Use a shallower path when the object model
@@ -154,16 +157,25 @@ does not guarantee two Account parents.
 
 ### Formula operands can be formula or roll-up fields
 
-`PassConditionFormula__c` (and the optional formulas below) may reference **calculated fields**: formula fields, roll-up summaries, and even formulas of formulas: at any depth, for any type (number, text, date, boolean, picklist) and any standard function. The engine loads the whole dependency chain, so you reference the field API names you use in Setup; you do **not** rewrite checks to point at the underlying source fields.
+| Supported operand | How to use it |
+| --- | --- |
+| Formula field | Reference its field API name directly. |
+| Roll-up summary field | Reference its field API name directly. |
+| Formula that depends on another formula | Reference the final field API name; the engine loads the dependency chain. |
+| Number, text, date, Boolean, or picklist calculation | Use its normal Salesforce formula type and functions. |
+
+Calculated dependencies can be nested to any depth. Do not rewrite the check to use the calculated
+field's underlying source fields.
 
 ### Showing Found vs Expected (optional)
 
 By default a Formula check shows only a **Passes when** line: the pass/fail formula text, unquoted: and no **Found** value. That **Passes when** line is **Advanced-tier**: users without `Record_Health_Check_View_Diagnostics` see the failure message only (plus any display-formula Found/Expected chips). For balance and comparison checks you can declare two optional single-value formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
 
-| Field | Purpose |
-| ----- | ------- |
-| `DisplayFoundFormula__c` | single-value formula → **Found** (left side: what the record has). |
-| `DisplayExpectedFormula__c` | single-value formula → **Expected** (right side: required or target value). |
+| Setup field | Effect on pass or fail | Purpose |
+| --- | --- | --- |
+| Display Found Formula (`DisplayFoundFormula__c`) | Display only | Single-value formula shown as **Found**, representing what the record has. |
+| Display Expected Formula (`DisplayExpectedFormula__c`) | Display only | Single-value formula shown as **Expected**, representing the required or target value. |
+| Pass Condition (`PassConditionFormula__c`) | Decides pass or fail | Boolean formula that decides the result. |
 
 `PassConditionFormula__c` still decides pass/fail (it must return Boolean); these two are display-only and additive. The engine does not compare Found and Expected to each other: there is no separate "formula comparison operator" setting; the comparison lives inside `PassConditionFormula__c`.
 
@@ -174,11 +186,13 @@ pass/fail decision.
 > [!CAUTION]
 > **Keep Found/Expected consistent with Pass Condition.** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassConditionFormula__c` compares A to B, use A for `DisplayFoundFormula__c` and B for `DisplayExpectedFormula__c`. Otherwise a row can **pass while Found ≠ Expected** or fail while the values look equal. A safe habit: copy each side of the comparison in `PassConditionFormula__c` verbatim into the matching display formula.
 
-- **When to use boolean-only:** the formula is a simple presence/condition check (`NOT(ISBLANK(...))`, `ISPICKVAL(...)`) where echoing the condition as Expected is enough.
-- **When to add Found/Expected:** the formula compares two values (balance, threshold, equality, date) and seeing both sides is more actionable than the formula text.
-- Leave both blank to keep the original behavior (Expected = quoted `PassConditionFormula__c`, no Found).
-- If a Found/Expected formula can't be resolved, the row silently falls back to the default display: it never changes pass/fail.
-- Set **single-value formula Return Type** to the formulas' type (e.g. Number) to save FormulaEval calls in bulk/Flow runs; leave Auto if unsure.
+| Situation | Configuration | Display behavior |
+| --- | --- | --- |
+| Simple presence or condition check, such as `NOT(ISBLANK(Phone))` or `ISPICKVAL(Type, "Partner")` | Leave Display Found Formula and Display Expected Formula blank. | Shows the default Expected value from Pass Condition and no Found value. |
+| Balance, threshold, equality, or date comparison | Put the actual value in Display Found Formula and the target value in Display Expected Formula. | Shows both values without changing the pass/fail decision. |
+| A display formula cannot be resolved | No configuration change is required. | Silently returns to the default display and never changes pass/fail. |
+| Formula type is known | Set Single-Value Formula Return Type to Number, Text, Date, or the matching type. | Avoids unnecessary FormulaEval calls in bulk and Flow runs. |
+| Formula type is uncertain | Leave Single-Value Formula Return Type as Auto. | The Framework determines the type. |
 
 ### Which Evaluation Type compares what?
 
@@ -197,32 +211,40 @@ Use **Verify with a query** when one SOQL result is the primary value. Start wit
 [Customer handoff](../examples/query/01-customer-contact.md); use the [Query reference](../reference/reference-query.md)
 for result modes and edge cases.
 
-At least one Contact:
+### At least one Contact
 
-```text
-SourceQuery__c: SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}
-QueryResultHandling__c: ONE_RESULT
-ComparisonOperator__c: GREATER_THAN
-ExpectedValueSource__c: FIXED_VALUE
-ExpectedFixedValue__c: 0
-```
+| Setup field | Value |
+| --- | --- |
+| Source Query | <code>SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id&#124;001000000000000AAA}</code> |
+| How To Read Query Results | `ONE_RESULT` |
+| Comparison Operator | `GREATER_THAN` |
+| Expected Value Source | `FIXED_VALUE` |
+| Expected Fixed Value | `0` |
 
-Supported aggregates (alias required except bare `COUNT()`):
+### Supported aggregate functions
 
-```text
-COUNT(), COUNT(field), COUNT_DISTINCT(field), SUM(field), AVG(field), MIN(field), MAX(field)
-```
+An alias is required except for bare `COUNT()`.
 
-SUM equals 10% of Annual Revenue:
+| Aggregate | Example | Result |
+| --- | --- | --- |
+| `COUNT()` | `SELECT COUNT() FROM Contact` | Number of returned records |
+| `COUNT(field)` | `SELECT COUNT(Email) emailCount FROM Contact` | Number of non-null field values |
+| `COUNT_DISTINCT(field)` | `SELECT COUNT_DISTINCT(LeadSource) sourceCount FROM Contact` | Number of distinct non-null values |
+| `SUM(field)` | `SELECT SUM(Amount) totalAmount FROM Opportunity` | Total numeric value |
+| `AVG(field)` | `SELECT AVG(Amount) averageAmount FROM Opportunity` | Average numeric value |
+| `MIN(field)` | `SELECT MIN(CloseDate) earliestCloseDate FROM Opportunity` | Lowest value |
+| `MAX(field)` | `SELECT MAX(CloseDate) latestCloseDate FROM Opportunity` | Highest value |
 
-```text
-SourceQuery__c: SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false
-SourceQueryField__c: totalAmount
-QueryResultHandling__c: ONE_RESULT
-ComparisonOperator__c: Equals
-ExpectedValueSource__c: RECORD_FORMULA
-ExpectedRecordFormula__c: AnnualRevenue * 0.1
-```
+### Open pipeline equals 10% of Annual Revenue
+
+| Setup field | Value |
+| --- | --- |
+| Source Query | <code>SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id&#124;001000000000000AAA} AND IsClosed = false</code> |
+| Source Query Field | `totalAmount` |
+| How To Read Query Results | `ONE_RESULT` |
+| Comparison Operator | `EQUALS` |
+| Expected Value Source | `RECORD_FORMULA` |
+| Expected Record Formula | `AnnualRevenue * 0.1` |
 
 ## 8. Compare two queries Rules
 
@@ -231,17 +253,19 @@ Use when both sides come from SOQL. Start with the
 [Compare two queries reference](../reference/reference-compare-two-queries.md) for the complete
 contract.
 
-- `ONE_RESULT` + single-value operators for single values.
-- `COMPARE_AS_LISTS` + `LISTS_OVERLAP`, `LISTS_CONTAIN_ALL`, or `LISTS_MATCH_EXACTLY` for lists (**case-insensitive** list matching; `CONTAINS` / `DOES_NOT_CONTAIN` on single-value text are **case-sensitive**).
+| Result shape | How To Read Query Results | Comparison operators | Matching behavior |
+| --- | --- | --- | --- |
+| One value from each query | `ONE_RESULT` | Single-value operators | `CONTAINS` and `DOES_NOT_CONTAIN` text comparisons are case-sensitive. |
+| A list from each query | `COMPARE_AS_LISTS` | `LISTS_OVERLAP`, `LISTS_CONTAIN_ALL`, `LISTS_MATCH_EXACTLY` | List matching is case-insensitive. |
 
-Customer contact coverage keeps pace with open pipeline:
+### Customer contact coverage keeps pace with open pipeline
 
-```text
-SourceQuery__c: SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}
-ComparisonQuery__c: SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false
-QueryResultHandling__c: ONE_RESULT
-ComparisonOperator__c: GREATER_THAN_OR_EQUAL
-```
+| Setup field | Value |
+| --- | --- |
+| Source Query | <code>SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id&#124;001000000000000AAA}</code> |
+| Comparison Query | <code>SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id&#124;001000000000000AAA} AND IsClosed = false</code> |
+| How To Read Query Results | `ONE_RESULT` |
+| Comparison Operator | `GREATER_THAN_OR_EQUAL` |
 
 ## 9. Apex rules
 
@@ -275,22 +299,131 @@ Set **Prerequisite Rule** to the prerequisite `DeveloperName`. Use sparingly for
 
 ## 11. Merge tokens
 
-Messages and SOQL may use any readable field on the base record: **standard or custom**: by API name:
+Merge tokens let one Rule speak about the record, its configuration, and its result without hard-coding those
+values. Use the namespace and property exactly as shown.
+
+The fallback is optional. A token without one inserts the resolved value when populated and inserts blank text when
+the value is null, empty, or whitespace-only:
+
+`{!rhcRule.checkTitle}` <!-- merge-fallback-optional-example -->
+
+For example, adding ` needs attention.` after that token produces `Data quality needs attention.` when the Check
+Title is `Data quality`. If the Check Title is blank, it produces ` needs attention.`. Check Title is required on
+active Rules, but the same blank behavior matters for optional record fields and relationships.
+
+Append `|fallback text` when a blank value should produce clear wording instead:
 
 ```text
-{!record.Id}
-{!record.Name}
-{!record.BillingCity}
-{!record.Parent.Name}
-{!record.Customer_Tier__c}
-{!record.Primary_Contact__c}
-{!record.Contract_Renewal_Date__c}
+{!record.Parent.Name|Independent account}
+{!record.Owner.Manager.Name|No manager assigned}
+{!rhcResult.foundValue|Not measured}
 ```
 
-- Use field API names exactly as shown in Setup (custom fields include the `__c` suffix).
-- Missing message tokens become blank text.
-- SOQL tokens are escaped and typed by the framework (strings quoted, numbers/dates/booleans unquoted).
-- The engine loads every token field from the record before evaluation; if the running user lacks FLS, the check may return `RECORD_NOT_ACCESSIBLE` or `MISSING_BIND_VALUE`.
+The fallback is literal text; it is not parsed as another merge token. Without an explicit fallback, display text
+keeps the existing graceful behavior and inserts blank text. A URL with a blank token and no fallback is suppressed
+instead of producing a broken link. In SOQL, the fallback is converted to the field's type; an invalid number,
+date, date/time, time, or Boolean fallback returns `MISSING_BIND_VALUE` rather than running a misleading query.
+
+### `record`: Record fields
+
+Use any readable field API name from the current record. Relationship paths may cross up to five lookups.
+
+<table>
+  <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>{!record.Name|this record}</code></td><td>The current record's Name.</td><td><code>Review {!record.Name|this record} before approval.</code></td></tr>
+    <tr><td><code>{!record.FieldApiName|Fallback value}</code></td><td>Any readable field on the current record. Replace <code>FieldApiName</code> with the Salesforce API name.</td><td><code>{!record.Customer_Tier__c|Standard} customers require an annual review.</code></td></tr>
+    <tr><td><code>{!record.Owner.Name|an unassigned owner}</code></td><td>A field from a related record.</td><td><code>Ask {!record.Owner.Name|an unassigned owner} to confirm the account details.</code></td></tr>
+    <tr><td><code>{!record.Parent.Parent.Name|no top-level account}</code></td><td>A field reached through multiple lookup relationships.</td><td><code>Escalate the review to {!record.Parent.Parent.Name|no top-level account}.</code></td></tr>
+  </tbody>
+</table>
+
+### `rhcRule`: Current Rule
+
+<table>
+  <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>{!rhcRule.developerName|rule unavailable}</code></td><td>The Rule's stable Developer Name.</td><td><code>Give support rule {!rhcRule.developerName|rule unavailable}.</code></td></tr>
+    <tr><td><code>{!rhcRule.masterLabel|Unnamed rule}</code></td><td>The Rule label shown in Setup.</td><td><code>Review the configuration for {!rhcRule.masterLabel|Unnamed rule}.</code></td></tr>
+    <tr><td><code>{!rhcRule.checkTitle|this check}</code></td><td>The user-facing Check Title.</td><td><code>{!rhcRule.checkTitle|This check} needs attention.</code></td></tr>
+    <tr><td><code>{!rhcRule.checkDescription|No description provided}</code></td><td>The Check Description.</td><td><code>Requirement: {!rhcRule.checkDescription|No description provided}.</code></td></tr>
+    <tr><td><code>{!rhcRule.category|general}</code></td><td>The Rule's Category label.</td><td><code>This is a {!rhcRule.category|general} readiness requirement.</code></td></tr>
+    <tr><td><code>{!rhcRule.evaluationType|not assigned}</code></td><td>The Evaluation Type label.</td><td><code>This requirement uses {!rhcRule.evaluationType|an unassigned evaluation method}.</code></td></tr>
+    <tr><td><code>{!rhcRule.failureSeverity|important}</code></td><td>The Failure Severity label.</td><td><code>This is a {!rhcRule.failureSeverity|important} issue.</code></td></tr>
+    <tr><td><code>{!rhcRule.evaluationOrder|not assigned}</code></td><td>The Rule's evaluation order.</td><td><code>This requirement runs at position {!rhcRule.evaluationOrder|not assigned}.</code></td></tr>
+  </tbody>
+</table>
+
+### `rhcSet`: Current Check Set
+
+<table>
+  <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>{!rhcSet.developerName|set unavailable}</code></td><td>The Check Set's stable Developer Name.</td><td><code>Give support Check Set {!rhcSet.developerName|set unavailable}.</code></td></tr>
+    <tr><td><code>{!rhcSet.masterLabel|Unnamed check set}</code></td><td>The Check Set label shown in Setup.</td><td><code>Review the configuration for {!rhcSet.masterLabel|Unnamed check set}.</code></td></tr>
+    <tr><td><code>{!rhcSet.cardTitle|Record Health Check}</code></td><td>The title users see on the card.</td><td><code>Return to {!rhcSet.cardTitle|Record Health Check} after making the correction.</code></td></tr>
+    <tr><td><code>{!rhcSet.cardSubtitle|No additional details}</code></td><td>The subtitle users see on the card.</td><td><code>Review scope: {!rhcSet.cardSubtitle|No additional details}.</code></td></tr>
+    <tr><td><code>{!rhcSet.objectApiName|object unavailable}</code></td><td>The Salesforce object API name configured for the Check Set.</td><td><code>This requirement evaluates a {!rhcSet.objectApiName|record} record.</code></td></tr>
+  </tbody>
+</table>
+
+### `rhcResult`: Final Rule result
+
+These values are available after the Rule has been evaluated.
+
+<table>
+  <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>{!rhcResult.status|an unknown result}</code></td><td>The final status, such as Pass, Fail, Skipped, or Unable to Evaluate.</td><td><code>The review returned {!rhcResult.status|an unknown result}.</code></td></tr>
+    <tr><td><code>{!rhcResult.foundValue|not measured}</code></td><td>The value the Rule found.</td><td><code>Found {!rhcResult.foundValue|not measured} open cases.</code></td></tr>
+    <tr><td><code>{!rhcResult.foundValuePluralSuffix|s}</code></td><td>An empty value for one item or <code>s</code> for multiple items.</td><td><code>Found {!rhcResult.foundValue|no} issue{!rhcResult.foundValuePluralSuffix|s}.</code></td></tr>
+    <tr><td><code>{!rhcResult.expectedValue|the configured target}</code></td><td>The value the Rule expected.</td><td><code>Expected {!rhcResult.expectedValue|the configured target}.</code></td></tr>
+    <tr><td><code>{!rhcResult.failedRecordCount|0}</code></td><td>The number of returned records that failed.</td><td><code>{!rhcResult.failedRecordCount|No} contacts are missing email.</code></td></tr>
+    <tr><td><code>{!rhcResult.totalRecordCount|0}</code></td><td>The total number of returned records evaluated.</td><td><code>Reviewed {!rhcResult.totalRecordCount|no} related contacts.</code></td></tr>
+    <tr><td><code>{!rhcResult.reasonCode|reason unavailable}</code></td><td>The diagnostic Reason Code.</td><td><code>The check could not finish because {!rhcResult.reasonCode|the reason is unavailable}.</code></td></tr>
+  </tbody>
+</table>
+
+### `rhcRun`: Current run
+
+<table>
+  <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>{!rhcRun.runId|unavailable}</code></td><td>The identifier shared by checks in the same run.</td><td><code>If the problem continues, give support run {!rhcRun.runId|unavailable}.</code></td></tr>
+    <tr><td><code>{!rhcRun.source|an unknown source}</code></td><td>Where the run started, such as the record page, Apex, or Flow.</td><td><code>This review was started from {!rhcRun.source|an unknown source}.</code></td></tr>
+    <tr><td><code>{!rhcRun.startedAt|start time unavailable}</code></td><td>When the run started.</td><td><code>The review started at {!rhcRun.startedAt|an unknown time}.</code></td></tr>
+    <tr><td><code>{!rhcRun.completedAt|completion time unavailable}</code></td><td>When the run completed.</td><td><code>The review completed at {!rhcRun.completedAt|an unknown time}.</code></td></tr>
+    <tr><td><code>{!rhcRun.durationMs|0}</code></td><td>How many milliseconds the run took.</td><td><code>The review completed in {!rhcRun.durationMs|0} milliseconds.</code></td></tr>
+  </tbody>
+</table>
+
+The field determines which contexts are valid:
+
+| Rule field type | Valid token namespaces |
+| --- | --- |
+| Failure, unable-to-evaluate, not-applicable, fix, action-label, Found-text, and Expected-text fields | `record`, `rhcResult`, `rhcRun`, `rhcRule`, `rhcSet` |
+| Action URL | `record`, `rhcRun`, `rhcRule`, `rhcSet`; result tokens are intentionally rejected |
+| Source Query, Comparison Query, and applicability Count Query | `record` only |
+| Salesforce formula fields | Use Salesforce formula syntax directly; do not put merge tokens inside formulas |
+
+- Use field API names exactly as shown in Setup; custom fields include the `__c` suffix.
+- Record tokens support text, ID/reference, number, currency, percent, checkbox, date, date/time, picklist,
+  multi-select picklist, email, phone, URL, encrypted-text values, and relationship fields when readable.
+- A blank value resolves to blank text. A null relationship makes its record token blank.
+- The explicit fallback applies to null, empty, and whitespace-only values. It does not replace `0`, `false`, or a
+  populated value.
+- Fallback text may contain spaces and additional `|` characters; everything after the first `|` is the fallback.
+- Fallback text is inserted once and never recursively expanded.
+- Curly braces are reserved for complete merge tokens. Extra, nested, or unmatched braces are rejected as
+  `MALFORMED_TOKEN` instead of being rendered as text.
+- Quotes, apostrophes, slashes, and additional pipes in a fallback are literal characters; they do not enable
+  formulas, Markdown, HTML, nested tokens, or code execution.
+- URL token values are URL-encoded automatically.
+- SOQL tokens are escaped and typed automatically: strings are quoted; numbers, dates, date/times, and Booleans
+  are bound in their native form. An unquoted multi-select token expands to a value tuple for `INCLUDES` or
+  `EXCLUDES`; a quoted token preserves its semicolon-delimited text.
+- The engine loads token fields before evaluation. If the running user lacks object or field access, the result
+  can be `RECORD_NOT_ACCESSIBLE` or `MISSING_BIND_VALUE`.
 
 SOQL examples live in the local [Query](../examples/README.md#query-examples) and
 [Compare two queries](../examples/README.md#compare-two-queries-examples) libraries.
@@ -300,10 +433,10 @@ SOQL examples live in the local [Query](../examples/README.md#query-examples) an
 **Message When Failed** and **Message When Unable To Evaluate** support multiple lines. Press **Enter** in Setup to start a new line; each line renders as a separate line on the card. Use a blank line (press Enter twice) to add spacing between paragraphs.
 
 ```text
-{!record.Name} is out of balance.
+{!record.Name|this record} is out of balance.
 
-Debit total: {!record.Debit_Total__c}
-Expected credit net: {!record.Credit_Net__c}
+Debit total: {!record.Debit_Total__c|0}
+Expected credit net: {!record.Credit_Net__c|0}
 
 Contact Finance to reconcile.
 ```
@@ -419,8 +552,8 @@ must receive one Rule result before it can decide whether starting the next Rule
 | Scenario | Behavior |
 | -------- | -------- |
 | Child subquery with inner `ORDER BY`/`LIMIT` on any query-based check | Handled by depth-0-aware `RecordHealthCheckSoqlTemplate` on all paths |
-| Multi-select picklist tokens | Unquoted `{!record.Field}` on a resolved multi-select expands to `('A', 'B')`; quoted `'{!record.Field}'` keeps `'A;B;C'`. Relationship paths follow the same rules when the related record is loaded. |
-| Same `{!record.Field}` token used quoted and unquoted in one SOQL template | Each form substituted independently (2026-06-22). `Name LIKE '{!record.Name}%'` works when the exact `'{!record.Name}'` substring appears in the template. |
+| Multi-select picklist tokens | Unquoted `{!record.Field\|Fallback value}` on a resolved multi-select expands to `('A', 'B')`; quoted `'{!record.Field\|Fallback value}'` keeps `'A;B;C'`. Relationship paths follow the same rules when the related record is loaded. |
+| Same `{!record.Field\|Fallback value}` token used quoted and unquoted in one SOQL template | Each form substituted independently (2026-06-22). `Name LIKE '{!record.Name\|this record}%'` works when the exact `'{!record.Name\|this record}'` substring appears in the template. |
 | Null field on existing row (multi-row Query) | Rows returned but value null + `SKIP_RECORD` → **SKIPPED** / `VALUE_IS_EMPTY` (not `NoRowsResult__c`) |
 | `COMPARE_TWO_QUERIES` empty query side (`ONE_RESULT`) | Governed by **`NoRowsResult__c`** before null-field logic: distinct from null on a returned row |
 | Semicolon-only multi-select bind | Value `;` alone can produce invalid `INCLUDES ()` SOQL: avoid blank multi-select values in bind tokens |

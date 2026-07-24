@@ -709,7 +709,7 @@
   width: 1.25rem;
   height: 1.25rem;
   padding: 0;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 0.2rem;
   background: transparent;
   cursor: pointer;
@@ -730,8 +730,8 @@
   display: none;
 }
 
-.rhc-cmp__toggle:hover,
-.rhc-cmp__toggle:focus-visible {
+.rhc-cmp__toggle:hover {
+  border-color: var(--slds-g-color-border-base-4, #939393);
   background: var(--slds-g-color-neutral-base-90, #e5e5e5);
 }
 

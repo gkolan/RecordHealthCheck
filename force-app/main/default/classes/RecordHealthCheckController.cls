@@ -177,7 +177,6 @@ public with sharing class RecordHealthCheckController {
   public static void completeRun(
     String checkSetDeveloperName,
     String runId,
-    List<RecordHealthCheckResult> results,
     String source,
     Id recordId
   ) {
@@ -186,20 +185,38 @@ public with sharing class RecordHealthCheckController {
       if (
         effectiveSource !=
         RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED ||
-        results == null
+        recordId == null
       ) {
         return;
       }
-      RecordHealthCheckSetResult response = new RecordHealthCheckSetResult();
-      response.checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+      String effectiveCheckSetName = RecordHealthCheckLogger.normalizeIdentifier(
         checkSetDeveloperName,
         80
       );
+      String effectiveRunId = RecordHealthCheckLogger.normalizeIdentifier(
+        runId,
+        120
+      );
+      RecordHealthCheckDefinitionResponse definitions = configService.getDefinitionResponse(
+        effectiveCheckSetName,
+        recordId
+      );
+      RecordHealthCheckSetResult response = new RecordHealthCheckSetResult();
+      response.checkSetDeveloperName = effectiveCheckSetName;
       response.recordId = recordId;
-      response.runId = RecordHealthCheckLogger.normalizeIdentifier(runId, 120);
-      for (RecordHealthCheckResult result : results) {
-        if (result != null)
-          response.add(result);
+      response.runId = effectiveRunId;
+      // Never trust browser-supplied result objects for a lifecycle event.
+      // Authoritative counts come only from server-owned metadata and results.
+      for (RecordHealthCheckDefinition definition : definitions.checks) {
+        response.add(
+          engine.evaluate(
+            effectiveCheckSetName,
+            definition.developerName,
+            recordId,
+            effectiveRunId,
+            effectiveSource
+          )
+        );
       }
       response.finish();
       RecordHealthCheckLifecyclePublisher.publishCompletedSet(

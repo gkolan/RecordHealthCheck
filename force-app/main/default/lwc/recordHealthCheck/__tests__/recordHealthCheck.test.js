@@ -544,6 +544,7 @@ describe("c-record-health-check — run orchestration", () => {
     expect(completeRun).toHaveBeenCalledWith(
       expect.objectContaining({ source: "USER_INITIATED" })
     );
+    expect(completeRun.mock.calls[0][0]).not.toHaveProperty("results");
   });
 
   it("threads a correlation runId into both Apex calls", async () => {
@@ -2034,6 +2035,34 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     expect(toggle.textContent.trim()).toBe("+");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(toggle.getAttribute("aria-label")).toBe("Expand value");
+  });
+
+  it("remeasures clamped values when the viewport is resized", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ...FAIL_NO_SEVERITY("Check_A"),
+      actualValue: "A value that starts fitting and later wraps",
+      expectedValue: null
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const chip = element.shadowRoot.querySelector("[data-clampval]");
+    const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
+    Object.defineProperty(chip, "clientHeight", {
+      configurable: true,
+      value: 20
+    });
+    Object.defineProperty(chip, "scrollHeight", {
+      configurable: true,
+      value: 48
+    });
+
+    window.dispatchEvent(new CustomEvent("resize"));
+
+    expect(toggle.hidden).toBe(false);
   });
 
   it("does not render the comparison block on a passing row", async () => {

@@ -9,11 +9,12 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>PASS</fullName><default
-        >false</default></value><value><fullName>FAIL</fullName><default
-        >false</default></value><value><fullName>SKIP</fullName><default
+            <value><fullName>PASS</fullName><label>Pass</label><default
+        >false</default></value><value><fullName>FAIL</fullName><label
+        >Fail</label><default>false</default></value><value><fullName
+        >SKIP</fullName><label>Skip</label><default
         >false</default></value><value><fullName
-        >UNABLE_TO_EVALUATE</fullName><default
+        >UNABLE_TO_EVALUATE</fullName><label>Unable to evaluate</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

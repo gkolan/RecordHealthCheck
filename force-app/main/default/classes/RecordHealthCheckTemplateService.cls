@@ -21,17 +21,25 @@ public class RecordHealthCheckTemplateService {
     Matcher matcher = TOKEN_PATTERN.matcher(template);
     while (matcher.find()) {
       String body = matcher.group(1);
-      Integer dot = body.indexOf('.');
-      String namespaceName = dot > 0 ? body.substring(0, dot) : null;
+      Integer fallbackSeparator = body.indexOf('|');
+      String reference = fallbackSeparator >= 0
+        ? body.substring(0, fallbackSeparator).trim()
+        : body.trim();
+      String fallbackValue = fallbackSeparator >= 0
+        ? body.substring(fallbackSeparator + 1)
+        : null;
+      Integer dot = reference.indexOf('.');
+      String namespaceName = dot > 0 ? reference.substring(0, dot) : null;
       String property = dot > 0 &&
-        dot < body.length() - 1
-        ? body.substring(dot + 1)
+        dot < reference.length() - 1
+        ? reference.substring(dot + 1)
         : null;
       tokens.add(
         new RecordHealthCheckToken(
           matcher.group(0),
           namespaceName,
           property,
+          fallbackValue,
           matcher.start(),
           matcher.end()
         )
@@ -48,6 +56,16 @@ public class RecordHealthCheckTemplateService {
     if (String.isBlank(template))
       return issues;
     List<RecordHealthCheckToken> tokens = parse(template);
+    if (containsStrayBrace(template, tokens)) {
+      issues.add(
+        issue(
+          'MALFORMED_TOKEN',
+          null,
+          'Curly braces are reserved for complete merge tokens and cannot appear outside one.'
+        )
+      );
+      return issues;
+    }
     if (tokens.size() > MAX_TOKENS) {
       issues.add(
         issue(
@@ -113,18 +131,22 @@ public class RecordHealthCheckTemplateService {
         );
       }
     }
-    if (
-      (template.contains('{!') || template.contains('}')) && tokens.isEmpty()
-    ) {
-      issues.add(
-        issue(
-          'MALFORMED_TOKEN',
-          null,
-          'The template contains malformed merge-token syntax.'
-        )
-      );
-    }
     return issues;
+  }
+
+  private static Boolean containsStrayBrace(
+    String template,
+    List<RecordHealthCheckToken> tokens
+  ) {
+    Integer cursor = 0;
+    for (RecordHealthCheckToken token : tokens) {
+      String outsideToken = template.substring(cursor, token.startIndex);
+      if (outsideToken.contains('{') || outsideToken.contains('}'))
+        return true;
+      cursor = token.endIndex;
+    }
+    String trailingText = template.substring(cursor);
+    return trailingText.contains('{') || trailingText.contains('}');
   }
 
   private static RecordHealthCheckTokenIssue issue(
@@ -182,6 +204,19 @@ public class RecordHealthCheckTemplateService {
     for (RecordHealthCheckToken token : parse(template)) {
       Object raw = valueFor(token, context);
       String value = raw == null ? '' : formatValue(raw);
+      if (String.isBlank(value)) {
+        if (token.fallbackValue != null) {
+          value = token.fallbackValue;
+        } else if (urlEncode) {
+          TemplateException ex = new TemplateException(
+            'A URL token resolved blank and has no explicit fallback. Token: ' +
+            token.expression
+          );
+          ex.reasonCode = 'MISSING_TOKEN_VALUE';
+          ex.token = token.expression;
+          throw ex;
+        }
+      }
       if (urlEncode && String.isNotBlank(value))
         value = EncodingUtil.urlEncode(value, 'UTF-8');
       resolved += template.substring(lastEnd, token.startIndex) + value;

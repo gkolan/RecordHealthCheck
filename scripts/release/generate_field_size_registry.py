@@ -51,7 +51,7 @@ def field_link(object_name, label, field):
     page = (
         "../metadata/fields-check-set.md"
         if object_name == "Record_Health_Check_Set__mdt"
-        else "../metadata/fields-rule.md"
+        else "../metadata/fields-check-rule.md"
     )
     anchor = github_anchor(f"{label} ({field})")
     return f"[`{field}`]({page}#{anchor})"
@@ -194,7 +194,7 @@ lines += [
     "## Related",
     "",
     "- [Check Set fields](../metadata/fields-check-set.md)",
-    "- [Rule fields](../metadata/fields-rule.md)",
+    "- [Rule fields](../metadata/fields-check-rule.md)",
     "- [Configuration guide](../guides/configure-check-sets-and-rules.md)",
     "- [Architecture map](reference-architecture-map.md)",
     "",

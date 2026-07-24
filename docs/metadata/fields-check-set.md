@@ -1,30 +1,21 @@
 # Check Set fields (`Record_Health_Check_Set__mdt`)
 
-> [!NOTE]
-> On this page, find the Check Set field that controls the card, run experience, result display, diagnostics, or lifecycle events and configure it with the correct Salesforce value.
->
-> **Reference**
->
-> - Every field below is sourced from shipped Custom Metadata.
-> - Text-field examples show one Account readiness card; Allowed values are sufficient for checkboxes and picklists.
-> - Installation guides provide complete setup paths.
+This page preserves the exact contract for every Check Set field: the label shown in Setup, API
+name, type, default, allowed values, and runtime behavior. Use the short decision path first, then
+open an individual field only when you need its exact details.
 
-## When to use this reference
+## Make the Check Set decisions
 
-Consult this reference when configuring the Record Health Check Lightning component and you need to
-know what one Check Set field controls. Start with the field index, then use **Used when** to decide
-whether the field belongs in your configuration.
+| Decision | Ask | Configure |
+| --- | --- | --- |
+| Where does this card belong? | Which record-page object will it evaluate? | [Object](#object-objectapiname__c) |
+| When should checks run? | Automatically, on request, or both? | [When Checks Run](#when-checks-run-cardrunmode__c) |
+| What should users see first? | All checks immediately, or a summary they can reveal? | [Reveal Mode](#reveal-mode-cardrevealmode__c) |
+| How much result detail is useful? | Should Found, Expected, passed, and skipped results always appear, appear conditionally, or stay hidden? | [Found/Expected Display](#foundexpected-display-foundexpecteddisplay__c), [Passed Checks](#passed-checks-passedchecksdisplay__c), and [Skipped Checks](#skipped-checks-skippedchecksdisplay__c) |
+| What happens during a problem? | Should later checks continue, and do administrators temporarily need diagnostics? | [Stop after a system error](#stop-after-a-system-error-stoponsystemerror__c) and [Show Diagnostics](#show-diagnostics-showdiagnostics__c) |
+| Does another process need the completed run? | Should a deliberate run publish one summary event? | [Publish Run Event](#publish-run-event-publishrunevent__c) |
 
-| Your task in Salesforce | Start with |
-| --- | --- |
-| Connect a Check Set to the correct Lightning record page | [Object](#object-objectapiname__c) |
-| Control whether Rules run automatically or on request | [When Checks Run](#when-checks-run-cardrunmode__c) |
-| Decide how results appear on the card | [Reveal Mode](#reveal-mode-cardrevealmode__c), [Found/Expected Display](#foundexpected-display-foundexpecteddisplay__c), and [Passed Checks](#passed-checks-passedchecksdisplay__c) |
-| Temporarily investigate a configuration problem | [Show Diagnostics](#show-diagnostics-showdiagnostics__c) |
-| Publish one event after a deliberate Check Set run | [Publish Run Event](#publish-run-event-publishrunevent__c) |
-
-> [!TIP]
-> If you are creating your first Check Set, follow [Create your first Rule](../installation/03-create-your-first-rule.md). Return here only when you need the exact Setup label, API name, default, or allowed value.
+For the complete creation flow, use [Create your first Rule](../installation/03-create-your-first-rule.md).
 
 ## Field index
 
@@ -44,6 +35,17 @@ whether the field belongs in your configuration.
 | [Skipped Checks](#skipped-checks-skippedchecksdisplay__c) | `SkippedChecksDisplay__c` | Result display |
 | [Show Diagnostics](#show-diagnostics-showdiagnostics__c) | `ShowDiagnostics__c` | Troubleshooting |
 | [Publish Run Event](#publish-run-event-publishrunevent__c) | `PublishRunEvent__c` | Lifecycle events |
+
+## Read an individual field
+
+| If you need to know… | Read these rows |
+| --- | --- |
+| What Salesforce calls it | Setup label and API name |
+| Whether you must configure it | Always required and Default |
+| What you can enter | Type, Capacity, and Allowed values |
+| When it affects the Check Set | Used when |
+| What users or the Framework experience | Description and Help text |
+| What a realistic value looks like | Example |
 
 ## 1. Identity and execution
 
@@ -279,6 +281,6 @@ whether the field belongs in your configuration.
 
 ## Related
 
-- [Rule fields](fields-rule.md)
+- [Rule fields](fields-check-rule.md)
 - [Create your first Rule](../installation/03-create-your-first-rule.md)
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

@@ -9,9 +9,11 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>SKIP_RECORD</fullName><default
-        >false</default></value><value><fullName>AS_BLANK</fullName><default
-        >false</default></value><value><fullName>AS_NO_MATCH</fullName><default
+            <value><fullName>SKIP_RECORD</fullName><label
+        >Ignore the record</label><default>false</default></value><value
+      ><fullName>AS_BLANK</fullName><label>Treat as blank</label><default
+        >false</default></value><value><fullName>AS_NO_MATCH</fullName><label
+        >Treat as not matching</label><default
         >true</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

@@ -1,13 +1,10 @@
 # Log Platform Event (`Record_Health_Check_Log__e`)
 
-> [!NOTE]
-> On this page, use the restricted Log Platform Event to preserve and correlate Framework errors without exposing diagnostic detail to business workflows or creating subscriber loops.
-
 `Record_Health_Check_Log__e` carries structured Framework `ERROR` information. Unlike the two
 lifecycle events, it uses **Publish Immediately**, contains restricted diagnostic detail, and is not
 controlled by Check Set or Rule publication fields.
 
-This event is for technical operations and support, not business readiness workflows.
+Use this event for restricted technical operations and support, not readiness workflows.
 
 ## When to use this event
 
@@ -90,12 +87,14 @@ unrestricted support channel.
 This event can contain a record ID, user ID, exception message, exception type, and stack trace.
 Treat the event and every persisted copy as restricted operational data.
 
-- Grant event subscription and persisted-log access only to approved administrators or support staff.
-- Apply least privilege to the subscriber's Apex class, Flow, integration user, and destination object.
-- Define retention and deletion requirements for persisted diagnostics.
-- Do not forward raw payloads to email, chat, tickets, or external systems without security review.
-- Do not assume sanitization removes every organization-specific identifier from an exception message.
-- Keep Found, Expected, and source field values out of custom logging additions.
+| Concern | Requirement |
+| --- | --- |
+| Access | Grant event subscription and persisted-log access only to approved administrators or support staff. |
+| Subscriber permissions | Apply least privilege to the Apex class, Flow, integration user, and destination object. |
+| Retention | Define deletion requirements for persisted diagnostics. |
+| External sharing | Do not forward raw payloads to email, chat, tickets, or external systems without security review. |
+| Sanitization | Assume an exception message can still contain organization-specific identifiers. |
+| Custom additions | Keep Found, Expected, and source field values out of custom logging. |
 
 ## Subscriber loop protection
 
@@ -115,11 +114,13 @@ repeat.
 
 ## Known limitations
 
-- An uncatchable governor-limit abort can prevent `flush()` and produce no Log event.
-- Publish acceptance does not prove delivery, persistence, alerting, or successful investigation.
-- Platform Event retention is temporary; long-term history requires a subscriber-owned store.
-- A missing Record ID or metadata name can be legitimate when the error occurred before that context was known.
-- `Code__c` can contain Framework-internal codes; use the public [Reason Code registry](../reference/reference-reason-codes.md) only for public Rule outcomes.
+| Limitation | Design response |
+| --- | --- |
+| An uncatchable governor-limit abort can prevent `flush()` and produce no Log event. | Keep Salesforce debug logs and platform exception monitoring available. |
+| Publish acceptance does not prove delivery, persistence, alerting, or investigation. | Monitor the subscriber and every downstream destination independently. |
+| Platform Event retention is temporary. | Persist events in a subscriber-owned store when long-term history is required. |
+| Record ID or metadata name can be blank when the failure occurred before that context was known. | Treat those fields as optional during correlation. |
+| `Code__c` can contain Framework-internal codes. | Use the public [Reason Code registry](../reference/reference-reason-codes.md) only for public Rule outcomes. |
 
 ## Related
 

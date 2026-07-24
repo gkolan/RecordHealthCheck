@@ -9,9 +9,10 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>RUN_ON_LOAD</fullName><default
-        >false</default></value><value><fullName
-        >RUN_ON_REQUEST</fullName><default
+            <value><fullName>RUN_ON_LOAD</fullName><label
+        >When the page opens</label><default>false</default></value><value
+      ><fullName>RUN_ON_REQUEST</fullName><label
+        >When the user clicks Run</label><default
         >true</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

@@ -9,8 +9,9 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>ALL_AT_ONCE</fullName><default
-        >false</default></value><value><fullName>ONE_BY_ONE</fullName><default
+            <value><fullName>ALL_AT_ONCE</fullName><label
+        >All at once</label><default>false</default></value><value><fullName
+        >ONE_BY_ONE</fullName><label>One by one</label><default
         >true</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

@@ -33,5 +33,5 @@ For every Query mode, comparison source, no-row behavior, empty-value option, an
 
 - [All practical examples](../README.md)
 - [Reference: Query](../../reference/reference-query.md)
-- [Rule fields](../../metadata/fields-rule.md)
+- [Rule fields](../../metadata/fields-check-rule.md)
 - [Configure Check Sets and Rules](../../guides/configure-check-sets-and-rules.md)

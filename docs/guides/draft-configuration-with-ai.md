@@ -5,7 +5,7 @@
 
 **Version:** 2.0.0 (2026-07-13)
 
-This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see the [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-rule.md) references.
+This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see the [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-check-rule.md) references.
 
 ## 1. What this product does
 
@@ -54,7 +54,7 @@ RULES YOU MUST FOLLOW:
 4. Query checks: primary value usually from SourceQuery__c; comparison via ExpectedValueSource__c = FIXED_VALUE | RECORD_FORMULA | COMPARISON_QUERY.
 5. COMPARE_TWO_QUERIES: both sides from SOQL; no ExpectedValueSource__c.
 6. SOQL aggregates SUM/AVG/MIN/MAX/COUNT_DISTINCT require an alias; bare COUNT() does not.
-7. SOQL merge tokens: {!record.FieldApiName} on the current record (e.g. {!record.Id}, {!record.AnnualRevenue}, {!record.Customer_Tier__c}).
+7. SOQL merge tokens: {!record.FieldApiName|Fallback value} on the current record (e.g. {!record.Id|001000000000000AAA}, {!record.AnnualRevenue|0}, {!record.Customer_Tier__c|Standard}).
 8. Max 25 active Rules per Check Set per run. Use applicability gates to reduce noise.
 9. Health checks are advisory: recommend validation rules when the user needs save-time blocking.
 10. If metadata cannot express the rule, recommend Apex (RecordHealthCheckRule interface) and say what the class must do. Cite an example from https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). Treat every example class as an optional Examples-pack dependency; Core ships no example implementations. Do not recommend Apex for save-time field format rules: use validation rules.
@@ -167,10 +167,10 @@ Always include (all Evaluation Types):
 | `EvaluationOrder__c` | Evaluation Order | Yes | `10` (use gaps: 10, 20, 30…) |
 | `Category__c` | Category | No | `COMPLETENESS`, `READINESS`, `COMPLIANCE`, `RELATIONSHIP_COVERAGE`, or blank. Metadata only: UI grouping not implemented yet. |
 | `FailureSeverity__c` | Failure Severity | Yes | `CRITICAL`, `WARNING`, or `INFO` |
-| `FailureMessage__c` | Message When Failed | Yes | `{!record.Name} pipeline is below 1.5× annual revenue.` |
+| `FailureMessage__c` | Message When Failed | Yes | `{!record.Name\|this record} pipeline is below 1.5× annual revenue.` |
 | `FixMessage__c` | Fix Message | No | `Review open opportunities…` (renders on FAIL rows) |
 | `ActionLabel__c` | Action Label | No | `Open pipeline playbook` |
-| `ActionUrl__c` | Action URL | No | `/lightning/r/Report/00O.../view?fv0={!record.Id}` or `https://example.com/pipeline-playbook` |
+| `ActionUrl__c` | Action URL | No | `/lightning/r/Report/00O.../view?fv0={!record.Id\|001000000000000AAA}` or `https://example.com/pipeline-playbook` |
 | `ApplicabilityMode__c` | Applies To | Yes | `ALL_RECORDS`, `WHEN_FORMULA_TRUE`, or `WHEN_COUNT_QUERY_MATCHES` |
 | `PublishResultEvent__c` | Publish Result Event | No | `false` by default; page-load runs never publish |
 | `IsActive__c` | Active | No | `true` |
@@ -396,10 +396,10 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 ### Merge tokens
 
-- Syntax: `{!record.FieldApiName}` on the **base record** (the record page object).
-- Examples: `{!record.Id}`, `{!record.OwnerId}`, `{!record.AnnualRevenue}`, `{!record.Parent.BillingCity}`, `{!record.Customer_Tier__c}`.
+- Syntax: `{!record.FieldApiName|Fallback value}` on the **base record** (the record page object).
+- Examples: `{!record.Id|001000000000000AAA}`, `{!record.OwnerId|005000000000000AAA}`, `{!record.AnnualRevenue|0}`, `{!record.Parent.BillingCity|the account city}`, `{!record.Customer_Tier__c|Standard}`.
 - Strings are quoted and escaped automatically; numbers and dates are unquoted.
-- The exact substring `'{!record.Field}'` inside a larger literal works (for example `Name LIKE '{!record.Name}%'`).
+- The exact substring `'{!record.Field|Fallback value}'` inside a larger literal works (for example `Name LIKE '{!record.Name|this record}%'`).
 - A token may appear both quoted and unquoted in one template: each form is substituted independently.
 - User must have read FLS on token fields or check returns `UNABLE_TO_EVALUATE`.
 
@@ -415,8 +415,8 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | `MIN(field)` | Yes | Alias name |
 | `MAX(field)` | Yes | Alias name |
 
-**Wrong:** `SELECT SUM(Amount) FROM Opportunity WHERE AccountId = {!record.Id}`
-**Right:** `SELECT SUM(Amount) pipelineTotal FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` + `SourceQueryField__c = pipelineTotal`
+**Wrong:** `SELECT SUM(Amount) FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA}`
+**Right:** `SELECT SUM(Amount) pipelineTotal FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND IsClosed = false` + `SourceQueryField__c = pipelineTotal`
 
 ### Null / empty rows
 
@@ -437,7 +437,7 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | `FormulaResultType__c` | `NUMBER` |
 | `ApplicabilityMode__c` | `ALL_RECORDS` |
 | `FailureSeverity__c` | `CRITICAL` |
-| `FailureMessage__c` | `{!record.Name} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.` |
+| `FailureMessage__c` | `{!record.Name\|this record} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.` |
 
 This example deliberately demonstrates multiple conditions and a two-level parent relationship.
 Ask whether the org guarantees both parent levels; otherwise recommend a shallower relationship or
@@ -448,7 +448,7 @@ an applicability condition.
 | API field | Value |
 | --- | --- |
 | `EvaluationType__c` | `QUERY` |
-| `SourceQuery__c` | `SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}` |
+| `SourceQuery__c` | `SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id\|001000000000000AAA}` |
 | `QueryResultHandling__c` | `ONE_RESULT` |
 | `ComparisonOperator__c` | `GREATER_THAN` |
 | `ExpectedValueSource__c` | `FIXED_VALUE` |
@@ -461,7 +461,7 @@ Shipped: `Account_EU_HasAtLeastOneContact`.
 | API field | Value |
 | --- | --- |
 | `EvaluationType__c` | `QUERY` |
-| `SourceQuery__c` | `SELECT SUM(TotalPrice) totalPipeline FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND TotalPrice != null` |
+| `SourceQuery__c` | `SELECT SUM(TotalPrice) totalPipeline FROM Opportunity WHERE AccountId = {!record.Id\|001000000000000AAA} AND IsClosed = false AND TotalPrice != null` |
 | `SourceQueryField__c` | `totalPipeline` |
 | `QueryResultHandling__c` | `ONE_RESULT` |
 | `ComparisonOperator__c` | `GREATER_THAN_OR_EQUAL` |
@@ -479,7 +479,7 @@ Use `Amount` instead of `TotalPrice` if products are not used. Similar shipped p
 | --- | --- |
 | `EvaluationType__c` | `QUERY` |
 | `FindInListFormula__c` | `BillingState` |
-| `ComparisonQuery__c` | `SELECT MailingState FROM Contact WHERE AccountId = {!record.Id} AND MailingState != null` |
+| `ComparisonQuery__c` | `SELECT MailingState FROM Contact WHERE AccountId = {!record.Id\|001000000000000AAA} AND MailingState != null` |
 | `ComparisonQueryField__c` | `MailingState` |
 | `QueryResultHandling__c` | `COMPARE_AS_LISTS` |
 | `ComparisonOperator__c` | `LIST_CONTAINS_ANY` |
@@ -507,7 +507,7 @@ Shipped: `Account_Adv_PartnerBillingCountry`.
 | `ApexParametersJson__c` | `{"daysBack": 90}` |
 | `ApplicabilityMode__c` | `ALL_RECORDS` |
 | `FailureSeverity__c` | `WARNING` |
-| `FailureMessage__c` | `{!record.Name} has no completed tasks or logged events in the last 90 days.` |
+| `FailureMessage__c` | `{!record.Name\|this record} has no completed tasks or logged events in the last 90 days.` |
 
 Sample Rule in the Examples **apex-advanced-checks** pack (see pack README). Doc: [apex/01-recent-activity.md](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/01-recent-activity.md).
 
@@ -519,7 +519,7 @@ Sample Rule in the Examples **apex-advanced-checks** pack (see pack README). Doc
 | `ApexClass__c` | `AccountOpenOpportunityHealthCheck` |
 | `ApexParametersJson__c` | `{"staleDays": 30}` |
 | `ApplicabilityMode__c` | `SOQL` |
-| `ApplicabilityCountQuery__c` | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
+| `ApplicabilityCountQuery__c` | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id\|001000000000000AAA} AND IsClosed = false` |
 | `ApplicabilityCountOperator__c` | `GREATER_THAN` |
 | `ApplicabilityCountThreshold__c` | `0` |
 | `FailureSeverity__c` | `CRITICAL` |

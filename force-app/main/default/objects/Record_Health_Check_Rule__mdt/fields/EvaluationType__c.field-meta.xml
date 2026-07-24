@@ -9,11 +9,13 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>FORMULA</fullName><default
-        >false</default></value><value><fullName>QUERY</fullName><default
+            <value><fullName>FORMULA</fullName><label
+        >Verify with a formula</label><default>false</default></value><value
+      ><fullName>QUERY</fullName><label>Verify with a query</label><default
         >false</default></value><value><fullName
-        >COMPARE_TWO_QUERIES</fullName><default>false</default></value><value
-      ><fullName>APEX</fullName><default
+        >COMPARE_TWO_QUERIES</fullName><label
+        >Compare two queries</label><default>false</default></value><value
+      ><fullName>APEX</fullName><label>Verify with Apex</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

@@ -3,7 +3,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-66.0-00A1E0.svg)](sfdx-project.json)
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)
+[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
 > **Make informed decisions before taking action on Salesforce data.**
 >
@@ -28,7 +28,7 @@ data that existed before the Rules were created, without writing to the record.
 <table>
   <tr>
     <td width="48%" valign="top">
-      <p><b>Example: Account Relationship &amp; Risk Health Check</b></p>
+      <p><b>Example:</b><br /><b>Account Relationship &amp; Risk Health Check</b></p>
       <p>An account team can review relationship strength, ownership, engagement, revenue coverage, and customer risk without leaving the record page.</p>
       <ul>
         <li><b>Review the whole relationship.</b> Rules evaluate the Account together with Opportunity Contact Roles, Contacts, Opportunities, Cases, Activities, ownership, and parent-account context.</li>
@@ -81,7 +81,7 @@ those deterministic records are provisioned only by the dedicated scratch-org se
 
 ### Deploy to a sandbox
 
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=main)
+[![Deploy to Sandbox](https://img.shields.io/badge/Deploy%20to-Sandbox-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
 The button opens Salesforce authentication and starts the deployment. Prefer the Salesforce CLI?
 
@@ -98,6 +98,8 @@ sf project deploy start --manifest manifest/package.xml
    Salesforce Setup.
 3. Add the **recordHealthCheck** component to a Lightning record page.
 4. Select the Check Set in Lightning App Builder, save the page, and activate it.
+
+For the complete first-run demo used by this project, follow [Create the demo scratch org](docs/installation/05-create-rhc-scratch-org.md).
 
 For permissions, verification, and other deployment methods, follow
 [Install and verify](docs/installation/02-install-and-verify.md).

@@ -12,9 +12,11 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>ON_DEMAND</fullName><default
-        >true</default></value><value><fullName>FAILURES_ONLY</fullName><default
-        >false</default></value><value><fullName>ALL_ROWS</fullName><default
+            <value><fullName>ON_DEMAND</fullName><label
+        >On demand</label><default>true</default></value><value><fullName
+        >FAILURES_ONLY</fullName><label>Failed checks only</label><default
+        >false</default></value><value><fullName>ALL_ROWS</fullName><label
+        >Every check</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
 </CustomField>

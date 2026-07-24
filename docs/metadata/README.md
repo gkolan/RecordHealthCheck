@@ -1,21 +1,18 @@
-# Custom Metadata Types and fields
-
-> [!NOTE]
-> On this page, move from the Custom Metadata record you are configuring to the exact Check Set, Rule, Platform Event, limit, or integration reference that defines its behavior.
+# Metadata reference
 
 Record Health Check configuration uses two Custom Metadata Types. The **Record Health Check Set**
 controls the card and groups related Rules. The **Record Health Check Rule** defines one question
 inside that card.
 
-Use Setup labels while configuring records in **Setup → Custom Metadata Types**. Use API names in
-metadata XML, Apex, automation, and generated configuration.
+Start with the name you see in Salesforce Setup. Each reference also supplies the API name needed
+for metadata XML, Apex, automation, and generated configuration.
 
 ## Choose the field reference
 
 | Plain name | Setup name | API type | Field reference |
 | ---------- | ---------- | -------- | --------------- |
 | **Check Set** | Record Health Check Set | `Record_Health_Check_Set__mdt` | [Check Set fields](fields-check-set.md) |
-| **Rule** | Record Health Check Rule | `Record_Health_Check_Rule__mdt` | [Rule fields](fields-rule.md) |
+| **Rule** | Record Health Check Rule | `Record_Health_Check_Rule__mdt` | [Rule fields](fields-check-rule.md) |
 
 ## Choose a Platform Event reference
 
@@ -28,12 +25,12 @@ publication contract and security profile.
 | Record Health Check Rule Result | `Record_Health_Check_Rule_Result__e` | [Rule Result Platform Event](event-rule-result.md) | One after-commit public outcome for an enabled Rule |
 | Record Health Check Log | `Record_Health_Check_Log__e` | [Log Platform Event](event-log.md) | Restricted, immediately published Framework `ERROR` diagnostics |
 
-## How these docs fit together
+## Find the next detail
 
 | Document | Role |
 | -------- | ---- |
 | [Check Set fields](fields-check-set.md) | Every field on the Check Set type |
-| [Rule fields](fields-rule.md) | Every field on the Rule type |
+| [Rule fields](fields-check-rule.md) | Every field on the Rule type |
 | [Reason Codes](../reference/reference-reason-codes.md) | Stable codes for skipped, unable, setup, and error outcomes |
 | [Lifecycle-events overview](../integration/lifecycle-events.md) | Publication behavior, source rules, opt-in choices, and subscriber failures |
 | [Check Set Run Platform Event](event-set-run.md) | Every field, summary-event possibilities, examples, limits, and subscriber design |

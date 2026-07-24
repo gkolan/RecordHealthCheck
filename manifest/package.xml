@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-<!-- Record Health Check — core (engine, schema, LWC, permissions). Deploy before any Check Set package. -->
+<!-- Record Health Check — core plus the clearly prefixed example Check Set, Rules, Apex evaluator, and test. -->
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
         <members>Record_Health_Check_Rule__mdt</members>
@@ -8,6 +8,27 @@
         <members>Record_Health_Check_Rule_Result__e</members>
         <members>Record_Health_Check_Set_Run__e</members>
         <name>CustomObject</name>
+    </types>
+    <types>
+        <members
+    >Record_Health_Check_Set__mdt.Example_Account_Relationship_Risk</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_Account_Owner_Active</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_Channel_Partner_Governance</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_Contacts_Have_Email</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_Customer_Engagement_Current</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_Executive_Sponsorship</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_Industry_Aligns_With_Parent</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_No_High_Priority_Issues</members>
+        <members
+    >Record_Health_Check_Rule__mdt.Example_Pipeline_Protects_Revenue</members>
+        <name>CustomMetadata</name>
     </types>
     <types>
         <members>Record_Health_Check_Set__mdt.ObjectApiName__c</members>
@@ -36,6 +57,8 @@
         <members>Record_Health_Check_Rule__mdt.ApexParametersJson__c</members>
         <members>Record_Health_Check_Rule__mdt.ApplicabilityMode__c</members>
         <members>Record_Health_Check_Rule__mdt.ApplicabilityFormula__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.ApplicabilityNotMetMessage__c</members>
         <members
     >Record_Health_Check_Rule__mdt.ApplicabilityCountOperator__c</members>
         <members
@@ -120,6 +143,8 @@
         <name>CustomField</name>
     </types>
     <types>
+        <members>AccountHasRecentActivityCheck</members>
+        <members>AccountHasRecentActivityCheckTest</members>
         <members>RecordHealthCheck</members>
         <members>RecordHealthCheckAccess</members>
         <members>RecordHealthCheckApexEvaluator</members>

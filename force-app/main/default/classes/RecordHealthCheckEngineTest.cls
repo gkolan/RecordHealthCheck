@@ -391,6 +391,70 @@ private class RecordHealthCheckEngineTest {
   }
 
   @isTest
+  static void bindTokensUsesTypedFallbacksForBlankValues() {
+    Account accountRecord = new Account(
+      Name = null,
+      Description = '',
+      AnnualRevenue = null,
+      NumberOfEmployees = null
+    );
+    RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
+    String bound = evaluator.bindTokens(
+      'SELECT Id FROM Account WHERE Name = {!record.Name|Unnamed Account} AND Description = {!record.Description|Needs review} AND AnnualRevenue >= {!record.AnnualRevenue|500000} AND NumberOfEmployees >= {!record.NumberOfEmployees|100}',
+      accountRecord
+    );
+
+    System.assert(bound.contains('Name = \'Unnamed Account\''));
+    System.assert(bound.contains('Description = \'Needs review\''));
+    System.assert(bound.contains('AnnualRevenue >= 500000'));
+    System.assert(bound.contains('NumberOfEmployees >= 100'));
+
+    Account populatedZero = new Account(AnnualRevenue = 0);
+    System.assert(
+      evaluator
+        .bindTokens(
+          'SELECT Id FROM Account WHERE AnnualRevenue = {!record.AnnualRevenue|500000}',
+          populatedZero
+        )
+        .contains('AnnualRevenue = 0'),
+      'A populated zero must not be replaced by its fallback.'
+    );
+
+    User inactiveUser = new User(IsActive = false);
+    System.assert(
+      evaluator
+        .bindTokens(
+          'SELECT Id FROM User WHERE IsActive = {!record.IsActive|true}',
+          inactiveUser
+        )
+        .contains('IsActive = false'),
+      'A populated false must not be replaced by its fallback.'
+    );
+
+    Opportunity opportunityRecord = new Opportunity();
+    String temporal = evaluator.bindTokens(
+      'SELECT Id FROM Opportunity WHERE CloseDate = {!record.CloseDate|2026-12-31} AND CreatedDate >= {!record.CreatedDate|2026-01-01T00:00:00Z}',
+      opportunityRecord
+    );
+    System.assert(temporal.contains('CloseDate = 2026-12-31'));
+    System.assert(temporal.contains('CreatedDate >= 2026-01-01T00:00:00Z'));
+  }
+
+  @isTest
+  static void bindTokensRejectsFallbackWithWrongFieldType() {
+    try {
+      new RecordHealthCheckSoqlEvaluator()
+        .bindTokens(
+          'SELECT Id FROM Account WHERE AnnualRevenue >= {!record.AnnualRevenue|not-a-number}',
+          new Account()
+        );
+      System.assert(false, 'Expected an invalid numeric fallback to fail.');
+    } catch (RecordHealthCheckEvaluatorException ex) {
+      System.assertEquals('MISSING_BIND_VALUE', ex.reasonCode);
+    }
+  }
+
+  @isTest
   static void bindTokensRejectsSemicolonOnlyMultiSelectSegments() {
     RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
     try {
@@ -432,16 +496,19 @@ private class RecordHealthCheckEngineTest {
 
   @isTest
   static void multiRowFoundSummaryIsDerivedAndOverridable() {
-    Account acc = new Account(Name = 'Summary Test Co');
-    insert acc;
-    insert new List<Contact>{
-      new Contact(
-        LastName = 'HasEmail',
-        Email = 'a@example.com',
-        AccountId = acc.Id
-      ),
-      new Contact(LastName = 'NoEmail', AccountId = acc.Id)
-    };
+    Account acc = RecordHealthCheckTestDataFactory.createAccount(
+      'Summary Test Co'
+    );
+    RecordHealthCheckTestDataFactory.createContacts(
+      new List<Contact>{
+        new Contact(
+          LastName = 'HasEmail',
+          Email = 'a@example.com',
+          AccountId = acc.Id
+        ),
+        new Contact(LastName = 'NoEmail', AccountId = acc.Id)
+      }
+    );
 
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Test_MultiRow_Summary',
@@ -704,6 +771,31 @@ private class RecordHealthCheckEngineTest {
       result.detailMessage.contains('suppressed'),
       'A breadcrumb is left in the admin detail channel'
     );
+  }
+
+  @isTest
+  static void remediationBlankUrlTokenUsesFallbackOrSuppressesLink() {
+    Account accountRecord = new Account(Name = 'Independent Account');
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.status = 'FAIL';
+    Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
+      ActionUrl__c = '/find?parent={!record.ParentId}',
+      ActionLabel__c = 'Review parent'
+    );
+
+    new RecordHealthCheckEngine()
+      .populateRemediationAction(result, rule, accountRecord);
+    System.assertEquals(null, result.actionUrl);
+    System.assertEquals(null, result.actionLabel);
+    System.assert(result.detailMessage.contains('MISSING_TOKEN_VALUE'));
+
+    result = new RecordHealthCheckResult();
+    result.status = 'FAIL';
+    rule.ActionUrl__c = '/find?parent={!record.ParentId|unassigned}';
+    new RecordHealthCheckEngine()
+      .populateRemediationAction(result, rule, accountRecord);
+    System.assertEquals('/find?parent=unassigned', result.actionUrl);
+    System.assertEquals('Review parent', result.actionLabel);
   }
 
   @isTest

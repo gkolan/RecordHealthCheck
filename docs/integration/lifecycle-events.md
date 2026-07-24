@@ -179,7 +179,7 @@ the [Log Platform Event reference](../metadata/event-log.md).
 - [Flow actions](flow-actions.md)
 - [Lightning component](lightning-component.md)
 - [Check Set fields](../metadata/fields-check-set.md): Publish Run Event
-- [Rule fields](../metadata/fields-rule.md): Publish Result Event
+- [Rule fields](../metadata/fields-check-rule.md): Publish Result Event
 - [Check Set Run Platform Event](../metadata/event-set-run.md)
 - [Rule Result Platform Event](../metadata/event-rule-result.md)
 - [Log Platform Event](../metadata/event-log.md)

@@ -9,9 +9,10 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>CRITICAL</fullName><default
-        >false</default></value><value><fullName>WARNING</fullName><default
-        >true</default></value><value><fullName>INFO</fullName><default
+            <value><fullName>CRITICAL</fullName><label>Critical</label><default
+        >false</default></value><value><fullName>WARNING</fullName><label
+        >Warning</label><default>true</default></value><value><fullName
+        >INFO</fullName><label>Info</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

@@ -48,33 +48,33 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
-| **Developer Name** | [`DeveloperName`](../../metadata/fields-rule.md#developer-name-developername) | `Billing_Address_Is_Complete` |
-| **Label** | [`MasterLabel`](../../metadata/fields-rule.md#label-masterlabel) | Billing Address Is Complete |
-| **Check Set** | [`Record_Health_Check_Set__c`](../../metadata/fields-rule.md#check-set-record_health_check_set__c) | `Account_Data_Quality` |
-| **Check Title** | [`CheckTitle__c`](../../metadata/fields-rule.md#check-title-checktitle__c) | Billing Address Is Complete |
-| **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-rule.md#evaluation-type-evaluationtype__c) | Verify with a formula |
-| **Pass Condition** | [`PassConditionFormula__c`](../../metadata/fields-rule.md#pass-condition-passconditionformula__c) | `AND(NOT(ISBLANK(BillingCity)), NOT(ISBLANK(BillingState)), NOT(ISBLANK(BillingCountry)))` |
-| **Display: Found Formula** | [`DisplayFoundFormula__c`](../../metadata/fields-rule.md#display-found-formula-displayfoundformula__c) | `IF(ISBLANK(BillingCity), "City missing; ", "") & IF(ISBLANK(BillingState), "State missing; ", "") & IF(ISBLANK(BillingCountry), "Country missing", "")` |
-| **Display: Expected Formula** | [`DisplayExpectedFormula__c`](../../metadata/fields-rule.md#display-expected-formula-displayexpectedformula__c) | `"City, State, and Country populated"` |
-| **Formula Result Type** | [`FormulaResultType__c`](../../metadata/fields-rule.md#formula-result-type-formularesulttype__c) | Text |
+| **Developer Name** | [`DeveloperName`](../../metadata/fields-check-rule.md#developer-name-developername) | `Billing_Address_Is_Complete` |
+| **Label** | [`MasterLabel`](../../metadata/fields-check-rule.md#label-masterlabel) | Billing Address Is Complete |
+| **Check Set** | [`Record_Health_Check_Set__c`](../../metadata/fields-check-rule.md#check-set-record_health_check_set__c) | `Account_Data_Quality` |
+| **Check Title** | [`CheckTitle__c`](../../metadata/fields-check-rule.md#check-title-checktitle__c) | Billing Address Is Complete |
+| **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c) | Verify with a formula |
+| **Pass Condition** | [`PassConditionFormula__c`](../../metadata/fields-check-rule.md#pass-condition-passconditionformula__c) | `AND(NOT(ISBLANK(BillingCity)), NOT(ISBLANK(BillingState)), NOT(ISBLANK(BillingCountry)))` |
+| **Display: Found Formula** | [`DisplayFoundFormula__c`](../../metadata/fields-check-rule.md#display-found-formula-displayfoundformula__c) | `IF(ISBLANK(BillingCity), "City missing; ", "") & IF(ISBLANK(BillingState), "State missing; ", "") & IF(ISBLANK(BillingCountry), "Country missing", "")` |
+| **Display: Expected Formula** | [`DisplayExpectedFormula__c`](../../metadata/fields-check-rule.md#display-expected-formula-displayexpectedformula__c) | `"City, State, and Country populated"` |
+| **Formula Result Type** | [`FormulaResultType__c`](../../metadata/fields-check-rule.md#formula-result-type-formularesulttype__c) | Text |
 
 ## Optional configuration
 
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
-| **Check Description** | [`CheckDescription__c`](../../metadata/fields-rule.md#check-description-checkdescription__c) | Checks whether Billing City, State, and Country are all populated. |
-| **Category** | [`Category__c`](../../metadata/fields-rule.md#category-category__c) | Required Field Completeness |
-| **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-rule.md#failure-severity-failureseverity__c) | Critical |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-rule.md#message-when-failed-failuremessage__c) | Billing address is incomplete: City, State, and Country are all required. |
-| **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check the billing address. Confirm the user can read all three fields. |
-| **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-rule.md#applies-to-applicabilitymode__c) | All records |
-| **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
-| **Fix Message** | [`FixMessage__c`](../../metadata/fields-rule.md#fix-message-fixmessage__c) | Add every billing-address field named in Found. |
-| **Action Label** | [`ActionLabel__c`](../../metadata/fields-rule.md#action-label-actionlabel__c) | `Edit billing address` |
-| **Action URL** | [`ActionUrl__c`](../../metadata/fields-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/edit` |
-| **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-rule.md#evaluation-order-evaluationorder__c) | `40` |
-| **Active** | [`IsActive__c`](../../metadata/fields-rule.md#active-isactive__c) | Checked |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks whether Billing City, State, and Country are all populated. |
+| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Required Field Completeness |
+| **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Critical |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | Billing address is incomplete: City, State, and Country are all required. |
+| **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check the billing address. Confirm the user can read all three fields. |
+| **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-check-rule.md#applies-to-applicabilitymode__c) | All records |
+| **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
+| **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Add every billing-address field named in Found. |
+| **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | `Edit billing address` |
+| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/edit` |
+| **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `40` |
+| **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
+| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
 
 The Found formula names the missing address parts, so the user does not have to inspect all three
 fields. Query and Apex fields do not apply.

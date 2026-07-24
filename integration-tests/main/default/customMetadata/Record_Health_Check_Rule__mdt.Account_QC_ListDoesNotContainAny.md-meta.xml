@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Account QC List Excludes Any</label>
+    <protected>false</protected>
+    <values>
+        <field>Record_Health_Check_Set__c</field>
+        <value xsi:type="xsd:string">Account_Query_Coverage</value>
+    </values>
+    <values>
+        <field>CheckTitle__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Industry Is Not Shared With Other Accounts</value>
+    </values>
+    <values>
+        <field>CheckDescription__c</field>
+        <value
+      xsi:type="xsd:string"
+    >An example of Comparison Operator = ListDoesNotContainAny, set to Info severity because it is not a real data-quality bar. The account's Industry must not appear in the list of other accounts' industries. It fails often in a populated org — treat it as a</value>
+    </values>
+    <values>
+        <field>EvaluationType__c</field>
+        <value xsi:type="xsd:string">QUERY</value>
+    </values>
+    <values>
+        <field>FindInListFormula__c</field>
+        <value xsi:type="xsd:string">Industry</value>
+    </values>
+    <values>
+        <field>QueryResultHandling__c</field>
+        <value xsi:type="xsd:string">COMPARE_AS_LISTS</value>
+    </values>
+    <values>
+        <field>ComparisonOperator__c</field>
+        <value xsi:type="xsd:string">LIST_CONTAINS_NONE</value>
+    </values>
+    <values>
+        <field>ComparisonQuery__c</field>
+        <value
+      xsi:type="xsd:string"
+    >SELECT Industry FROM Account WHERE Id != {!record.Id} AND Industry != null</value>
+    </values>
+    <values>
+        <field>ComparisonQueryField__c</field>
+        <value xsi:type="xsd:string">Industry</value>
+    </values>
+    <values>
+        <field>NoRowsResult__c</field>
+        <value xsi:type="xsd:string">PASS</value>
+    </values>
+    <values>
+        <field>FailureSeverity__c</field>
+        <value xsi:type="xsd:string">INFO</value>
+    </values>
+    <values>
+        <field>FailureMessage__c</field>
+        <value
+      xsi:type="xsd:string"
+    >{!record.Name} shares its industry with at least one other account. This sample rule is illustrative — in most orgs many accounts share an industry. Copy the ListDoesNotContainAny pattern, not this threshold.</value>
+    </values>
+    <values>
+        <field>UnableToEvaluateMessage__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Could not compare this account's industry against other accounts. Contact your administrator.</value>
+    </values>
+    <values>
+        <field>ApplicabilityMode__c</field>
+        <value xsi:type="xsd:string">WHEN_FORMULA_TRUE</value>
+    </values>
+    <values>
+        <field>ApplicabilityFormula__c</field>
+        <value xsi:type="xsd:string">NOT(ISBLANK(TEXT(Industry)))</value>
+    </values>
+    <values>
+        <field>EvaluationOrder__c</field>
+        <value xsi:type="xsd:double">100</value>
+    </values>
+    <values>
+        <field>IsActive__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>

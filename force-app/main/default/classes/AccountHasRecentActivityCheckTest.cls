@@ -11,14 +11,17 @@
 private class AccountHasRecentActivityCheckTest {
   @IsTest
   static void completedTaskInsideWindowPasses() {
-    Account account = new Account(Name = 'RHC Recent Activity Pass');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.createAccount(
+      'RHC Recent Activity Pass'
+    );
 
-    insert new Task(
-      WhatId = account.Id,
-      Subject = 'Recent call',
-      Status = 'Completed',
-      ActivityDate = Date.today()
+    RecordHealthCheckTestDataFactory.createTask(
+      new Task(
+        WhatId = account.Id,
+        Subject = 'Recent call',
+        Status = 'Completed',
+        ActivityDate = Date.today()
+      )
     );
 
     RecordHealthCheckResult result = evaluate(account.Id, null);
@@ -38,8 +41,9 @@ private class AccountHasRecentActivityCheckTest {
 
   @IsTest
   static void noActivityFails() {
-    Account account = new Account(Name = 'RHC Recent Activity Fail');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.createAccount(
+      'RHC Recent Activity Fail'
+    );
 
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
@@ -52,14 +56,17 @@ private class AccountHasRecentActivityCheckTest {
 
   @IsTest
   static void activityOutsideWindowFails() {
-    Account account = new Account(Name = 'RHC Recent Activity Stale');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.createAccount(
+      'RHC Recent Activity Stale'
+    );
 
-    insert new Task(
-      WhatId = account.Id,
-      Subject = 'Old call',
-      Status = 'Completed',
-      ActivityDate = Date.today().addDays(-400)
+    RecordHealthCheckTestDataFactory.createTask(
+      new Task(
+        WhatId = account.Id,
+        Subject = 'Old call',
+        Status = 'Completed',
+        ActivityDate = Date.today().addDays(-400)
+      )
     );
 
     // A 90-day window excludes the 400-day-old task.
@@ -80,14 +87,17 @@ private class AccountHasRecentActivityCheckTest {
 
   @IsTest
   static void invalidDaysBackFallsBackToDefault() {
-    Account account = new Account(Name = 'RHC Recent Activity Default');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.createAccount(
+      'RHC Recent Activity Default'
+    );
 
-    insert new Task(
-      WhatId = account.Id,
-      Subject = 'Recent call',
-      Status = 'Completed',
-      ActivityDate = Date.today()
+    RecordHealthCheckTestDataFactory.createTask(
+      new Task(
+        WhatId = account.Id,
+        Subject = 'Recent call',
+        Status = 'Completed',
+        ActivityDate = Date.today()
+      )
     );
 
     // Out-of-range and unparseable values both fall back to the 30-day default
