@@ -3,13 +3,17 @@
 
 Run from the repository root with:
   python3 scripts/release/generate_field_size_registry.py
+  python3 scripts/release/generate_field_size_registry.py --check
 
 The script reads metadata and rewrites only the generated registry. It has no
-network dependencies and is idempotent.
+network dependencies and is idempotent. `--check` exits non-zero when the
+committed page would change.
 """
 
 from pathlib import Path
+import argparse
 import re
+import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -200,6 +204,38 @@ lines += [
     "- [Architecture map](reference-architecture-map.md)",
     "",
 ]
-OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-OUTPUT.write_text("\n".join(lines), encoding="utf-8")
-print(f"Wrote {OUTPUT.relative_to(ROOT)} with {len(rows)} fields")
+content = "\n".join(lines)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit 0 when OUTPUT matches generated content; otherwise print a diff hint and exit 1.",
+    )
+    args = parser.parse_args(argv)
+
+    if args.check:
+        if not OUTPUT.is_file():
+            print(f"Missing {OUTPUT.relative_to(ROOT)}; run without --check to generate it.", file=sys.stderr)
+            return 1
+        existing = OUTPUT.read_text(encoding="utf-8")
+        if existing == content:
+            print(f"{OUTPUT.relative_to(ROOT)} is up to date ({len(rows)} fields).")
+            return 0
+        print(
+            f"{OUTPUT.relative_to(ROOT)} is out of date with shipped Custom Metadata. "
+            "Run: python3 scripts/release/generate_field_size_registry.py",
+            file=sys.stderr,
+        )
+        return 1
+
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT.write_text(content, encoding="utf-8")
+    print(f"Wrote {OUTPUT.relative_to(ROOT)} with {len(rows)} fields")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

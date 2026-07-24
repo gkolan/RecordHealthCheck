@@ -49,8 +49,10 @@ For the end-to-end model, start with [Integrate Record Health Check](../integrat
 
 ## Prerequisites and sandbox quick start
 
-1. Assign subscriber access to the selected platform event and choose Flow, Apex, or Pub/Sub API as
-   the subscriber technology.
+1. Assign subscriber access to the selected platform event (object permissions on the event) and
+   choose Flow, Apex, or Pub/Sub API as the subscriber technology. Custom fields on these platform
+   events are not field-level-security permissionable; granting event object access is enough for
+   field visibility in subscriber UIs.
 2. In a sandbox, enable **Publish Run Event** on one Check Set. Leave Rule publication off for the
    first test.
 3. Subscribe before clicking Run or Rerun; automatic page load cannot publish.

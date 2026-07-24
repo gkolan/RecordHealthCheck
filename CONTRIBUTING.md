@@ -87,6 +87,13 @@ feedback by pushing more commits to the same branch.
 
 See [`docs/reference/reference-architecture-map.md`](docs/reference/reference-architecture-map.md) to find where things live.
 
+## Integration-test fixtures
+
+[`integration-tests/`](integration-tests/) holds CI-only fixture metadata and is **not** part of
+the product install. Do not add it to `sfdx-project.json` `packageDirectories`. The release
+gate deploys it with an explicit `--source-dir integration-tests` after Core. See
+[`integration-tests/README.md`](integration-tests/README.md).
+
 ## Documentation changes
 
 Docs must match the code at the same commit. Follow these authoring standards:

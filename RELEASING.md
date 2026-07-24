@@ -59,8 +59,9 @@ replace `X.Y.Z` with your chosen number (no leading `v` for `package.json`).
    so the changelog commit and the tag stay together.)
 
 2. In [`CHANGELOG.md`](CHANGELOG.md), rename the **`## Unreleased`** heading to
-   **`## vX.Y.Z: YYYY-MM-DD`** and add a fresh empty `## Unreleased` section
-   above it for future work.
+   **`## [X.Y.Z] - YYYY-MM-DD`** and add a fresh empty `## Unreleased` section
+   above it for future work. Keep the compare links at the bottom of the file in
+   sync with the new version.
 
 ## Step 4: Commit the release prep
 

@@ -83,13 +83,18 @@ those deterministic records are provisioned only by the dedicated scratch-org se
 
 [![Deploy to Sandbox](https://img.shields.io/badge/Deploy%20to-Sandbox-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
-The button opens Salesforce authentication and starts the deployment. Prefer the Salesforce CLI?
+The button opens Salesforce authentication and starts the deployment. It deploys the
+default package directory (`force-app`) only. Prefer the Salesforce CLI?
 
 ```bash
 git clone https://github.com/gkolan/RecordHealthCheck.git
 cd RecordHealthCheck
 sf project deploy start --manifest manifest/package.xml
 ```
+
+Always use the manifest (or an explicit `--source-dir force-app`) for installs. The
+`integration-tests/` tree is CI fixture metadata and is not part of the product; see
+[`integration-tests/README.md`](integration-tests/README.md).
 
 ### After installing
 

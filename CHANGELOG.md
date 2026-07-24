@@ -9,12 +9,19 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Removed a sample report that hardcoded a real Account Id, and removed personal DevHub
   backup manifests that did not belong in the product repository.
 - Removed an unused root stylesheet left over from an unpublished docs site scaffold.
+- Removed standard-object list view overrides from `integration-tests/` so fixture deploys cannot
+  overwrite org `AllAccounts` / `AllOpenCases` / similar views.
 
 ### Fixed
 
 - Documented demo setup now ships `scripts/setup-demo.sh` and the Apex scripts it runs.
 - Install manifest includes the `Examples` Custom Metadata list views.
 - Contributor and PR template links/instructions no longer point at local-only paths.
+- `integration-tests/` is no longer a `packageDirectories` entry, so a bare
+  `sf project deploy start` installs Core only; CI still deploys fixtures with `--source-dir`.
+- Normalized remaining metadata API versions to 66.0 and corrected the User permission set
+  description (no metrics log object).
+- Field-limits reference page is gated in CI via `npm run check:field-limits`.
 
 ## [2.0.0] - 2026-07-15
 
@@ -60,7 +67,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Added a Set-first integration overview with explicit product boundaries, quickstarts, status and
   failure semantics, limits, testing guidance, and surface-selection links.
 
-## [1.2.0]: 2026-07-09
+## [1.2.0] - 2026-07-09
 
 ### App Builder & setup
 
@@ -106,7 +113,7 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Client-side circular-dependency and skip messages now match Apex wording.
 - Setup availability (`getCheckSetAvailabilityForRecord`) is no longer Aura-cacheable, so activating a Check Set refreshes the blank-setup banner on the next load.
 
-## [1.1.0]: 2026-07-04
+## [1.1.0] - 2026-07-04
 
 - Humanized **Found** / **Expected** values: numbers gain thousands separators (`70000.0` → `"70,000"`, a trailing `.0` dropped), Booleans read `"Yes"` / `"No"`, dates and datetimes render in the viewer's locale and time zone, and semicolon-delimited multi-select picklists render comma-separated. Applied at the shared `RecordHealthCheckComparisonEngine.formatValue` choke point, so typed values and metadata operand strings on both sides humanize identically; ordinary text, IDs, and codes are left unchanged.
 - Long value chips now clamp to two lines with a quiet **Show more** / **Show less** toggle that appears only when the value overflows, so a long formula or list no longer dominates the card.
@@ -122,6 +129,12 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Reworked the Check Set display defaults for a friendlier first run: renamed `CardRevealMode__c` from **Result Display Style** to **How checks appear** (clearer description and inline help that explain the on-load behavior), and changed its default to `OneAtATime` so checks reveal one at a time as the run advances. Passed and skipped checks now default to `Show` (`PassedChecksDisplay__c` / `SkippedChecksDisplay__c`) so viewers see what passed and what was skipped; `Hide` remains the power-user opt-in for a summarize-only, failures-focused view. Example Check Sets updated to match, except `Account_Data_Quality`, kept as the intentional failures-only demo.
 - Updated docs, examples, and plugin guidance for comparison display, provenance, and the then-current 98-test LWC suite.
 
-## [1.0.0]: 2026-06-23
+## [1.0.0] - 2026-06-23
 
 Initial release: metadata-driven record health checks, Lightning record-page component, Apex evaluation engine, 10 sample Check Sets and 88 Rules, and documentation under `docs/`.
+
+[Unreleased]: https://github.com/gkolan/RecordHealthCheck/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/gkolan/RecordHealthCheck/compare/v1.2.0...v2.0.0
+[1.2.0]: https://github.com/gkolan/RecordHealthCheck/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/gkolan/RecordHealthCheck/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/gkolan/RecordHealthCheck/releases/tag/v1.0.0

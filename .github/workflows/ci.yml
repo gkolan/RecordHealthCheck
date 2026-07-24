@@ -23,6 +23,7 @@ jobs:
       - run: npm run check:namespaced-tokens
       - run: npm run check:test-data-factory
       - run: npm run check:docs
+      - run: npm run check:field-limits
       - run: npm run test:unit:coverage
       - name: Validate XML
         run: python3 -c "import pathlib,xml.etree.ElementTree as ET; [ET.parse(p) for root in ('force-app','integration-tests','manifest') for p in pathlib.Path(root).rglob('*.xml')]"
