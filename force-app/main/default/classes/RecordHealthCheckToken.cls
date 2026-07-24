@@ -3,6 +3,7 @@ public class RecordHealthCheckToken {
   public String expression;
   public String namespaceName;
   public String propertyPath;
+  public String fallbackValue;
   public Integer startIndex;
   public Integer endIndex;
 
@@ -13,9 +14,21 @@ public class RecordHealthCheckToken {
     Integer startIndex,
     Integer endIndex
   ) {
+    this(expression, namespaceName, propertyPath, null, startIndex, endIndex);
+  }
+
+  public RecordHealthCheckToken(
+    String expression,
+    String namespaceName,
+    String propertyPath,
+    String fallbackValue,
+    Integer startIndex,
+    Integer endIndex
+  ) {
     this.expression = expression;
     this.namespaceName = namespaceName;
     this.propertyPath = propertyPath;
+    this.fallbackValue = fallbackValue;
     this.startIndex = startIndex;
     this.endIndex = endIndex;
   }

@@ -9,25 +9,31 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>EQUALS</fullName><default
-        >false</default></value><value><fullName>NOT_EQUALS</fullName><default
-        >false</default></value><value><fullName>GREATER_THAN</fullName><default
+            <value><fullName>EQUALS</fullName><label>Equal to</label><default
+        >false</default></value><value><fullName>NOT_EQUALS</fullName><label
+        >Not equal to</label><default>false</default></value><value><fullName
+        >GREATER_THAN</fullName><label>Greater than</label><default
         >false</default></value><value><fullName
-        >GREATER_THAN_OR_EQUAL</fullName><default>false</default></value><value
-      ><fullName>LESS_THAN</fullName><default>false</default></value><value
-      ><fullName>LESS_THAN_OR_EQUAL</fullName><default
-        >false</default></value><value><fullName>CONTAINS</fullName><default
+        >GREATER_THAN_OR_EQUAL</fullName><label>At least</label><default
+        >false</default></value><value><fullName>LESS_THAN</fullName><label
+        >Less than</label><default>false</default></value><value><fullName
+        >LESS_THAN_OR_EQUAL</fullName><label>At most</label><default
+        >false</default></value><value><fullName>CONTAINS</fullName><label
+        >Contains text</label><default>false</default></value><value><fullName
+        >DOES_NOT_CONTAIN</fullName><label>Does not contain text</label><default
+        >false</default></value><value><fullName>IS_BLANK</fullName><label
+        >Is empty</label><default>false</default></value><value><fullName
+        >IS_NOT_BLANK</fullName><label>Is not empty</label><default
         >false</default></value><value><fullName
-        >DOES_NOT_CONTAIN</fullName><default>false</default></value><value
-      ><fullName>IS_BLANK</fullName><default>false</default></value><value
-      ><fullName>IS_NOT_BLANK</fullName><default>false</default></value><value
-      ><fullName>LIST_CONTAINS_ANY</fullName><default
+        >LIST_CONTAINS_ANY</fullName><label>List contains any</label><default
         >false</default></value><value><fullName
-        >LIST_CONTAINS_NONE</fullName><default>false</default></value><value
-      ><fullName>LISTS_OVERLAP</fullName><default>false</default></value><value
-      ><fullName>LISTS_CONTAIN_ALL</fullName><default
+        >LIST_CONTAINS_NONE</fullName><label>List contains none</label><default
+        >false</default></value><value><fullName>LISTS_OVERLAP</fullName><label
+        >Lists overlap</label><default>false</default></value><value><fullName
+        >LISTS_CONTAIN_ALL</fullName><label>Lists contain all</label><default
         >false</default></value><value><fullName
-        >LISTS_MATCH_EXACTLY</fullName><default
+        >LISTS_MATCH_EXACTLY</fullName><label
+        >Lists match exactly</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
         <inlineHelpText

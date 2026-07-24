@@ -45,10 +45,23 @@ Use this map while converting exported Custom Metadata. **Earlier release** cont
 Setup label; **Current release** contains the field to deploy. A field whose API name is unchanged may still have
 a new label, restricted value set, size, or default.
 
-For current descriptions, allowed values, defaults, and dependencies, use the
-[Rule fields](../metadata/fields-rule.md) and [Check Set fields](../metadata/fields-check-set.md) references.
+### Before and after at a glance
 
-### Rule fields
+These representative rows show how to read the complete tables below. The value on the left is what an exported
+v1.x record contains; the value on the right is what the migrated v2 record must contain.
+
+| Metadata type | Before (v1.x) | After (v2) |
+| --- | --- | --- |
+| Rule | `CheckName__c` (Check Name) | `CheckTitle__c` (Check Title) |
+| Rule | `CheckMethod__c` (Check Type) | `EvaluationType__c` (Evaluation Type) |
+| Rule | `PrimaryActionLabel__c` (Action Button Label) | `ActionLabel__c` (Action Label) |
+| Check Set | `PanelHeading__c` (Panel Title) | `CardTitle__c` (Card Title) |
+| Check Set | `ComparisonDisplay__c` (Found/Expected Display) | `FoundExpectedDisplay__c` (Found/Expected Display) |
+
+For current descriptions, allowed values, defaults, and dependencies, use the
+[Rule fields](../metadata/fields-check-rule.md) and [Check Set fields](../metadata/fields-check-set.md) references.
+
+### Complete Rule field map
 
 | Earlier API | Earlier label | Current API | Current Setup label | Current type |
 | --- | --- | --- | --- | --- |
@@ -94,7 +107,7 @@ For current descriptions, allowed values, defaults, and dependencies, use the
 | `FixInstructions__c` | Fix Instructions | `FixMessage__c` | Fix Message | Long Text Area |
 | Not applicable | Added in the current release | `PublishResultEvent__c` | Publish Result Event | Checkbox |
 
-### Check Set fields
+### Complete Check Set field map
 
 | Earlier API | Earlier label | Current API | Current Setup label | Current type |
 | --- | --- | --- | --- | --- |

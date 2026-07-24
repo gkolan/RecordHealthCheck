@@ -29,5 +29,5 @@ For both query shapes, compatible operators, no-row behavior, security, and limi
 
 - [All practical examples](../README.md)
 - [Reference: Compare two queries](../../reference/reference-compare-two-queries.md)
-- [Rule fields](../../metadata/fields-rule.md)
+- [Rule fields](../../metadata/fields-check-rule.md)
 - [Configure Check Sets and Rules](../../guides/configure-check-sets-and-rules.md)

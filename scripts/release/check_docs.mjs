@@ -12,10 +12,12 @@ const docsRoot = path.join(root, "docs");
 const markdownFiles = [];
 const narrativeHeaders = /^(notes?|description|purpose|detail)$/i;
 const apiName = /\b[A-Za-z][A-Za-z0-9_]*__(?:c|mdt|e)\b/g;
+const retiredExamplesRepository = ["RecordHealthCheck", "Examples"].join("-");
 
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
+    if (entryPath === path.join(docsRoot, "slides")) continue;
     if (entry.isDirectory()) walk(entryPath);
     else if (entry.name.endsWith(".md")) markdownFiles.push(entryPath);
   }
@@ -37,6 +39,15 @@ function headings(markdown) {
   );
 }
 
+function splitTableRow(row) {
+  const escapedPipe = "\u0000RHC_ESCAPED_PIPE\u0000";
+  return row
+    .replaceAll("\\|", escapedPipe)
+    .split("|")
+    .slice(1, -1)
+    .map((cell) => cell.replaceAll(escapedPipe, "|").trim());
+}
+
 walk(docsRoot);
 const failures = [];
 const projectMarkdownFiles = [
@@ -49,16 +60,49 @@ const projectMarkdownFiles = [
 
 for (const file of projectMarkdownFiles) {
   const markdown = fs.readFileSync(file, "utf8");
+  const relativeFile = path.relative(root, file);
   if (markdown.includes("—")) {
     failures.push(
       `${path.relative(root, file)}: replace em dashes with natural sentence punctuation`
+    );
+  }
+  if (file.startsWith(`${docsRoot}${path.sep}`)) {
+    for (const match of markdown.matchAll(/\{!([^}\n]+)\}/g)) {
+      if (
+        !match[1].includes("|") &&
+        !match[1].includes("\\|") &&
+        !match[1].includes("&#124;")
+      ) {
+        const lineStart = markdown.lastIndexOf("\n", match.index) + 1;
+        const lineEnd = markdown.indexOf("\n", match.index);
+        const nextLineEnd = markdown.indexOf(
+          "\n",
+          lineEnd === -1 ? markdown.length : lineEnd + 1
+        );
+        const exampleContext = markdown.slice(
+          lineStart,
+          nextLineEnd === -1 ? markdown.length : nextLineEnd
+        );
+        if (exampleContext.includes("merge-fallback-optional-example"))
+          continue;
+        failures.push(
+          `${relativeFile}: merge token ${match[0]} must include an explicit fallback`
+        );
+      }
+    }
+  }
+  if (
+    markdown.toLowerCase().includes(retiredExamplesRepository.toLowerCase())
+  ) {
+    failures.push(
+      `${relativeFile}: remove references to the retired external examples repository`
     );
   }
 }
 
 const canonicalFieldAnchors = new Map();
 for (const reference of [
-  path.join(docsRoot, "metadata/fields-rule.md"),
+  path.join(docsRoot, "metadata/fields-check-rule.md"),
   path.join(docsRoot, "metadata/fields-check-set.md")
 ]) {
   const markdown = fs.readFileSync(reference, "utf8");
@@ -84,7 +128,7 @@ for (const folder of ["formula", "query", "compare-two-queries", "apex"]) {
 }
 
 for (const [objectName, referenceName] of [
-  ["Record_Health_Check_Rule__mdt", "fields-rule.md"],
+  ["Record_Health_Check_Rule__mdt", "fields-check-rule.md"],
   ["Record_Health_Check_Set__mdt", "fields-check-set.md"]
 ]) {
   const reference = path.join(docsRoot, "metadata", referenceName);
@@ -132,9 +176,21 @@ for (const file of markdownFiles) {
     relativeFile
   );
 
-  if (!/^# .+\n\n> \[!NOTE\]\n> On this page,/.test(markdown)) {
+  const openingAfterTitle = markdown
+    .replace(/^# .+\n+/, "")
+    .split(/^##\s/m, 1)[0]
+    .trim();
+  const hasOnThisPageNote = /^> \[!NOTE\]\n> On this page,/.test(
+    openingAfterTitle
+  );
+  const openingWordCount = openingAfterTitle
+    .replace(/[`*_>#\[\]()]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  if (!hasOnThisPageNote && openingWordCount < 12) {
     failures.push(
-      `${relativeFile}: page must begin with an On this page note immediately after the title`
+      `${relativeFile}: page must begin with a substantive introduction or an On this page note`
     );
   }
 
@@ -266,10 +322,7 @@ for (const file of markdownFiles) {
     ) {
       continue;
     }
-    const headers = lines[index]
-      .split("|")
-      .slice(1, -1)
-      .map((cell) => cell.trim());
+    const headers = splitTableRow(lines[index]);
 
     const exampleApiColumn =
       headers[0] === "Setup field" && headers[1] === "API name" ? 1 : -1;
@@ -289,7 +342,7 @@ for (const file of markdownFiles) {
 
     let rowIndex = index + 2;
     while (rowIndex < lines.length && /^\|.*\|$/.test(lines[rowIndex])) {
-      const cells = lines[rowIndex].split("|").slice(1, -1);
+      const cells = splitTableRow(lines[rowIndex]);
       if (exampleApiColumn !== -1) {
         const cell = cells[exampleApiColumn] || "";
         const api = cell.match(/`([^`]+)`/)?.[1];

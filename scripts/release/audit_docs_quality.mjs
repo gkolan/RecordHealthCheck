@@ -17,6 +17,7 @@ const files = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
+    if (entryPath === path.join(docsRoot, "slides")) continue;
     if (entry.isDirectory()) walk(entryPath);
     else if (entry.name.endsWith(".md")) files.push(entryPath);
   }
@@ -48,6 +49,8 @@ function localLinksResolve(file, markdown) {
 }
 
 function tablesAreReadable(markdown) {
+  const columnCount = (row) =>
+    row.replaceAll("\\|", "").split("|").slice(1, -1).length;
   const lines = markdown.split(/\r?\n/);
   for (let index = 0; index < lines.length - 1; index += 1) {
     if (
@@ -56,11 +59,11 @@ function tablesAreReadable(markdown) {
     ) {
       continue;
     }
-    const columns = lines[index].split("|").slice(1, -1).length;
+    const columns = columnCount(lines[index]);
     if (columns > 6) return false;
     let row = index + 2;
     while (row < lines.length && /^\|.*\|$/.test(lines[row])) {
-      if (lines[row].split("|").slice(1, -1).length !== columns) return false;
+      if (columnCount(lines[row]) !== columns) return false;
       row += 1;
     }
   }

@@ -782,11 +782,12 @@ private class RecordHealthCheckCoverageTest {
     // least one Contact email is blank. The shared factory gives every seeded
     // Contact an email, so add a deterministic blank-email Contact for this
     // assertion and remove it afterward so later checks see the original data.
-    Contact blankEmailContact = new Contact(
-      LastName = 'Blank Email Coverage',
-      AccountId = accountRecord.Id
+    Contact blankEmailContact = RecordHealthCheckTestDataFactory.createContact(
+      new Contact(
+        LastName = 'Blank Email Coverage',
+        AccountId = accountRecord.Id
+      )
     );
-    insert blankEmailContact;
     Record_Health_Check_Rule__mdt allBlankFail = queryRule('Q_All_Blank_Fail');
     allBlankFail.SourceQuery__c = 'SELECT Email FROM Contact WHERE AccountId = {!record.Id}';
     allBlankFail.SourceQueryField__c = 'Email';
@@ -1659,6 +1660,7 @@ private class RecordHealthCheckCoverageTest {
     fieldRule.PassConditionFormula__c = 'AND(NOT(ISBLANK(BillingCity)), NOT(ISBLANK(Parent.BillingCity)))';
     fieldRule.FailureMessage__c = '{!record.Name} {!record.BillingCity} {!record.Parent.BillingCity}';
     fieldRule.UnableToEvaluateMessage__c = '{!record.Phone}';
+    fieldRule.ApplicabilityNotMetMessage__c = '{!record.AccountNumber} is outside this policy.';
     fieldRule.ApplicabilityMode__c = 'WHEN_FORMULA_TRUE';
     fieldRule.ApplicabilityFormula__c = 'NOT(ISBLANK(Website))';
     Set<String> fields = engine.collectRecordFields(
@@ -1668,6 +1670,7 @@ private class RecordHealthCheckCoverageTest {
     System.assert(fields.contains('Id'));
     System.assert(fields.contains('BillingCity'));
     System.assert(fields.contains('Parent.BillingCity'));
+    System.assert(fields.contains('AccountNumber'));
     System.assertNotEquals(
       null,
       engine.loadRecord(accountRecord.Id, fieldRule)
@@ -3949,8 +3952,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void formulaCheckPopulatesFoundAndExpectedFromSingleValueFormulas() {
-    Account a = new Account(Name = 'Balance Co', NumberOfEmployees = 100);
-    insert a;
+    Account a = RecordHealthCheckTestDataFactory.createAccount(
+      new Account(Name = 'Balance Co', NumberOfEmployees = 100)
+    );
     Account record = [
       SELECT Id, NumberOfEmployees, AnnualRevenue
       FROM Account

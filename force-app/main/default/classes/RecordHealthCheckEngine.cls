@@ -921,6 +921,7 @@ public with sharing class RecordHealthCheckEngine {
     // turns them into blanks and they must never make record loading fail.
     addMergeFields(fields, objectType, rule.FailureMessage__c);
     addMergeFields(fields, objectType, rule.UnableToEvaluateMessage__c);
+    addMergeFields(fields, objectType, rule.ApplicabilityNotMetMessage__c);
     // Remediation link fields may carry {!record.FieldName} tokens (including relationship
     // paths like {!record.Owner.ManagerId}); load their fields so the token resolves.
     addMergeFields(fields, objectType, rule.ActionUrl__c);
@@ -1386,12 +1387,24 @@ public with sharing class RecordHealthCheckEngine {
       return;
     }
 
-    String resolvedUrl = formulaEvaluator.resolveUrlMergeFields(
-      rule.ActionUrl__c,
-      record,
-      rule,
-      result
-    );
+    String resolvedUrl;
+    try {
+      resolvedUrl = formulaEvaluator.resolveUrlMergeFields(
+        rule.ActionUrl__c,
+        record,
+        rule,
+        result
+      );
+    } catch (RecordHealthCheckTemplateService.TemplateException ex) {
+      if (String.isBlank(result.detailMessage)) {
+        result.detailMessage =
+          'Remediation link suppressed (' +
+          ex.reasonCode +
+          '): ' +
+          ex.getMessage();
+      }
+      return;
+    }
     String safeUrl = sanitizeActionUrl(resolvedUrl);
     if (safeUrl == null) {
       // Suppress the link but leave a breadcrumb in the admin-only detail channel.

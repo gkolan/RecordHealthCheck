@@ -76,7 +76,7 @@ private class RecordHealthCheckControllerTest {
     Integer beforeDml = Limits.getDmlStatements();
 
     RecordHealthCheckController.evaluateCheck(
-      'Account_Data_Quality',
+      'Example_Account_Relationship_Risk',
       'Missing_Rule',
       accountRecord.Id,
       'automatic-run',
@@ -89,7 +89,7 @@ private class RecordHealthCheckControllerTest {
     );
 
     RecordHealthCheckResult result = RecordHealthCheckController.evaluateCheck(
-      'Account_Data_Quality',
+      'Example_Account_Relationship_Risk',
       'Missing_Rule',
       accountRecord.Id,
       'user-run',
@@ -102,9 +102,8 @@ private class RecordHealthCheckControllerTest {
     );
 
     RecordHealthCheckController.completeRun(
-      'Account_Data_Quality',
+      'Example_Account_Relationship_Risk',
       'user-run',
-      new List<RecordHealthCheckResult>{ result },
       RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED,
       accountRecord.Id
     );

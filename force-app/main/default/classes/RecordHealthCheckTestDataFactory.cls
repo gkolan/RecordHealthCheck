@@ -73,7 +73,10 @@ public class RecordHealthCheckTestDataFactory {
   }
 
   public static Account createAccount(String name) {
-    Account accountRecord = new Account(Name = name);
+    return createAccount(new Account(Name = name));
+  }
+
+  public static Account createAccount(Account accountRecord) {
     populateRequiredFields(accountRecord);
     insertAllowingDuplicateRules(new List<SObject>{ accountRecord });
     return accountRecord;
@@ -118,6 +121,11 @@ public class RecordHealthCheckTestDataFactory {
     );
   }
 
+  public static Contact createContact(Contact contactRecord) {
+    createContacts(new List<Contact>{ contactRecord });
+    return contactRecord;
+  }
+
   public static Opportunity createOpportunity(
     Id accountId,
     String name,
@@ -136,24 +144,30 @@ public class RecordHealthCheckTestDataFactory {
   }
 
   public static Task createCompletedTask(Id whatId) {
-    Task taskRecord = new Task(
-      Subject = 'Coverage Task',
-      WhatId = whatId,
-      Status = 'Completed',
-      ActivityDate = Date.today()
+    return createTask(
+      new Task(
+        Subject = 'Coverage Task',
+        WhatId = whatId,
+        Status = 'Completed',
+        ActivityDate = Date.today()
+      )
     );
+  }
+
+  public static Task createTask(Task taskRecord) {
     populateRequiredFields(taskRecord);
     insertAllowingDuplicateRules(new List<SObject>{ taskRecord });
     return taskRecord;
   }
 
-  private static void createContacts(List<Contact> contacts) {
+  public static List<Contact> createContacts(List<Contact> contacts) {
     List<SObject> records = new List<SObject>();
     for (Contact contactRecord : contacts) {
       populateRequiredFields(contactRecord);
       records.add(contactRecord);
     }
     insertAllowingDuplicateRules(records);
+    return contacts;
   }
 
   private static String uniqueToken() {

@@ -5,7 +5,7 @@
 
 <!-- Generated from shipped Salesforce metadata by scripts/release/generate_field_size_registry.py. -->
 
-Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `ERROR` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name}`.
+Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `ERROR` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name|this record}`.
 
 ## Start with what happened
 
@@ -17,9 +17,9 @@ Use this page when Salesforce will not save or deploy a Custom Metadata value, w
 
 ## Why the Framework limits completed text
 
-Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name}` is replaced with the current record's Name.
+Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name|this record}` is replaced with the current record's Name.
 
-A saved template can therefore be short while the completed text becomes much larger. `FailureMessage__c` might contain `Account {!record.Name} needs review.`, but the Account Name is not inserted until the Rule runs.
+A saved template can therefore be short while the completed text becomes much larger. `FailureMessage__c` might contain `Account {!record.Name|this record} needs review.`, but the Account Name is not inserted until the Rule runs.
 
 The Framework limits one completed value to 20,000 characters so a merge token cannot create an unexpectedly large result, response payload, or demand on Salesforce transaction resources. A predictable ceiling also keeps the Lightning card and calling integrations from receiving unbounded display text.
 
@@ -44,30 +44,30 @@ These are the Rule fields where character count can prevent a value from being s
 
 | Field API name | Salesforce field type | What Salesforce accepts | Completed text limit | If the value is too long |
 | --- | --- | ---: | ---: | --- |
-| [`ActionLabel__c`](../metadata/fields-rule.md#action-label-actionlabel__c) | Text | 80 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
-| [`ActionUrl__c`](../metadata/fields-rule.md#action-url-actionurl__c) | LongTextArea | 32768 | 2,000 | The Framework leaves out a URL over 2,000 characters or one that fails its safety checks |
-| [`ApexClass__c`](../metadata/fields-rule.md#apex-class-apexclass__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
-| [`ApexParametersJson__c`](../metadata/fields-rule.md#apex-parameters-json-apexparametersjson__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`ApplicabilityCountQuery__c`](../metadata/fields-rule.md#applies-when-count-query-applicabilitycountquery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`ApplicabilityFormula__c`](../metadata/fields-rule.md#applies-when-formula-applicabilityformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`CheckDescription__c`](../metadata/fields-rule.md#check-description-checkdescription__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
-| [`CheckTitle__c`](../metadata/fields-rule.md#check-title-checktitle__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
-| [`ComparisonQueryField__c`](../metadata/fields-rule.md#comparison-query-field-comparisonqueryfield__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
-| [`ComparisonQuery__c`](../metadata/fields-rule.md#comparison-query-comparisonquery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`DisplayExpectedFormula__c`](../metadata/fields-rule.md#display-expected-formula-displayexpectedformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`DisplayExpectedText__c`](../metadata/fields-rule.md#display-expected-text-displayexpectedtext__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
-| [`DisplayFoundFormula__c`](../metadata/fields-rule.md#display-found-formula-displayfoundformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`DisplayFoundText__c`](../metadata/fields-rule.md#display-found-text-displayfoundtext__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
-| [`ExpectedFixedValue__c`](../metadata/fields-rule.md#expected-value-fixed-expectedfixedvalue__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
-| [`ExpectedRecordFormula__c`](../metadata/fields-rule.md#expected-value-formula-expectedrecordformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`FailureMessage__c`](../metadata/fields-rule.md#message-when-failed-failuremessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
-| [`FindInListFormula__c`](../metadata/fields-rule.md#value-to-find-in-the-list-formula-findinlistformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`FixMessage__c`](../metadata/fields-rule.md#fix-message-fixmessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
-| [`PassConditionFormula__c`](../metadata/fields-rule.md#pass-condition-passconditionformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`PrerequisiteRule__c`](../metadata/fields-rule.md#prerequisite-rule-prerequisiterule__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
-| [`SourceQueryField__c`](../metadata/fields-rule.md#source-query-field-sourcequeryfield__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
-| [`SourceQuery__c`](../metadata/fields-rule.md#source-query-sourcequery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`UnableToEvaluateMessage__c`](../metadata/fields-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`ActionLabel__c`](../metadata/fields-check-rule.md#action-label-actionlabel__c) | Text | 80 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`ActionUrl__c`](../metadata/fields-check-rule.md#action-url-actionurl__c) | LongTextArea | 32768 | 2,000 | The Framework leaves out a URL over 2,000 characters or one that fails its safety checks |
+| [`ApexClass__c`](../metadata/fields-check-rule.md#apex-class-apexclass__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
+| [`ApexParametersJson__c`](../metadata/fields-check-rule.md#apex-parameters-json-apexparametersjson__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`ApplicabilityCountQuery__c`](../metadata/fields-check-rule.md#applies-when-count-query-applicabilitycountquery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`ApplicabilityFormula__c`](../metadata/fields-check-rule.md#applies-when-formula-applicabilityformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`CheckDescription__c`](../metadata/fields-check-rule.md#check-description-checkdescription__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`CheckTitle__c`](../metadata/fields-check-rule.md#check-title-checktitle__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
+| [`ComparisonQueryField__c`](../metadata/fields-check-rule.md#comparison-query-field-comparisonqueryfield__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
+| [`ComparisonQuery__c`](../metadata/fields-check-rule.md#comparison-query-comparisonquery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`DisplayExpectedFormula__c`](../metadata/fields-check-rule.md#display-expected-formula-displayexpectedformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`DisplayExpectedText__c`](../metadata/fields-check-rule.md#display-expected-text-displayexpectedtext__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`DisplayFoundFormula__c`](../metadata/fields-check-rule.md#display-found-formula-displayfoundformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`DisplayFoundText__c`](../metadata/fields-check-rule.md#display-found-text-displayfoundtext__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`ExpectedFixedValue__c`](../metadata/fields-check-rule.md#expected-value-fixed-expectedfixedvalue__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
+| [`ExpectedRecordFormula__c`](../metadata/fields-check-rule.md#expected-value-formula-expectedrecordformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`FailureMessage__c`](../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`FindInListFormula__c`](../metadata/fields-check-rule.md#value-to-find-in-the-list-formula-findinlistformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`FixMessage__c`](../metadata/fields-check-rule.md#fix-message-fixmessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`PassConditionFormula__c`](../metadata/fields-check-rule.md#pass-condition-passconditionformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`PrerequisiteRule__c`](../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
+| [`SourceQueryField__c`](../metadata/fields-check-rule.md#source-query-field-sourcequeryfield__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
+| [`SourceQuery__c`](../metadata/fields-check-rule.md#source-query-sourcequery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
+| [`UnableToEvaluateMessage__c`](../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 
 ## Fields controlled by something other than character count
 
@@ -77,10 +77,10 @@ These fields are still constrained, but making their text shorter will not solve
 | --- | --- | --- | --- |
 | Check Set | Picklist | Restricted value set | [`CardRevealMode__c`](../metadata/fields-check-set.md#reveal-mode-cardrevealmode__c), [`CardRunMode__c`](../metadata/fields-check-set.md#when-checks-run-cardrunmode__c), [`FoundExpectedDisplay__c`](../metadata/fields-check-set.md#foundexpected-display-foundexpecteddisplay__c), [`PassedChecksDisplay__c`](../metadata/fields-check-set.md#passed-checks-passedchecksdisplay__c), [`SkippedChecksDisplay__c`](../metadata/fields-check-set.md#skipped-checks-skippedchecksdisplay__c) |
 | Check Set | Checkbox | true/false | [`IsActive__c`](../metadata/fields-check-set.md#active-isactive__c), [`PublishRunEvent__c`](../metadata/fields-check-set.md#publish-run-event-publishrunevent__c), [`ShowDiagnostics__c`](../metadata/fields-check-set.md#show-diagnostics-showdiagnostics__c), [`StopOnSystemError__c`](../metadata/fields-check-set.md#stop-after-a-system-error-stoponsystemerror__c) |
-| Rule | Picklist | Restricted value set | [`ApplicabilityCountOperator__c`](../metadata/fields-rule.md#count-must-be-applicabilitycountoperator__c), [`ApplicabilityMode__c`](../metadata/fields-rule.md#applies-to-applicabilitymode__c), [`Category__c`](../metadata/fields-rule.md#category-category__c), [`ComparisonOperator__c`](../metadata/fields-rule.md#comparison-operator-comparisonoperator__c), [`EmptyValueHandling__c`](../metadata/fields-rule.md#if-field-value-is-empty-emptyvaluehandling__c), [`EvaluationType__c`](../metadata/fields-rule.md#evaluation-type-evaluationtype__c), [`ExpectedValueSource__c`](../metadata/fields-rule.md#expected-value-comes-from-expectedvaluesource__c), [`FailureSeverity__c`](../metadata/fields-rule.md#failure-severity-failureseverity__c), [`FormulaResultType__c`](../metadata/fields-rule.md#formula-result-type-formularesulttype__c), [`NoRowsResult__c`](../metadata/fields-rule.md#if-query-finds-no-records-norowsresult__c), [`QueryResultHandling__c`](../metadata/fields-rule.md#how-to-read-query-results-queryresulthandling__c) |
-| Rule | Number | 4 digits, 0 decimal places | [`ApplicabilityCountThreshold__c`](../metadata/fields-rule.md#count-value-applicabilitycountthreshold__c), [`EvaluationOrder__c`](../metadata/fields-rule.md#evaluation-order-evaluationorder__c), [`MaxQueryRows__c`](../metadata/fields-rule.md#max-query-rows-1-2000-maxqueryrows__c) |
-| Rule | Checkbox | true/false | [`IsActive__c`](../metadata/fields-rule.md#active-isactive__c), [`PublishResultEvent__c`](../metadata/fields-rule.md#publish-result-event-publishresultevent__c) |
-| Rule | Metadata relationship | Must name a Check Set | [`Record_Health_Check_Set__c`](../metadata/fields-rule.md#check-set-record_health_check_set__c) |
+| Rule | Picklist | Restricted value set | [`ApplicabilityCountOperator__c`](../metadata/fields-check-rule.md#count-must-be-applicabilitycountoperator__c), [`ApplicabilityMode__c`](../metadata/fields-check-rule.md#applies-to-applicabilitymode__c), [`Category__c`](../metadata/fields-check-rule.md#category-category__c), [`ComparisonOperator__c`](../metadata/fields-check-rule.md#comparison-operator-comparisonoperator__c), [`EmptyValueHandling__c`](../metadata/fields-check-rule.md#if-field-value-is-empty-emptyvaluehandling__c), [`EvaluationType__c`](../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c), [`ExpectedValueSource__c`](../metadata/fields-check-rule.md#expected-value-comes-from-expectedvaluesource__c), [`FailureSeverity__c`](../metadata/fields-check-rule.md#failure-severity-failureseverity__c), [`FormulaResultType__c`](../metadata/fields-check-rule.md#formula-result-type-formularesulttype__c), [`NoRowsResult__c`](../metadata/fields-check-rule.md#if-query-finds-no-records-norowsresult__c), [`QueryResultHandling__c`](../metadata/fields-check-rule.md#how-to-read-query-results-queryresulthandling__c) |
+| Rule | Number | 4 digits, 0 decimal places | [`ApplicabilityCountThreshold__c`](../metadata/fields-check-rule.md#count-value-applicabilitycountthreshold__c), [`EvaluationOrder__c`](../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c), [`MaxQueryRows__c`](../metadata/fields-check-rule.md#max-query-rows-1-2000-maxqueryrows__c) |
+| Rule | Checkbox | true/false | [`IsActive__c`](../metadata/fields-check-rule.md#active-isactive__c), [`PublishResultEvent__c`](../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) |
+| Rule | Metadata relationship | Must name a Check Set | [`Record_Health_Check_Set__c`](../metadata/fields-check-rule.md#check-set-record_health_check_set__c) |
 
 This page covers all **12 Check Set fields** and **41 Rule fields** in the shipped Custom Metadata definitions.
 
@@ -95,6 +95,6 @@ When an action URL is unsafe or longer than 2,000 characters, the Rule can still
 ## Related
 
 - [Check Set fields](../metadata/fields-check-set.md)
-- [Rule fields](../metadata/fields-rule.md)
+- [Rule fields](../metadata/fields-check-rule.md)
 - [Configuration guide](../guides/configure-check-sets-and-rules.md)
 - [Architecture map](reference-architecture-map.md)

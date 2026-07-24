@@ -8,7 +8,6 @@
 .localdevserver/
 deploy-options.json
 /config/
-/integration-tests/
 .claude/
 /CLAUDE.md
 .playwright-mcp/

@@ -145,9 +145,9 @@ private class RecordHealthCheckCoverageThresholdTest {
   static void engineMapsDeletedRecordsToNotAccessible() {
     if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
       return;
-    Account deletedAccount = new Account(Name = 'Delete me');
-    insert deletedAccount;
-    delete deletedAccount;
+    Account deletedAccount = RecordHealthCheckTestDataFactory.createDeletedAccount(
+      'Delete me'
+    );
 
     RecordHealthCheckResult result = new RecordHealthCheckEngine()
       .evaluate(

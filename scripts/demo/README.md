@@ -3,13 +3,13 @@
 Create a complete 30-day scratch org with one command:
 
 ```bash
-./scripts/setup-v2-demo.sh rhc-v2
+./scripts/setup-demo.sh rhc-demo
 ```
 
 Set a different Dev Hub when needed:
 
 ```bash
-DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-v2-demo.sh my-demo-alias
+DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-demo.sh my-demo-alias
 ```
 
 The setup deploys the core package, the `Example_Account_Relationship_Risk`
@@ -32,6 +32,6 @@ The final verification fails the setup immediately unless the health check
 returns exactly **3 passed, 4 failed, and 1 skipped**. The skipped channel rule
 must remain business-valid for Acme's `Customer` account type.
 
-`setupV2DemoData.apex` is idempotent for the named Acme demo records. On rerun,
+`setupDemoData.apex` is idempotent for the named Acme demo records. On rerun,
 it replaces Acme's Contacts, Opportunities, Opportunity Contact Roles, Tasks,
 Events, and Cases so the scenario does not drift or accumulate duplicates.

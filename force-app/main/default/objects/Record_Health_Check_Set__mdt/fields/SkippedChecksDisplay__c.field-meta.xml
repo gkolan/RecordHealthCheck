@@ -12,9 +12,9 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
-            <value><fullName>SHOW_EACH_CHECK</fullName><default
-        >true</default></value><value><fullName
-        >SHOW_COUNT_ONLY</fullName><default
+            <value><fullName>SHOW_EACH_CHECK</fullName><label
+        >Show each check</label><default>true</default></value><value><fullName
+        >SHOW_COUNT_ONLY</fullName><label>Show count only</label><default
         >false</default></value></valueSetDefinition>
     </valueSet>
 </CustomField>

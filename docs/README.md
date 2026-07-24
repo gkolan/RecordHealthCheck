@@ -17,7 +17,7 @@ Health Check, begin with **Install and verify**, then create one Rule or copy an
 | Understand the product before installing it | [How Record Health Check works](installation/01-how-it-works.md) | Check Sets, Rules, result meanings, and when to use a health check |
 | Install it and see a working card | [Install and verify](installation/02-install-and-verify.md) | Deploy Core, add a Check Set, place the card, and verify a result |
 | Create my first check in Salesforce Setup | [Create your first Rule](installation/03-create-your-first-rule.md) | Configure a Formula Rule without writing Apex or using the command line |
-| Copy a practical business example | [Examples library](examples/README.md) | Choose Formula, Query, Compare Two Queries, or Apex and adapt a complete example |
+| Copy a practical example | [Examples library](examples/README.md) | Choose Formula, Query, Compare Two Queries, or Apex and adapt a complete example |
 | Configure advanced behavior | [Configure Check Sets and Rules](guides/configure-check-sets-and-rules.md) | Applicability, dependencies, messages, actions, display behavior, and troubleshooting |
 | Upgrade an existing installation | [Upgrade Record Health Check](installation/04-upgrading.md) | Back up, migrate renamed fields, validate, and prepare rollback |
 | Call health checks from code or automation | [Integration overview](integration/README.md) | Choose Lightning, Apex, Flow, or platform events |
@@ -81,7 +81,7 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 | Reference | What it contains |
 | --- | --- |
 | [Check Set fields](metadata/fields-check-set.md) | Every Check Set field, default, dependency, and allowed value |
-| [Rule fields](metadata/fields-rule.md) | Every Rule field grouped by purpose and Evaluation Type |
+| [Rule fields](metadata/fields-check-rule.md) | Every Rule field grouped by purpose and Evaluation Type |
 | [Reason Codes](reference/reference-reason-codes.md) | Stable explanations for skipped, unable-to-evaluate, and error outcomes |
 | [Platform Event metadata](metadata/README.md#choose-a-platform-event-reference) | Fields and usage for Set Run, Rule Result, and Log events |
 | [Field limits](reference/reference-fields-limits.md) | Salesforce storage limits and Framework completed-text limits |

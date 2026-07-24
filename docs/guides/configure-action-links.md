@@ -6,7 +6,7 @@
 > **Reference**
 >
 > - This guide covers allowed URL formats, merge tokens, and link patterns.
-> - For the field definitions, use the [Rule fields reference](../metadata/fields-rule.md).
+> - For the field definitions, use the [Rule fields reference](../metadata/fields-check-rule.md).
 
 Use **Fix Message**, **Action Label**, and **Action URL** to turn a failed Rule into a clear next
 step. The Rule can guide a user to a Salesforce record, related list, report, Knowledge article,
@@ -19,13 +19,13 @@ external site, or prefilled create page instead of requiring the user to search 
 | Explain what the user should correct | **Fix Message** (`FixMessage__c`) |
 | Give the destination a clear button label | **Action Label** (`ActionLabel__c`) |
 | Open a verified Salesforce or HTTPS destination | **Action URL** (`ActionUrl__c`) |
-| Reuse the current record or parent values in guidance | `{!record.FieldApiName}` merge tokens |
+| Reuse the current record or parent values in guidance | `{!record.FieldApiName\|Fallback value}` merge tokens |
 
 These settings are configured on the Rule:
 
-- [**Action Label** (`ActionLabel__c`)](../metadata/fields-rule.md#action-label-actionlabel__c)
-- [**Action URL** (`ActionUrl__c`)](../metadata/fields-rule.md#action-url-actionurl__c)
-- [**Fix Message** (`FixMessage__c`)](../metadata/fields-rule.md#fix-message-fixmessage__c)
+- [**Action Label** (`ActionLabel__c`)](../metadata/fields-check-rule.md#action-label-actionlabel__c)
+- [**Action URL** (`ActionUrl__c`)](../metadata/fields-check-rule.md#action-url-actionurl__c)
+- [**Fix Message** (`FixMessage__c`)](../metadata/fields-check-rule.md#fix-message-fixmessage__c)
 
 These fields render only on `FAIL` rows, not on `PASS`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`
 rows.
@@ -69,13 +69,13 @@ Unsafe URLs are dropped. Fix Message can still render.
 Action URLs and Fix Message support merge tokens from the current record:
 
 ```text
-{!record.Id}
-{!record.Name}
-{!record.OwnerId}
-{!record.Owner.ManagerId}
-{!record.ParentId}
-{!record.Parent.Parent.Name}
-{!record.Parent.Customer_Tier__c}
+{!record.Id|001000000000000AAA}
+{!record.Name|this record}
+{!record.OwnerId|005000000000000AAA}
+{!record.Owner.ManagerId|005000000000000AAA}
+{!record.ParentId|001000000000000AAA}
+{!record.Parent.Parent.Name|no top-level account}
+{!record.Parent.Customer_Tier__c|Standard}
 ```
 
 The engine resolves token values before showing the link. Values substituted into URLs are URL-encoded.
@@ -87,14 +87,14 @@ name from your data model.
 
 | Goal | Action URL pattern |
 | --- | --- |
-| Create a Case with Account, Subject, and Origin defaults | `/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id},Subject=Review%20{!record.Name},Origin=Web` |
+| Create a Case with Account, Subject, and Origin defaults | `/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id\|001000000000000AAA},Subject=Review%20{!record.Name\|this record},Origin=Web` |
 | Open a Knowledge article | `/lightning/r/Knowledge__kav/ka0xxxxxxxxxxxxxxx/view` |
-| Open an external support playbook | `https://support.example.com/account-readiness?accountId={!record.Id}` |
-| View the current Account | `/lightning/r/Account/{!record.Id}/view` |
-| Edit the current Account | `/lightning/r/Account/{!record.Id}/edit` |
-| Open the Account's Contacts related list | `/lightning/r/Account/{!record.Id}/related/Contacts/view` |
-| Open a report filtered by record ID | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}` |
-| Open a report with record and parent filters | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}&fv1={!record.Parent.Name}` |
+| Open an external support playbook | `https://support.example.com/account-readiness?accountId={!record.Id\|001000000000000AAA}` |
+| View the current Account | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/view` |
+| Edit the current Account | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/edit` |
+| Open the Account's Contacts related list | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/related/Contacts/view` |
+| Open a report filtered by record ID | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id\|001000000000000AAA}` |
+| Open a report with record and parent filters | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id\|001000000000000AAA}&fv1={!record.Parent.Name\|no parent account}` |
 | Open a Contact list view | `/lightning/o/Contact/list?filterName=Recent` |
 | Open an internal Lightning page | `/lightning/n/Data_Quality_Playbook` |
 
@@ -109,7 +109,7 @@ Lightning report links can include filter values such as `fv0`, `fv1`, and `fv2`
 Example:
 
 ```text
-/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}
+/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id|001000000000000AAA}
 ```
 
 Use this when the report's first filter expects the current record Id.
@@ -132,7 +132,7 @@ Action Label:
 `View contacts to fix`
 
 Action URL:
-`/lightning/r/Account/{!record.Id}/related/Contacts/view`
+`/lightning/r/Account/{!record.Id|001000000000000AAA}/related/Contacts/view`
 
 Fix Message:
 `Open the account's contacts and add the missing email addresses.`
@@ -147,7 +147,7 @@ Action Label:
 `View high-priority cases`
 
 Action URL:
-`/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}`
+`/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id|001000000000000AAA}`
 
 Fix Message:
 `Review the open high-priority cases before your next renewal or executive conversation.`
@@ -181,6 +181,6 @@ Only `https://` external links are allowed.
 ## Related
 
 - [Configure Check Sets and Rules](configure-check-sets-and-rules.md): every card and Check Set setting
-- [Rule fields](../metadata/fields-rule.md): field definitions for `ActionLabel__c`, `ActionUrl__c`, and `FixMessage__c`
+- [Rule fields](../metadata/fields-check-rule.md): field definitions for `ActionLabel__c`, `ActionUrl__c`, and `FixMessage__c`
 - [Field limits](../reference/reference-fields-limits.md): character limits for these fields
 - [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md): troubleshooting a Rule that fails to evaluate

@@ -16,6 +16,7 @@
   "scripts": {
     "lint": "eslint --no-error-on-unmatched-pattern **/{aura,lwc}/**/*.js",
     "check:namespaced-tokens": "python3 scripts/release/migrate_namespaced_tokens.py check",
+    "check:test-data-factory": "node scripts/release/check_test_data_factory.mjs",
     "check:docs": "node scripts/release/check_docs.mjs && node scripts/release/audit_docs_quality.mjs --check",
     "audit:docs": "node scripts/release/audit_docs_quality.mjs",
     "test": "npm run test:unit",

@@ -3,16 +3,13 @@ const { jestConfig } = require("@salesforce/sfdx-lwc-jest/config");
 module.exports = {
   ...jestConfig,
   modulePathIgnorePatterns: ["<rootDir>/.localdevserver"],
-  // Keep the source glob at the bundle level. The sfdx-lwc-jest resolver does
-  // not instrument this project through the recursive `lwc/**/*` pattern and
-  // silently reports an empty 0% table, which bypasses coverage thresholds.
-  // Jest's LWC transformer only discovers source files through a bare `*`
-  // pattern. A `*.js` glob produces an empty report and silently bypasses the
-  // threshold, even though the JavaScript files exist.
+  // List production modules explicitly. sfdx-lwc-jest silently produced an
+  // empty 0% report for bundle-level globs, which also bypassed thresholds.
   collectCoverageFrom: [
-    "force-app/main/default/lwc/recordHealthCheck/*",
-    "!force-app/main/default/lwc/recordHealthCheck/*.html",
-    "!force-app/main/default/lwc/recordHealthCheck/*.css"
+    "force-app/main/default/lwc/recordHealthCheck/recordHealthCheck.js",
+    "force-app/main/default/lwc/recordHealthCheck/healthCheckModel.js",
+    "force-app/main/default/lwc/recordHealthCheck/healthCheckPresentation.js",
+    "force-app/main/default/lwc/recordHealthCheck/healthCheckRunner.js"
   ],
   coverageThreshold: {
     global: {
