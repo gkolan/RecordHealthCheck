@@ -54,6 +54,14 @@ sf project deploy start \
   --target-org "$TARGET_ALIAS" \
   --wait 30
 
+echo "==> Installing the Account record page with the card on it..."
+# Overrides the standard Account record page, so the seeded Account shows the
+# card without a trip through Lightning App Builder.
+sf project deploy start \
+  --metadata-dir scripts/display-formats/metadata \
+  --target-org "$TARGET_ALIAS" \
+  --wait 30
+
 echo "==> Assigning the admin permission set..."
 sf org assign permset \
   --name Record_Health_Check_Admin \

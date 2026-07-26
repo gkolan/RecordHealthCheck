@@ -136,6 +136,8 @@ scripts/apex/*
 !scripts/apex/verifyDisplayFormats.apex
 !scripts/demo/
 !scripts/demo/**
+!scripts/display-formats/
+!scripts/display-formats/**
 
 # Point-in-time maintainer audit / review write-ups at repo root (keep under tasks/).
 /*-AUDIT-*.md
