@@ -56,15 +56,15 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Check Set** | [`Record_Health_Check_Set__c`](../../metadata/fields-check-rule.md#check-set-record_health_check_set__c) | `Account_Record_Alignment` |
 | **Check Title** | [`CheckTitle__c`](../../metadata/fields-check-rule.md#check-title-checktitle__c) | Account Team Covers Opportunity Owners |
 | **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c) | Compare two queries |
-| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT OwnerId FROM Opportunity WHERE AccountId = {!record.Id\|001000000000000AAA} AND IsClosed = false` |
+| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT OwnerId FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
 | **Source Query Field** | [`SourceQueryField__c`](../../metadata/fields-check-rule.md#source-query-field-sourcequeryfield__c) | `OwnerId` |
-| **Comparison Query** | [`ComparisonQuery__c`](../../metadata/fields-check-rule.md#comparison-query-comparisonquery__c) | `SELECT UserId FROM AccountTeamMember WHERE AccountId = {!record.Id\|001000000000000AAA}` |
+| **Comparison Query** | [`ComparisonQuery__c`](../../metadata/fields-check-rule.md#comparison-query-comparisonquery__c) | `SELECT UserId FROM AccountTeamMember WHERE AccountId = {!record.Id}` |
 | **Comparison Query Field** | [`ComparisonQueryField__c`](../../metadata/fields-check-rule.md#comparison-query-field-comparisonqueryfield__c) | `UserId` |
 | **How To Read Query Results** | [`QueryResultHandling__c`](../../metadata/fields-check-rule.md#how-to-read-query-results-queryresulthandling__c) | Compare as lists |
 | **Comparison Operator** | [`ComparisonOperator__c`](../../metadata/fields-check-rule.md#comparison-operator-comparisonoperator__c) | Lists contain all |
 | **If Query Finds No Records** | [`NoRowsResult__c`](../../metadata/fields-check-rule.md#if-query-finds-no-records-norowsresult__c) | Fail |
 | **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-check-rule.md#applies-to-applicabilitymode__c) | When a count query matches |
-| **Applies When (Count Query)** | [`ApplicabilityCountQuery__c`](../../metadata/fields-check-rule.md#applies-when-count-query-applicabilitycountquery__c) | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id\|001000000000000AAA} AND IsClosed = false` |
+| **Applies When (Count Query)** | [`ApplicabilityCountQuery__c`](../../metadata/fields-check-rule.md#applies-when-count-query-applicabilitycountquery__c) | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
 
 ## Optional configuration
 
@@ -73,7 +73,7 @@ These values improve presentation. Change them for your process, or leave an opt
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Warning |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | One or more open Opportunity owners are missing from the Account Team. Review the missing users before the handoff. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | On `{!record.Name\|this record}`, one or more open Opportunity owners are missing from the Account Team. Review the missing users before the handoff. |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks that the Account Team includes every open Opportunity owner. |
 | **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Team Coverage |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to compare the query results. Confirm the user can read every object and field named in both queries. |

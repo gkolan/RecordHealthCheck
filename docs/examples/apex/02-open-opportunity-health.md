@@ -52,7 +52,7 @@ A sales manager opens an Account before pipeline coaching.
 | `context.recordId` | The Account being evaluated at run time |
 | `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
-Do not put the Account ID in the parameter JSON. Record Health Check supplies it automatically:
+Record Health Check supplies the Account ID automatically; leave it out of the parameter JSON:
 
 - On a Lightning record page, `context.recordId` is the ID of the open record.
 - From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
@@ -204,7 +204,7 @@ The context contains:
 | --- | --- | --- |
 | `recordId` | `Id` | Record being evaluated; use this value in SOQL |
 | `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; do not assume every field was loaded |
+| `record` | `SObject` | Partial current record; only requested fields are loaded |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
 
@@ -218,8 +218,8 @@ For a completed check, the class must return all three required values:
 | `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
 | `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
 
-Do not return `SKIP` from the class to represent applicability; configure **Applies To** on the
-Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
+For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
+runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
 [Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
@@ -239,7 +239,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Apex Class** | [`ApexClass__c`](../../metadata/fields-check-rule.md#apex-class-apexclass__c) | `AccountOpenOpportunityHealthCheck` |
 | **Apex Parameters (JSON)** | [`ApexParametersJson__c`](../../metadata/fields-check-rule.md#apex-parameters-json-apexparametersjson__c) | `{"staleDays": 30}` |
 | **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-check-rule.md#applies-to-applicabilitymode__c) | When a count query matches |
-| **Applies When (Count Query)** | [`ApplicabilityCountQuery__c`](../../metadata/fields-check-rule.md#applies-when-count-query-applicabilitycountquery__c) | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id\|001000000000000AAA} AND IsClosed = false` |
+| **Applies When (Count Query)** | [`ApplicabilityCountQuery__c`](../../metadata/fields-check-rule.md#applies-when-count-query-applicabilitycountquery__c) | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
 | **Count Must Be** | [`ApplicabilityCountOperator__c`](../../metadata/fields-check-rule.md#count-must-be-applicabilitycountoperator__c) | Greater than |
 | **Count Value** | [`ApplicabilityCountThreshold__c`](../../metadata/fields-check-rule.md#count-value-applicabilitycountthreshold__c) | `0` |
 
@@ -249,12 +249,12 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | --- | --- | --- |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks whether any open Opportunity is stale, missing Next Step, and outside the current quarter at the same time. |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Critical |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | One or more open opportunities are simultaneously stale, missing a Next Step, and have a Close Date outside the current quarter. Update Next Step, activity, or Close Date on the unhealthy Opportunities. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name\|this record}` has open opportunities that are simultaneously stale, missing a Next Step, and have a Close Date outside the current quarter. Update Next Step, activity, or Close Date on the unhealthy Opportunities. |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check open Opportunity health. Confirm the running user can read the Opportunities and fields used by this Rule. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review the open Opportunities. For each unhealthy Opportunity, update Next Step, log current activity, or correct Close Date. |
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | `Review open opportunities` |
-| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/related/Opportunities/view` |
+| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Opportunities/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `20` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
 | **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |

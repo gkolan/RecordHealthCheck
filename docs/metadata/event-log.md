@@ -16,8 +16,8 @@ Use this event for restricted technical operations and support, not readiness wo
 | Release monitoring | Compare error rates before and after a Framework or configuration deployment |
 | Reproduction support | Use record and metadata identifiers to reproduce a failure under controlled access |
 
-Do not use the Log event as a Rule result, audit history, or business-process command. Use Rule
-Result and Set Run events for finalized outcomes.
+Use the Log event for ERROR diagnostics; use Rule Result and Set Run events for finalized
+outcomes.
 
 ## How publication works
 
@@ -79,8 +79,8 @@ replacement for Salesforce debug logs and platform exception monitoring.
 }
 ```
 
-Never copy real stack traces, IDs, or production error messages into public documentation or an
-unrestricted support channel.
+Use illustrative cleaned-up values in public documentation and unrestricted support channels;
+keep real stack traces, IDs, and production error messages out of those surfaces.
 
 ## Security requirements
 
@@ -92,7 +92,7 @@ Treat the event and every persisted copy as restricted operational data.
 | Access | Grant event subscription and persisted-log access only to approved administrators or support staff. |
 | Subscriber permissions | Apply least privilege to the Apex class, Flow, integration user, and destination object. |
 | Retention | Define deletion requirements for persisted diagnostics. |
-| External sharing | Do not forward raw event data to email, chat, tickets, or external systems without security review. |
+| External sharing | Share Log event data only after a security review. |
 | Safe handling | Assume an exception message can still contain organization-specific identifiers. |
 | Custom additions | Keep Found, Expected, and source field values out of custom logging. |
 

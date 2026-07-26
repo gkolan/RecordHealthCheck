@@ -8,7 +8,7 @@
 > **Reference**
 >
 > - For the full architecture story (layers, runtime path, security, limits), use
->   [Reference: Architecture](reference-architecture.md).
+> [Reference: Architecture](reference-architecture.md).
 > - For calling health checks from your code, use [Reference: Apex API](reference-apex-api.md).
 > - For writing a custom evaluator plugin, use [Reference: Apex](reference-apex.md).
 
@@ -35,7 +35,7 @@ Every class entry below follows the same order, so you can find any given fact i
 every time: **Role** (what it is, read in under three seconds) → **Type** (declared sharing mode or
 data holder / interface / exception) → what it does → **Key members** (the constants/methods/fields
 worth knowing) → **Notable behavior** (gotchas, rationale, or a concrete example grounded in the
-code) → **See also**. A class skips a slot only when there's genuinely nothing to put there — the
+code) → **See also**. A class skips a slot only when there's genuinely nothing to put there - the
 order never changes.
 
 ## Layers at a glance
@@ -57,7 +57,7 @@ readability, but all three live at **L2** in the architecture layer diagram.
 
 ## Class index by level
 
-### L5 — Entry points
+### L5 - Entry points
 
 | Level | Class | One-line purpose |
 | --- | --- | --- |
@@ -69,13 +69,13 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L5 | [`RecordHealthCheckRunContext`](#recordhealthcheckruncontext) | Run id, source, and timing for one evaluation |
 | L5 | [`RecordHealthCheckSetPicklist`](#recordhealthchecksetpicklist) | App Builder dynamic picklist for Check Set Developer Name |
 
-### L4 — Engine
+### L4 - Engine
 
 | Level | Class | One-line purpose |
 | --- | --- | --- |
 | L4 | [`RecordHealthCheckEngine`](#recordhealthcheckengine) | One-Rule evaluation path (never throws for catchable failures) |
 
-### L3 — Evaluators
+### L3 - Evaluators
 
 | Level | Class | One-line purpose |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L3 | [`RecordHealthCheckApexEvaluator`](#recordhealthcheckapexevaluator) | Loads and runs a `RecordHealthCheckRule` plugin |
 | L3 | [`RecordHealthCheckQueryEvaluatorSupport`](#recordhealthcheckqueryevaluatorsupport) | Shared query execution and empty-result handling |
 
-### L2 — Shared services
+### L2 - Shared services
 
 | Level | Class | One-line purpose |
 | --- | --- | --- |
@@ -103,13 +103,13 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L2 | [`RecordHealthCheckEvaluatorException`](#recordhealthcheckevaluatorexception) | Evaluator failure carrying a reason code |
 | L2 | [`RecordHealthCheckAccess`](#recordhealthcheckaccess) | Diagnostics Custom Permission check |
 | L2 | [`RecordHealthCheckLogger`](#recordhealthchecklogger) | `[RHC]` debug lines and ERROR log platform events |
-| L2 | [`RecordHealthCheckTemplateService`](#recordhealthchecktemplateservice) | Parse, validate, and resolve `{!namespace.property}` tokens |
+| L2 | [`RecordHealthCheckTemplateService`](#recordhealthchecktemplateservice) | Parse, validate, and resolve namespaced merge tokens and their optional fallback text |
 | L2 | [`RecordHealthCheckTokenRegistry`](#recordhealthchecktokenregistry) | Allowed token namespaces and properties |
 | L2 | [`RecordHealthCheckToken`](#recordhealthchecktoken) | One parsed merge token |
 | L2 | [`RecordHealthCheckTokenIssue`](#recordhealthchecktokenissue) | One token validation failure |
 | L2 | [`RecordHealthCheckMergeContext`](#recordhealthcheckmergecontext) | Values available while resolving merge tokens |
 
-### L1 — Results and definitions
+### L1 - Results and definitions
 
 | Level | Class | One-line purpose |
 | --- | --- | --- |
@@ -154,11 +154,11 @@ nested calls, and a final `RecordHealthCheckLogger.flush()`.
 
 **Notable behavior:**
 - **When to use it:** any Apex process that needs a typed health decision. Prefer `runSet` when the
-  business question is "is this Check Set healthy?" Prefer `runRule` only when the process needs one
-  specific Rule.
+ business question is "is this Check Set healthy?" Prefer `runRule` only when the process needs one
+ specific Rule.
 - **Gotcha:** multi-record `runRule`/`runSet` overloads increment a private `publicationDeferralDepth`
-  counter around the per-record loop so lifecycle events publish once after the whole batch, not once
-  per record; the single-record overloads publish immediately because that counter stays at `0`.
+ counter around the per-record loop so lifecycle events publish once after the whole batch, not once
+ per record; the single-record overloads publish immediately because that counter stays at `0`.
 
 **See also:** [Reference: Apex API](reference-apex-api.md)
 
@@ -182,13 +182,13 @@ inputs, supplies Lightning lifecycle sources, and delegates to `RecordHealthChec
 
 **Notable behavior:**
 - **Source behavior:** the browser may request only Lightning-allowed source values. Unknown values
-  fall back to non-publishable `RUN_ON_LOAD` behavior (as documented in architecture).
+ fall back to non-publishable `RUN_ON_LOAD` behavior (as documented in architecture).
 - **Gotcha:** `getCheckDefinitions` distinguishes a caught `ConfigException` (logged at `DEBUG`,
-  reason code passed through as-is) from any other exception (logged at `ERROR`, always rethrown as
-  `LOAD_FAILED`) so a real governor-limit or NPE failure is never mistaken by the card for a genuine
-  missing-Check-Set condition. `completeRun` also ignores any Rule results the browser tried to pass
-  in — it always re-evaluates server-side before publishing, since a lifecycle event must reflect
-  server-side counts.
+ reason code passed through as-is) from any other exception (logged at `ERROR`, always rethrown as
+ `LOAD_FAILED`) so a real governor-limit or NPE failure is never mistaken by the card for a genuine
+ missing-Check-Set condition. `completeRun` also ignores any Rule results the browser tried to pass
+ in - it always re-evaluates server-side before publishing, since a lifecycle event must reflect
+ server-side counts.
 
 **See also:** [Lightning component](../integration/lightning-component.md)
 
@@ -203,9 +203,9 @@ and full `resultJson` for advanced consumers. Enforces the Flow record and evalu
 
 **Notable behavior:**
 - **Gotcha:** `validateRequestCount` checks the request-list size against both
-  `RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL` (200) and `MAX_EVALUATIONS_PER_CALL` (15) up front, so
-  an oversized bulk Flow call fails before any record is evaluated rather than partway through the
-  loop.
+ `RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL` (200) and `MAX_EVALUATIONS_PER_CALL` (15) up front, so
+ an oversized bulk Flow call fails before any record is evaluated rather than partway through the
+ loop.
 
 ### `RecordHealthCheckRunSetFlowAction`
 
@@ -218,9 +218,9 @@ oversized requests fail before partial work.
 
 **Notable behavior:**
 - **Gotcha:** before evaluating anything, it calls `getDefinitionResponse` for every request and
-  accumulates `plannedEvaluations`, throwing `RecordHealthCheckRequestException` the moment the
-  running total would exceed `MAX_EVALUATIONS_PER_CALL` — this planning pass means an oversized
-  multi-record batch fails without evaluating any of it, not just the records past the limit.
+ accumulates `plannedEvaluations`, throwing `RecordHealthCheckRequestException` the moment the
+ running total would exceed `MAX_EVALUATIONS_PER_CALL` - this planning pass means an oversized
+ multi-record batch fails without evaluating any of it, not just the records past the limit.
 
 **See also:** [Flow actions](../integration/flow-actions.md)
 
@@ -246,11 +246,11 @@ publication in subscriber context to prevent loops.
 
 **Notable behavior:**
 - **Gotcha:** `newEventId` builds a unique key from the run id, a suffix (`SET` or the Rule
-  Developer Name), and 8 hex characters from a freshly generated AES key — truncating the run id to
-  50 characters and the suffix to 20 so a caller-supplied run id can never exceed the platform
-  event's `EventId__c` field. `canPublish` checks both `PUBLISHABLE_SOURCES` and a
-  `subscriberContextOverride` flag so a subscriber reacting to one of these events cannot trigger
-  republication and loop.
+ Developer Name), and 8 hex characters from a freshly generated AES key - truncating the run id to
+ 50 characters and the suffix to 20 so a caller-supplied run id can never exceed the platform
+ event's `EventId__c` field. `canPublish` checks both `PUBLISHABLE_SOURCES` and a
+ `subscriberContextOverride` flag so a subscriber reacting to one of these events cannot trigger
+ republication and loop.
 
 **See also:** [Lifecycle events](../integration/lifecycle-events.md)
 
@@ -264,9 +264,9 @@ evaluation path; `complete()` stamps end time. Exposed to merge tokens (`rhcRun.
 building lifecycle events.
 
 **Notable behavior:**
-- **Gotcha:** `complete()` is safe to call more than once — it only stamps `completedAt`/`durationMs`
-  when `completedAt` is still `null`, so calling it again along a call chain cannot overwrite the
-  original duration with a later, longer one.
+- **Gotcha:** `complete()` is safe to call more than once - it only stamps `completedAt`/`durationMs`
+ when `completedAt` is still `null`, so calling it again along a call chain cannot overwrite the
+ original duration with a later, longer one.
 
 ### `RecordHealthCheckSetPicklist`
 
@@ -280,10 +280,10 @@ extra click.
 
 **Notable behavior:**
 - **Why it exists:** DeveloperName, not MasterLabel, is used for both the picklist label and value
-  because MasterLabels are not guaranteed unique across Check Sets while the DeveloperName is — using
-  it avoids the free-text entry that was previously the most common cause of a blank card. When
-  `entityName` is blank (for example, a template being edited outside a record page), `getValues()`
-  falls back to listing every active Check Set rather than none.
+ because MasterLabels are not guaranteed unique across Check Sets while the DeveloperName is - using
+ it avoids the free-text entry that was previously the most common cause of a blank card. When
+ `entityName` is blank (for example, a template being edited outside a record page), `getValues()`
+ falls back to listing every active Check Set rather than none.
 
 ---
 
@@ -295,7 +295,7 @@ extra click.
 **Type:** Service class · `public with sharing`
 
 Takes a Check Set name, Rule name, record Id, and run context, then returns exactly one
-`RecordHealthCheckResult`. Designed never to throw for catchable failures—those become a status and
+`RecordHealthCheckResult`. Designed never to throw for catchable failures - those become a status and
 reason code. Governor-limit exceptions remain uncatchable, as with any Apex API.
 
 **Key members:**
@@ -308,15 +308,15 @@ reason code. Governor-limit exceptions remain uncatchable, as with any Apex API.
 
 **Notable behavior:**
 - **Gotcha:** the per-transaction FormulaEval call counter is deliberately never reset inside
-  `evaluate` — a code comment explains that the platform's 100-call `FormulaEval` limit applies to
-  the whole transaction, so resetting the framework's own counter per check would let a caller looping
-  `evaluate()` many times (Flow, batch, anonymous Apex) drive the framework's count back to zero
-  while the real platform count keeps climbing toward the uncatchable governor limit. Calculated-field
-  dependency expansion is separately limited to `FORMULA_DEPENDENCY_DEPTH_CAP` (`10`) so a
-  misconfigured or cyclic formula-field graph cannot walk forever even though a visited-set already
-  breaks true cycles. Remediation deep links only resolve on `FAIL` and only when the URL is a
-  same-org relative path or absolute `https://` — `javascript:`, `data:`, and protocol-relative (`//`)
-  URLs are rejected.
+ `evaluate` - a code comment explains that the platform's 100-call `FormulaEval` limit applies to
+ the whole transaction, so resetting the framework's own counter per check would let a caller looping
+ `evaluate()` many times (Flow, batch, anonymous Apex) drive the framework's count back to zero
+ while the real platform count keeps climbing toward the uncatchable governor limit. Calculated-field
+ dependency expansion is separately limited to `FORMULA_DEPENDENCY_DEPTH_CAP` (`10`) so a
+ misconfigured or cyclic formula-field graph cannot walk forever even though a visited-set already
+ breaks true cycles. Remediation deep links only resolve on `FAIL` and only when the URL is a
+ same-org relative path or absolute `https://` - `javascript:`, `data:`, and protocol-relative (`//`)
+ URLs are rejected.
 
 **See also:** [Architecture § How one Rule is evaluated](reference-architecture.md#6-how-one-rule-is-evaluated)
 
@@ -347,15 +347,15 @@ primary values (`FindInListFormula__c`).
 
 **Notable behavior:**
 - **Gotcha:** a formula that resolves to `null` (e.g. a null relationship traversal) is treated as
-  `UNABLE_TO_EVALUATE`/`INVALID_FORMULA`, not `FAIL` — the class comments explain that letting null
-  count as false would produce false failures. `evaluateFormulaAnyType` tries the admin-declared
-  `FormulaResultType__c` or a cached previously-resolved return type first, and only falls back to
-  trying all eight `formulaeval.FormulaReturnType` values (in a fixed cheapest-first order:
-  `BOOLEAN`, `DECIMAL`, `DATE`, `DATETIME`, `STRING`, `DOUBLE`, `INTEGER`, `LONG`) when that preferred
-  type fails, since every failed attempt still uses one of the 100 FormulaEval calls for the
-  transaction. `FORMULA_EVAL_SAFETY_MARGIN` is `5`, so calls stop being attempted once
-  `formulaEvalCallCount` reaches 95, leaving spare room for later checks' applicability checks in
-  the same transaction.
+ `UNABLE_TO_EVALUATE`/`INVALID_FORMULA`, not `FAIL` - the class comments explain that letting null
+ count as false would produce false failures. `evaluateFormulaAnyType` tries the admin-declared
+ `FormulaResultType__c` or a cached previously-resolved return type first, and only falls back to
+ trying all eight `formulaeval.FormulaReturnType` values (in a fixed cheapest-first order:
+ `BOOLEAN`, `DECIMAL`, `DATE`, `DATETIME`, `STRING`, `DOUBLE`, `INTEGER`, `LONG`) when that preferred
+ type fails, since every failed attempt still uses one of the 100 FormulaEval calls for the
+ transaction. `FORMULA_EVAL_SAFETY_MARGIN` is `5`, so calls stop being attempted once
+ `formulaEvalCallCount` reaches 95, leaving spare room for later checks' applicability checks in
+ the same transaction.
 
 **See also:** [Reference: Formula](reference-formula.md)
 
@@ -372,12 +372,12 @@ operators according to Rule configuration.
 
 **Notable behavior:**
 - **Gotcha:** an indeterminate operator result is split into two distinct causes that must not be
-  handled the same way: a genuine zero-row query is governed by `NoRowsResult__c`, while a present
-  row whose field value is null is governed by `EmptyValueHandling__c` and resolves to `SKIPPED` —
-  collapsing the two would let "null value + no rows" wrongly resolve to `FAIL`. `bindTokens` also
-  resolves each `{!record.Field}` token in both a quoted and unquoted form, since a multi-select
-  picklist token expands differently depending on whether it appears inside quotes (raw `'A;B;C'`
-  value) or unquoted (an `INCLUDES (...)` list).
+ handled the same way: a genuine zero-row query is governed by `NoRowsResult__c`, while a present
+ row whose field value is null is governed by `EmptyValueHandling__c` and resolves to `SKIPPED` - 
+ collapsing the two would let "null value + no rows" wrongly resolve to `FAIL`. `bindTokens` also
+  resolves each `{!record.FieldApiName}` token (with optional `|Fallback value`) in both a quoted and unquoted form, since a multi-select
+ picklist token expands differently depending on whether it appears inside quotes (raw `'A;B;C'`
+ value) or unquoted (an `INCLUDES (...)` list).
 
 **See also:** [Reference: Query](reference-query.md)
 
@@ -398,9 +398,9 @@ follows `NoRowsResult__c`, consistent with the single-query evaluator.
 
 **Notable behavior:**
 - **Gotcha:** under `AS_NO_MATCH` empty-value handling, a missing list value is not converted to an
-  empty string (which would let two nulls wrongly "match" as blanks) — it is replaced with a unique
-  placeholder, `' __rhc_missing__:' + side + ':' + index`, so a null on one side matches nothing, not
-  even another null.
+ empty string (which would let two nulls wrongly "match" as blanks) - it is replaced with a unique
+ placeholder, `' __rhc_missing__:' + side + ':' + index`, so a null on one side matches nothing, not
+ even another null.
 
 **See also:** [Reference: Compare two queries](reference-compare-two-queries.md)
 
@@ -422,12 +422,12 @@ Found-Expected completeness for `PASS` / `FAIL`.
 
 **Notable behavior:**
 - **Gotcha:** `finalizeApexResult` rejects any `apexResult.status` outside
-  `{PASS, FAIL, SKIPPED, UNABLE_TO_EVALUATE, ERROR}` and, for determinate `PASS`/`FAIL`, requires both
-  `actualValue` and `expectedValue` to be non-blank — a plugin returning an unrecognized status or a
-  determinate result without those values is changed to `ERROR`/`APEX_EVALUATOR_ERROR` rather than
-  letting a malformed plugin response reach the UI. A `null` `recordId` is also rejected explicitly
-  before the plugin runs (`APEX_EVALUATOR_ERROR`), since the interface's null-safe `objectApiName`
-  lookup would otherwise let a plugin run with no real record context.
+ `{PASS, FAIL, SKIPPED, UNABLE_TO_EVALUATE, ERROR}` and, for determinate `PASS`/`FAIL`, requires both
+ `actualValue` and `expectedValue` to be non-blank - a plugin returning an unrecognized status or a
+ determinate result without those values is changed to `ERROR`/`APEX_EVALUATOR_ERROR` rather than
+ letting a malformed plugin response reach the UI. A `null` `recordId` is also rejected explicitly
+ before the plugin runs (`APEX_EVALUATOR_ERROR`), since the interface's null-safe `objectApiName`
+ lookup would otherwise let a plugin run with no real record context.
 
 **See also:** [Reference: Apex](reference-apex.md)
 
@@ -451,11 +451,11 @@ and the safe "cannot evaluate" message helper.
 
 **Notable behavior:**
 - **Gotcha:** `runQuery` asks `RecordHealthCheckSoqlTemplate.prepareForExecution` for `maxRows + 1`
-  rows rather than `maxRows` — fetching one extra row is how it distinguishes "exactly at the limit"
-  from "over the limit" and raises `GOVERNOR_LIMIT_RISK` only in the latter case, without needing a
-  separate `COUNT()` query. `buildEmptyResult`'s four-way branch on `NoRowsResult__c` (`PASS`, `FAIL`,
-  `UNABLE_TO_EVALUATE`, or the default `SKIPPED`/`APPLICABILITY_NOT_MET`) is shared exactly by both
-  SOQL evaluators so a zero-row query behaves identically regardless of Evaluation Type.
+ rows rather than `maxRows` - fetching one extra row is how it distinguishes "exactly at the limit"
+ from "over the limit" and raises `GOVERNOR_LIMIT_RISK` only in the latter case, without needing a
+ separate `COUNT()` query. `buildEmptyResult`'s four-way branch on `NoRowsResult__c` (`PASS`, `FAIL`,
+ `UNABLE_TO_EVALUATE`, or the default `SKIPPED`/`APPLICABILITY_NOT_MET`) is shared exactly by both
+ SOQL evaluators so a zero-row query behaves identically regardless of Evaluation Type.
 
 ---
 
@@ -476,7 +476,7 @@ Rule's parent Check Set, loads Rules for evaluation, and maps the first
 | Member | Purpose |
 | --- | --- |
 | `ConfigException` (nested) | Exception carrying `reasonCode` |
-| `RC_*` | Reason-code string aliases used across load paths — the single source of truth callers compare against, rather than a literal (e.g. `RC_CONFIG_INACTIVE`, `RC_OBJECT_MISMATCH`, `RC_NO_ACTIVE_CHECKS`) |
+| `RC_*` | Reason-code string aliases used across load paths - the single source of truth callers compare against, rather than a literal (e.g. `RC_CONFIG_INACTIVE`, `RC_OBJECT_MISMATCH`, `RC_NO_ACTIVE_CHECKS`) |
 | `findCheckSetDeveloperName(...)` | Resolve a Rule's parent Check Set |
 | `getCheckSetAvailabilityForObject(...)` | Active/inactive Check Sets for an object |
 | `getDefinitionResponse(...)` | Build the Lightning definition response |
@@ -486,10 +486,10 @@ Rule's parent Check Set, loads Rules for evaluation, and maps the first
 
 **Notable behavior:**
 - **Gotcha:** `getDefinitionResponse` prefers `CardTitle__c`, then falls back to MasterLabel, then
-  DeveloperName, so the card never renders with a blank title when an admin left Card Title blank.
-  When active Rules for a Check Set exceed `FRAMEWORK_MAX_CHECKS` (25), it logs a `WARN` server-side
-  in addition to the truncation metadata the LWC shows as its "First 25 of N shown" badge, so the
-  excess is visible in logs too, not only in the UI.
+ DeveloperName, so the card never renders with a blank title when an admin left Card Title blank.
+ When active Rules for a Check Set exceed `FRAMEWORK_MAX_CHECKS` (25), it logs a `WARN` server-side
+ in addition to the truncation metadata the LWC shows as its "First 25 of N shown" badge, so the
+ excess is visible in logs too, not only in the UI.
 
 ### `RecordHealthCheckRuleValidator`
 
@@ -498,18 +498,18 @@ Rule's parent Check Set, loads Rules for evaluation, and maps the first
 
 Returns ordered `Finding` values (`FindingCode` enum) once. Runtime (`ConfigService`) takes the first
 finding; deploy-time (`MetadataValidator`) collects all findings. Keeps the decision logic in one
-place so the two validators cannot disagree on *what* is invalid—only on how findings are mapped to
+place so the two validators cannot disagree on *what* is invalid - only on how findings are mapped to
 messages and field names.
 
 **Notable behavior:**
 - **Gotcha:** `MaxQueryRows__c` and `EmptyValueHandling__c` / `NoRowsResult__c` are deliberately
-  *excluded* from `queryFindings`/`compareQueriesFindings` — callers run `maxRowsFindings` and
-  `nullEmptyFindings` separately, since `ConfigService` applies them only to Query/CompareTwoQueries
-  checks while `MetadataValidator` runs them once at the top level for every Evaluation Type; folding
-  them into the per-type producers would double-count findings for the collect-all caller. Mutually
-  exclusive conditions (operator, `QueryResultHandling__c`, comparison-value source) use `if`/`else
-  if` chains for the same reason — so at most one `Finding` is returned per field even by the
-  collect-everything path.
+ *excluded* from `queryFindings`/`compareQueriesFindings` - callers run `maxRowsFindings` and
+ `nullEmptyFindings` separately, since `ConfigService` applies them only to Query/CompareTwoQueries
+ checks while `MetadataValidator` runs them once at the top level for every Evaluation Type; folding
+ them into the per-type producers would double-count findings for the collect-all caller. Mutually
+ exclusive conditions (operator, `QueryResultHandling__c`, comparison-value source) use `if`/`else
+ if` chains for the same reason - so at most one `Finding` is returned per field even by the
+ collect-everything path.
 
 ### `RecordHealthCheckMetadataValidator`
 
@@ -529,11 +529,11 @@ passed. Use before promoting configuration between orgs.
 
 **Notable behavior:**
 - **Gotcha:** `validateRecords` treats a Check Set with more active Rules than
-  `RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS` (25) as `WARNING`/`CHECK_LIMIT_EXCEEDED`, not
-  `ERROR` — the excess Rules still deploy and are still valid, they simply will not run. It then
-  checks whether any *included* Rule's `PrerequisiteRule__c` points outside that first-25 execution
-  window and adds a second `WARNING`/`DEPENDENCY_NOT_IN_RUN` per such Rule, since the dependency
-  would silently never resolve.
+ `RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS` (25) as `WARNING`/`CHECK_LIMIT_EXCEEDED`, not
+ `ERROR` - the excess Rules still deploy and are still valid, they simply will not run. It then
+ checks whether any *included* Rule's `PrerequisiteRule__c` points outside that first-25 execution
+ window and adds a second `WARNING`/`DEPENDENCY_NOT_IN_RUN` per such Rule, since the dependency
+ would silently never resolve.
 
 ### `RecordHealthCheckConfigValidator`
 
@@ -546,11 +546,11 @@ deploy-time paths.
 
 **Notable behavior:**
 - **Gotcha:** `isValidApexPlugin` creates an instance of the class while validating it, then caches
-  that instance in `validatedPluginInstances` by class name; `takeValidatedPlugin` retrieves and
-  removes it so `RecordHealthCheckApexEvaluator` can reuse the already-built plugin instead of
-  calling `newInstance()` a second time. `isJsonObject` treats a blank string as valid (returns
-  `true`) since `ApexParametersJson__c` is optional — only a non-blank value that fails to parse as a
-  JSON object is rejected.
+ that instance in `validatedPluginInstances` by class name; `takeValidatedPlugin` retrieves and
+ removes it so `RecordHealthCheckApexEvaluator` can reuse the already-built plugin instead of
+ calling `newInstance()` a second time. `isJsonObject` treats a blank string as valid (returns
+ `true`) since `ApexParametersJson__c` is optional - only a non-blank value that fails to parse as a
+ JSON object is rejected.
 
 ### `RecordHealthCheckConstants`
 
@@ -564,19 +564,19 @@ both read from here so they cannot get out of sync.
 
 **Notable behavior:**
 - **Why it exists:** a class comment notes these values used to be duplicated exactly in both
-  `RecordHealthCheckConfigService` and `RecordHealthCheckMetadataValidator`; adding a new operator or
-  mode meant editing several files together, and missing one let the two validators silently
-  disagree. Every `public static Set<String>` accessor here returns a `new Set<String>(...)` copy,
-  not the internal set itself, so a caller changing the returned set can never overwrite the
-  framework's official values. The class also owns the Apex-to-LWC value translation
-  (`toLwcTriggerMode`, `toLwcSeverity`, `toLwcEvaluatorType`, etc.) that maps current metadata
-  picklist values (for example `CRITICAL`) onto the older string values the LWC still expects (for
-  example `Error`).
+ `RecordHealthCheckConfigService` and `RecordHealthCheckMetadataValidator`; adding a new operator or
+ mode meant editing several files together, and missing one let the two validators silently
+ disagree. Every `public static Set<String>` accessor here returns a `new Set<String>(...)` copy,
+ not the internal set itself, so a caller changing the returned set can never overwrite the
+ framework's official values. The class also owns the Apex-to-LWC value translation
+ (`toLwcTriggerMode`, `toLwcSeverity`, `toLwcEvaluatorType`, etc.) that maps current metadata
+ picklist values (for example `CRITICAL`) onto the older string values the LWC still expects (for
+ example `Error`).
 
 ### `RecordHealthCheckReasonCodes`
 
 **Role:** Selected stable reason-code helpers.
-**Type:** Constants holder · `public` (no sharing keyword — data-only)
+**Type:** Constants holder · `public` (no sharing keyword - data-only)
 
 Declares commonly referenced codes (for example applicability and access) and marks which codes are
 diagnostics-only (`isDiagnosticsOnly`). Full outcome list lives in
@@ -590,9 +590,9 @@ diagnostics-only (`isDiagnosticsOnly`). Full outcome list lives in
 
 **Notable behavior:**
 - **Example:** `DIAGNOSTICS_ONLY` contains exactly `FIELD_NOT_ACCESSIBLE` and
-  `RECORD_NOT_ACCESSIBLE` — the two reason codes that reveal FLS/sharing details an unauthorized
-  viewer should not see; `isDiagnosticsOnly(reasonCode)` simply checks whether the code is in that
-  pair.
+ `RECORD_NOT_ACCESSIBLE` - the two reason codes that reveal FLS/sharing details an unauthorized
+ viewer should not see; `isDiagnosticsOnly(reasonCode)` simply checks whether the code is in that
+ pair.
 
 ### `RecordHealthCheckSetAvailability`
 
@@ -610,8 +610,8 @@ Used when the Lightning card has no Check Set selected.
 
 **Notable behavior:**
 - **Gotcha:** the no-arg constructor sets both `@AuraEnabled` booleans to `false`, so a caller that
-  returns early before filling them in (for example `RecordHealthCheckController` on a `null`
-  `recordId`) still returns a valid, non-null shape to the LWC.
+ returns early before filling them in (for example `RecordHealthCheckController` on a `null`
+ `recordId`) still returns a valid, non-null shape to the LWC.
 
 ---
 
@@ -638,12 +638,12 @@ and `EmptyValueHandling__c` / `NoRowsResult__c` resolution. Throws
 | `formatValue(...)` / `formatList(...)` | Human-readable display formatting |
 
 **Notable behavior:**
-- **Example:** `formatValue` humanizes typed values for display — a `Boolean` renders as `Yes`/`No`,
-  a numeric type gains thousands separators (dropping an all-zero fractional part, so Decimal
-  `70000.0` reads `70,000`), and a semicolon-delimited multi-select picklist string
-  (`"Hot;Warm;Cold"`) becomes `"Hot, Warm, Cold"`. `formatList` limits the rendered preview to
-  `LIST_PREVIEW_CAP` (`10`) entries and appends `… (N total)` beyond that, so a large query result
-  stays readable in the UI.
+- **Example:** `formatValue` humanizes typed values for display - a `Boolean` renders as `Yes`/`No`,
+ a numeric type gains thousands separators (dropping an all-zero fractional part, so Decimal
+ `70000.0` reads `70,000`), and a semicolon-delimited multi-select picklist string
+ (`"Hot;Warm;Cold"`) becomes `"Hot, Warm, Cold"`. `formatList` limits the rendered preview to
+ `LIST_PREVIEW_CAP` (`10`) entries and appends `… (N total)` beyond that, so a large query result
+ stays readable in the UI.
 
 ### `RecordHealthCheckSoqlTemplate`
 
@@ -664,14 +664,14 @@ literals and nested subqueries so false positives and misplaced injection are av
 
 **Notable behavior:**
 - **Gotcha:** `maskStringLiterals` replaces every character inside a single-quoted literal with a
-  space (preserving length and position) rather than stripping it, so later regex match indices
-  computed against the masked copy still map back onto the original SOQL string unchanged.
-  `injectUserMode` only inserts `WITH USER_MODE` when no outer `WITH` clause already exists, and
-  walks `TAIL_CLAUSE_PATTERNS` to find the earliest legal tail-clause position (`GROUP BY`/`ORDER
-  BY`/`LIMIT`/etc.) to insert before — an admin query already ending in a tail clause never gets
-  `WITH USER_MODE` appended after it, which would be invalid SOQL. `WITH SYSTEM_MODE` is rejected
-  outright rather than merely ignored, since it would let an admin-authored query bypass the
-  sharing/FLS enforcement the framework guarantees.
+ space (preserving length and position) rather than stripping it, so later regex match indices
+ computed against the masked copy still map back onto the original SOQL string unchanged.
+ `injectUserMode` only inserts `WITH USER_MODE` when no outer `WITH` clause already exists, and
+ walks `TAIL_CLAUSE_PATTERNS` to find the earliest legal tail-clause position (`GROUP BY`/`ORDER
+ BY`/`LIMIT`/etc.) to insert before - an admin query already ending in a tail clause never gets
+ `WITH USER_MODE` appended after it, which would be invalid SOQL. `WITH SYSTEM_MODE` is rejected
+ outright rather than merely ignored, since it would let an admin-authored query bypass the
+ sharing/FLS enforcement the framework guarantees.
 
 ### `RecordHealthCheckValueResolver`
 
@@ -692,12 +692,12 @@ string values consistently for both Query evaluators.
 
 **Notable behavior:**
 - **Gotcha:** `traverse` returns `null` (not an exception) when an intermediate relationship in a
-  dotted field path (e.g. `Account.Name`) is itself null, so a broken relationship chain becomes a
-  null value rather than an error. `classifyQueryException` inspects the exception message text
-  for `access`, `permission`, or `insufficient privileges` to decide `FIELD_NOT_ACCESSIBLE` vs.
-  `INVALID_SOQL_TEMPLATE` — it accepts the base `Exception` type specifically because
-  `System.QueryException` cannot be constructed with a custom message in a test, so only the message
-  is ever inspected, not the exception's runtime type.
+ dotted field path (e.g. `Account.Name`) is itself null, so a broken relationship chain becomes a
+ null value rather than an error. `classifyQueryException` inspects the exception message text
+ for `access`, `permission`, or `insufficient privileges` to decide `FIELD_NOT_ACCESSIBLE` vs.
+ `INVALID_SOQL_TEMPLATE` - it accepts the base `Exception` type specifically because
+ `System.QueryException` cannot be constructed with a custom message in a test, so only the message
+ is ever inspected, not the exception's runtime type.
 
 ### `RecordHealthCheckDescribeCache`
 
@@ -722,10 +722,10 @@ rather than calling Schema APIs directly elsewhere in the Framework.
 
 **Notable behavior:**
 - **Gotcha:** `describeField` keys its cache on the `Schema.SObjectField` token itself, not on
-  `String.valueOf(field)` — a comment notes that `String.valueOf` returns only the unqualified field
-  name, so two same-named fields reached from different objects (for example `Account.Name` vs.
-  `Contact.Name` via a relationship traversal) would otherwise collide in the cache and return the
-  wrong describe, including a wrong `isAccessible()` result.
+ `String.valueOf(field)` - a comment notes that `String.valueOf` returns only the unqualified field
+ name, so two same-named fields reached from different objects (for example `Account.Name` vs.
+ `Contact.Name` via a relationship traversal) would otherwise collide in the cache and return the
+ wrong describe, including a wrong `isAccessible()` result.
 
 ### `RecordHealthCheckEvaluatorException`
 
@@ -737,10 +737,10 @@ Thrown by comparison, SOQL template, and value-resolution paths. Evaluators catc
 
 **Notable behavior:**
 - **Why it exists:** a class comment explains this type was promoted from duplicate inner
-  `EvaluatorException` classes that previously lived separately inside
-  `RecordHealthCheckSoqlEvaluator` and `RecordHealthCheckCompareQueriesEvaluator`; a single top-level
-  exception lets the shared `RecordHealthCheckComparisonEngine` throw one type that both evaluators'
-  catch blocks recognize, instead of each evaluator needing its own.
+ `EvaluatorException` classes that previously lived separately inside
+ `RecordHealthCheckSoqlEvaluator` and `RecordHealthCheckCompareQueriesEvaluator`; a single top-level
+ exception lets the shared `RecordHealthCheckComparisonEngine` throw one type that both evaluators'
+ catch blocks recognize, instead of each evaluator needing its own.
 
 ### `RecordHealthCheckAccess`
 
@@ -759,9 +759,9 @@ only answers *who* may see them.
 
 **Notable behavior:**
 - **Gotcha:** `canViewDetails()` only honors the `@TestVisible` `viewDetailsPermissionOverride` when
-  `Test.isRunningTest()` is true — a test override left set can never leak into a non-test
-  `FeatureManagement.checkPermission` call, so production behavior always reflects the real Custom
-  Permission assignment.
+ `Test.isRunningTest()` is true - a test override left set can never leak into a non-test
+ `FeatureManagement.checkPermission` call, so production behavior always reflects the real Custom
+ Permission assignment.
 
 ### `RecordHealthCheckLogger`
 
@@ -784,11 +784,11 @@ subscriber-context guarded). Entry points call `flush()` so ERROR platform event
 
 **Notable behavior:**
 - **Gotcha:** `captureErrorEvent` deliberately never carries field values (actual/expected) into the
-  `Record_Health_Check_Log__e` event — only identifying context (run id, Check Set/Rule
-  names, record id, exception type/message/stack) — because those raw values belong to Debug Mode's
-  admin detail channel, not a platform event any subscriber with object access could read.
-  `enterSubscriberContext()` is a one-way loop guard a subscriber processing this same event must
-  call first, so an error raised while handling a log event cannot republish onto the same event bus.
+ `Record_Health_Check_Log__e` event - only identifying context (run id, Check Set/Rule
+ names, record id, exception type/message/stack) - because those raw values belong to Debug Mode's
+ admin detail channel, not a platform event any subscriber with object access could read.
+ `enterSubscriberContext()` is a one-way loop guard a subscriber processing this same event must
+ call first, so an error raised while handling a log event cannot republish onto the same event bus.
 
 **See also:** [Log event metadata](../metadata/event-log.md)
 
@@ -801,7 +801,8 @@ subscriber-context guarded). Entry points call `flush()` so ERROR platform event
 **Role:** Parse, validate, and resolve merge tokens.
 **Type:** Shared service · `public` (no sharing keyword)
 
-Handles `{!namespace.property|Fallback}` syntax for display messages, URLs, and SOQL text.
+Handles namespaced tokens such as `{!record.Name}`, with optional fallback text such as
+`{!record.Name|Fallback}`, for display messages, URLs, and SOQL text.
 Enforces max 100 tokens and 20,000 characters of resolved text. Unknown namespaces, unknown
 properties, legacy flat tokens, and stray braces become structured `RecordHealthCheckTokenIssue`s.
 
@@ -814,13 +815,13 @@ properties, legacy flat tokens, and stray braces become structured `RecordHealth
 
 **Notable behavior:**
 - **Gotcha:** `resolveFieldPath` rejects a dotted record token whose relationship depth exceeds 5
-  hops (`parts.size() > 6`) with `TOKEN_NOT_AVAILABLE_IN_PHASE`, so a runaway relationship chain in an
-  admin-authored template fails immediately rather than describing arbitrarily deep schema. On
-  `SURFACE_URL`, a token that resolves blank and has no `|Fallback` throws `MISSING_TOKEN_VALUE`
-  instead of silently substituting an empty string — a blank display value is harmless, but a blank
-  URL segment could produce a broken or unintended link. `rhcResult` tokens can only be resolved once
-  `context.resultFinalized` is true, since a result's Found/Expected values are not meaningful until
-  the evaluator has finished.
+ hops (`parts.size() > 6`) with `TOKEN_NOT_AVAILABLE_IN_PHASE`, so a runaway relationship chain in an
+ admin-authored template fails immediately rather than describing arbitrarily deep schema. On
+ `SURFACE_URL`, a token that resolves blank and has no `|Fallback` throws `MISSING_TOKEN_VALUE`
+ instead of silently substituting an empty string - a blank display value is harmless, but a blank
+ URL segment could produce a broken or unintended link. `rhcResult` tokens can only be resolved once
+ `context.resultFinalized` is true, since a result's Found/Expected values are not meaningful until
+ the evaluator has finished.
 
 **See also:** [Reference: Merge tokens](reference-merge-tokens.md)
 
@@ -841,9 +842,9 @@ Name, status, run id, and so on).
 
 **Notable behavior:**
 - **Example:** `RESULT_PROPERTIES` is exactly `{status, foundValue, foundValuePluralSuffix,
-  expectedValue, failedRecordCount, totalRecordCount, reasonCode}` — `foundValuePluralSuffix` in
-  particular exists so a multi-row summary message can render "1 Contact" vs "2 Contacts" without the
-  admin hand-authoring a conditional.
+ expectedValue, failedRecordCount, totalRecordCount, reasonCode}` - `foundValuePluralSuffix` in
+ particular exists so a multi-row summary message can render "1 Contact" vs "2 Contacts" without the
+ admin hand-authoring a conditional.
 
 ### `RecordHealthCheckToken`
 
@@ -857,12 +858,12 @@ Name, status, run id, and so on).
 | `expression` | The full raw token text |
 | `namespaceName` | The token's namespace (e.g. `record`, `rhcRule`) |
 | `propertyPath` | The property or field path within that namespace |
-| `fallbackValue` | Optional `\|Fallback` value; `null` when omitted |
+| `fallbackValue` | Optional fallback text written after the pipe character; `null` when omitted |
 | `startIndex` / `endIndex` | Start and end position of the token within the template string |
 
 **Notable behavior:**
 - **Note:** a convenience constructor omits `fallbackValue` (defaults to `null`) for callers that
-  only need the namespace/property/span.
+ only need the namespace/property/span.
 
 ### `RecordHealthCheckTokenIssue`
 
@@ -873,7 +874,7 @@ Name, status, run id, and so on).
 
 | Member | Purpose |
 | --- | --- |
-| `RecordHealthCheckTokenIssue(String reasonCode, String token, String message)` | Constructor — for example `('UNSUPPORTED_TOKEN_NAMESPACE', '{!foo.bar}', 'Unsupported token namespace "foo".')` |
+| `RecordHealthCheckTokenIssue(String reasonCode, String token, String message)` | Constructor - for example `('UNSUPPORTED_TOKEN_NAMESPACE', '{!foo.bar}', 'Unsupported token namespace "foo".')` <!-- legacy-token-ok --> |
 
 ### `RecordHealthCheckMergeContext`
 
@@ -895,11 +896,11 @@ failed/total record counts for plural-aware result tokens.
 
 **Notable behavior:**
 - **Gotcha:** `withRule` also derives `checkSet` by calling
-  `value.getSObject('Record_Health_Check_Set__r')` on the passed-in Rule record — callers never set
-  `checkSet` directly, so a Rule query that omits the `Record_Health_Check_Set__r` relationship will
-  silently leave `rhcSet.*` tokens unresolved. `resultFinalized` defaults to `false` and is only
-  ever set `true` through `withResult(value, finalized)`, which controls when `rhcResult.*` tokens
-  become available.
+ `value.getSObject('Record_Health_Check_Set__r')` on the passed-in Rule record - callers never set
+ `checkSet` directly, so a Rule query that omits the `Record_Health_Check_Set__r` relationship will
+ silently leave `rhcSet.*` tokens unresolved. `resultFinalized` defaults to `false` and is only
+ ever set `true` through `withResult(value, finalized)`, which controls when `rhcResult.*` tokens
+ become available.
 
 ---
 
@@ -923,12 +924,12 @@ when authorized.
 | `PASSES_WHEN_LABEL` (`"Passes when"`) | Override for `expectedValueLabel` on Formula Rules |
 
 **Notable behavior:**
-- **Gotcha:** `expectedValueLabel` exists purely to override the UI's default "Expected" caption — it
-  is set to the class constant `PASSES_WHEN_LABEL` only for the Formula-evaluator case where
-  `expectedValue` echoes the raw pass/fail condition rather than a real comparison operand, so the
-  row reads "Passes when …" instead of the misleading "Expected …".
+- **Gotcha:** `expectedValueLabel` exists purely to override the UI's default "Expected" caption - it
+ is set to the class constant `PASSES_WHEN_LABEL` only for the Formula-evaluator case where
+ `expectedValue` echoes the raw pass/fail condition rather than a real comparison operand, so the
+ row reads "Passes when …" instead of the misleading "Expected …".
 
-**See also:** [Apex API — Rule response](reference-apex-api.md#rule-response)
+**See also:** [Apex API - Rule response](reference-apex-api.md#rule-response)
 
 ### `RecordHealthCheckSetResult`
 
@@ -948,11 +949,11 @@ precedence ERROR → UNABLE_TO_EVALUATE → FAIL → PASS → SKIPPED.
 
 **Notable behavior:**
 - **Gotcha:** `add`'s status-to-counter mapping treats any status other than `PASS`, `FAIL`,
-  `SKIPPED`, or `ERROR` as `unableCount` (the `else` branch) — so `UNABLE_TO_EVALUATE` is only ever
-  reached implicitly, not matched by name. `finish()` defaults the aggregate `status` to `SKIPPED`
-  when every counter is still zero (an empty `results` list), rather than leaving `status` null.
+ `SKIPPED`, or `ERROR` as `unableCount` (the `else` branch) - so `UNABLE_TO_EVALUATE` is only ever
+ reached implicitly, not matched by name. `finish()` defaults the aggregate `status` to `SKIPPED`
+ when every counter is still zero (an empty `results` list), rather than leaving `status` null.
 
-**See also:** [Apex API — Check Set response](reference-apex-api.md#check-set-response)
+**See also:** [Apex API - Check Set response](reference-apex-api.md#check-set-response)
 
 ### `RecordHealthCheckDefinition` / `RecordHealthCheckDefinitionResponse`
 
@@ -971,15 +972,15 @@ precedence ERROR → UNABLE_TO_EVALUATE → FAIL → PASS → SKIPPED.
 | `RecordHealthCheckDefinitionResponse.showDiagnostics` / `checks` | Diagnostics visibility flag and the ordered Rule definitions |
 
 **Notable behavior:**
-- **Note:** `inactiveRuleLabels` — the list of names, not just the count — is only meaningful to an
-  admin auditing why a Rule did not run.
+- **Note:** `inactiveRuleLabels` - the list of names, not just the count - is only meaningful to an
+ admin auditing why a Rule did not run.
 
 ### `RecordHealthCheckAdminDetail`
 
 **Role:** Structured diagnostics for authorized Show Diagnostics viewers.
 **Type:** Data holder (`@AuraEnabled`) · `public` (no sharing keyword)
 
-Never filled in on a normal business response.
+Left blank on a normal business response.
 
 **Key members:**
 
@@ -990,8 +991,8 @@ Never filled in on a normal business response.
 | `message` | Diagnostics message text |
 
 **Notable behavior:**
-- **Note:** all three fields are `@AuraEnabled` with no constructor — callers set them field by
-  field.
+- **Note:** all three fields are `@AuraEnabled` with no constructor - callers set them field by
+ field.
 
 ### `RecordHealthCheckValueSource`
 
@@ -1007,10 +1008,10 @@ Never filled in on a normal business response.
 | `rowCount(...)` | Formats pluralized row counts |
 
 **Notable behavior:**
-- **Gotcha:** `render` returns `null` — not an empty string — when every part of the `Detail` is
-  blank, so the engine can leave the public `*Detail` string `null` rather than showing an empty
-  parenthetical note. `rowCount` exists solely so a value-source note never reads "1 row(s)": it
-  special-cases `n == 1` to `"1 row"` and treats a `null` count as `0`.
+- **Gotcha:** `render` returns `null` - not an empty string - when every part of the `Detail` is
+ blank, so the engine can leave the public `*Detail` string `null` rather than showing an empty
+ parenthetical note. `rowCount` exists solely so a value-source note never reads "1 row(s)": it
+ special-cases `n == 1` to `"1 row"` and treats a `null` count as `0`.
 
 ### `RecordHealthCheckRule` (interface)
 
@@ -1019,7 +1020,7 @@ Never filled in on a normal business response.
 
 ```apex
 public interface RecordHealthCheckRule {
-  RecordHealthCheckResult evaluate(RecordHealthCheckContext context);
+ RecordHealthCheckResult evaluate(RecordHealthCheckContext context);
 }
 ```
 
@@ -1027,11 +1028,11 @@ Implementations must be `public`, preferably `with sharing`, and return valid st
 Found and Expected set on determinate `PASS` / `FAIL`.
 
 **Notable behavior:**
-- **Gotcha:** the interface itself has no return-value validation — it is a one-method contract with
-  a single `evaluate(RecordHealthCheckContext context)` signature. All the enforcement described
-  above (valid status set, required Found/Expected on `PASS`/`FAIL`) lives in the caller,
-  `RecordHealthCheckApexEvaluator.finalizeApexResult`, not in this interface, since Apex interfaces
-  cannot express those constraints at compile time.
+- **Gotcha:** the interface itself has no return-value validation - it is a one-method contract with
+ a single `evaluate(RecordHealthCheckContext context)` signature. All the enforcement described
+ above (valid status set, required Found/Expected on `PASS`/`FAIL`) lives in the caller,
+ `RecordHealthCheckApexEvaluator.finalizeApexResult`, not in this interface, since Apex interfaces
+ cannot express those constraints at compile time.
 
 ### `RecordHealthCheckContext`
 
@@ -1044,15 +1045,15 @@ Found and Expected set on determinate `PASS` / `FAIL`.
 | --- | --- |
 | `recordId` | Id of the record under evaluation (preferred bind variable) |
 | `objectApiName` | Object API name (for example `Account`) |
-| `record` | Partially loaded SObject — only fields the engine already needed |
+| `record` | Partially loaded SObject - only fields the engine already needed |
 | `parameters` | Parsed `ApexParametersJson__c` object; empty map when blank (never null from the evaluator) |
 | `ruleDeveloperName` | Rule Developer Name for logging/correlation |
 
 **Notable behavior:**
-- **Gotcha:** `parameters` is guaranteed to be a non-null (possibly empty) `Map<String, Object>` —
-  `RecordHealthCheckApexEvaluator` parses `ApexParametersJson__c` before building the context and
-  always supplies at least an empty map, so a plugin never needs a null check before reading
-  `context.parameters`.
+- **Gotcha:** `parameters` is guaranteed to be a non-null (possibly empty) `Map<String, Object>` - 
+ `RecordHealthCheckApexEvaluator` parses `ApexParametersJson__c` before building the context and
+ always supplies at least an empty map, so a plugin never needs a null check before reading
+ `context.parameters`.
 
 **See also:** [Reference: Apex](reference-apex.md)
 
@@ -1083,10 +1084,10 @@ metadata.
 
 **Notable behavior:**
 - **Gotcha:** `resolveDaysBack` falls back to `DEFAULT_DAYS_BACK` whenever the supplied `daysBack` is
-  missing, non-numeric, or outside `MIN_DAYS_BACK`/`MAX_DAYS_BACK` — a malformed parameter never
-  throws or fails the check, it just uses the default window. Both queries run
-  `WITH USER_MODE` and use `SELECT COUNT()`, so Task/Event visibility follows the running user's
-  sharing and FLS like every other Framework query.
+ missing, non-numeric, or outside `MIN_DAYS_BACK`/`MAX_DAYS_BACK` - a malformed parameter never
+ throws or fails the check, it just uses the default window. Both queries run
+ `WITH USER_MODE` and use `SELECT COUNT()`, so Task/Event visibility follows the running user's
+ sharing and FLS like every other Framework query.
 
 **See also:** [Recent Account activity example](../examples/apex/01-recent-activity.md)
 
@@ -1116,9 +1117,9 @@ are not part of the Core package unless you deploy that folder.
 
 ## Related
 
-- [Reference: Architecture](reference-architecture.md) — layers, runtime path, ownership map
-- [Reference: Apex API](reference-apex-api.md) — public `runRule` / `runSet` contract
-- [Reference: Apex](reference-apex.md) — writing a `RecordHealthCheckRule` plugin
-- [Reference: Reason Codes](reference-reason-codes.md) — status and reason codes
-- [Reference: Merge tokens](reference-merge-tokens.md) — token namespaces and limits
+- [Reference: Architecture](reference-architecture.md) - layers, runtime path, ownership map
+- [Reference: Apex API](reference-apex-api.md) - public `runRule` / `runSet` contract
+- [Reference: Apex](reference-apex.md) - writing a `RecordHealthCheckRule` plugin
+- [Reference: Reason Codes](reference-reason-codes.md) - status and reason codes
+- [Reference: Merge tokens](reference-merge-tokens.md) - token namespaces and limits
 - [Technical references index](README.md)

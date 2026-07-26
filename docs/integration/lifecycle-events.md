@@ -162,7 +162,7 @@ Salesforce data under their own security model using the Record ID, metadata Dev
 | No event after an explicit run | Metadata switch is off, source is blocked, or transaction rolled back | Check the publication field, source, logs, and commit outcome |
 | Duplicate processing | Replay or subscriber retry delivered the event again | Keep unique by `EventId__c`; make follow-on work safe to repeat |
 | Missing record context | The run had no single record, or a record ID was not available at publish | Correlate with `RunId__c` and metadata names; `RecordId__c` is set only when available |
-| Subscriber failure | Subscriber limits, access, or business logic failed independently | Monitor and retry in the subscriber; do not reinterpret the completed health result |
+| Subscriber failure | Subscriber limits, access, or business logic failed independently | Monitor and retry in the subscriber; keep the completed health result as already finalized |
 
 ## Diagnostics events are a separate channel
 

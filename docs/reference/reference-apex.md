@@ -66,17 +66,17 @@ the plugin; a missing ID is rejected earlier with public reason `NO_RECORD_CONTE
 
 ## 2. Reading fields on the current record
 
-### `context.record` is partial: Do not assume all fields are loaded
+### `context.record` is partial: Only requested fields are loaded
 
 The engine loads only fields it knows the Rule needs:
 
 | Source on the Rule | Fields added to `context.record` |
 | ------------------ | -------------------------------- |
-| `{!record.Field\|Fallback value}` merge tokens in **Message When Failed** / **Message When Unable To Evaluate** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
+| Record field merge tokens in **Message When Failed** / **Message When Unable To Evaluate** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
 | **Applies When (Formula)** | Fields referenced in that formula |
 | SOQL templates on Query rules | Merge tokens in those queries |
 
-For a typical **Apex** Rule with applicability **Always** and message `{!record.Name|this record} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
+For a typical **Apex** Rule with applicability **Always** and message `{!record.Name} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
 
 `BillingCity`, custom fields, or `Parent.BillingCity` are **not** guaranteed on `context.record` unless they appear in merge tokens or applicability formulas on that Rule.
 
@@ -336,7 +336,7 @@ return result;
 On **`FAIL`**, the evaluator sets:
 
 - **`severity`** from Rule `FailureSeverity__c` (not set by the plugin)
-- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field|Fallback value}` merge tokens resolved
+- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field}` merge tokens (optional `|Fallback value`) resolved
 
 ### Found / Expected (required for PASS / FAIL)
 

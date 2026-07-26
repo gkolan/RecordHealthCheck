@@ -19,14 +19,17 @@ reference pages.
 - Keep one idea per paragraph, normally in one or two sentences. Split procedures into numbered
   steps and split independent facts into labeled bullets.
 - Remove lead-ins that merely announce the heading, table, code block, or number of items that
-  immediately follows. Do not explain facts already evident from names or examples.
+  immediately follows. Skip restating facts already evident from names or examples.
 - Use exact Setup labels for people and exact API names in code, tables, and automation contracts.
 - Keep one primary source for each fact. Link to it instead of copying long field, reason-code, or
   event definitions into several guides.
 - Prefer plain technical language in explanations; see
   [Prefer plain technical language](#prefer-plain-technical-language-avoid-cs-jargon).
-- Distinguish `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, `ERROR`, and a thrown fault. Do not use
-  “error” as a catch-all for access or configuration outcomes.
+- Write as a peer documenting how the product works. Prefer “Use X” and “Record Health Check
+  supplies Y” over imperative prohibitions such as “Do not invent…” or “Don’t put…”. State facts
+  and preferred patterns; leave scolding out of guides and references.
+- Distinguish `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, `ERROR`, and a thrown fault. Reserve “error”
+  for thrown faults and the `ERROR` status, not as a catch-all for access or configuration outcomes.
 - End task pages with **Next steps** and reference pages with **Related** or **See also** links.
 - Use sentence-case headings, concise paragraphs, accessible link text, fenced code with a language,
   and tables only when readers need to compare repeated fields.
@@ -37,6 +40,10 @@ reference pages.
 - In `docs/metadata`, use a purpose-first prefix so related references sort together: `fields-*`
   for Custom Metadata field catalogs and `event-*` for Platform Event references. Put cross-cutting
   Framework limits in `docs/reference`.
+- Lead merge-token examples with the bare form (`{!record.Name}`). Treat `|Fallback text` as
+  optional. Any page that shows merge tokens must include at least one fallback example, such as
+  `{!record.Name|this record}`, without putting a fallback on every tag. `{!record.Id}` stays bare.
+  See [Reference: Merge tokens](../reference/reference-merge-tokens.md).
 
 ## Write for the person doing the work
 
@@ -56,13 +63,14 @@ opening and structure to the page's purpose:
 | Explanation or overview | The concept or decision being explained, mental model, boundaries, and links to tasks |
 | Design specification | Scope, authority, intended technical audience, formal behavior, and compatibility boundaries |
 
-Do not add an invented persona or business story to a reference, specification, command index, or
-API contract. These pages still need purpose and audience clarity, but readers should reach the
+Skip invented personas or business stories on reference, specification, command index, and
+API contract pages. These pages still need purpose and audience clarity, but readers should reach the
 technical information immediately.
 
 For a tutorial or how-to guide, establish the task, prerequisites, observable result, and next
 action before exhaustive detail. State the intended Salesforce role only when it helps readers
-judge whether the procedure applies to them; do not manufacture a character or story.
+judge whether the procedure applies to them; keep the role factual rather than a manufactured
+character or story.
 
 For a practical example, establish these points before exhaustive reference detail:
 
@@ -88,9 +96,9 @@ Use this learning path for practical examples and longer tutorials:
 7. Advanced or exhaustive reference detail
 8. Next steps
 
-Do not begin a learning page with engine architecture, response versions, internal wrappers, or a
-list of what the feature is not. Put those details after the reader can recognize the task and
-complete the main path.
+Begin a learning page with the task and shortest working path. Place engine architecture, response
+versions, internal wrappers, and “what this is not” lists after the reader can recognize the task
+and complete the main path.
 
 ### Preserve exact terminology
 
@@ -106,8 +114,8 @@ Reader-friendly writing does not replace official names with invented shorthand.
   the relationship the first time both appear.
 - Explain an unfamiliar term in ordinary language when it first matters. Keep the exact term so the
   reader can find it in Salesforce or the Framework.
-- Never branch automation on administrator-authored display text. Use documented statuses, reason
-  codes, Developer Names, and API values.
+- Branch automation on documented statuses, reason codes, Developer Names, and API values rather
+  than administrator-authored display text.
 
 ### Prefer plain technical language (avoid CS jargon)
 
@@ -189,7 +197,8 @@ left-hand word is an identifier, label, or Salesforce term.
 | “shared validation primitives” | “shared validation helpers” |
 
 When an LLM or reviewer is unsure, keep the Salesforce or Framework term and explain the behavior in
-plain words around it. Do not invent softer replacements for Setup labels or API names.
+plain words around it. Keep Setup labels and API names exact; softer synonyms belong only in
+explanations around those terms.
 
 ### Capitalize named concepts consistently
 
@@ -227,8 +236,8 @@ editorial quality score or replace this human review.
 
 ### Table readability
 
-- Use prose or bullets when rows do not compare the same attributes. Do not turn a paragraph into a
-  one-row table.
+- Use prose or bullets when rows do not compare the same attributes. Prefer prose over a
+  one-row table that only restates a paragraph.
 - Keep useful comparison tables. Fix column sizing or horizontal overflow instead of replacing a
   table solely because identifiers wrap.
 - Put the API-name column near the left and wrap every literal API name in backticks so it remains
@@ -241,11 +250,11 @@ editorial quality score or replace this human review.
   column would hide type, required/default, size, or runtime-contract information.
 - Move long examples, exceptions, and corrective actions below the table when they are specific to
   only one row.
-- Do not surround a table with prose that repeats its heading, rows, or conclusion.
+- Keep table surroundings lean: skip prose that only repeats the heading, rows, or conclusion.
 - Include a corrective action only when it adds a non-obvious diagnostic step, location, or
   decision. Prefer **What to investigate** when “corrective action” would restate the failure.
-- Never shorten, insert spaces into, or split an API name to make a table fit. Published tables keep
-  inline code on one line and scroll horizontally on narrow screens.
+- Keep API names whole in published tables: no shortened forms, inserted spaces, or mid-name line
+  splits for fit. Tables scroll horizontally on narrow screens when needed.
 
 ## Requirements by page type
 
@@ -282,8 +291,8 @@ independent requirements, or procedures; do not turn every sentence into a bulle
 - **Versioning:** state the contract version, compatibility promise, deprecation process, and any
   separate product or event version.
 - **Human- and automation-readable names:** use exact API names, meaningful field names, explicit
-  types, stable status/reason values, and concrete descriptions. Never require automation to parse
-  display text.
+  types, stable status/reason values, and concrete descriptions. Automation branches on those
+  values, not on display text.
 - **Related navigation:** end with links to the integration overview and the primary references for
   Statuses, Reason Codes, configuration, and events.
 
@@ -305,11 +314,12 @@ Use [Seller research readiness](../examples/formula/01-account-research-ready.md
 - One realistic business scenario and one primary end-to-end example per page.
 - One native GitHub **Note** with a natural “On this page,” sentence followed by **Reference**.
 - Exact Setup navigation, Custom Metadata Type, labels, API names, and record Developer Names.
-- Explain `recordId` where it enters the surface; do not hide it inside an unexplained query.
+- Explain `recordId` where it enters the surface; keep it visible rather than burying it inside an
+  unexplained query.
 - Use one parameter object effectively. When the surface supports multiple parameters, demonstrate
   at least two related values in that one object.
 - Comment code where the reader must understand framework input, security, defaults, decisions, or
-  returned values. Do not comment syntax that is already self-explanatory.
+  returned values. Leave self-explanatory syntax uncommented.
 - Separate configuration from testing. When applicable, show both a direct programmatic test, such
   as Execute Anonymous, and the user-facing Lightning component path.
 - Present **What the user sees** as a table with individual rows for `PASS`, `FAIL`, `SKIPPED`,
@@ -322,9 +332,9 @@ Use [Seller research readiness](../examples/formula/01-account-research-ready.md
   `FORMULA`, `QUERY`, `COMPARE_TWO_QUERIES`, and `APEX`. The example explains why that type fits and
   provides one complete path; the reference owns the full contract and edge cases.
 
-Do not publish an OpenAPI document for the Apex, Flow, Lightning, or platform-event surfaces. OpenAPI
-describes HTTP operations and would misrepresent these Salesforce-native contracts. If a REST API is
-added later, its reference must be generated from a version-controlled OpenAPI document and linked
+Document Apex, Flow, Lightning, and platform-event surfaces with the Salesforce-native references
+in this tree. OpenAPI describes HTTP operations and would misrepresent these contracts. If a REST
+API is added later, generate its reference from a version-controlled OpenAPI document and link it
 from this page.
 
 ## Version and deprecation policy

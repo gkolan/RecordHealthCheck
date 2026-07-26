@@ -16,9 +16,9 @@ customer sandbox or production org.
 | `sf project deploy start` (no flags)                      | `force-app` only (this directory is not a `packageDirectories` entry) |
 | Release gate                                              | Explicit `--source-dir integration-tests` after the Framework deploy  |
 
-Do **not** add this path back to `sfdx-project.json` `packageDirectories` unless you
-also change every public install instruction. A bare `sf project deploy start` with
-this directory registered would push fixture Rules, triggers, and related test
+Keep this path out of `sfdx-project.json` `packageDirectories` so a bare
+`sf project deploy start` stays Framework-only. Registering it without updating every
+public install instruction would push fixture Rules, triggers, and related test
 metadata into the target org.
 
 ## Contents (high level)

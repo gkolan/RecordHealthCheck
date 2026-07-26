@@ -54,8 +54,8 @@ New to the model? Read [Integrate Record Health Check](../integration/README.md)
 - Calls run `with sharing` and evaluation uses the calling user's record and field access. The API
   does not elevate access.
 - Restricted diagnostic values are returned only when the user has the
-  `Record_Health_Check_View_Diagnostics` Custom Permission. Do not make business logic depend on those
-  optional values.
+  `Record_Health_Check_View_Diagnostics` Custom Permission. Keep business logic on public Status and
+  Reason Code fields.
 
 ## Quick examples
 
@@ -203,7 +203,7 @@ usable response was returned for that invocation.
 | Uncatchable governor-limit exception | The calling transaction lacks remaining Salesforce limits | Reduce work per transaction or move the call to a transaction with adequate limits |
 
 Catch `RecordHealthCheck.RecordHealthCheckRequestException` only when the caller can correct or
-report the request. Do not convert a missing response into `PASS`.
+report the request. Treat a missing response as a fault or unable outcome and report the request.
 
 ```apex
 try {
@@ -277,7 +277,7 @@ directly by `runRule`.
 | `status` | `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR` |
 | `severity` | `CRITICAL`, `WARNING`, or `INFO` when applicable |
 | `reasonCode` | Stable machine-readable outcome reason |
-| `message` | User-facing text; do not use as an automation key |
+| `message` | User-facing text; branch automation on Status, Reason Code, and Developer Name |
 | `actualValue`, `expectedValue` | Security-filtered comparison values when available |
 | `expectedValueLabel` | Overrides the Expected caption, including authorized **Passes when** formula detail |
 | `actualValueDetail`, `expectedValueDetail` | Authorized source-detail strings; included only through enabled browser diagnostics |

@@ -38,7 +38,7 @@ A data steward is preparing Accounts imported from a test or legacy system.
 | **Verify with a query** using **Contains text** | Looks for text that must be present. This example needs **Does not contain text** because the placeholder domain must be absent. |
 
 The sample domain is intentionally obvious. Replace it with a domain confirmed by your data or
-integration owner; do not block a legitimate customer domain merely because it resembles test data.
+integration owner; leave legitimate customer domains alone even when they resemble test data.
 
 ## Why not use a Validation Rule or Report
 
@@ -57,7 +57,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Check Set** | [`Record_Health_Check_Set__c`](../../metadata/fields-check-rule.md#check-set-record_health_check_set__c) | `Account_Related_Record_Review` |
 | **Check Title** | [`CheckTitle__c`](../../metadata/fields-check-rule.md#check-title-checktitle__c) | Contact Emails Exclude Placeholder Domain |
 | **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c) | Verify with a query |
-| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT Email FROM Contact WHERE AccountId = {!record.Id\|001000000000000AAA}` |
+| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT Email FROM Contact WHERE AccountId = {!record.Id}` |
 | **Source Query Field** | [`SourceQueryField__c`](../../metadata/fields-check-rule.md#source-query-field-sourcequeryfield__c) | `Email` |
 | **How To Read Query Results** | [`QueryResultHandling__c`](../../metadata/fields-check-rule.md#how-to-read-query-results-queryresulthandling__c) | Every record passes |
 | **Comparison Operator** | [`ComparisonOperator__c`](../../metadata/fields-check-rule.md#comparison-operator-comparisonoperator__c) | Does not contain text |
@@ -66,8 +66,14 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **If Query Finds No Records** | [`NoRowsResult__c`](../../metadata/fields-check-rule.md#if-query-finds-no-records-norowsresult__c) | Skip |
 | **If Field Value Is Empty** | [`EmptyValueHandling__c`](../../metadata/fields-check-rule.md#if-field-value-is-empty-emptyvaluehandling__c) | Ignore the record |
 | **Max Query Rows (1-2000)** | [`MaxQueryRows__c`](../../metadata/fields-check-rule.md#max-query-rows-1-2000-maxqueryrows__c) | `200` |
-| **Display: Found Text** | [`DisplayFoundText__c`](../../metadata/fields-check-rule.md#display-found-text-displayfoundtext__c) | `{!rhcResult.failedRecordCount\|0} of {!rhcResult.totalRecordCount\|0} contact emails use the placeholder domain` |
+| **Display: Found Text** | [`DisplayFoundText__c`](../../metadata/fields-check-rule.md#display-found-text-displayfoundtext__c) | Count of contact emails using the placeholder domain out of the total: copy it from below the table |
 | **Display: Expected Text** | [`DisplayExpectedText__c`](../../metadata/fields-check-rule.md#display-expected-text-displayexpectedtext__c) | `No contact email uses the confirmed placeholder domain` |
+
+Copy this value into **Display: Found Text**:
+
+```text
+{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount|0} contact emails use the placeholder domain
+```
 
 ## Optional configuration
 
@@ -82,7 +88,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | `Has_At_Least_One_Contact` from [Customer handoff](01-customer-contact.md) |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review the related Contacts and correct only addresses that have been verified. |
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | `Review contacts` |
-| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/related/Contacts/view` |
+| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Contacts/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `100` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked only after replacing the sample domain with a confirmed value |
 | **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |

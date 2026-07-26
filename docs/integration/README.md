@@ -159,8 +159,8 @@ Handle these cases separately:
 - A successful response followed by a transaction rollback, which suppresses Publish After Commit events.
 - Duplicate or replayed subscriber processing.
 
-Use stable Statuses, Reason Codes, Failure Severities, and Developer Names for automation. Do not branch on
-administrator-authored message text.
+Use stable Statuses, Reason Codes, Failure Severities, and Developer Names for automation. Branch
+automation on those fields rather than administrator-authored message text.
 
 ## Test before enabling events
 

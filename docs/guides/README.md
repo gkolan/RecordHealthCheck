@@ -28,8 +28,8 @@ when you need field-level detail.
 ## Related
 
 - [Documentation home](../README.md)
-- [Documentation standard](../development/documentation-standard.md) — including
-  [plain technical language for AI and authors](../development/documentation-standard.md#prefer-plain-technical-language-avoid-cs-jargon)
+- [Documentation standard](../development/documentation-standard.md) - including
+ [plain technical language for AI and authors](../development/documentation-standard.md#prefer-plain-technical-language-avoid-cs-jargon)
 - [Examples library](../examples/README.md)
 - [Technical references](../reference/README.md)
 - [Create your first Rule](../installation/03-create-your-first-rule.md)

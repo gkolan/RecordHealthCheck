@@ -58,7 +58,7 @@ as small as the comparison requires.
 
 ## SOQL templates and security
 
-- Both templates support current-record merge tokens such as `{!record.Id|001000000000000AAA}` and parent paths.
+- Both templates support current-record merge tokens such as `{!record.Id}` and parent paths. Append `|Fallback value` when an optional lookup can be blank (for example `{!record.ParentId|001000000000000AAA}`).
 - Use API names in SOQL and aliases in the matching Query Field setting.
 - Queries run using the current user's effective record, object, and field access.
 - Access, invalid-query, alias, conversion, and incompatible-shape problems return

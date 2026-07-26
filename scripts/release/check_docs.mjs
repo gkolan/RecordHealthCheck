@@ -17,7 +17,11 @@ const retiredExamplesRepository = ["RecordHealthCheck", "Examples"].join("-");
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
-    if (entryPath === path.join(docsRoot, "slides")) continue;
+    if (
+      entryPath === path.join(docsRoot, "slides") ||
+      entryPath === path.join(docsRoot, "audits")
+    )
+      continue;
     if (entry.isDirectory()) walk(entryPath);
     else if (entry.name.endsWith(".md")) markdownFiles.push(entryPath);
   }
@@ -42,6 +46,7 @@ function headings(markdown) {
 function splitTableRow(row) {
   const escapedPipe = "\u0000RHC_ESCAPED_PIPE\u0000";
   return row
+    .replaceAll("&#124;", escapedPipe)
     .replaceAll("\\|", escapedPipe)
     .split("|")
     .slice(1, -1)
@@ -67,28 +72,47 @@ for (const file of projectMarkdownFiles) {
     );
   }
   if (file.startsWith(`${docsRoot}${path.sep}`)) {
+    // Lead with bare tokens (`{!record.Name}`); fallback is optional. Require at
+    // least one fallback example on any page that shows merge tokens, so readers
+    // still see the `|Fallback text` form without repeating it on every tag.
+    let countedMergeToken = false;
+    let countedFallbackToken = false;
     for (const match of markdown.matchAll(/\{!([^}\n]+)\}/g)) {
-      if (
-        !match[1].includes("|") &&
-        !match[1].includes("\\|") &&
-        !match[1].includes("&#124;")
-      ) {
-        const lineStart = markdown.lastIndexOf("\n", match.index) + 1;
-        const lineEnd = markdown.indexOf("\n", match.index);
-        const nextLineEnd = markdown.indexOf(
-          "\n",
-          lineEnd === -1 ? markdown.length : lineEnd + 1
-        );
-        const exampleContext = markdown.slice(
-          lineStart,
-          nextLineEnd === -1 ? markdown.length : nextLineEnd
-        );
-        if (exampleContext.includes("merge-fallback-optional-example"))
-          continue;
-        failures.push(
-          `${relativeFile}: merge token ${match[0]} must include an explicit fallback`
-        );
+      const body = match[1];
+      const lineStart = markdown.lastIndexOf("\n", match.index) + 1;
+      const lineEnd = markdown.indexOf("\n", match.index);
+      const nextLineEnd = markdown.indexOf(
+        "\n",
+        lineEnd === -1 ? markdown.length : lineEnd + 1
+      );
+      let lookbackStart = lineStart;
+      for (let i = 0; i < 8; i += 1) {
+        if (lookbackStart <= 0) {
+          lookbackStart = 0;
+          break;
+        }
+        lookbackStart =
+          markdown.lastIndexOf("\n", Math.max(0, lookbackStart - 2)) + 1;
       }
+      const exampleContext = markdown.slice(
+        lookbackStart,
+        nextLineEnd === -1 ? markdown.length : nextLineEnd
+      );
+      // Rejected legacy examples such as `{!Id}` are not teaching tokens.
+      if (exampleContext.includes("legacy-token-ok")) continue;
+      countedMergeToken = true;
+      if (
+        body.includes("|") ||
+        body.includes("\\|") ||
+        body.includes("&#124;")
+      ) {
+        countedFallbackToken = true;
+      }
+    }
+    if (countedMergeToken && !countedFallbackToken) {
+      failures.push(
+        `${relativeFile}: pages with merge tokens must include at least one fallback example`
+      );
     }
   }
   if (

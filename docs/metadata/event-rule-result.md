@@ -97,8 +97,8 @@ Values are illustrative. Consumers must ignore additive fields they do not recog
 | `UNABLE_TO_EVALUATE` | Access, configuration, dependency, or available data prevented a reliable decision. Use `ReasonCode__c`. |
 | `ERROR` | An unexpected Framework, evaluator, or platform problem occurred. Investigate logs and the Log event. |
 
-Never treat every status other than `FAIL` as success. Never branch on display messages; they are
-intentionally absent from this contract.
+Route `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, and `ERROR` separately. Branch on Status,
+Reason Code, and Developer Name; display messages are intentionally absent from this contract.
 
 ## Subscriber design
 
@@ -110,7 +110,7 @@ intentionally absent from this contract.
 | Run correlation | Use `RunId__c` to group Rule Result events with their Set Run summary. |
 | Retention | Persist events when history beyond Platform Event retention is required. |
 | Additional data | Query under the subscriber's own security context. |
-| Restricted detail | Do not treat `ContainsRestrictedDetail__c = true` as permission to expose diagnostics. |
+| Restricted detail | Treat `ContainsRestrictedDetail__c = true` as a signal that restricted detail was withheld, not as permission to expose it. |
 
 ## Limits and security
 

@@ -31,7 +31,7 @@ sandbox or scratch org made from a current production backup before changing pro
 
 ## Upgrade procedure
 
-1. Convert Custom Metadata source to the current field APIs and values before deployment. Do not deploy the destructive-change manifest until every record has been converted and validated.
+1. Convert Custom Metadata source to the current field APIs and values before deployment. Convert and validate every record before running the destructive-change manifest.
 2. Deploy the current source and run all local Apex tests.
 3. Run `scripts/apex/validateMetadata.apex` and resolve every invalid Rule or Check Set.
 4. Assign `Record_Health_Check_User` to viewers and `Record_Health_Check_Admin` only to administrators. Assign the diagnostics-detail Custom Permission only where justified.
@@ -161,7 +161,7 @@ Rollback is a restore operation, not a dual-read mode. If a release gate fails:
 4. Re-run the v1.x test and smoke suites.
 5. Preserve failed deployment, validation, and subscriber logs for root-cause analysis.
 
-Do not run the upgrade's destructive changes in production until the backup has been restore-tested and the release owner has approved the rollback evidence.
+Run the upgrade's destructive changes in production only after the backup has been restore-tested and the release owner has approved the rollback evidence.
 
 ## Next steps
 

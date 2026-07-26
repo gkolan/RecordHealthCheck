@@ -53,7 +53,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Check Set** | [`Record_Health_Check_Set__c`](../../metadata/fields-check-rule.md#check-set-record_health_check_set__c) | `Account_Related_Record_Review` |
 | **Check Title** | [`CheckTitle__c`](../../metadata/fields-check-rule.md#check-title-checktitle__c) | Has Significant Open Opportunity |
 | **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c) | Verify with a query |
-| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT Amount FROM Opportunity WHERE AccountId = {!record.Id\|001000000000000AAA} AND IsClosed = false AND Amount != null` |
+| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT Amount FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND Amount != null` |
 | **Source Query Field** | [`SourceQueryField__c`](../../metadata/fields-check-rule.md#source-query-field-sourcequeryfield__c) | `Amount` |
 | **How To Read Query Results** | [`QueryResultHandling__c`](../../metadata/fields-check-rule.md#how-to-read-query-results-queryresulthandling__c) | Any record passes |
 | **Comparison Operator** | [`ComparisonOperator__c`](../../metadata/fields-check-rule.md#comparison-operator-comparisonoperator__c) | Greater than |
@@ -75,7 +75,7 @@ percentage approved for your pipeline review.
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks whether an open Opportunity exceeds 10% of Annual Revenue when Annual Revenue is available. |
 | **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Sales Readiness |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Info |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | No open Opportunity exceeds 10% of Annual Revenue. Increase an open Opportunity Amount or revisit the Account Annual Revenue. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name\|this record}` has no open Opportunity that exceeds 10% of Annual Revenue. Increase an open Opportunity Amount or revisit the Account Annual Revenue. |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to compare open Opportunity Amount with Annual Revenue. Confirm access to both objects and fields. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank; applicability already prevents a meaningless zero threshold. |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review Annual Revenue and open Opportunity Amounts, then correct the value that is inaccurate. |

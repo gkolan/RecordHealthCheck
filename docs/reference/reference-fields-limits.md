@@ -5,7 +5,7 @@
 
 <!-- Generated from shipped Salesforce metadata by scripts/release/generate_field_size_registry.py. -->
 
-Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `UNABLE_TO_EVALUATE` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name|Unnamed record}`.
+Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `UNABLE_TO_EVALUATE` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name}`.
 
 ## Start with what happened
 
@@ -17,11 +17,11 @@ Use this page when Salesforce will not save or deploy a Custom Metadata value, w
 
 ## Why the Framework limits completed text
 
-Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name|Unnamed record}` is replaced with the current record's Name when populated.
+Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name}` is replaced with the current record's Name when populated. Append `|Fallback text` when a blank value needs a substitute, as in `{!record.Name|Unnamed record}`.
 
-A saved template can therefore be short while the completed text becomes much larger. `FailureMessage__c` might contain `Account {!record.Name|Unnamed record} needs review.`, but the Account Name is not inserted until the Rule runs.
+A saved template can therefore be short while the completed text becomes much larger. `FailureMessage__c` might contain `Account {!record.Name} needs review.`, but the Account Name is not inserted until the Rule runs.
 
-The Framework limits one completed value to 20,000 characters so a merge token cannot create an unexpectedly large result, response, or demand on Salesforce transaction resources. A predictable ceiling also keeps the Lightning card and calling integrations from receiving unbounded display text.
+The Framework limits one completed value to 20,000 characters so a merge token cannot create an unexpectedly large result, response payload, or demand on Salesforce transaction resources. A predictable ceiling also keeps the Lightning card and calling integrations from receiving unbounded display text.
 
 When completed text crosses the limit, the Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`. It does not cut the message to fit because truncated failure guidance, values, or instructions could mislead the user. **Not applicable** in the tables means the field does not accept Framework merge tokens, so only the Salesforce limit matters.
 

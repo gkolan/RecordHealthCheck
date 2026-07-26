@@ -363,7 +363,7 @@ export class HealthCheckRunner {
   }
 
   _resetEvaluationPool() {
-    // Do not zero _activeEvaluations; abandoned runs decrement on settle.
+    // Leave _activeEvaluations alone; abandoned runs decrement on settle.
     for (const pending of this._evaluationQueue) {
       pending.resolve(false);
     }

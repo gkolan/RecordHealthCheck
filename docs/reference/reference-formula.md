@@ -64,7 +64,7 @@ A null or non-Boolean pass-condition result does not become `FAIL`; the engine r
 ## Security and limits
 
 - Evaluation uses the running user's object, record, and field access.
-- Do not use a display formula to expose a value that the viewer should not see.
+- Use display formulas only for values the viewer is allowed to see.
 - Parent traversal depends on the relationship and referenced fields being available to the user.
 - Formula evaluation consumes Salesforce transaction resources; avoid repeating expensive logic
   across pass, Found, Expected, and applicability formulas.

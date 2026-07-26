@@ -57,7 +57,7 @@ the configured look-back window.
 | `context.recordId` | The Account being evaluated at run time |
 | `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
-Do not put the Account ID in the parameter JSON. Record Health Check supplies it automatically:
+Record Health Check supplies the Account ID automatically; leave it out of the parameter JSON:
 
 - On a Lightning record page, `context.recordId` is the ID of the open record.
 - From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
@@ -210,7 +210,7 @@ The context contains:
 | --- | --- | --- |
 | `recordId` | `Id` | Record being evaluated; use this value in SOQL |
 | `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; do not assume every field was loaded |
+| `record` | `SObject` | Partial current record; only requested fields are loaded |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
 
@@ -224,8 +224,8 @@ For a completed check, the class must return all three required values:
 | `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
 | `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
 
-Do not return `SKIP` from the class to represent applicability; configure **Applies To** on the
-Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
+For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
+runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
 [Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
@@ -251,16 +251,22 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | --- | --- | --- |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks for a completed Task or Event related to the Account inside the selected number of days. |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Warning |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name\|this record}` has no completed tasks or logged events in the last 90 days. Log a completed Task or Event inside the look-back window. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | Names the record, then asks for a completed Task or Event in the window: copy it from below the table |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check recent activity. Confirm the running user can read Tasks and Events. |
 | **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-check-rule.md#applies-to-applicabilitymode__c) | All records |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review the Account activity timeline. If no completed Task or Event falls inside the 90-day window, log the activity and rerun the check. |
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | `Log account activity` |
-| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/o/Task/new?defaultFieldValues=WhatId={!record.Id\|001000000000000AAA}` |
+| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/o/Task/new?defaultFieldValues=WhatId={!record.Id}` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `10` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
 | **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+
+Copy this value into **Message When Failed**:
+
+```text
+{!record.Name|this record} has no completed tasks or logged events in the last 90 days. Log a completed Task or Event inside the look-back window.
+```
 
 Change `daysBack` to change the window without redeploying the class.
 
@@ -280,12 +286,12 @@ If your administrators maintain an activity report filtered by Account ID, a rep
 better for diagnosis:
 
 ```text
-/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id|001000000000000AAA}
+/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}
 ```
 
-Replace the report ID with one from the target org. Do not publish the placeholder as a working
-link. The prefilled Task link is the safer portable default because it does not depend on an
-org-specific report or an assumed Activity related-list API name.
+Replace the report ID with one from the target org before sharing the URL. The prefilled Task link
+is the safer portable default because it does not depend on an org-specific report or an assumed
+Activity related-list API name.
 
 ## Check Set configuration
 

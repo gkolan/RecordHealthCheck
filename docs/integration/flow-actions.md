@@ -56,8 +56,9 @@ Add a Decision element after the action and create explicit branches for the ret
 | Could not determine | `UNABLE_TO_EVALUATE` | Route for configuration, access, dependency, or data review |
 | System problem | `ERROR` | Route for technical investigation |
 
-Do not treat every value other than `FAIL` as success. `UNABLE_TO_EVALUATE` and `ERROR` need their
-own handling because neither confirms that the record is healthy.
+Route `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, and `ERROR` separately.
+`UNABLE_TO_EVALUATE` and `ERROR` need their own handling because neither confirms that the record is
+healthy.
 
 ### Step 3: Connect the fault path
 
@@ -151,8 +152,9 @@ The success value is `PASS`, not `SUCCESS`.
 | `UNABLE_TO_EVALUATE` | Configuration, access, dependency, or available data prevented a reliable conclusion | No |
 | `ERROR` | An unexpected evaluator or platform problem occurred | No; route the returned status, then investigate |
 
-Use **Reason Code** or the documented count outputs for automation. Do not branch on user-facing
-messages because administrators can change message text without changing the result meaning.
+Use **Reason Code** or the documented count outputs for automation. Branch automation on Status,
+Reason Code, and Developer Name; administrators can change message text without changing the result
+meaning.
 
 ## Security and running-user access
 
@@ -206,7 +208,7 @@ associated with that transaction and prevents Publish After Commit events from b
 | Configuration lookup fault | The supplied API name is incorrect, inactive, or unavailable | Verify the exact Developer Name and activation |
 | Salesforce access fault or unable result | The running user lacks required record, object, field, or Apex access | Grant only the required access and retest in the same Flow context |
 | Governor-limit fault | The transaction has insufficient remaining Salesforce limits | Reduce other work or run the evaluation in a separate transaction |
-| `FAIL` returned as a normal output | The Rule found an unhealthy business condition | Route the status with a Decision element; do not use the fault connector |
+| `FAIL` returned as a normal output | The Rule found an unhealthy business condition | Route the status with a Decision element; keep the fault connector for invalid requests and transaction failures |
 
 Use the [reason-code reference](../reference/reference-reason-codes.md) when the action returns a code you do
 not recognize.

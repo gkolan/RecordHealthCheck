@@ -15,7 +15,7 @@ contributing, you agree that your contributions are licensed under the
 | **Report a bug**            | Open a [Bug report](https://github.com/gkolan/RecordHealthCheck/issues/new?template=bug_report.yml) issue                     |
 | **Request a feature**       | Open a [Feature request](https://github.com/gkolan/RecordHealthCheck/issues/new?template=feature_request.yml) issue           |
 | **Ask a question**          | Start a [GitHub Discussion](https://github.com/gkolan/RecordHealthCheck/discussions) (or open an issue if Discussions is off) |
-| **Report a security issue** | **Do not** open a public issue: follow the [Security policy](SECURITY.md)                                                     |
+| **Report a security issue** | Report privately through the [Security policy](SECURITY.md) rather than a public issue                                        |
 | **Fix code or docs**        | Open a pull request (see below)                                                                                               |
 
 ## Reporting a bug: step by step
@@ -32,8 +32,8 @@ contributing, you agree that your contributions are licensed under the
    - Org type (Production / Sandbox / Scratch) and API version.
 4. Submit. A maintainer will triage and may ask for a minimal reproduction.
 
-**Never paste** Salesforce access tokens, session IDs, full Org IDs, or real customer
-record data into an issue.
+Omit Salesforce access tokens, session IDs, full Org IDs, and real customer
+record data from issues.
 
 ## Opening a pull request: step by step
 
@@ -78,12 +78,12 @@ feedback by pushing more commits to the same branch.
 - **Apex changes** must also pass the project Apex test suite and a validation
   deployment (`sf project deploy validate`) with `RunLocalTests` in a clean
   scratch org.
-- **Never weaken** CRUD/FLS enforcement, the 25-Rule run cap, the 5-way Apex
-  concurrency cap, debug-detail authorization, or result normalization just to
-  make a test pass.
+- Keep CRUD/FLS enforcement, the 25-Rule run cap, the 5-way Apex
+  concurrency cap, debug-detail authorization, and result normalization intact even when
+  that makes a test harder to write.
 - **New evaluator features** must update runtime validation, deploy-time
   validation, reason-code documentation, and both positive and misconfiguration
-  tests. Do not add another parser or comparison operator copy: extend the shared modules.
+  tests. Prefer extending the shared modules over adding another parser or comparison operator copy.
 
 See [`docs/reference/reference-architecture.md`](../docs/reference/reference-architecture.md)
 for the published Framework architecture and to find where things live.
@@ -91,7 +91,7 @@ for the published Framework architecture and to find where things live.
 ## Integration-test fixtures
 
 [`integration-tests/`](../integration-tests/) holds CI-only fixture metadata and is **not** part of
-the product install. Do not add it to `sfdx-project.json` `packageDirectories`. The release
+the product install. Keep it out of `sfdx-project.json` `packageDirectories`. The release
 gate deploys it with an explicit `--source-dir integration-tests` after Core. See
 [`integration-tests/README.md`](../integration-tests/README.md).
 

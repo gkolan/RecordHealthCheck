@@ -22,9 +22,10 @@ Rules, and Apex evaluator.
 They do **not** create Acme demo Account data. Those deterministic records come only from
 [Try the demo](05-create-rhc-scratch-org.md).
 
-Always use the manifest (or an explicit `--source-dir force-app`). Do not run a bare
-`sf project deploy start` expecting only product metadata, and do not deploy `integration-tests/`;
-that tree is CI fixture metadata. See [`integration-tests/README.md`](../../integration-tests/README.md).
+Always use the manifest (or an explicit `--source-dir force-app`). A bare
+`sf project deploy start` can pull more than product metadata; keep `integration-tests/` out of
+sandbox installs. That tree is CI fixture metadata. See
+[`integration-tests/README.md`](../../integration-tests/README.md).
 
 ## What success looks like
 

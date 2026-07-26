@@ -117,7 +117,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 
 | Code | Typical status | Meaning |
 | --- | --- | --- |
-| `LEGACY_FLAT_TOKEN` | `UNABLE_TO_EVALUATE` | Legacy `{!Id\|not available}`-style token rejected under strict namespaced syntax. <!-- legacy-token-ok --> |
+| `LEGACY_FLAT_TOKEN` | `UNABLE_TO_EVALUATE` | Legacy token written without a namespace, rejected under strict namespaced syntax. See the example below the table. |
 | `UNSUPPORTED_TOKEN_NAMESPACE` | `UNABLE_TO_EVALUATE` | Token namespace is not on the allowed list. |
 | `UNKNOWN_TOKEN_PROPERTY` | `UNABLE_TO_EVALUATE` | Token property path is not recognized. |
 | `TOKEN_NOT_ALLOWED_ON_SURFACE` | `UNABLE_TO_EVALUATE` | Token used on a message/query surface that forbids it. |
@@ -125,6 +125,14 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `MALFORMED_TOKEN` | `UNABLE_TO_EVALUATE` | Token syntax is malformed. |
 | `TOKEN_LIMIT_EXCEEDED` | `UNABLE_TO_EVALUATE` | One template contains more than 100 merge tokens. Split or simplify it so one message cannot create disproportionate field discovery and resolution work. |
 | `RESOLVED_TEMPLATE_TOO_LONG` | `UNABLE_TO_EVALUATE` | Completed text exceeded 20,000 characters. Shorten the template or inserted Salesforce values; the Framework does not return truncated guidance. |
+
+`LEGACY_FLAT_TOKEN` covers the retired flat form, which names a field with no namespace in front of it: <!-- legacy-token-ok -->
+
+```text
+{!Id|not available}
+```
+
+Rewrite it with the namespace, as `{!record.Id}`. Append a fallback only when a blank value needs a substitute, such as `{!record.Name|this record}`.
 
 ---
 
@@ -145,8 +153,8 @@ These often appear on the card chrome rather than a single Rule row:
 ## Consumer guidance
 
 1. Branch automation on `status` first, then `reasonCode`.
-2. Treat unknown future codes as additive: do not reject a code just because you have not seen it before, unless you maintain an intentionally strict allowed list.
-3. Never show diagnostics-only codes to unauthorized users; trust the remapped public `reasonCode`.
+2. Treat unknown future codes as additive: route unrecognized codes to a safe review path (or keep an intentionally strict allowed list when your process requires one).
+3. Keep diagnostics-only codes out of unauthorized user views; trust the remapped public `reasonCode`.
 4. Log lines may mention events such as `DEPENDENCY_NOT_PASSED`; that is a **log event name**, not the public Rule `reasonCode` (`PREREQUISITE_NOT_MET` is).
 
 ## Related
