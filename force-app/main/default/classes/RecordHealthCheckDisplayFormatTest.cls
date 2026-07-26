@@ -539,6 +539,96 @@ private class RecordHealthCheckDisplayFormatTest {
     );
   }
 
+  @isTest
+  static void dateShapedTextThatIsNotARealDateStaysAsWritten() {
+    // Date.newInstance rolls out-of-range parts over, so without a range check
+    // "2026-13-40" would read as 9 February 2027 — a date the record never held.
+    for (
+      String format : new List<String>{ AUTO, DATE_FORMAT, DATETIME_FORMAT }
+    ) {
+      System.assertEquals(
+        '2026-13-40',
+        RecordHealthCheckDisplayFormat.render('2026-13-40', format),
+        format + ' should leave an impossible month and day as written'
+      );
+      System.assertEquals(
+        '2026-02-30',
+        RecordHealthCheckDisplayFormat.render('2026-02-30', format),
+        format + ' should leave 30 February as written'
+      );
+      System.assertEquals(
+        '2026-07-04 99:99:99',
+        RecordHealthCheckDisplayFormat.render('2026-07-04 99:99:99', format),
+        format + ' should leave an impossible time as written'
+      );
+    }
+
+    // A real leap day still renders.
+    System.assertEquals(
+      Date.newInstance(2028, 2, 29).format(),
+      RecordHealthCheckDisplayFormat.render('2028-02-29', AUTO),
+      '29 February in a leap year is a real date'
+    );
+    System.assertEquals(
+      '2027-02-29',
+      RecordHealthCheckDisplayFormat.render('2027-02-29', AUTO),
+      '29 February outside a leap year is not'
+    );
+  }
+
+  @isTest
+  static void alignedOperandsKeepLeadingZeros() {
+    System.assertEquals(
+      '00100',
+      (String) RecordHealthCheckDisplayFormat.alignExpectedToFound(
+        '00100',
+        5.0,
+        AUTO
+      ),
+      'Aligning must not drop leading zeros, matching the Number format'
+    );
+    System.assertEquals(
+      true,
+      RecordHealthCheckDisplayFormat.alignExpectedToFound(
+        '100',
+        5.0,
+        AUTO
+      ) instanceof Decimal,
+      'A plain numeric operand still aligns'
+    );
+  }
+
+  @isTest
+  static void aggregateAmountsAreLabelledWithTheCorporateCurrency() {
+    List<AggregateResult> totals = [
+      SELECT SUM(Amount) total
+      FROM Opportunity
+      WHERE Id = NULL
+    ];
+    SObject aggregate = totals.isEmpty() ? null : totals[0];
+    String iso = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(aggregate);
+
+    if (!UserInfo.isMultiCurrencyOrganization()) {
+      System.assertEquals(
+        null,
+        iso,
+        'A single-currency org has one currency, so there is nothing to resolve'
+      );
+      return;
+    }
+
+    // Salesforce converts an aggregate into the corporate currency, so the chip
+    // has to say corporate rather than whichever currency the reader uses.
+    List<SObject> corporate = Database.query(
+      'SELECT IsoCode FROM CurrencyType WHERE IsCorporate = TRUE LIMIT 1'
+    );
+    System.assertEquals(
+      String.valueOf(corporate[0].get('IsoCode')),
+      iso,
+      'An aggregate is labelled with the corporate currency'
+    );
+  }
+
   // ─── Text and Raw ─────────────────────────────────────────────────────────
 
   @isTest
@@ -910,20 +1000,7 @@ private class RecordHealthCheckDisplayFormatTest {
       'With no record currency the running user currency is used'
     );
 
-    // An aggregate row carries no currency field, so the running user currency
-    // is used rather than the read failing.
-    List<AggregateResult> totals = [
-      SELECT SUM(Amount) total
-      FROM Opportunity
-      WHERE Id = NULL
-    ];
-    System.assertEquals(
-      null,
-      RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
-        totals.isEmpty() ? null : totals[0]
-      ),
-      'A summed total has no single record currency behind it'
-    );
+    // An aggregate is covered by aggregateAmountsAreLabelledWithTheCorporateCurrency.
   }
 
   // ─── Display only ─────────────────────────────────────────────────────────

@@ -92,6 +92,7 @@
     >Record_Health_Check_Rule__mdt.DisplayExpectedFormula__c</members>
         <members>Record_Health_Check_Rule__mdt.FormulaResultType__c</members>
         <members>Record_Health_Check_Rule__mdt.DisplayFoundText__c</members>
+        <members>Record_Health_Check_Rule__mdt.DisplayValueFormat__c</members>
         <members>Record_Health_Check_Rule__mdt.DisplayExpectedText__c</members>
         <members>Record_Health_Check_Log__e.CheckSetDeveloperName__c</members>
         <members>Record_Health_Check_Log__e.Code__c</members>
@@ -158,6 +159,8 @@
         <members>RecordHealthCheckDefinition</members>
         <members>RecordHealthCheckDefinitionResponse</members>
         <members>RecordHealthCheckDescribeCache</members>
+        <members>RecordHealthCheckDisplayFormat</members>
+        <members>RecordHealthCheckDisplayFormatTest</members>
         <members>RecordHealthCheckCompareQueriesEvaluator</members>
         <members>RecordHealthCheckEngine</members>
         <members>RecordHealthCheckEvaluatorException</members>

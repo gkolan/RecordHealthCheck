@@ -20,7 +20,9 @@ List<Account> existing = [
   LIMIT 1
 ];
 
-Account target = existing.isEmpty() ? new Account(Name = accountName) : existing[0];
+Account target = existing.isEmpty()
+  ? new Account(Name = accountName)
+  : existing[0];
 target.AnnualRevenue = 70000;
 target.NumberOfEmployees = 2500;
 target.BillingStreet = '1 Display Way';

@@ -433,6 +433,12 @@ public with sharing class RecordHealthCheckDisplayFormat {
     if (row == null || !isMultiCurrencyOrg()) {
       return null;
     }
+    if (row instanceof AggregateResult) {
+      // Salesforce converts an aggregate such as SUM(Amount) into the corporate
+      // currency, so the label has to say corporate too. Falling back to the
+      // running user's currency would put their code on someone else's number.
+      return corporateCurrency();
+    }
     try {
       Object iso = row.get('CurrencyIsoCode');
       return iso == null ? null : String.valueOf(iso);
@@ -440,6 +446,39 @@ public with sharing class RecordHealthCheckDisplayFormat {
       // The row did not select CurrencyIsoCode, or has no such field.
       return null;
     }
+  }
+
+  /**
+   * The org's corporate currency, read once per transaction. Null when the org
+   * has a single currency, or when the corporate row cannot be read — the caller
+   * then falls back to the running user's currency.
+   */
+  private static Boolean corporateCurrencyLoaded = false;
+  private static String corporateCurrencyCode;
+
+  private static String corporateCurrency() {
+    if (corporateCurrencyLoaded) {
+      return corporateCurrencyCode;
+    }
+    corporateCurrencyLoaded = true;
+    if (!isMultiCurrencyOrg()) {
+      return null;
+    }
+    try {
+      // CurrencyType only exists in an org with more than one currency, so the
+      // query is built at run time rather than compiled against the type.
+      // code-analyzer-suppress-next-line ApexCRUDViolation: CurrencyType is org configuration read for display only.
+      List<SObject> corporate = Database.query(
+        'SELECT IsoCode FROM CurrencyType WHERE IsCorporate = TRUE LIMIT 1'
+      );
+      if (!corporate.isEmpty()) {
+        corporateCurrencyCode = String.valueOf(corporate[0].get('IsoCode'));
+      }
+    } catch (Exception ex) {
+      // No read access, or no corporate row — the user's currency still applies.
+      corporateCurrencyCode = null;
+    }
+    return corporateCurrencyCode;
   }
 
   /**
@@ -572,30 +611,64 @@ public with sharing class RecordHealthCheckDisplayFormat {
   // Callers reach these parsers only with a non-null string: render returns the
   // blank placeholder before any parsing, and String.valueOf of a non-null value is
   // never null.
+  /**
+   * Whether the parts of an ISO string name a real point in time.
+   *
+   * Date.newInstance and Datetime.newInstance roll out-of-range parts over
+   * instead of rejecting them, so "2026-13-40" would quietly become 9 February
+   * 2027 — a date the record never held. Checking the range first means text
+   * that only looks like a date keeps its original spelling.
+   */
+  private static Boolean isRealDate(Integer year, Integer month, Integer day) {
+    if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31) {
+      return false;
+    }
+    Date candidate = Date.newInstance(year, month, day);
+    return candidate.year() == year &&
+      candidate.month() == month &&
+      candidate.day() == day;
+  }
+
+  private static Boolean isRealTime(
+    Integer hour,
+    Integer minute,
+    Integer second
+  ) {
+    return hour >= 0 &&
+      hour <= 23 &&
+      minute >= 0 &&
+      minute <= 59 &&
+      second >= 0 &&
+      second <= 59;
+  }
+
   private static Datetime parseDatetime(String raw) {
     Matcher m = DATETIME_PATTERN.matcher(raw.trim());
     if (!m.matches()) {
       return null;
     }
-    return Datetime.newInstance(
-      Integer.valueOf(m.group(1)),
-      Integer.valueOf(m.group(2)),
-      Integer.valueOf(m.group(3)),
-      Integer.valueOf(m.group(4)),
-      Integer.valueOf(m.group(5)),
-      Integer.valueOf(m.group(6))
-    );
+    Integer year = Integer.valueOf(m.group(1));
+    Integer month = Integer.valueOf(m.group(2));
+    Integer day = Integer.valueOf(m.group(3));
+    Integer hour = Integer.valueOf(m.group(4));
+    Integer minute = Integer.valueOf(m.group(5));
+    Integer second = Integer.valueOf(m.group(6));
+    if (!isRealDate(year, month, day) || !isRealTime(hour, minute, second)) {
+      return null;
+    }
+    return Datetime.newInstance(year, month, day, hour, minute, second);
   }
 
   private static Date parseDate(String raw) {
     String s = raw.trim();
     Matcher m = DATE_PATTERN.matcher(s);
     if (m.matches()) {
-      return Date.newInstance(
-        Integer.valueOf(m.group(1)),
-        Integer.valueOf(m.group(2)),
-        Integer.valueOf(m.group(3))
-      );
+      Integer year = Integer.valueOf(m.group(1));
+      Integer month = Integer.valueOf(m.group(2));
+      Integer day = Integer.valueOf(m.group(3));
+      return isRealDate(year, month, day)
+        ? Date.newInstance(year, month, day)
+        : null;
     }
     Datetime asDatetime = parseDatetime(s);
     return asDatetime == null ? null : asDatetime.date();
@@ -643,9 +716,9 @@ public with sharing class RecordHealthCheckDisplayFormat {
     if (!isNumeric(found) || !(comparison instanceof String)) {
       return comparison;
     }
-    String s = ((String) comparison).trim();
-    return NUMERIC_PATTERN.matcher(s).matches()
-      ? (Object) Decimal.valueOf(s)
-      : comparison;
+    // toDisplayDecimal applies the same leading-zero guard the Number format
+    // uses, so "00100" stays as written on both paths rather than becoming 100.
+    Decimal aligned = toDisplayDecimal(comparison);
+    return aligned == null ? comparison : (Object) aligned;
   }
 }

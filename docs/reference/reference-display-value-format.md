@@ -64,6 +64,8 @@ instead, so a display choice can never break a card:
 | Percent | `12.5%` | `12.5%` - no second percent sign is added |
 | Currency | `$70,000` | `$70,000` - not formatted a second time |
 | Checkbox | `Technology` | `Technology` |
+| Date | `2026-13-40` | `2026-13-40` - the parts are out of range, so it is not a real date |
+| Date | `2026-02-30` | `2026-02-30` - February has no 30th |
 
 Naming Number on a digit string is a deliberate choice, so `90210` becomes `90,210`. Use Raw for postal codes
 and other codes that must keep their exact spelling.
@@ -116,7 +118,7 @@ Fixed Custom Metadata operands and other flattened strings are recognized in thi
 | Shape | Display rule | Example |
 | --- | --- | --- |
 | Boolean text | Case-insensitive `true` / `false` → `Yes` / `No` | `False` → `No` |
-| ISO date `YYYY-MM-DD` | Same locale date format as a typed Date | `2026-07-04` → locale date |
+| ISO date `YYYY-MM-DD` | Same locale date format as a typed Date, when the parts name a real date | `2026-07-04` → locale date; `2026-02-30` unchanged |
 | ISO datetime `YYYY-MM-DD HH:MM:SS` or `YYYY-MM-DDTHH:MM:SS…` | Same locale datetime format as a typed Datetime | `2026-07-04 17:30:00` → locale datetime |
 | Semicolon-delimited multi-select | Comma-separated list after trimming each part | `Hot;Warm;Cold` → `Hot, Warm, Cold` |
 | Ordinary text | Unchanged | `Technology`, `0012345`, `90210`, `1-800-CALL` |
@@ -168,6 +170,10 @@ them on a card.
 | A Formula Rule | The record's currency |
 | An aggregate such as `SUM(Amount)` | Salesforce converts an aggregate to the corporate currency, and the chip follows |
 | A query over a different object without `CurrencyIsoCode` | The running user's currency, rather than borrowing an unrelated record's |
+
+On a Compare two queries Rule the two sides are separate queries and may hold separate currencies.
+They share one format, but each keeps its own currency, so a pipeline total converted to the
+corporate currency does not get labelled with the currency of the record it is compared against.
 
 ## List previews
 

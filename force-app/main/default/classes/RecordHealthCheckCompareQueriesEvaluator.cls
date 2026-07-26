@@ -131,7 +131,14 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
 
     // Capture actual vs expected from the rows already fetched (no extra query)
     // so the UI can show the comparison on a non-passing row.
-    setComparisonValues(rule, result, primaryRows, comparisonRows, mode);
+    setComparisonValues(
+      rule,
+      record,
+      result,
+      primaryRows,
+      comparisonRows,
+      mode
+    );
 
     if (passed) {
       result.status = 'PASS';
@@ -157,6 +164,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   @TestVisible
   private void setComparisonValues(
     Record_Health_Check_Rule__mdt rule,
+    SObject record,
     RecordHealthCheckResult result,
     List<SObject> primaryRows,
     List<SObject> comparisonRows,
@@ -174,6 +182,37 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
       primaryRow
     );
+    if (
+      String.isBlank(displayIsoCode) &&
+      primaryRow != null &&
+      record != null &&
+      primaryRow.getSObjectType() == record.getSObjectType()
+    ) {
+      // Same rule as the single-query evaluator: when the primary query read the
+      // record the card is on, that record's currency is this amount's currency.
+      displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+        record
+      );
+    }
+
+    // The two sides are separate queries and can hold separate currencies — a
+    // pipeline total converted to the corporate currency against a record's own
+    // amount, for instance. They share one format, but each keeps its own
+    // currency so neither number is labelled with the other's.
+    SObject comparisonRow = comparisonRows.isEmpty() ? null : comparisonRows[0];
+    String comparisonIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+      comparisonRow
+    );
+    if (
+      String.isBlank(comparisonIsoCode) &&
+      comparisonRow != null &&
+      record != null &&
+      comparisonRow.getSObjectType() == record.getSObjectType()
+    ) {
+      comparisonIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+        record
+      );
+    }
 
     if (mode == 'ONE_RESULT') {
       Object primaryValue = resolveSingleValue(
@@ -195,7 +234,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         rule.ComparisonOperator__c,
         comparisonValue,
         displayFormat,
-        displayIsoCode
+        comparisonIsoCode
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
@@ -226,7 +265,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         rule.ComparisonOperator__c,
         comparisonList,
         displayFormat,
-        displayIsoCode
+        comparisonIsoCode
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
