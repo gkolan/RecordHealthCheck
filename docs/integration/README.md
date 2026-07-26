@@ -52,7 +52,7 @@ Record Health Check is not:
 | Show health on a record page | [Lightning component](lightning-component.md) | Rows and Set summary | `USER_INITIATED`; automatic load is blocked |
 | Make a code-level decision | [Apex API](../reference/reference-apex-api.md) | Typed Rule or Set response | `APEX_API`, `SCHEDULED`, or `BATCH` |
 | Branch in automation without code | [Flow actions](flow-actions.md) | Flow output variables and JSON | `FLOW` |
-| React asynchronously or export results | [Platform events](lifecycle-events.md) | Event payload | Depends on the publisher |
+| React asynchronously or export results | [Platform events](lifecycle-events.md) | Event body | Depends on the publisher |
 | Add a custom evaluation algorithm | [Recent Account activity](../examples/apex/01-recent-activity.md) | Normal Rule result | Inherits the calling run |
 
 ## Core model

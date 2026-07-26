@@ -7,7 +7,7 @@
  * Single logging API for the Record Health Check framework.
  * EVERY framework log line flows through this class. The engine, controller, and
  * evaluators never call System.debug directly — they call this logger — so the
- * destination ("sink") can be changed in exactly one place. To adopt Nebula
+ * destination can be changed in exactly one place. To adopt Nebula
  * Logger (or any other logging framework) later, replace the body of `emit`
  * with the equivalent Nebula calls; no other class needs to change.
  * Two things make a line useful for debugging:
@@ -16,13 +16,13 @@
  * log down to a single user interaction.
  * - user — captured automatically from UserInfo.getUserId(), so every line is
  * attributable to the running user without any caller passing it in.
- * This is authoritative (it cannot be spoofed by the client) and means
+ * This is trusted server-side (it cannot be spoofed by the client) and means
  * "show me everything that happened for user X" is a simple log filter.
  */
 public with sharing class RecordHealthCheckLogger {
   /**
    * Framework-level severity. Kept independent of System.LoggingLevel so the
-   * sink can map it however the target framework expects. DEBUG maps to FINE.
+   * destination can map it however the target framework expects. DEBUG maps to FINE.
    */
   public enum Level {
     ERROR,
@@ -33,13 +33,13 @@ public with sharing class RecordHealthCheckLogger {
 
   private static final String PREFIX = '[RHC]';
 
-  // ─── Durable ERROR sink (platform event) ────────────────────────────────────
+  // ─── Platform-event ERROR destination ───────────────────────────────────────
   // System.debug is ephemeral and usually off in production, so a check that
-  // errors would otherwise leave no trace. ERROR lines are ALSO buffered as
+  // errors would otherwise leave no trace. ERROR lines are ALSO held as
   // Record_Health_Check_Log__e events and published once at the transaction
   // boundary via flush() — the counterpart to Nebula's saveLog(). Core only
-  // emits the versioned event; the extension package owns persistence, retention,
-  // and reporting. Buffering (not per-line publish) keeps a 200-record bulk run
+  // publishes the versioned event; the extension package owns persistence, retention,
+  // and reporting. Holding events (not per-line publish) keeps a 200-record bulk run
   // that errors on every record to one chunked publish, well under DML limits.
   @TestVisible
   private static final String LOG_CONTRACT_VERSION = '1.0';
@@ -47,7 +47,7 @@ public with sharing class RecordHealthCheckLogger {
   private static final Integer MESSAGE_MAX = 4000;
   private static final Integer STACK_MAX = 32000;
 
-  // Default ON: durable error capture must not require opt-in (opt-out only).
+  // Default ON: platform-event error capture must not require optional enablement (opt-out only).
   @TestVisible
   private static Boolean publishErrorEvents = true;
   // Loop guard: a subscriber processing a log event sets this so its own ERROR
@@ -118,7 +118,7 @@ public with sharing class RecordHealthCheckLogger {
       .emit(lvl, checkName, event, fields, ex);
   }
 
-  // ─── Sink ──────────────────────────────────────────────────────────────────
+  // ─── Destination ───────────────────────────────────────────────────────────
 
   private void emit(
     Level lvl,
@@ -154,7 +154,7 @@ public with sharing class RecordHealthCheckLogger {
     captureErrorEvent(lvl, checkName, event, fields, ex);
   }
 
-  // ─── Durable ERROR sink ──────────────────────────────────────────────────────
+  // ─── Platform-event ERROR destination ────────────────────────────────────────
 
   /**
    * Buffers an ERROR line as a Record_Health_Check_Log__e event. No-op for
@@ -223,10 +223,10 @@ public with sharing class RecordHealthCheckLogger {
   }
 
   /**
-   * Publishes buffered ERROR events (chunked) and clears the buffer. Call once at
+   * Publishes held ERROR events (chunked) and clears the buffer. Call once at
    * every transaction boundary — the controller @AuraEnabled methods, the public
    * RecordHealthCheck API, and Flow invocables. Best-effort and exception-safe:
-   * a publish failure is logged and swallowed so durable logging can never
+   * a publish failure is logged and swallowed so platform-event logging can never
    * disrupt the health check result.
    */
   public static void flush() {

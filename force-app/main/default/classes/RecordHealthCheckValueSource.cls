@@ -5,7 +5,7 @@
 
 /**
  * Value source of one side of a comparison (the "Found" value or the "Expected"
- * condition). Evaluators populate the structured Detail; a single formatter
+ * condition). Evaluators fill in the structured Detail; a single formatter
  * renders it to the one human-readable string surfaced on the result.
  * The public result contract stays two strings (actualValueDetail /
  * expectedValueDetail); the internal shape stays structured so the underlying
@@ -17,8 +17,8 @@ public class RecordHealthCheckValueSource {
    * One side's value source facts.
    * - sourceLabel: where the value came from — a field API name, a plain-English
    * query description, or a operator phrase.
-   * - rawValueLabel: the raw value or row count before any coercion.
-   * - coercionLabel: the coercion/interpretation applied, if any
+   * - rawValueLabel: the raw value or row count before any conversion.
+   * - coercionLabel: the conversion/interpretation applied, if any
    * (e.g. "blank treated as 0", "null rows skipped"). Null when none applies.
    */
   public class Detail {

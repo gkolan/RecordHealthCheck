@@ -91,7 +91,7 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
         responses.add(response);
       }
     } finally {
-      // Boundary flush for the durable ERROR sink. RecordHealthCheck.runSet also
+      // Boundary flush for the platform-event ERROR destination. RecordHealthCheck.runSet also
       // flushes per call; this keeps the invariant explicit at the Flow entry.
       RecordHealthCheckLogger.flush();
     }

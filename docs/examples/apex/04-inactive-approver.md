@@ -244,7 +244,7 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       inactiveNames.add(assignee.Name);
     }
 
-    // Populate on pass and fail so an entitled viewer can audit a green row too.
+    // Set Found/Expected on pass and fail so an entitled viewer can audit a green row too.
     populateComparison(result, inactiveNames.size());
 
     if (inactiveNames.isEmpty()) {

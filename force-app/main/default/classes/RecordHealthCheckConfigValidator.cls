@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** Shared, side-effect-free validation primitives used at runtime and in CI. */
+/** Shared validation helpers used at runtime and in CI; they do not change org data. */
 public with sharing class RecordHealthCheckConfigValidator {
   private static Map<String, RecordHealthCheckRule> validatedPluginInstances = new Map<String, RecordHealthCheckRule>();
   public static RecordHealthCheckTokenIssue firstTemplateIssue(

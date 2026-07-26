@@ -4,11 +4,11 @@
  */
 
 /**
- * Shared value extraction, coercion, and comparison for the SOQL evaluators.
+ * Shared value extraction, conversion, and comparison for the SOQL evaluators.
  * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckCompareQueriesEvaluator
  * previously carried their own copies of single-value/list extraction, QueryException
- * classification, type coercion, equality, and ordered comparison — and the copies
- * had drifted (notably Date/DateTime coercion). Centralizing them here
+ * classification, type conversion, equality, and ordered comparison — and the copies
+ * had gotten out of sync (notably Date/DateTime conversion). Keeping them in one place
  * guarantees single-query and compare-queries checks behave identically.
  * Apex boxes Date values through the Datetime branch when they are held as Object
  * so temporal comparisons consistently use Datetime semantics after the numeric
@@ -126,7 +126,7 @@ public with sharing class RecordHealthCheckValueResolver {
     }
     // Apex boxes Date values through the Datetime branch above, which also
     // normalizes Date/Datetime pairs before comparison.
-    // Coerce both sides to Id before comparison, so a 15-char and an 18-char form of
+    // Convert both sides to Id before comparison, so a 15-char and an 18-char form of
     // the same Id match (String.valueOf would often compare them as unequal).
     if (primary instanceof Id || comparison instanceof Id) {
       try {
@@ -212,7 +212,7 @@ public with sharing class RecordHealthCheckValueResolver {
     );
   }
 
-  // ─── Coercion (strict — see class header) ──────────────────────────────────
+  // ─── Conversion (strict — see class header) ────────────────────────────────
 
   public static Boolean isNumericObject(Object value) {
     return value instanceof Integer ||

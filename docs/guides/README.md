@@ -14,7 +14,7 @@ when you need field-level detail.
 | Design a complete readiness review | [Configure Check Sets and Rules](configure-check-sets-and-rules.md) | Turn a Salesforce business question into a Check Set, ordered Rules, outcomes, and release checklist |
 | Give users a corrective next step | [Configure action links](configure-action-links.md) | Pair Fix Message with a safe Action Label and Action URL |
 | Match the card to a Lightning page | [Choose the card design system](choose-card-design-system.md) | Select SLDS 1 or SLDS 2 without changing Framework behavior |
-| Draft configuration with an AI assistant | [Draft configuration with AI](draft-configuration-with-ai.md) | Provide Framework vocabulary, constraints, and a reviewable output format |
+| Draft configuration with an AI assistant | [Draft configuration with AI](draft-configuration-with-ai.md) | Provide Framework terms, constraints, and a reviewable output format |
 | Investigate a result safely | [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md) | Reveal authorized card and browser-console evidence, then turn it off |
 
 ## Recommended path
@@ -28,6 +28,8 @@ when you need field-level detail.
 ## Related
 
 - [Documentation home](../README.md)
+- [Documentation standard](../development/documentation-standard.md) — including
+  [plain technical language for AI and authors](../development/documentation-standard.md#prefer-plain-technical-language-avoid-cs-jargon)
 - [Examples library](../examples/README.md)
 - [Technical references](../reference/README.md)
 - [Create your first Rule](../installation/03-create-your-first-rule.md)

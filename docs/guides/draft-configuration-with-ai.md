@@ -5,7 +5,9 @@
 
 **Version:** 2.0.0 (2026-07-13)
 
-This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see the [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-check-rule.md) references.
+This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see the [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-check-rule.md) references. When writing explanatory prose (not Setup labels or API names), follow
+[plain technical language](../development/documentation-standard.md#prefer-plain-technical-language-avoid-cs-jargon)
+in the [Documentation standard](../development/documentation-standard.md).
 
 ## 1. What this product does
 
@@ -55,7 +57,7 @@ RULES YOU MUST FOLLOW:
 5. COMPARE_TWO_QUERIES: both sides from SOQL; no ExpectedValueSource__c.
 6. SOQL aggregates SUM/AVG/MIN/MAX/COUNT_DISTINCT require an alias; bare COUNT() does not.
 7. SOQL merge tokens: {!record.FieldApiName|Fallback value} on the current record (e.g. {!record.Id|001000000000000AAA}, {!record.AnnualRevenue|0}, {!record.Customer_Tier__c|Standard}).
-8. Max 25 active Rules per Check Set per run. Use applicability gates to reduce noise.
+8. Max 25 active Rules per Check Set per run. Use applicability checks to reduce noise.
 9. Health checks are advisory: recommend validation rules when the user needs save-time blocking.
 10. If metadata cannot express the rule, recommend Apex (RecordHealthCheckRule interface) and say what the class must do. Cite an example from https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). Treat every example class as an optional Examples-pack dependency; Core ships no example implementations. Do not recommend Apex for save-time field format rules: use validation rules.
 11. QueryResultHandling__c = ONE_RESULT for aggregates and single COUNT(); ANY_ROW_PASSES / ALL_ROWS_PASS for row-by-row; COMPARE_AS_LISTS for list operators.
@@ -200,7 +202,7 @@ When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex
 | JSON defaults | Apex constants + `ApexParametersJson__c` keys (e.g. `daysBack`) with bounds |
 | Examples-pack vs custom | Use an Examples-pack class only when that pack is installed and the pattern matches |
 | Outcome | `PASS`/`FAIL`; required `actualValue`/`expectedValue` on both statuses |
-| Applicability | Why `ApplicabilityMode__c` is not `ALL_RECORDS` if gated |
+| Applicability | Why `ApplicabilityMode__c` is not `ALL_RECORDS` if the Rule only runs when a condition is met |
 
 ## 5. Rule fields by Evaluation Type
 

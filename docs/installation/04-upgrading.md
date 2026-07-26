@@ -18,14 +18,14 @@ sandbox or scratch org made from a current production backup before changing pro
 ## What changes
 
 - Every field rename is listed in the [field-migration reference](#field-migration-reference). The current release does not read v1.x field API names.
-- Category values use the current vocabulary, and Severity `Error` is now `Critical`.
+- Category values use the current list of terms, and Severity `Error` is now `Critical`.
 - `MaxQueryRows__c` defaults to `200`, `EmptyValueHandling__c` to `AS_NO_MATCH`, and `EvaluationOrder__c` to `100`.
 - Values moving from Long Text Area to Text are limited to 255 characters; review them before deployment.
 - Apex identifiers using “comparator” or “scalar” were renamed to operator/single-value wording. `VALID_COMPARATORS`, `DUAL_QUERY_COMPARATORS`, and `VALID_APPLICABILITY_COMPARATORS` are now the corresponding `...OPERATORS` properties. `scalarFromRow` and `scalarList` are now `singleValueFromRow` and `singleValueList`.
 - Reason code `INVALID_COMPARATOR` is now `INVALID_OPERATOR`.
 - The public synchronous response contract is stable at `1.0` on `RecordHealthCheckResult` /
   `RecordHealthCheckSetResult` and grows additively. The independent lifecycle event contract is
-  also `1.0`, is opt-in, and
+  also `1.0`, is optional by default, and
   Publish After Commit. See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and
   [Platform events](../integration/lifecycle-events.md).
 
@@ -149,7 +149,7 @@ sf project deploy start --manifest manifest/package.xml --test-level RunLocalTes
 sf apex run --file scripts/apex/validateMetadata.apex --target-org <validation-org>
 ```
 
-Retrieve the deployed metadata into an empty directory and compare it with the release source. Review expected org-normalized XML separately from unexpected drift.
+Retrieve the deployed metadata into an empty directory and compare it with the release source. Review expected org-normalized XML separately from unexpected differences.
 
 ## Rollback
 
@@ -167,5 +167,5 @@ Do not run the upgrade's destructive changes in production until the backup has 
 
 - [Create your first Rule](03-create-your-first-rule.md): verify the upgraded installation and first Rule
 - [Metadata reference](../metadata/README.md): review current field APIs and values
-- [Lifecycle events](../integration/lifecycle-events.md): validate opt-in publication and subscribers
+- [Lifecycle events](../integration/lifecycle-events.md): validate optional publication and subscribers
 - [Reason Codes](../reference/reference-reason-codes.md): update downstream status handling

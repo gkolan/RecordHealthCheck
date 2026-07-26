@@ -23,7 +23,7 @@ text and action URLs. Use strict namespaced syntax:
 
 Not every namespace is available on every surface. Record-query templates allow only record-field
 tokens. Display text can use the registered namespaces when that data exists in the current phase;
-action URLs URL-encode each inserted value before the final URL allowlist runs.
+action URLs URL-encode each inserted value before the final URL allowed list runs.
 
 Use `{!namespace.property|fallback text}` when a supported token may resolve to blank. Unknown
 namespaces and properties are configuration errors; the Framework does not silently accept legacy

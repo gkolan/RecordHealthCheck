@@ -110,7 +110,7 @@ The aggregate Contact count becomes these Framework outcomes and card values:
 | --- | --- |
 | **`PASS`** | The Rule passes when at least one visible related Contact exists. |
 | **`FAIL`** | A count of zero shows Needs attention with Warning severity. |
-| **`SKIPPED`** | Bare `COUNT()` returns zero rather than no rows, and this configuration has no applicability gate or prerequisite, so it does not produce `SKIPPED`. |
+| **`SKIPPED`** | Bare `COUNT()` returns zero rather than no rows, and this configuration has no applicability check or prerequisite, so it does not produce `SKIPPED`. |
 | **Found** | Found shows the visible related Contact count when Found/Expected display is enabled on the Check Set. |
 | **Expected** | Expected shows the fixed minimum required by the Rule: `0` with the **Greater than** operator. |
 

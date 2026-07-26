@@ -306,7 +306,7 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     }
 
     // Value source — where each side came from and its raw value/row count, so an
-    // entitled viewer can tell a true value from an empty/coerced one.
+    // entitled viewer can tell a true value from an empty/converted one.
     result.actualValueSource = new RecordHealthCheckValueSource.Detail(
       describePrimarySource(rule),
       primaryList != null

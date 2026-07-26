@@ -2,7 +2,7 @@
 
 This page preserves the exact contract for every Rule field: the label shown in Setup, API name,
 type, default, allowed values, runtime behavior, and an example. Use the decision path first, then
-open an individual field when you need the authoritative detail.
+open an individual field when you need the full detail.
 
 ## Build a Rule in the order it runs
 

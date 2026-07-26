@@ -94,14 +94,14 @@ Results remain in component state; the component does not create a history recor
 
 ### Check Set Run event
 
-After every row resolves, an opted-in Set can produce `Record_Health_Check_Set_Run__e` with
+After every row resolves, a Set with publication enabled can produce `Record_Health_Check_Set_Run__e` with
 `Phase__c = COMPLETED` and `Source__c = USER_INITIATED`. See
 [Check Set Run event fields](../metadata/event-set-run.md#fields)
 for the complete field list.
 
 ### Rule Result event
 
-Each server-finalized, opted-in Rule can produce `Record_Health_Check_Rule_Result__e` with
+Each server-finalized Rule with publication enabled can produce `Record_Health_Check_Rule_Result__e` with
 `Source__c = USER_INITIATED`. See
 [Rule Result event fields](../metadata/event-rule-result.md#fields)
 for the complete field list.

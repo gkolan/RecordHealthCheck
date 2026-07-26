@@ -5,7 +5,7 @@
 >
 > **Reference**
 >
-> - This page is the canonical source for Show Diagnostics and the F12 console output.
+> - This page is the primary source for Show Diagnostics and the F12 console output.
 > - For every other Check Set field, use the [Configure Check Sets and Rules](configure-check-sets-and-rules.md#3-check-set-fields).
 
 Use this guide when a Rule shows **Unable to check**, behaves differently between users, or needs

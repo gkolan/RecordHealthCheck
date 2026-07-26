@@ -157,7 +157,7 @@ RecordHealthCheckSetResult result = RecordHealthCheck.runSet(
 | Source-aware batch/async caller | `BATCH` |
 | Platform-event subscriber | `SUBSCRIBER`: publication blocked |
 
-Unknown and blank source values fail closed: evaluation can run, but lifecycle publication is
+Unknown and blank source values fall back to the safer default: evaluation can run, but lifecycle publication is
 blocked.
 
 ## Limits and transaction behavior
@@ -280,7 +280,7 @@ directly by `runRule`.
 | `message` | User-facing text; do not use as an automation key |
 | `actualValue`, `expectedValue` | Security-filtered comparison values when available |
 | `expectedValueLabel` | Overrides the Expected caption, including authorized **Passes when** formula detail |
-| `actualValueDetail`, `expectedValueDetail` | Authorized source-detail strings; emitted only through enabled browser diagnostics |
+| `actualValueDetail`, `expectedValueDetail` | Authorized source-detail strings; included only through enabled browser diagnostics |
 | `adminDetailMessage` | Authorized troubleshooting text when Show Diagnostics is enabled |
 | `adminDetail` | Authorized structured diagnostics: restricted-detail flag, field names, Reason Code, and message |
 | `actionLabel`, `actionUrl` | Resolved read-only remediation link for `FAIL`; blank when unavailable or unsafe |
@@ -353,7 +353,7 @@ The API can produce these asynchronous outputs in addition to its synchronous re
 | `ContainsRestrictedDetail__c` | Restricted detail existed; the detail itself is never included |
 
 Events intentionally omit record ID, object API name, user ID, messages, queries, and field values.
-The [Platform events reference](../integration/lifecycle-events.md) remains the canonical behavioral overview,
+The [Platform events reference](../integration/lifecycle-events.md) remains the primary behavioral overview,
 retention, replay, and subscriber contract.
 
 ## Related

@@ -51,7 +51,7 @@ do not publish.
 
 | Setup label | API name | Type | Required/default | Meaning |
 | --- | --- | --- | --- | --- |
-| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level deduplication key. |
+| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level unique key. |
 | Run ID | `RunId__c` | Text(120) | Required; supplied or generated | Correlates this result with its Check Set run, response, and Framework logs. |
 | Check Set API Name | `CheckSetDeveloperName__c` | Text(80) | Required | Parent Check Set `DeveloperName`. |
 | Rule API Name | `RuleDeveloperName__c` | Text(80) | Required | Finalized Rule `DeveloperName`. |
@@ -65,7 +65,7 @@ do not publish.
 | Core Version | `CoreVersion__c` | Text(20) | Required; `2.0.0` | Framework release that produced the event. |
 | Contains Restricted Detail | `ContainsRestrictedDetail__c` | Checkbox | Defaults to false | Indicates that restricted detail existed on the in-memory result. It does not publish that detail. |
 
-## Example payload
+## Example event body
 
 ```json
 {
@@ -104,7 +104,7 @@ intentionally absent from this contract.
 
 | Concern | Subscriber responsibility |
 | --- | --- |
-| Duplicate delivery | Deduplicate with `EventId__c` and make side effects safe to repeat. |
+| Duplicate delivery | Keep unique with `EventId__c` and make follow-on work safe to repeat. |
 | Routing | Use API values, not translated labels or administrator-authored text. |
 | Future values | Send unknown additive Reason Codes and statuses to a safe review path. |
 | Run correlation | Use `RunId__c` to group Rule Result events with their Set Run summary. |

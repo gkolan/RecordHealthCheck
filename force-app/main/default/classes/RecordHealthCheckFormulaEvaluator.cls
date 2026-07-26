@@ -19,7 +19,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   // transaction made the guard lie when a caller loops evaluate() (Flow, batch
   // anonymous Apex). Each real LWC request is its own transaction, so the counter
   // naturally starts at zero there without any reset. A 5-call safety margin
-  // leaves room for applicability gates on the remaining checks to still resolve.
+  // leaves room for applicability checks on the remaining checks to still resolve.
   // Tests reset this @TestVisible field directly to isolate per-method counts.
   @TestVisible
   private static Integer formulaEvalCallCount = 0;
@@ -28,10 +28,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   // Distinguishes a resolved null from a display formula that could not resolve.
   private static final Object ABSENT = new Map<String, Object>();
 
-  // evaluateFormulaAnyType probes up to 8 return types and every failed
+  // evaluateFormulaAnyType tries up to 8 return types and every failed
   // attempt consumes a real, platform-counted FormulaEval call. When a caller
   // loops evaluate() over many records in one transaction (Flow, batch, anonymous
-  // Apex), re-probing the same single-value formula per record multiplies that cost and
+  // Apex), retrying the same single-value formula per record multiplies that cost and
   // can exhaust the 100-call budget. Caching the return type that first resolved a
   // given formula (keyed by SObject type + expression) lets the second and later
   // records resolve in a single call. Transaction-scoped, like formulaEvalCallCount.
@@ -110,7 +110,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       result.detailMessage = 'Formula returned null. The formula may reference a null relationship or an inaccessible field.';
     } else if (evalResult instanceof Boolean) {
       Boolean passed = (Boolean) evalResult;
-      // Populate Found / Expected for display. By default a Formula check has no
+      // Set Found / Expected for display. By default a Formula check has no
       // separable record value vs operand — the condition lives inside the
       // expression — so we echo the formula as the pass/fail condition under a
       // "Passes when" key (e.g. Passes when ISBLANK(BillingCity)). When the admin
@@ -143,10 +143,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   /**
    * Sets a Formula check's Found (actualValue) and Expected (expectedValue)
    * display values.
-   * Found: only when DisplayFoundFormula__c is populated — resolved as a single-value
+   * Found: only when DisplayFoundFormula__c is set — resolved as a single-value
    * and formatted like Query checks. Blank leaves actualValue null (no Found
    * chip), matching the original behavior.
-   * Expected: the resolved DisplayExpectedFormula__c single-value when populated
+   * Expected: the resolved DisplayExpectedFormula__c single-value when set
    * otherwise the unquoted PassConditionFormula__c text (original behavior).
    * Display is purely additive: pass/fail has already been decided by the
    * boolean PassConditionFormula__c. A single-value formula that fails to resolve (non-single-value
@@ -214,7 +214,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Resolves a display-only single-value formula, returning ABSENT (not throwing) when
-   * it cannot be evaluated, so a bad Found/Expected formula degrades to the
+   * it cannot be evaluated, so a bad Found/Expected formula falls back to the
    * default display instead of failing the check.
    */
   private Object resolveSingleValueForDisplay(
@@ -239,7 +239,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
    * true — gate passes, main evaluator should run
    * false — gate fails, return SKIPPED
    * null — gate could not be evaluated, return UNABLE_TO_EVALUATE
-   * The out-param reasonCode[0] is populated when null is returned.
+   * The out-param reasonCode[0] is set when null is returned.
    */
   public Boolean evaluateApplicabilityFormula(
     String formulaExpression,
@@ -283,9 +283,9 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   /**
    * overload accepting the admin-declared return type (the
    * FormulaResultType__c picklist value). When non-blank and not 'AUTO'
-   * the formula is evaluated once with that type instead of probing up to eight
+   * the formula is evaluated once with that type instead of trying up to eight
    * saving FormulaEval calls in bulk/Flow loops. An unrecognized or mis-declared
-   * type degrades gracefully to the full probe, so a wrong declaration never
+   * type falls back gracefully to trying all return types, so a wrong declaration never
    * fails a check that would otherwise resolve.
    */
   public Object resolveFormulaSingleValue(
@@ -311,7 +311,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   /**
    * Maps the FormulaResultType__c picklist value to a FormulaReturnType
-   * or null for 'AUTO'/blank/unrecognized (caller probes all types).
+   * or null for 'AUTO'/blank/unrecognized (caller tries all types).
    */
   @TestVisible
   private formulaeval.FormulaReturnType mapDeclaredReturnType(
@@ -337,7 +337,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         return formulaeval.FormulaReturnType.STRING;
       }
       when else {
-        // 'AUTO' and any unrecognized value fall back to full probing.
+        // 'AUTO' and any unrecognized value fall back to trying all return types.
         return null;
       }
     }
@@ -391,13 +391,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     SObject record,
     formulaeval.FormulaReturnType declaredType
   ) {
-    // try a preferred return type before probing — first the
+    // try a preferred return type before trying all types — first the
     // admin-declared type (FormulaResultType__c), else the type that
     // already resolved this formula in this transaction. Either way a single
-    // call replaces the up-to-eight-call probe for repeated evaluations
+    // call replaces trying up to eight types for repeated evaluations
     // (bulk/Flow loops). A preferred type can still fail for a particular record
     // (e.g. a value that overflows a numeric type, or a mis-declared type), so
-    // fall through to a full probe and re-cache on success.
+    // fall through to trying all types and re-cache on success.
     String cacheKey =
       String.valueOf(record.getSObjectType()) +
       '|' +
@@ -424,7 +424,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     // Order matters: each failed attempt burns a FormulaEval API call (limit 100/tx).
     // BOOLEAN first (most formula checks), DECIMAL next (numbers/currency/percent)
     // DATE/DATETIME before STRING so temporal fields resolve in 3–4 calls rather than 7–8.
-    // STRING is a catch-all that can coerce almost any type, so it comes after specifics.
+    // STRING is a catch-all that can convert almost any type, so it comes after specifics.
     List<formulaeval.FormulaReturnType> typesToTry = new List<formulaeval.FormulaReturnType>{
       formulaeval.FormulaReturnType.BOOLEAN,
       formulaeval.FormulaReturnType.DECIMAL,

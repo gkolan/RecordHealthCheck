@@ -226,7 +226,7 @@ Flow-published events use `Source__c = FLOW`. Publication is off by default, bes
 not change the synchronous result. A successful Flow action does not prove that an asynchronous
 subscriber completed.
 
-Subscribers must tolerate duplicate or replayed delivery. For the complete payloads and subscriber
+Subscribers must tolerate duplicate or replayed delivery. For the complete event bodies and subscriber
 guidance, see [Lifecycle events](lifecycle-events.md).
 
 ## Version compatibility

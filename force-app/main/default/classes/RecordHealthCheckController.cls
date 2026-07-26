@@ -100,7 +100,7 @@ public with sharing class RecordHealthCheckController {
         'An unexpected error occurred loading the health check configuration.'
       );
     } finally {
-      // Publish the buffered CONFIG_UNEXPECTED error before LOAD_FAILED unwinds —
+      // Publish the held CONFIG_UNEXPECTED error before LOAD_FAILED unwinds —
       // PublishImmediately survives the rollback the thrown exception triggers.
       RecordHealthCheckLogger.flush();
     }
@@ -209,7 +209,7 @@ public with sharing class RecordHealthCheckController {
       response.recordId = recordId;
       response.runId = effectiveRunId;
       // Never trust browser-supplied result objects for a lifecycle event.
-      // Authoritative counts come only from server-owned metadata and results.
+      // Server-side counts come only from server-owned metadata and results.
       for (RecordHealthCheckDefinition definition : definitions.checks) {
         response.add(
           engine.evaluate(
@@ -231,7 +231,7 @@ public with sharing class RecordHealthCheckController {
     }
   }
 
-  /** The browser may request only the two LWC modes; unknown values fail closed. */
+  /** The browser may request only the two LWC modes; unknown values fall back to the safer default. */
   private static String normalizeLwcSource(String source) {
     return source == RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
       ? RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED

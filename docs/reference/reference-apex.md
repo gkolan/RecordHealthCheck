@@ -362,7 +362,7 @@ See the [Rule field reference](../metadata/fields-check-rule.md) for comparison 
 
 ### Diagnostic detail (optional)
 
-When the check can explain where a value came from, populate `actualValueSource` /
+When the check can explain where a value came from, set `actualValueSource` /
 `expectedValueSource` with `RecordHealthCheckValueSource.Detail`. These never render on the card.
 See [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md#what-you-see-in-the-browser-console) for who
 can see them and when.
@@ -413,13 +413,13 @@ Any other string → evaluator converts to `ERROR` / `APEX_EVALUATOR_ERROR`.
 | `durationMs` | Evaluator |
 | `reasonCode` | Framework (plugins rarely need this) |
 
-## 7. Canonical basic example
+## 7. Primary basic example
 
 Use the complete [Recent Account activity example](../examples/apex/01-recent-activity.md).
 It is intentionally the one complete example shared by these plugin pages: it shows a
 `public with sharing` implementation, user-mode aggregate SOQL, two independently overridable JSON
 parameters, safe defaults, `PASS`/`FAIL`, and required Found/Expected values. Keeping the complete
-class in one place prevents the short contract and detailed reference from drifting.
+class in one place prevents the short contract and detailed reference from getting out of sync.
 
 ## 8. Checklist before deploy
 

@@ -441,7 +441,7 @@ public with sharing class RecordHealthCheckEngine {
       );
     }
 
-    // 4. Applicability gate (server-side, runs before every evaluator)
+    // 4. Applicability check (server-side, runs before every evaluator)
     RecordHealthCheckResult applicabilityResult = checkApplicability(
       rule,
       recordId,
@@ -478,7 +478,7 @@ public with sharing class RecordHealthCheckEngine {
     resolveEvalResultMessage(evalResult, rule, record);
 
     // 6b. Guided remediation: a FAIL may carry a read-only deep link the admin
-    // authored per rule. Populated only on FAIL (remediation is meaningless on a
+    // authored per rule. Set only on FAIL (remediation is meaningless on a
     // pass, and a non-determinate status may not have a loaded record to resolve
     // tokens against). The URL is token-resolved against the record and then
     // sanitized before it can reach the UI as an href.
@@ -675,7 +675,7 @@ public with sharing class RecordHealthCheckEngine {
     return result;
   }
 
-  // ─── Applicability gate ────────────────────────────────────
+  // ─── Applicability check ───────────────────────────────────
 
   @TestVisible
   private class CheckSetContextOutcome {
@@ -695,7 +695,7 @@ public with sharing class RecordHealthCheckEngine {
       // a null Check Set relationship must NOT proceed as if the set were
       // active and object-matched (that would bypass IsActive__c / ObjectApiName__c
       // enforcement). loadRule only returns a rule whose set relationship is
-      // populated, so reaching here is an anomaly — surface it as a config error.
+      // filled in, so reaching here is an anomaly — surface it as a config error.
       RecordHealthCheckResult result = new RecordHealthCheckResult();
       result.ruleDeveloperName = ruleDeveloperName;
       result.status = 'UNABLE_TO_EVALUATE';
@@ -826,7 +826,7 @@ public with sharing class RecordHealthCheckEngine {
       List<SObject> rows = Database.query(safeSoql);
 
       // isSingleCountQuery guarantees one aggregate row with one whole-number
-      // value. Accept aliases by reading the first populated aggregate field.
+      // value. Accept aliases by reading the first aggregate field that has a value.
       AggregateResult aggregateRow = (AggregateResult) rows[0];
       Object aggregateValue = aggregateRow
         .getPopulatedFieldsAsMap()
@@ -1336,7 +1336,7 @@ public with sharing class RecordHealthCheckEngine {
   }
 
   /**
-   * Populates the read-only remediation link on a FAIL result from the rule's
+   * Sets the read-only remediation link on a FAIL result from the rule's
    * PrimaryAction / FixInstructions fields. The URL is token-resolved against the
    * record (with each substituted value URL-encoded) and then sanitized; an
    * unsafe or over-length URL is dropped rather than surfaced as an href, but any
@@ -1427,7 +1427,7 @@ public with sharing class RecordHealthCheckEngine {
     if (trimmed.length() > 2000) {
       return null;
     }
-    // Reject control characters as defense in depth before applying the scheme allowlist.
+    // Reject control characters as defense in depth before applying the scheme allowed list.
     if (
       trimmed.contains('\n') ||
       trimmed.contains('\r') ||

@@ -131,7 +131,7 @@ private class ApprovalInactiveApproverCheckTest {
   @IsTest
   static void inactiveAssignedUserFailsAndNamesTheUser() {
     User inactive = createInactiveUser();
-    // Name is a derived field, populated on the persisted record (FirstName +
+    // Name is a derived field, set on the persisted record (FirstName +
     // LastName), so read it back to compare against the message.
     String inactiveName = [SELECT Name FROM User WHERE Id = :inactive.Id].Name;
 

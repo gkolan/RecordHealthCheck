@@ -56,7 +56,7 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.status = score >= minScore ? 'PASS' : 'FAIL';
-    // Populate on pass and fail so an entitled viewer can audit a green row too
+    // Set on pass and fail so an entitled viewer can audit a green row too
     // . The disclosure keeps these off the default card.
     result.actualValue = String.valueOf(score);
     result.expectedValue = String.valueOf(minScore) + '+';

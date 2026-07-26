@@ -30,7 +30,7 @@ public class RecordHealthCheckResult {
   @AuraEnabled
   public String message;
   @AuraEnabled
-  public String actualValue; // what the record/query produced — populated on a determinate PASS/FAIL
+  public String actualValue; // what the record/query produced — set on a determinate PASS/FAIL
   @AuraEnabled
   public String expectedValue; // the operator + comparison operand the value was tested against
   @AuraEnabled
@@ -39,14 +39,14 @@ public class RecordHealthCheckResult {
   public String actualValueDetail; // value-source note for the Found side — gated by Record_Health_Check_View_Diagnostics
   @AuraEnabled
   public String expectedValueDetail; // value-source note for the Expected side — gated by the same permission
-  // Structured value source the evaluators populate; the engine renders these into
+  // Structured value source the evaluators fill in; the engine renders these into
   // the two *Detail strings above and gates them by permission. Intentionally not
   // @AuraEnabled — the public contract is the rendered strings, not this shape.
   public RecordHealthCheckValueSource.Detail actualValueSource;
   public RecordHealthCheckValueSource.Detail expectedValueSource;
   public String detailMessage; // intentionally not @AuraEnabled — raw exception text, internal only
   @AuraEnabled
-  public String adminDetailMessage; // populated from detailMessage when ShowDiagnostics__c is on
+  public String adminDetailMessage; // set from detailMessage when ShowDiagnostics__c is on
   @AuraEnabled
   public RecordHealthCheckAdminDetail adminDetail; // null unless authorized diagnostics is active
   @AuraEnabled

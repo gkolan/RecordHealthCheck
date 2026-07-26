@@ -21,7 +21,7 @@
  * - an oversized outer LIMIT (e.g. 50000) consuming the governor limit before
  * the post-query size check;
  * - keyword rejection firing on words such as "update" inside a string literal.
- * Methods are static and side-effect free. Callers map TemplateException.reasonCode
+ * Methods are static and do not change state. Callers map TemplateException.reasonCode
  * onto their own result/exception types.
  */
 public with sharing class RecordHealthCheckSoqlTemplate {
@@ -287,7 +287,7 @@ public with sharing class RecordHealthCheckSoqlTemplate {
    * pure aggregates (depth-0 aggregate, no depth-0 GROUP BY) get no LIMIT (illegal);
    * an existing depth-0 LIMIT greater than cap is lowered to cap;
    * otherwise a LIMIT of cap is added (before a depth-0 OFFSET if present).
-   * Callers still probe with cap+1 by passing maxRows+1 — see the evaluators.
+   * Callers still try with cap+1 by passing maxRows+1 — see the evaluators.
    */
   @TestVisible
   private static String enforceRowCap(String soql, Integer cap) {

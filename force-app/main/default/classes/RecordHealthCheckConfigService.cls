@@ -21,7 +21,7 @@ public with sharing class RecordHealthCheckConfigService {
 
   // Valid-value sets and caps are owned by RecordHealthCheckConstants so this
   // runtime validator and RecordHealthCheckMetadataValidator (deploy-time) can
-  // never drift. Local aliases keep the call sites below readable.
+  // never get out of sync. Local aliases keep the call sites below readable.
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps only the baseline checks below (inline) plus a first-fail adapter
   // (toResult). The operator/source/null-empty value sets live with those producers.
@@ -105,7 +105,7 @@ public with sharing class RecordHealthCheckConfigService {
    * Loads and validates a Check Set and its active rules.
    * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND,
    * CONFIG_INACTIVE, OBJECT_MISMATCH, NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS).
-   * Returns a fully populated RecordHealthCheckDefinitionResponse on success.
+   * Returns a fully filled-in RecordHealthCheckDefinitionResponse on success.
    */
   public RecordHealthCheckDefinitionResponse getDefinitionResponse(
     String checkSetDeveloperName,
@@ -232,7 +232,7 @@ public with sharing class RecordHealthCheckConfigService {
       ? inactiveRuleLabels(checkSetDeveloperName)
       : new List<String>();
 
-    // Emit WARN when active rules exceed FRAMEWORK_MAX_CHECKS, so truncation is
+    // Log WARN when active rules exceed FRAMEWORK_MAX_CHECKS, so truncation is
     // visible server-side and not only in the LWC "First 25 of N shown" badge.
     if (checksOmitted) {
       logCheckLimitExceeded(checkSetDeveloperName, recordId, totalAvailable);
@@ -658,8 +658,8 @@ public with sharing class RecordHealthCheckConfigService {
   // are appended only for Query / CompareTwoQueries.
 
   /**
-   * Validates the ApplicabilityMode gate (Formula / SOQL sub-fields). Returns null when the
-   * gate is well-formed (or mode is Always/blank). Kept @TestVisible for parity with prior API.
+   * Validates the ApplicabilityMode check (Formula / SOQL sub-fields). Returns null when the
+   * check is valid (or mode is Always/blank). Kept @TestVisible for parity with prior API.
    */
   @TestVisible
   private RecordHealthCheckResult validateApplicability(
@@ -717,7 +717,7 @@ public with sharing class RecordHealthCheckConfigService {
 
   /**
    * Maps a shared Finding to this runtime path's UNABLE_TO_EVALUATE reason code and detail
-   * message. This switch is the ONLY place the runtime output vocabulary lives — the decision
+   * message. This switch is the ONLY place the runtime output terms live — the decision
    * tree that produced the finding is shared. Reason codes and messages here are byte-for-byte
    * the originals so the engine and every pinned test see identical results.
    */
@@ -727,7 +727,7 @@ public with sharing class RecordHealthCheckConfigService {
   ) {
     String val = finding.offendingValue;
     switch on finding.code {
-      // ── Applicability gate ──
+      // ── Applicability check ──
       when APPLICABILITY_FORMULA_MISSING {
         return buildUnableResult(
           rule,

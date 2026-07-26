@@ -170,7 +170,7 @@ export default class RecordHealthCheck extends LightningElement {
       this._initialLoadTimer = null;
     }
     // Bump the run token and clear the concurrency pool so any in-flight
-    // evaluation resolves to a discarded result instead of mutating a dead component.
+    // evaluation resolves to a discarded result instead of changing a dead component.
     this._runner.invalidate();
     if (this._tooltipListenersBound) {
       this.template.removeEventListener("mouseover", this._positionTooltip);
@@ -472,7 +472,7 @@ export default class RecordHealthCheck extends LightningElement {
   /**
    * Blank checkSetName is ambiguous until we ask Apex what Check Sets exist for
    * this object. Active sets → SETUP_REQUIRED (pick one). Inactive only →
-   * INACTIVE_CHECK_SETS_ONLY. None at all → NO_ACTIVE_CHECK_SETS. Probe failures
+   * INACTIVE_CHECK_SETS_ONLY. None at all → NO_ACTIVE_CHECK_SETS. Lookup failures
    * and missing recordId fall back to SETUP_REQUIRED so we never falsely claim
    * the org has no Check Sets.
    */
@@ -488,7 +488,7 @@ export default class RecordHealthCheck extends LightningElement {
           hasInactive: response?.hasInactive === true
         };
       } catch {
-        // Probe failed (e.g. transient Apex error) — fall back to SETUP_REQUIRED
+        // Lookup failed (e.g. transient Apex error) — fall back to SETUP_REQUIRED
         // rather than falsely claiming the org has no Check Sets for this object.
         availability = { hasActive: true, hasInactive: false };
       }

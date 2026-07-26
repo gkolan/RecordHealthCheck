@@ -6,7 +6,7 @@
 public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   private static final Integer DEFAULT_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
 
-  // sentinel representing a missing value under Treat as not matching (AS_NO_MATCH) in a
+  // placeholder representing a missing value under Treat as not matching (AS_NO_MATCH) in a
   // list comparison. The reserved leading-space token will not realistically
   // collide with field data, and toStringList appends the side + a per-null index
   // so every missing value is distinct — a null then matches nothing, not even
@@ -150,7 +150,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   // ─── Actual vs expected display values ────────────────────────────────────
 
   /**
-   * Populates result.actualValue / result.expectedValue from the rows already
+   * Sets result.actualValue / result.expectedValue from the rows already
    * fetched. Called only after the operator returned a determinate boolean, so
    * resolveSingleValue cannot throw here for the OneResult path.
    */
@@ -413,9 +413,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         }
         if (nullBehavior == 'AS_NO_MATCH') {
           // A missing value must match nothing — not even another missing value.
-          // Coercing to '' (the old behavior) let two null fields "match" as
-          // blanks and wrongly satisfy ListsOverlap / ExactListMatch. Emit a
-          // unique, non-data sentinel instead so each null stays distinct.
+          // Converting to '' (the old behavior) let two null fields "match" as
+          // blanks and wrongly satisfy ListsOverlap / ExactListMatch. Write a
+          // unique, non-data placeholder instead so each null stays distinct.
           values.add(MISSING_NO_MATCH_SENTINEL + side + ':' + missingIndex++);
           continue;
         }

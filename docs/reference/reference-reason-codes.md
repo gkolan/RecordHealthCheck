@@ -28,7 +28,7 @@ can disclose Salesforce access information to someone who is not allowed to see 
 administrators still receive the specific cause through Show Diagnostics, where they can distinguish
 a missing record from missing field access without weakening the normal user's security boundary.
 
-Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. Other codes are emitted directly by the engine, evaluators, template service, LWC, or plugins.
+Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. Other codes are returned directly by the engine, evaluators, template service, LWC, or plugins.
 
 ---
 
@@ -37,7 +37,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | Code | Typical status | Meaning |
 | --- | --- | --- |
 | `NOT_APPLICABLE_BY_FORMULA` | `SKIPPED` | Applicability mode `WHEN_FORMULA_TRUE` returned false. |
-| `NOT_APPLICABLE_BY_COUNT` | `SKIPPED` | Applicability count gate was not met. |
+| `NOT_APPLICABLE_BY_COUNT` | `SKIPPED` | Applicability count check was not met. |
 | `PREREQUISITE_NOT_MET` | `SKIPPED` | Prerequisite Rule did not return `PASS`. |
 | `STOPPED_AFTER_ERROR` | `SKIPPED` | Client stopped the remaining checks after a system error. |
 | `CLIENT_CALL_FAILED` | `ERROR` | The browser could not complete the Apex evaluation request. |
@@ -46,7 +46,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `MISSING_TOKEN_VALUE` | `UNABLE_TO_EVALUATE` | A required merge-token value was unavailable. |
 | `CIRCULAR_DEPENDENCY` | `UNABLE_TO_EVALUATE` | Prerequisite cycle detected (LWC may pre-seed without calling Apex). |
 | `DEPENDENCY_NOT_IN_RUN` | `SKIPPED` | LWC-only: prerequisite was omitted by the configured Framework run cap. |
-| `APPLICABILITY_NOT_MET` | `SKIPPED` | Query empty-result path chose skip via `NoRowsResult__c = SKIP` (distinct from applicability gates above). |
+| `APPLICABILITY_NOT_MET` | `SKIPPED` | Query empty-result path chose skip via `NoRowsResult__c = SKIP` (distinct from applicability checks above). |
 | `VALUE_IS_EMPTY` | `SKIPPED` | Row comparison skipped because a compared field value was empty under `EmptyValueHandling__c = SKIP_RECORD`. |
 
 ---
@@ -85,7 +85,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | --- | --- | --- |
 | `INVALID_SOQL_TEMPLATE` | `UNABLE_TO_EVALUATE` | SOQL template failed safety or parse checks. |
 | `INVALID_OPERATOR` | `UNABLE_TO_EVALUATE` | Comparison operator missing or illegal for this Rule shape. |
-| `INCOMPATIBLE_COMPARISON_TYPES` | `UNABLE_TO_EVALUATE` | Ordered comparison cannot coerce the two sides safely. |
+| `INCOMPATIBLE_COMPARISON_TYPES` | `UNABLE_TO_EVALUATE` | Ordered comparison cannot convert the two sides safely. |
 | `MULTIPLE_ROWS_RETURNED` | `UNABLE_TO_EVALUATE` | `ONE_RESULT` expected one row/aggregate but got more. |
 | `NO_ROWS_RETURNED` | `UNABLE_TO_EVALUATE` | Empty result handled as unable (`NoRowsResult__c = UNABLE_TO_EVALUATE`). |
 | `MISSING_BIND_VALUE` | `UNABLE_TO_EVALUATE` | Merge token required for SOQL bind could not be resolved. |
@@ -109,7 +109,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `APEX_CLASS_NOT_FOUND` | `UNABLE_TO_EVALUATE` | `ApexClass__c` could not be resolved to a `RecordHealthCheckRule`. |
 | `INVALID_APEX_PARAMETERS` | `UNABLE_TO_EVALUATE` | `ApexParametersJson__c` is not valid JSON object input. |
 | `APEX_EVALUATOR_ERROR` | `ERROR` / `UNABLE_TO_EVALUATE` | Plugin threw, returned an illegal status, or omitted required Found/Expected on `PASS`/`FAIL`. |
-| `OBJECT_NOT_FOUND` | plugin-defined | Example plugins may emit domain-specific codes such as this. |
+| `OBJECT_NOT_FOUND` | plugin-defined | Example plugins may return domain-specific codes such as this. |
 
 ---
 
@@ -118,7 +118,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | Code | Typical status | Meaning |
 | --- | --- | --- |
 | `LEGACY_FLAT_TOKEN` | `UNABLE_TO_EVALUATE` | Legacy `{!Id\|not available}`-style token rejected under strict namespaced syntax. <!-- legacy-token-ok --> |
-| `UNSUPPORTED_TOKEN_NAMESPACE` | `UNABLE_TO_EVALUATE` | Token namespace is not allowlisted. |
+| `UNSUPPORTED_TOKEN_NAMESPACE` | `UNABLE_TO_EVALUATE` | Token namespace is not on the allowed list. |
 | `UNKNOWN_TOKEN_PROPERTY` | `UNABLE_TO_EVALUATE` | Token property path is not recognized. |
 | `TOKEN_NOT_ALLOWED_ON_SURFACE` | `UNABLE_TO_EVALUATE` | Token used on a message/query surface that forbids it. |
 | `TOKEN_NOT_AVAILABLE_IN_PHASE` | `UNABLE_TO_EVALUATE` | Token requires data not available in this resolution phase. |
@@ -134,7 +134,7 @@ These often appear on the card chrome rather than a single Rule row:
 
 | Code | Meaning |
 | --- | --- |
-| `SETUP_REQUIRED` | No Check Set selected, or availability probe fell back to setup guidance. |
+| `SETUP_REQUIRED` | No Check Set selected, or availability check fell back to setup guidance. |
 | `NO_ACTIVE_CHECK_SETS` | No Check Sets exist for the page object. |
 | `INACTIVE_CHECK_SETS_ONLY` | Check Sets exist but none are active. |
 | `NO_ACTIVE_CHECKS` | Selected Check Set has no active Rules. |
@@ -145,7 +145,7 @@ These often appear on the card chrome rather than a single Rule row:
 ## Consumer guidance
 
 1. Branch automation on `status` first, then `reasonCode`.
-2. Treat unknown future codes as additive: do not reject a code just because you have not seen it before, unless you maintain an intentionally strict allowlist.
+2. Treat unknown future codes as additive: do not reject a code just because you have not seen it before, unless you maintain an intentionally strict allowed list.
 3. Never show diagnostics-only codes to unauthorized users; trust the remapped public `reasonCode`.
 4. Log lines may mention events such as `DEPENDENCY_NOT_PASSED`; that is a **log event name**, not the public Rule `reasonCode` (`PREREQUISITE_NOT_MET` is).
 

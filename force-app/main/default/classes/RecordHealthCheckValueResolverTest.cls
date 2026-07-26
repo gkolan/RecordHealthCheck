@@ -6,7 +6,7 @@
 /**
  * Unit tests for RecordHealthCheckValueResolver. Pure in-memory logic — no DML.
  * Focuses on consolidated behavior the evaluators share: native Date comparison
- * (never coerced to midnight DateTime) and relationship-path extraction with
+ * (never converted to midnight DateTime) and relationship-path extraction with
  * missing-field classification.
  */
 @isTest

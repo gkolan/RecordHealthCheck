@@ -228,7 +228,7 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
   ].filter(Boolean);
 
   // Guided remediation: a read-only deep link and/or fix instructions the server
-  // populates only on FAIL (actionUrl is blank on any other status). Instructions
+  // sets only on FAIL (actionUrl is blank on any other status). Instructions
   // may stand alone when the link was omitted or failed sanitization server-side.
   const actionUrl = isResolved ? safeActionUrl(result.actionUrl) : null;
   const actionLabel = actionUrl ? result.actionLabel || "Fix this" : null;

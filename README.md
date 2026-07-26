@@ -1,9 +1,10 @@
 # Record Health Check
 
 [![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE)
-[![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
+[![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
 [![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
+[![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
 
 > **Make informed decisions before taking action on Salesforce data.**
 >

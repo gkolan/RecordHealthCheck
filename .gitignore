@@ -58,8 +58,10 @@ $RECYCLE.BIN/
 
 # Internal / local-only files — kept on your machine, never published.
 # Remove an entry below if you decide you DO want it in the public repo.
-/docs/development/
+/docs/development/*
+!/docs/development/documentation-standard.md
 /spec/
+/specs/
 /releases/
 .backups/
 tasks/

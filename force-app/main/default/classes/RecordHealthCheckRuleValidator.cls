@@ -6,7 +6,7 @@
 /**
  * Shared rule-validation decision tree for Record Health Check.
  * The per-type query/compare-queries/applicability/formula/apex/MaxRows/empty-value validation
- * lives here once. Producers emit neutral Findings in a single canonical order
+ * lives here once. Producers report neutral Findings in a single official order
  * (= ConfigService's first-fail order). Each caller maps FindingCode to its own
  * output contract:
  * - ConfigService takes findings[0] (first failure) → toResult(...);
@@ -17,7 +17,7 @@
  * - The baseline checks (Label, Run Order, Message When Check Fails, Check Type,
  * Severity, Applicability Mode) stay inline in each caller — divergent ordering
  * granularity (ConfigService combines Label+Priority into one message), and
- * short-circuit semantics (MetadataValidator validates Severity/Message before
+ * return-early semantics (MetadataValidator validates Severity/Message before
  * its terminating bad-Check-Type return).
  * - MaxRows and null/empty-behavior are standalone producers — ConfigService scopes
  * them to Query/CompareTwoQueries; MetadataValidator runs them once at top level
@@ -26,7 +26,7 @@
  */
 public with sharing class RecordHealthCheckRuleValidator {
   // Valid-value sets are owned by RecordHealthCheckConstants so this validator and its two
-  // callers can never drift. Local aliases keep the producers below readable.
+  // callers can never get out of sync. Local aliases keep the producers below readable.
   private static final Set<String> VALID_OPERATORS = RecordHealthCheckConstants.VALID_OPERATORS;
   private static final Set<String> DUAL_QUERY_OPERATORS = RecordHealthCheckConstants.DUAL_QUERY_OPERATORS;
   private static final Set<String> VALID_COMPARISON_VALUE_SOURCES = RecordHealthCheckConstants.VALID_COMPARISON_VALUE_SOURCES;
@@ -44,7 +44,7 @@ public with sharing class RecordHealthCheckRuleValidator {
    * code, message, and (deploy-time only) field name.
    */
   public enum FindingCode {
-    // Applicability gate
+    // Applicability check
     APPLICABILITY_FORMULA_MISSING,
     APPLICABILITY_SOQL_MISSING,
     APPLICABILITY_SOQL_NOT_SINGLE_VALUE,
@@ -130,10 +130,10 @@ public with sharing class RecordHealthCheckRuleValidator {
       maxRows != maxRows.intValue());
   }
 
-  // ─── Applicability gate ───────────────────────────────────────────────────
+  // ─── Applicability check ──────────────────────────────────────────────────
 
   /**
-   * Sub-field validation for the Applicability Mode gate
+   * Sub-field validation for the Applicability Mode check
    * Formula → ApplicabilityFormula__c required
    * SOQL → ApplicabilityCountQuery__c required + single-value COUNT, ApplicabilityCountOperator__c a recognized
    * count operator, ApplicabilityCountThreshold__c present.

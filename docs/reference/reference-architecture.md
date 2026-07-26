@@ -30,7 +30,7 @@ outside that model:
 | Record Health Check | One record on read, per Check Set | Returns `FAIL` at the configured severity, with no transactional effect |
 
 The advisory boundary is what makes administrator-authored formulas and SOQL tolerable in this
-Framework: a malformed Rule degrades to a documented status on one card, while the same input inside
+Framework: a malformed Rule becomes a documented status on one card, while the same input inside
 a Validation Rule or trigger would block saves org-wide.
 
 ## 2. Design principles
@@ -43,7 +43,7 @@ a Validation Rule or trigger would block saves org-wide.
 | 4 | Hard limits by design | Rules per Check Set, query rows, merge tokens, and message size all have fixed maximums |
 | 5 | One source of truth per fact | Allowed values and caps are shared by runtime checks and deploy-time validation |
 | 6 | Stable versioned responses | Integrations key on reason codes and version fields, never on display wording |
-| 7 | Plain language | Public names and messages use Salesforce Setup vocabulary |
+| 7 | Plain language | Public names and messages use Salesforce Setup terms |
 
 ## 3. What ships in the package
 
@@ -53,7 +53,7 @@ a Validation Rule or trigger would block saves org-wide.
 | Apex engine and four evaluators | Formula, Query, Compare two queries, and Apex evaluation |
 | Lightning Web Component | Record-page card, one Apex call per Rule, progressive reveal |
 | Public Apex API and two invocable Flow actions | The same engine for automation and integrations |
-| `Record_Health_Check_Set_Run__e` and `Record_Health_Check_Rule_Result__e` | Opt-in lifecycle events after deliberate runs |
+| `Record_Health_Check_Set_Run__e` and `Record_Health_Check_Rule_Result__e` | Optional lifecycle events after deliberate runs |
 | `Record_Health_Check_Log__e` | `ERROR` detail published through `RecordHealthCheckLogger.flush()` |
 | Two Permission Sets and one Custom Permission | Separate execution access from diagnostics access |
 
@@ -147,7 +147,7 @@ limit exceptions remain uncatchable, as they do for any Apex API.
 6. **Load the record.** The query runs `WITH USER_MODE` and selects only the fields the Rule needs,
    including fields found by walking formula dependencies. No access produces
    `RECORD_NOT_ACCESSIBLE`, not a thrown exception.
-7. **Apply the applicability gate.** `ALL_RECORDS`, `WHEN_FORMULA_TRUE`, or
+7. **Apply the applicability check.** `ALL_RECORDS`, `WHEN_FORMULA_TRUE`, or
    `WHEN_COUNT_QUERY_MATCHES` decides whether this Rule applies to this record right now. A Rule that
    does not apply is `SKIPPED` with the administrator's configured message.
 8. **Route to the evaluator.** Formula, SOQL, Compare two queries, or Apex produces Found, Expected,
@@ -155,7 +155,7 @@ limit exceptions remain uncatchable, as they do for any Apex API.
 9. **Resolve merge tokens in the messages.** A bad token changes how the message is handled, never
    the status.
 10. **Attach the fix link on failure only.** The action URL is token-resolved against the record, then
-    sanitized before it can become a link.
+    cleaned up before it can become a link.
 11. **Log the outcome.** `PASS` and `SKIPPED` log at debug level, `FAIL` at info, and anything else at
     warn, all through the shared logger.
 12. **Apply Check Set flags.** Diagnostics detail is attached only when the Check Set enables it and
@@ -186,7 +186,7 @@ per Rule, at most five calls in flight, so each Rule is its own Apex transaction
 completed event with counts computed from that re-evaluation, not from browser-supplied results.
 
 **Apex and Flow:** `runRule` and `runSet` evaluate in one transaction, defer publication until the
-outermost call returns, then flush buffered `ERROR` log events.
+outermost call returns, then flush held `ERROR` log events.
 
 Evaluation itself is read-only, with `with sharing` classes and `WITH USER_MODE` queries. Publishing
 lifecycle and log platform events is the one intentional write on that path.
@@ -199,7 +199,7 @@ Every Rule returns exactly one status, with a stable reason code where one appli
 | --- | --- |
 | `PASS` | The configured comparison held |
 | `FAIL` | The comparison did not hold, carrying the `FailureSeverity__c` value |
-| `SKIPPED` | The applicability gate excluded the record, or a prerequisite Rule did not pass |
+| `SKIPPED` | The applicability check excluded the record, or a prerequisite Rule did not pass |
 | `UNABLE_TO_EVALUATE` | Configuration, access, or input data prevented a determinate answer |
 | `ERROR` | An unhandled evaluator or platform failure, normalized at the boundary |
 
@@ -246,7 +246,7 @@ Stored field capacities live in [Field limits](reference-fields-limits.md); runt
 | Records per Flow request | 200 | Both invocable actions before dispatch |
 | Merge tokens in one message | 100 | `RecordHealthCheckTemplateService`, returning `TOKEN_LIMIT_EXCEEDED` |
 | Resolved message length | 20,000 characters | `RecordHealthCheckTemplateService`, returning `RESOLVED_TEMPLATE_TOO_LONG` |
-| Fix link length | 2,000 characters | Apex sanitizer, then `healthCheckPresentation` before binding an `href` |
+| Fix link length | 2,000 characters | Apex safe-link handling, then `healthCheckPresentation` before binding an `href` |
 | `FormulaEval` calls per transaction | The platform's 100, minus a safety margin | `RecordHealthCheckFormulaEvaluator`, returning `FORMULA_EVAL_LIMIT` |
 | Evaluate calls in flight from the card | 5 | `healthCheckRunner` queue |
 
@@ -258,7 +258,7 @@ a loop in Flow or batch Apex drive the Framework count to zero while the real co
 ## 11. Validation happens twice
 
 The same allowed values and caps are checked at two different moments, and both read them from
-`RecordHealthCheckConstants` so they cannot drift apart.
+`RecordHealthCheckConstants` so they cannot get out of sync.
 
 | When | Class | What happens on failure |
 | --- | --- | --- |
@@ -270,12 +270,12 @@ The same allowed values and caps are checked at two different moments, and both 
 | Signal | Where it surfaces | Notes |
 | --- | --- | --- |
 | Structured `[RHC]` debug lines | Salesforce debug logs | Every line carries the run id and the running user |
-| `Record_Health_Check_Log__e` | Platform event subscribers and monitoring tools | `ERROR` detail buffered during the run and published by `flush()` |
-| `Record_Health_Check_Set_Run__e` | Platform event subscribers | Published after a deliberate run when the Check Set opts in |
-| `Record_Health_Check_Rule_Result__e` | Platform event subscribers | Published per Rule when that Rule opts in |
+| `Record_Health_Check_Log__e` | Platform event subscribers and monitoring tools | `ERROR` detail held during the run and published by `flush()` |
+| `Record_Health_Check_Set_Run__e` | Platform event subscribers | Published after a deliberate run when the Check Set enables publication |
+| `Record_Health_Check_Rule_Result__e` | Platform event subscribers | Published per Rule when that Rule enables publication |
 | Show Diagnostics on the card | The Lightning record page | Requires the diagnostics Custom Permission |
 
-Publication is opt-in per Check Set and per Rule, limited to deliberate runs, and best effort. Events
+Publication is optional per Check Set and per Rule, limited to deliberate runs, and best effort. Events
 publish in chunks of 100, and a failed publish is logged as a warning rather than failing the run. A
 subscriber cannot cause a loop, because a run happening inside a subscriber context does not publish
 again.
@@ -291,7 +291,7 @@ again.
 
 A custom Apex evaluator receives a `RecordHealthCheckContext` and returns a
 `RecordHealthCheckResult`. It executes inside the engine path, after applicability and prerequisites
-and before merge-token resolution, so it inherits result shaping, diagnostics gating, and error
+and before merge-token resolution, so it inherits result shaping, diagnostics checks, and error
 normalization rather than reimplementing them.
 
 ## 14. Delivery and environments
@@ -307,14 +307,14 @@ Operational consequences:
 - Check Sets and Rules are Custom Metadata, so they deploy between orgs and version control
   alongside the classes they configure.
 - Developer Names are contract identifiers. `PrerequisiteRule__c`, the Apex API, the Flow actions,
-  and the event payloads all reference them, so renaming one is a breaking change.
+  and the event bodies all reference them, so renaming one is a breaking change.
 
 ## 15. Design decisions
 
 | Decision | Rationale |
 | --- | --- |
 | One Rule per Apex call from the card | Isolates each Rule in its own transaction and lets results render as they complete |
-| Counts recomputed server-side in `completeRun` | An event payload a subscriber acts on cannot depend on values supplied by the browser |
+| Counts recomputed server-side in `completeRun` | Event data a subscriber acts on cannot depend on values supplied by the browser |
 | Automatic card loads cannot publish events | Page views would otherwise generate unbounded event volume from no deliberate action |
 | The engine never throws | Every surface consumes one result shape instead of implementing its own exception handling |
 | Allowed values in one constants class | Runtime and deploy-time validation previously duplicated them and could diverge silently |
@@ -335,6 +335,7 @@ Operational consequences:
 ## 17. Class ownership map
 
 Use this when changing code. If a responsibility moves, update this table in the same change.
+For longer per-class descriptions, see [Reference: Apex classes](reference-apex-classes.md).
 
 ### Entry points
 
@@ -344,7 +345,7 @@ Use this when changing code. If a responsibility moves, update this table in the
 | `RecordHealthCheckRunRuleFlowAction` and `RecordHealthCheckRunSetFlowAction` | Packaged Flow actions |
 | `RecordHealthCheckController` | Lightning card: availability, definitions, `evaluateCheck`, `completeRun` |
 | `RecordHealthCheckEngine` | The one-Rule evaluation path |
-| `RecordHealthCheckLifecyclePublisher` | Opt-in Set and Rule platform events |
+| `RecordHealthCheckLifecyclePublisher` | Optional Set and Rule platform events |
 | `RecordHealthCheckRunContext` | Values carried for the duration of one run |
 
 ### Configuration and validation
@@ -385,12 +386,12 @@ Use this when changing code. If a responsibility moves, update this table in the
 
 | Class | Responsibility |
 | --- | --- |
-| `RecordHealthCheckLogger` | `[RHC]` log lines, the `ERROR` buffer, and `flush()` to the log event |
+| `RecordHealthCheckLogger` | `[RHC]` log lines, held `ERROR` entries, and `flush()` to the log event |
 | `RecordHealthCheckAccess` | The diagnostics permission check |
 | `RecordHealthCheckValueSource` | Comparison diagnostic detail |
 | `RecordHealthCheckSetPicklist` | Check Set picker in Lightning App Builder |
 | `RecordHealthCheckResult` and `RecordHealthCheckSetResult` | Apex and Flow responses at contract `1.0` |
-| `RecordHealthCheckDefinition` and `RecordHealthCheckDefinitionResponse` | Definition payload for the Lightning card |
+| `RecordHealthCheckDefinition` and `RecordHealthCheckDefinitionResponse` | Definition response for the Lightning card |
 | `RecordHealthCheckAdminDetail` | Structured diagnostics detail |
 | `RecordHealthCheckContext` and `RecordHealthCheckRule` | Custom Apex evaluator input and interface |
 | `RecordHealthCheckEvaluatorException` | Evaluator failure carrying a reason code |
@@ -402,7 +403,7 @@ One bundle, four modules. Keep them together as one component.
 | Module | Responsibility |
 | --- | --- |
 | `recordHealthCheck` | The component itself: wires, rendering, and user interaction |
-| `healthCheckRunner` | Run lifecycle: prerequisite gating, capped concurrency, progressive reveal |
+| `healthCheckRunner` | Run lifecycle: prerequisite checks, capped concurrency, progressive reveal |
 | `healthCheckModel` | Result normalization, error parsing, run ids, dependency loop detection |
 | `healthCheckPresentation` | Display shaping, summary counts, and link safety |
 
@@ -414,7 +415,8 @@ One bundle, four modules. Keep them together as one component.
 | Evaluation Type contracts | [Formula](reference-formula.md), [Query](reference-query.md), [Compare two queries](reference-compare-two-queries.md), [Apex](reference-apex.md) |
 | Calling surfaces | [Apex API](reference-apex-api.md), [Flow actions](../integration/flow-actions.md), [Lightning component](../integration/lightning-component.md) |
 | Events | [Lifecycle events](../integration/lifecycle-events.md), [Log event](../metadata/event-log.md) |
-| Result vocabulary | [Reason codes](reference-reason-codes.md), [Merge tokens](reference-merge-tokens.md) |
+| Result terms and codes | [Reason codes](reference-reason-codes.md), [Merge tokens](reference-merge-tokens.md) |
+| Class-by-class guide | [Apex classes](reference-apex-classes.md) |
 | Concepts and installation | [How it works](../installation/01-how-it-works.md), [Install and verify](../installation/02-install-and-verify.md), [Upgrading](../installation/04-upgrading.md) |
 
 ## Related

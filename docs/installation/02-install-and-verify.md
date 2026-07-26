@@ -122,4 +122,4 @@ If the card does not appear or a Rule will not evaluate, see
 - [Try the demo](05-create-rhc-scratch-org.md): full scratch-org walkthrough with deterministic Acme data
 - [Examples library](../examples/README.md): adapt another Rule pattern
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): configure every field
-- [How It Works](01-how-it-works.md): learn the result vocabulary
+- [How It Works](01-how-it-works.md): learn the result terms and codes

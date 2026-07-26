@@ -4,7 +4,7 @@
  */
 
 public with sharing class RecordHealthCheckMetadataValidator {
-  // ─── Validation issue DTO ─────────────────────────────────────────────────
+  // ─── Validation issue data holder ─────────────────────────────────────────
 
   public class ValidationIssue {
     public String severity; // ERROR, WARNING
@@ -30,7 +30,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
 
   // Valid-value sets and caps are owned by RecordHealthCheckConstants so this
   // deploy-time validator and RecordHealthCheckConfigService (runtime) can never
-  // drift. Local aliases keep the call sites below readable.
+  // get out of sync. Local aliases keep the call sites below readable.
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps the baseline + Check Set + dependency-graph checks (inline) plus a
   // collect-all adapter (toIssue). The operator/source/null-empty value sets live with
@@ -454,7 +454,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
     }
 
     // MaxRows, empty-value handling, and empty-result behavior are validated for all
-    // check types at top level. Shared producers emit the findings; toIssue maps
+    // check types at top level. Shared producers report the findings; toIssue maps
     // each to this class's reason code / field.
     addIssues(
       issues,
@@ -533,7 +533,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
 
   /**
    * Maps a shared Finding to this deploy-time path's ERROR ValidationIssue (field name, message
-   * reason code). This switch is the ONLY place MetadataValidator's output vocabulary lives — the
+   * reason code). This switch is the ONLY place MetadataValidator's output terms live — the
    * decision tree that produced the finding is shared. Field names / messages / reason codes here
    * are byte-for-byte the originals so packaged metadata still validates clean and the
    * reason-code-membership tests still pass.
@@ -544,7 +544,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   ) {
     String val = finding.offendingValue;
     switch on finding.code {
-      // ── Applicability gate ──
+      // ── Applicability check ──
       when APPLICABILITY_FORMULA_MISSING {
         return err(
           rule,

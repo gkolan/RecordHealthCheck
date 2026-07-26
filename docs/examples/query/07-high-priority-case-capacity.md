@@ -115,7 +115,7 @@ The card turns the aggregate count and upper limit into these user-facing values
 | --- | --- |
 | **`PASS`** | Zero through three visible open high-priority Cases is within the example limit. |
 | **`FAIL`** | Four or more visible open high-priority Cases exceeds the limit and shows Needs attention with Warning severity. |
-| **`SKIPPED`** | Bare `COUNT()` returns zero rather than no rows, and this configuration has no applicability gate or prerequisite, so it does not produce `SKIPPED`. |
+| **`SKIPPED`** | Bare `COUNT()` returns zero rather than no rows, and this configuration has no applicability check or prerequisite, so it does not produce `SKIPPED`. |
 | **Found** | When the user reveals Found and Expected, Found shows the current visible high-priority Case count. |
 | **Expected** | When the user reveals Found and Expected, Expected shows the maximum allowed count: `3`. |
 

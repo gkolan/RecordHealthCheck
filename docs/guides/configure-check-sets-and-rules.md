@@ -184,7 +184,7 @@ grandparent Account's revenue as **Expected**, while the complete Boolean formul
 pass/fail decision.
 
 > [!CAUTION]
-> **Keep Found/Expected consistent with Pass Condition.** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassConditionFormula__c` compares A to B, use A for `DisplayFoundFormula__c` and B for `DisplayExpectedFormula__c`. Otherwise a row can **pass while Found ≠ Expected** or fail while the values look equal. A safe habit: copy each side of the comparison in `PassConditionFormula__c` verbatim into the matching display formula.
+> **Keep Found/Expected consistent with Pass Condition.** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassConditionFormula__c` compares A to B, use A for `DisplayFoundFormula__c` and B for `DisplayExpectedFormula__c`. Otherwise a row can **pass while Found ≠ Expected** or fail while the values look equal. A safe habit: copy each side of the comparison in `PassConditionFormula__c` exactly into the matching display formula.
 
 | Situation | Configuration | Display behavior |
 | --- | --- | --- |
@@ -520,14 +520,14 @@ Automation uses the public `RecordHealthCheck` Apex class or the separate Rule a
 3. LWC coordinates runs (dependencies, concurrent evaluations, display modes, run token).
 4. Apex evaluates each Rule (applicability, dependencies, evaluator routing).
 5. LWC renders results and summaries. Automatic runs publish nothing; explicit Run and Rerun
-   actions publish opted-in Rule events and one opted-in Set completion event.
+   actions publish enabled Rule events and one enabled Set completion event.
 
 **Programmatic flow (Apex / Flow):**
 
 1. Caller invokes `RecordHealthCheck.runRule`, `runSet`, Flow **Run Record Health Check Rule**, or Flow **Run Record Health Check Set**.
 2. The public Apex class enforces call limits and returns `RecordHealthCheckResult` or
    `RecordHealthCheckSetResult` (`contractVersion` `1.0`).
-3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` emits Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
+3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` publishes Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
 
 **Boundaries:**
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** The complete allowlist for product-qualified Framework tokens. */
+/** The complete allowed list for product-qualified Framework tokens. */
 public class RecordHealthCheckTokenRegistry {
   public static final Set<String> NAMESPACES = new Set<String>{
     'record',

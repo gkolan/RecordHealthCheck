@@ -1195,7 +1195,7 @@ private class RecordHealthCheckCoverageTest {
       'SKIPPED'
     );
 
-    // Treat as not matching (AS_NO_MATCH) keeps null values as distinct sentinels (non-empty
+    // Treat as not matching (AS_NO_MATCH) keeps null values as distinct placeholders (non-empty
     // list), so an all-null primary cannot overlap a real comparison value.
     Record_Health_Check_Rule__mdt allNullNoMatch = allNullSkip.clone();
     allNullNoMatch.DeveloperName = 'D_List_All_Null_NoMatch';
@@ -1476,7 +1476,7 @@ private class RecordHealthCheckCoverageTest {
   @IsTest
   static void formulaEvaluatorHonorsDeclaredReturnType() {
     // a declared single-value return type (FormulaResultType__c) resolves
-    // the formula in a single FormulaEval call instead of probing up to eight types.
+    // the formula in a single FormulaEval call instead of trying up to eight types.
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckFormulaEvaluator evaluator = new RecordHealthCheckFormulaEvaluator();
 
@@ -1518,7 +1518,7 @@ private class RecordHealthCheckCoverageTest {
       'Declared Text type should resolve a string formula in one FormulaEval call.'
     );
 
-    // Auto (no declared type) probes multiple types but resolves the same value.
+    // Auto (no declared type) tries multiple types but resolves the same value.
     RecordHealthCheckFormulaEvaluator.formulaEvalCallCount = 0;
     RecordHealthCheckFormulaEvaluator.resolvedReturnTypeByFormula.clear();
     System.assertEquals(
@@ -1530,7 +1530,7 @@ private class RecordHealthCheckCoverageTest {
       'Auto (no declared type) should probe multiple return types.'
     );
 
-    // A mis-declared type ('NUMBER' for a text field) degrades to a full probe
+    // A mis-declared type ('NUMBER' for a text field) falls back to trying all return types
     // and still returns the correct value rather than failing the check.
     RecordHealthCheckFormulaEvaluator.formulaEvalCallCount = 0;
     RecordHealthCheckFormulaEvaluator.resolvedReturnTypeByFormula.clear();
@@ -4140,7 +4140,7 @@ private class RecordHealthCheckCoverageTest {
       'Echoed pass/fail condition carries the "Passes when" key, not "Expected"'
     );
 
-    // An unresolvable Found/Expected formula degrades to the default — it must
+    // An unresolvable Found/Expected formula falls back to the default — it must
     // never throw or change pass/fail.
     Record_Health_Check_Rule__mdt bad = new Record_Health_Check_Rule__mdt(
       EvaluationType__c = 'FORMULA',

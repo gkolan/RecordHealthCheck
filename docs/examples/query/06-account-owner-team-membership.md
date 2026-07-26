@@ -122,7 +122,7 @@ The record formula and Account Team query become these Framework outcomes and ca
 | --- | --- |
 | **`PASS`** | The Account Owner's User ID appears in the visible Account Team Member User IDs. |
 | **`FAIL`** | The visible Account Team is empty or does not include the Owner, so the card shows Needs attention with Warning severity. |
-| **`SKIPPED`** | This configuration has no applicability gate or prerequisite and treats an empty Account Team as `FAIL`, so it does not produce `SKIPPED`. |
+| **`SKIPPED`** | This configuration has no applicability check or prerequisite and treats an empty Account Team as `FAIL`, so it does not produce `SKIPPED`. |
 | **Found** | Found shows the Account Owner ID resolved from the record formula. |
 | **Expected** | Expected represents the visible Account Team User IDs searched for that Owner ID. |
 | **`UNABLE_TO_EVALUATE`** | Missing access to `OwnerId`, `AccountTeamMember`, or `UserId` prevents a reliable comparison. |

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** Best-effort, opt-in lifecycle publication for deliberately initiated runs. */
+/** Best-effort, optional lifecycle publication for deliberately initiated runs. */
 public with sharing class RecordHealthCheckLifecyclePublisher {
   public static final String CONTRACT_VERSION = '1.0';
   public static final String CORE_VERSION = '2.0.0';

@@ -160,7 +160,7 @@ private class RecordHealthCheckDescribeCacheTest {
   }
 
   /**
-   * Same unqualified name, different objects — the collision would also corrupt
+   * Same unqualified name, different objects — the collision would also return the wrong
    * getReferenceTo() used by relationship traversal. Assert each cached describe
    * stays tied to its own field token (do not assume OwnerId's first reference
    * target is identical across objects: Case.OwnerId can include Group/queues).

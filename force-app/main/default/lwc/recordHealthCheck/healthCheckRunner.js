@@ -134,7 +134,7 @@ export class HealthCheckRunner {
    * Builds the recursive task launcher shared by the concurrent and sequential
    * run paths. Each check's promise is memoized in taskMap so a check is only
    * evaluated once even when several dependents point at it; cycle members
-   * short-circuit to an already-resolved promise (their result is pre-seeded).
+   * return early with an already-resolved promise (their result is pre-seeded).
    */
   _makeRunCheck(taskMap, checkMap, cycleNames, token) {
     const runCheck = (check) => {
