@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Account DVF Currency</label>
+    <label>Account DVF Percent</label>
     <protected>false</protected>
     <values>
         <field>Record_Health_Check_Set__c</field>
@@ -12,13 +12,13 @@
     </values>
     <values>
         <field>CheckTitle__c</field>
-        <value xsi:type="xsd:string">Annual Revenue Meets the Minimum</value>
+        <value xsi:type="xsd:string">Open Opportunity Probability Is Set</value>
     </values>
     <values>
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Query Rule with Display: Value Format set to Currency. Found and Expected both render as money instead of two bare numbers. In an org with more than one currency the amount reads in the Account's own currency.</value>
+    >Query Rule with Display: Value Format set to Percent, reading the Probability field on an open opportunity. Both sides of the comparison gain a percent sign.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>
@@ -26,17 +26,17 @@
     </values>
     <values>
         <field>DisplayValueFormat__c</field>
-        <value xsi:type="xsd:string">CURRENCY</value>
+        <value xsi:type="xsd:string">PERCENT</value>
     </values>
     <values>
         <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT AnnualRevenue FROM Account WHERE Id = {!record.Id}</value>
+    >SELECT Probability FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false ORDER BY CloseDate ASC LIMIT 1</value>
     </values>
     <values>
         <field>SourceQueryField__c</field>
-        <value xsi:type="xsd:string">AnnualRevenue</value>
+        <value xsi:type="xsd:string">Probability</value>
     </values>
     <values>
         <field>QueryResultHandling__c</field>
@@ -52,7 +52,7 @@
     </values>
     <values>
         <field>ExpectedFixedValue__c</field>
-        <value xsi:type="xsd:string">50000</value>
+        <value xsi:type="xsd:string">5</value>
     </values>
     <values>
         <field>NoRowsResult__c</field>
@@ -64,23 +64,23 @@
     </values>
     <values>
         <field>FailureSeverity__c</field>
-        <value xsi:type="xsd:string">WARNING</value>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
     <values>
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!record.Name} has annual revenue below the minimum for this segment.</value>
+    >The next opportunity for {!record.Name} has a very low probability.</value>
     </values>
     <values>
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Could not read annual revenue for this account. Contact your administrator.</value>
+    >Could not read the opportunity probability. Contact your administrator.</value>
     </values>
     <values>
         <field>EvaluationOrder__c</field>
-        <value xsi:type="xsd:double">10</value>
+        <value xsi:type="xsd:double">80</value>
     </values>
     <values>
         <field>IsActive__c</field>

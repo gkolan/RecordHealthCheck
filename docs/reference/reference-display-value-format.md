@@ -31,7 +31,7 @@ what every Rule did before this field existed. Name a format and that choice is 
 
 | Format | What it does | Example |
 | --- | --- | --- |
-| Auto | Works the format out from the value's type | see [Auto: Typed values](#auto-typed-values) below |
+| Auto | Works the format out from the field's definition in Setup, then the value's type | a Currency field reads as money; see [Auto: Typed values](#auto-typed-values) |
 | Number | Groups digits for the running user's locale | `2500` → `2,500` |
 | Currency | Money with the currency symbol and its minor units | `70000` → `$70,000.00` |
 | Percent | The number followed by a percent sign | `12.5` → `12.5%` |
@@ -65,7 +65,7 @@ instead, so a display choice can never break a card:
 | Currency | `$70,000` | `$70,000` - not formatted a second time |
 | Checkbox | `Technology` | `Technology` |
 
-Naming Number on a digit string is an opt-in, so `90210` becomes `90,210`. Use Raw for postal codes
+Naming Number on a digit string is a deliberate choice, so `90210` becomes `90,210`. Use Raw for postal codes
 and other codes that must keep their exact spelling.
 
 ## Blank and empty values
@@ -77,9 +77,26 @@ and other codes that must keep their exact spelling.
 
 Values are not wrapped in quotes. The card chip already separates them from surrounding prose.
 
+## Auto: The field's own definition
+
+On **Auto**, a queried field that has a display shape of its own decides the format:
+
+| Field type in Setup | Renders as | Example |
+| --- | --- | --- |
+| Currency | Money | `AnnualRevenue` `70000` → `$70,000.00` |
+| Percent | A percentage | `Probability` `10` → `10%` |
+
+Naming a format on the Rule always wins over the field definition, so Number on a Currency field
+drops the symbol as asked. Field types without a shape of their own - Number, Text, Checkbox, Date,
+Date/Time - fall through to the type rules below.
+
+A value with no single source field behind it, such as `SUM(Amount)`, has no definition to read, so
+it uses the type rules below. Name Currency on the Rule when an aggregate should read as money.
+
 ## Auto: Typed values
 
-On **Auto**, when the Framework still has the Apex type, it formats from that type:
+When there is no field definition to read, and the Framework still has the Apex type, it formats
+from that type:
 
 | Type | Display rule | Example |
 | --- | --- | --- |
@@ -125,20 +142,32 @@ underlying value and the pass or fail outcome are identical.
 
 ## Currency
 
-Currency renders with the running user's currency, which in a single-currency org is the org
-currency:
-
 | Behavior | Detail |
 | --- | --- |
-| Symbol | Used when the Framework has one for that currency, for example `$`, `€`, `£`, `¥`, `₹` |
-| ISO style | A currency with no symbol on file renders as `SAR 70,000.00` |
+| Which currency | The record's own currency when it has one, otherwise the running user's currency |
+| Symbol | Used in a single-currency org, for example `$70,000.00` |
+| ISO style | Used in an org with more than one currency, for example `USD 70,000.00`, and for any currency with no symbol on file such as `SAR 70,000.00` |
 | Minor units | Two decimal places, or none for currencies that have no minor unit such as yen and won |
-| Negative amounts | The minus sign leads: `-$1,250.50` |
+| Negative amounts | The minus sign leads: `-$1,250.50`, or `USD -1,250.50` in ISO style |
 | Rounding | Sub-unit amounts are rounded for display only; the compared value is untouched |
 | No currency available | Falls back to a plain grouped number |
 
-An amount is shown in its own currency rather than converted. Converting values for a comparison is
-a separate concern from writing them on a card.
+An org with more than one currency leads with the ISO code because a bare `$` cannot tell US,
+Australian, and Canadian dollars apart on the same card.
+
+An amount is shown in its own currency rather than converted, so a euro record reads in euros for a
+reader who works in dollars. Converting values for a comparison is a separate concern from writing
+them on a card.
+
+### Which record's currency is used
+
+| Where the value came from | Currency used |
+| --- | --- |
+| A query over the record the card is on | That record's currency |
+| A query whose rows carry `CurrencyIsoCode` | Each row's own currency |
+| A Formula Rule | The record's currency |
+| An aggregate such as `SUM(Amount)` | Salesforce converts an aggregate to the corporate currency, and the chip follows |
+| A query over a different object without `CurrencyIsoCode` | The running user's currency, rather than borrowing an unrelated record's |
 
 ## List previews
 
@@ -171,11 +200,10 @@ Every entry uses the Rule's Display: Value Format, so a list of amounts reads co
 
 | Not yet | What happens today |
 | --- | --- |
-| Reading Currency or Percent from the field's own definition on Auto | Auto renders a Currency field as a plain number; set Display: Value Format to Currency to get money |
-| Per-record `CurrencyIsoCode` in a multi-currency org | Amounts render in the running user's currency |
 | Picklist API values shown as their labels | The stored API value is shown |
-| A different format for Found than for Expected | One format covers both sides |
+| A different format for Found than for Expected | One format covers both sides; use Display Text or a Display Formula per side when they must differ |
 | Percent for ratios such as `0.8` meaning 80% | Percent follows Salesforce Percent field semantics, so `0.8` reads `0.8%` |
+| Format filters inside merge tokens, such as `\|currency` | `\|` already means fallback text in a merge token; use Display: Value Format instead |
 
 ## Related
 

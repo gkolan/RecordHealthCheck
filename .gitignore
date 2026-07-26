@@ -7,7 +7,10 @@
 .sfdx/
 .localdevserver/
 deploy-options.json
-/config/
+/config/*
+# Scratch-org definitions the published setup scripts depend on.
+!/config/project-scratch-def.json
+!/config/display-formats-scratch-def.json
 .claude/
 /CLAUDE.md
 .playwright-mcp/
@@ -117,6 +120,8 @@ scripts/*
 !scripts/release/**
 # Reproducible demo scratch-org provisioning (see docs/installation/05-*).
 !scripts/setup-demo.sh
+# Display: Value Format coverage org (see docs/reference/reference-display-value-format.md).
+!scripts/setup-display-formats.sh
 # Exception: the metadata validator is a release-gate dependency referenced by
 # .github/workflows/salesforce-validate.yml and the V2 upgrade docs, so it must
 # be tracked. Everything else under scripts/ stays local.
@@ -127,6 +132,8 @@ scripts/apex/*
 !scripts/apex/setupDemoUser.apex
 !scripts/apex/deactivateDemoUser.apex
 !scripts/apex/verifyDemo.apex
+!scripts/apex/setupDisplayFormatData.apex
+!scripts/apex/verifyDisplayFormats.apex
 !scripts/demo/
 !scripts/demo/**
 

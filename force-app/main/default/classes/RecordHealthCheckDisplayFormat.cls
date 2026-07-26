@@ -6,10 +6,11 @@
 /**
  * Renders Found and Expected values as display text for the card chips.
  *
- * Two layers decide the wording. When a Rule leaves Display: Value Format on
- * "Auto", values are humanized from their Apex type — the long-standing
- * behavior. When a Rule names a format (Currency, Number, Percent, …), that
- * choice wins and the value is rendered that way instead.
+ * Three things decide the wording, in order. A format the Rule names (Currency,
+ * Number, Percent, …) always wins. Otherwise, on "Auto", a queried field whose
+ * Setup definition has a display shape of its own decides — a Currency field
+ * reads as money. Failing both, the value is humanized from its Apex type, the
+ * long-standing behavior.
  *
  * Formatting is display only: RecordHealthCheckComparisonEngine decides pass
  * and fail from the raw typed values, never from these strings. When a named
@@ -35,7 +36,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
 
   /**
    * Every format the Rule field accepts. A value outside this set is treated as
-   * "Auto" so a future picklist entry degrades to today's behavior instead of
+   * "Auto" so a future picklist entry falls back to today's behavior instead of
    * breaking a card. The restricted picklist blocks unknown values at deploy
    * time; this set is the runtime backstop.
    */
@@ -51,7 +52,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
     FORMAT_RAW
   };
 
-  public static final String BLANK_SENTINEL = '(blank)';
+  public static final String BLANK_TEXT = '(blank)';
 
   // ─── Value shapes ─────────────────────────────────────────────────────────
 
@@ -126,16 +127,28 @@ public with sharing class RecordHealthCheckDisplayFormat {
   // ─── Entry point ──────────────────────────────────────────────────────────
 
   /**
+   * Renders one value using the Rule's chosen format, in the running user's
+   * currency when the format is Currency.
+   */
+  public static String render(Object value, String format) {
+    return render(value, format, null);
+  }
+
+  /**
    * Renders one value using the Rule's chosen format. A null or whitespace-only
    * value always reads "(blank)", including under Raw, so an empty chip is never
    * silently blank on the card.
+   *
+   * `isoCode` names the currency an amount belongs to, for a Currency Rule in a
+   * multi-currency org. Leave it blank to use the running user's currency; it is
+   * ignored by every other format.
    */
-  public static String render(Object value, String format) {
+  public static String render(Object value, String format, String isoCode) {
     if (value == null) {
-      return BLANK_SENTINEL;
+      return BLANK_TEXT;
     }
 
-    String chosen = normalize(format);
+    String chosen = resolveFormat(format);
 
     if (chosen == FORMAT_RAW || chosen == FORMAT_TEXT) {
       return unchanged(value);
@@ -146,7 +159,9 @@ public with sharing class RecordHealthCheckDisplayFormat {
     }
     if (chosen == FORMAT_CURRENCY) {
       Decimal amount = toDisplayDecimal(value);
-      return amount == null ? unchanged(value) : renderCurrency(amount);
+      return amount == null
+        ? unchanged(value)
+        : renderCurrency(amount, resolveIsoCode(isoCode));
     }
     if (chosen == FORMAT_PERCENT) {
       Decimal amount = toDisplayDecimal(value);
@@ -165,12 +180,12 @@ public with sharing class RecordHealthCheckDisplayFormat {
       return asDatetime == null ? unchanged(value) : asDatetime;
     }
 
-    // FORMAT_AUTO, and anything normalize sent here in its place.
+    // FORMAT_AUTO, and anything resolveFormat sent here in its place.
     return renderAuto(value);
   }
 
   /** Blank Display: Value Format, or a value this release does not know, is "Auto". */
-  private static String normalize(String format) {
+  private static String resolveFormat(String format) {
     if (String.isBlank(format)) {
       return FORMAT_AUTO;
     }
@@ -185,7 +200,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
    */
   private static String unchanged(Object value) {
     String s = String.valueOf(value);
-    return (s == null || s.trim() == '') ? BLANK_SENTINEL : s;
+    return (s == null || s.trim() == '') ? BLANK_TEXT : s;
   }
 
   // ─── Auto ─────────────────────────────────────────────────────────────────
@@ -214,16 +229,16 @@ public with sharing class RecordHealthCheckDisplayFormat {
 
     String s = String.valueOf(value);
     if (s == null || s.trim() == '') {
-      return BLANK_SENTINEL;
+      return BLANK_TEXT;
     }
 
     String asBoolean = renderBooleanText(s);
     if (asBoolean != null) {
       return asBoolean;
     }
-    String asTemporal = renderTemporalText(s);
-    if (asTemporal != null) {
-      return asTemporal;
+    String asDateOrTime = renderDateOrTimeText(s);
+    if (asDateOrTime != null) {
+      return asDateOrTime;
     }
     String asMultiSelect = renderMultiSelect(s);
     return asMultiSelect == null ? s : asMultiSelect;
@@ -237,7 +252,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
    * user and "70.000" for a German one. A real fraction keeps its digits.
    */
   private static String renderNumber(Decimal amount) {
-    return amount.setScale(significantScale(amount)).format();
+    return amount.setScale(decimalPlacesToShow(amount)).format();
   }
 
   /**
@@ -272,12 +287,12 @@ public with sharing class RecordHealthCheckDisplayFormat {
    * assumed — a period for English (US), a comma for German (Germany).
    */
   private static String localeDecimalMark() {
-    String probe = Decimal.valueOf('1.5').format();
-    return probe.length() >= 2 ? probe.substring(1, 2) : '.';
+    String sample = Decimal.valueOf('1.5').format();
+    return sample.length() >= 2 ? sample.substring(1, 2) : '.';
   }
 
   /** Decimal places left once trailing zeros are dropped. */
-  private static Integer significantScale(Decimal amount) {
+  private static Integer decimalPlacesToShow(Decimal amount) {
     String plain = amount.toPlainString();
     Integer dot = plain.indexOf('.');
     if (dot < 0) {
@@ -324,27 +339,145 @@ public with sharing class RecordHealthCheckDisplayFormat {
   // ─── Currency ─────────────────────────────────────────────────────────────
 
   /**
-   * Money in the running user's currency, which in a single-currency org is the
-   * org currency.
+   * The format that suits a field, worked out from how the field is defined in
+   * Setup. A Currency field reads as money and a Percent field gains a percent
+   * sign without the author naming a format. Returns null for field types that
+   * Auto already handles well, so the caller leaves the format alone.
+   *
+   * Only the field types with a display shape of their own are mapped here.
+   * Numbers, text, checkboxes, dates, and date/times keep their long-standing
+   * Auto wording, which already reads correctly from the Apex type.
    */
-  private static String renderCurrency(Decimal amount) {
-    return renderCurrency(amount, UserInfo.getDefaultCurrency());
+  public static String formatForField(Schema.DescribeFieldResult field) {
+    if (field == null) {
+      return null;
+    }
+    Schema.DisplayType fieldType = field.getType();
+    if (fieldType == Schema.DisplayType.CURRENCY) {
+      return FORMAT_CURRENCY;
+    }
+    if (fieldType == Schema.DisplayType.PERCENT) {
+      return FORMAT_PERCENT;
+    }
+    return null;
   }
 
   /**
-   * Money in a named currency: the symbol when one is on file, otherwise the ISO
-   * code, and the minor units that currency actually uses — two places for US
-   * dollars, none for yen. An amount with no currency to render in falls back to
-   * a plain number rather than guessing a symbol.
+   * The format to write a queried value with: the one the author named, or when
+   * they left Display: Value Format on Auto, the one the field's own definition
+   * suggests. A Currency field therefore reads as money with no Rule change.
    *
-   * The currency is a parameter rather than read inline so an amount can be
-   * shown in the currency it belongs to. Every caller passes the running user's
-   * currency today; a value that carries its own CurrencyIsoCode can pass that
-   * instead without reworking the renderer.
+   * An author who named a format always wins — the field definition only fills
+   * in for Auto.
+   */
+  public static String formatForRow(
+    String authorFormat,
+    SObject row,
+    String fieldPath
+  ) {
+    if (resolveFormat(authorFormat) != FORMAT_AUTO) {
+      return authorFormat;
+    }
+    String fromField = formatForField(describeQueryField(row, fieldPath));
+    return fromField == null ? authorFormat : fromField;
+  }
+
+  /**
+   * The Setup definition of the field a query read, or null when there is none
+   * to describe: an aggregate result has no single source field, and a field
+   * path that does not resolve is left alone rather than guessed at.
+   */
+  private static Schema.DescribeFieldResult describeQueryField(
+    SObject row,
+    String fieldPath
+  ) {
+    if (
+      row == null ||
+      String.isBlank(fieldPath) ||
+      row instanceof AggregateResult
+    ) {
+      return null;
+    }
+    SObject current = row;
+    List<String> parts = fieldPath.trim().split('\\.');
+    // Walk any relationship steps so "Account.AnnualRevenue" describes the field
+    // on Account, not a same-named field on the row's own object.
+    for (Integer i = 0; i < parts.size() - 1; i++) {
+      try {
+        current = current.getSObject(parts[i]);
+      } catch (System.SObjectException ex) {
+        return null;
+      }
+      if (current == null) {
+        return null;
+      }
+    }
+    Schema.SObjectField token = RecordHealthCheckDescribeCache.fieldMap(
+        current.getSObjectType()
+      )
+      .get(parts[parts.size() - 1]);
+    return RecordHealthCheckDescribeCache.describeField(token);
+  }
+
+  /**
+   * The currency a row's amounts belong to, for an org with more than one
+   * currency. Returns null in a single-currency org, and for rows that do not
+   * carry CurrencyIsoCode — an aggregate result, or a query that did not select
+   * it — so the caller falls back to the running user's currency.
+   *
+   * Reading the row rather than the running user keeps an amount in its own
+   * currency: a card should not relabel an amount in euros as dollars because
+   * the person looking at it works in dollars.
+   */
+  public static String currencyIsoCodeFrom(SObject row) {
+    if (row == null || !isMultiCurrencyOrg()) {
+      return null;
+    }
+    try {
+      Object iso = row.get('CurrencyIsoCode');
+      return iso == null ? null : String.valueOf(iso);
+    } catch (System.SObjectException ex) {
+      // The row did not select CurrencyIsoCode, or has no such field.
+      return null;
+    }
+  }
+
+  /**
+   * The currency an amount should be shown in: the one the record carries when
+   * the Rule supplied it, otherwise the running user's currency. In a
+   * single-currency org the user's currency is the org currency.
+   */
+  private static String resolveIsoCode(String isoCode) {
+    return String.isBlank(isoCode) ? UserInfo.getDefaultCurrency() : isoCode;
+  }
+
+  /**
+   * Whether this org has more than one currency. Read once per transaction
+   * because it cannot change while a card is running.
+   */
+  private static Boolean multiCurrency;
+
+  private static Boolean isMultiCurrencyOrg() {
+    if (multiCurrency == null) {
+      multiCurrency = UserInfo.isMultiCurrencyOrganization();
+    }
+    return multiCurrency;
+  }
+
+  /**
+   * Money in a named currency, using the minor units that currency actually
+   * uses — two places for US dollars, none for yen. An amount with no currency
+   * to show it in falls back to a plain number rather than guessing a symbol.
+   *
+   * In an org with more than one currency the ISO code leads ("USD 70,000.00"),
+   * because a bare symbol cannot tell US, Australian, and Canadian dollars
+   * apart on the same card. An org with a single currency has no such ambiguity,
+   * so the symbol reads better there ("$70,000.00"). A currency with no symbol
+   * on file always uses the ISO code.
    */
   public static String renderCurrency(Decimal amount, String isoCode) {
     if (amount == null) {
-      return BLANK_SENTINEL;
+      return BLANK_TEXT;
     }
     String iso = isoCode;
     if (String.isBlank(iso)) {
@@ -356,8 +489,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
     String rendered = renderFixedScale(amount, places);
 
     String symbol = CURRENCY_SYMBOLS.get(iso);
-    if (symbol == null) {
-      // No symbol on file — ISO style reads unambiguously ("SAR 70,000.00").
+    if (symbol == null || isMultiCurrencyOrg()) {
       return iso + ' ' + rendered;
     }
     // Keep the minus sign ahead of the symbol: "-$70,000.00".
@@ -428,7 +560,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
   }
 
   /** ISO date or datetime text in the running user's locale; null for other text. */
-  private static String renderTemporalText(String raw) {
+  private static String renderDateOrTimeText(String raw) {
     Datetime asDatetime = parseDatetime(raw);
     if (asDatetime != null) {
       return asDatetime.format();
@@ -438,7 +570,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
   }
 
   // Callers reach these parsers only with a non-null string: render returns the
-  // blank sentinel before any parsing, and String.valueOf of a non-null value is
+  // blank placeholder before any parsing, and String.valueOf of a non-null value is
   // never null.
   private static Datetime parseDatetime(String raw) {
     Matcher m = DATETIME_PATTERN.matcher(raw.trim());
@@ -505,7 +637,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
     Object found,
     String format
   ) {
-    if (normalize(format) != FORMAT_AUTO) {
+    if (resolveFormat(format) != FORMAT_AUTO) {
       return comparison;
     }
     if (!isNumeric(found) || !(comparison instanceof String)) {

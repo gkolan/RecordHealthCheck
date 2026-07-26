@@ -85,6 +85,9 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
     // ── Resolve primary value / list ──────────────────────────────────────
     Object primaryValue = null;
     List<Object> primaryList = null;
+    // Kept for the display step: the row tells the formatter how the queried
+    // field is defined in Setup, and which currency the row's amounts are in.
+    SObject primaryRow = null;
 
     if (isListOperator) {
       // List-membership mode: primary side comes from FindInListFormula__c.
@@ -117,11 +120,13 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
             'OneResult check returned ' + rows.size() + ' rows.'
           );
         } else {
+          primaryRow = rows[0];
           primaryValue = readQueryFieldValue(rows[0], rule.SourceQueryField__c);
         }
       } else {
         // AnyRowPasses, AllRowsPass, CompareAsLists
         primaryList = resolveFieldList(rows, rule.SourceQueryField__c);
+        primaryRow = rows.isEmpty() ? null : rows[0];
       }
     }
 
@@ -238,6 +243,31 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         : buildNullIndeterminateResult(result);
     }
 
+    // How the queried field is defined in Setup fills in the format when the
+    // author left Display: Value Format on Auto, and the row names the currency
+    // its amounts are in.
+    String displayFormat = RecordHealthCheckDisplayFormat.formatForRow(
+      rule.DisplayValueFormat__c,
+      primaryRow,
+      rule.SourceQueryField__c
+    );
+    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+      primaryRow
+    );
+    if (
+      String.isBlank(displayIsoCode) &&
+      primaryRow != null &&
+      record != null &&
+      primaryRow.getSObjectType() == record.getSObjectType()
+    ) {
+      // The query read the same record the card is on, so that record's currency
+      // is this amount's currency. A query over a different object is left on the
+      // running user's currency instead of borrowing an unrelated one.
+      displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+        record
+      );
+    }
+
     // Capture what the record produced vs what the rule required so the UI can
     // show the comparison on a non-passing row.
     if (primaryList != null && rule.QueryResultHandling__c == 'ALL_ROWS_PASS') {
@@ -269,31 +299,36 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
             rule.ComparisonOperator__c,
             comparisonValue,
             firstDisplayValue(primaryValue, primaryList),
-            rule.DisplayValueFormat__c
+            displayFormat,
+            displayIsoCode
           );
     } else {
       String rawActualValue = primaryList != null
         ? RecordHealthCheckComparisonEngine.formatList(
             primaryList,
-            rule.DisplayValueFormat__c
+            displayFormat,
+            displayIsoCode
           )
         : RecordHealthCheckComparisonEngine.formatValue(
             primaryValue,
-            rule.DisplayValueFormat__c
+            displayFormat,
+            displayIsoCode
           );
       String rawExpectedValue;
       if (isListOperator) {
         rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
           rule.ComparisonOperator__c,
           comparisonList,
-          rule.DisplayValueFormat__c
+          displayFormat,
+          displayIsoCode
         );
       } else {
         rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpectedForActual(
           rule.ComparisonOperator__c,
           comparisonValue,
           firstDisplayValue(primaryValue, primaryList),
-          rule.DisplayValueFormat__c
+          displayFormat,
+          displayIsoCode
         );
       }
       result.actualValue = String.isNotBlank(rule.DisplayFoundText__c)

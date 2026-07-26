@@ -159,6 +159,12 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     SObject record,
     RecordHealthCheckResult result
   ) {
+    // A formula result carries no field definition, so Auto stays as the author
+    // left it. The record still names the currency for a Currency Rule.
+    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+      record
+    );
+
     if (String.isNotBlank(rule.DisplayFoundFormula__c)) {
       Object found = resolveSingleValueForDisplay(
         rule.DisplayFoundFormula__c,
@@ -168,7 +174,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       if (found != ABSENT) {
         result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
           found,
-          rule.DisplayValueFormat__c
+          rule.DisplayValueFormat__c,
+          displayIsoCode
         );
         result.actualValueSource = new RecordHealthCheckValueSource.Detail(
           'Found formula',
@@ -187,7 +194,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       if (expected != ABSENT) {
         result.expectedValue = RecordHealthCheckComparisonEngine.formatValue(
           expected,
-          rule.DisplayValueFormat__c
+          rule.DisplayValueFormat__c,
+          displayIsoCode
         );
         result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
           'Expected formula',

@@ -11,7 +11,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   // collide with field data, and toStringList appends the side + a per-null index
   // so every missing value is distinct — a null then matches nothing, not even
   // another null. See toStringList.
-  private static final String MISSING_NO_MATCH_SENTINEL = ' __rhc_missing__:';
+  private static final String MISSING_NO_MATCH_PLACEHOLDER = ' __rhc_missing__:';
 
   // Delegate token binding and query execution to the existing SOQL evaluator
   private RecordHealthCheckSoqlEvaluator soqlEvaluator = new RecordHealthCheckSoqlEvaluator();
@@ -162,6 +162,19 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     List<SObject> comparisonRows,
     String mode
   ) {
+    // The primary row decides the format when the author left Display: Value
+    // Format on Auto, and names the currency its amounts are in. Both sides use
+    // that one choice so the two chips read in the same units.
+    SObject primaryRow = primaryRows.isEmpty() ? null : primaryRows[0];
+    String displayFormat = RecordHealthCheckDisplayFormat.formatForRow(
+      rule.DisplayValueFormat__c,
+      primaryRow,
+      rule.SourceQueryField__c
+    );
+    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+      primaryRow
+    );
+
     if (mode == 'ONE_RESULT') {
       Object primaryValue = resolveSingleValue(
         primaryRows,
@@ -175,12 +188,14 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
       );
       result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
         primaryValue,
-        rule.DisplayValueFormat__c
+        displayFormat,
+        displayIsoCode
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpected(
         rule.ComparisonOperator__c,
         comparisonValue,
-        rule.DisplayValueFormat__c
+        displayFormat,
+        displayIsoCode
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
@@ -204,12 +219,14 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
       );
       result.actualValue = RecordHealthCheckComparisonEngine.formatList(
         primaryList,
-        rule.DisplayValueFormat__c
+        displayFormat,
+        displayIsoCode
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
         rule.ComparisonOperator__c,
         comparisonList,
-        rule.DisplayValueFormat__c
+        displayFormat,
+        displayIsoCode
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
@@ -420,7 +437,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
           // Converting to '' (the old behavior) let two null fields "match" as
           // blanks and wrongly satisfy ListsOverlap / ExactListMatch. Write a
           // unique, non-data placeholder instead so each null stays distinct.
-          values.add(MISSING_NO_MATCH_SENTINEL + side + ':' + missingIndex++);
+          values.add(
+            MISSING_NO_MATCH_PLACEHOLDER + side + ':' + missingIndex++
+          );
           continue;
         }
         // TreatMissingAsBlank and the CMT blank default treat a missing value as

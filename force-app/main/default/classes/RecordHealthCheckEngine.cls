@@ -950,6 +950,19 @@ public with sharing class RecordHealthCheckEngine {
       addFormulaFields(fields, objectType, rule.ApplicabilityFormula__c);
     }
 
+    // In an org with more than one currency, an amount is shown in the record's
+    // own currency, so the record has to carry it. Asked for whatever the Rule's
+    // Display: Value Format says, because Auto may still resolve to Currency
+    // from the field's own definition. One standard field on a query that
+    // already selects the Rule's fields.
+    if (
+      UserInfo.isMultiCurrencyOrganization() &&
+      RecordHealthCheckDescribeCache.fieldMap(objectType)
+        .containsKey('currencyisocode')
+    ) {
+      fields.add('CurrencyIsoCode');
+    }
+
     return fields;
   }
 

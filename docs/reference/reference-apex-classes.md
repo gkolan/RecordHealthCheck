@@ -662,8 +662,10 @@ values, so no format can move a check between pass and fail.
 
 | Member | Purpose |
 | --- | --- |
-| `render(value, format)` | One value rendered for the chosen format |
+| `render(value, format, isoCode)` | One value rendered for the chosen format and currency |
 | `renderCurrency(amount, isoCode)` | Money in a named currency |
+| `formatForField(...)` / `formatForRow(...)` | The format a field's Setup definition suggests, used when the Rule is on Auto |
+| `currencyIsoCodeFrom(row)` | The currency a row's amounts belong to, in an org with more than one |
 | `alignExpectedToFound(...)` | Keeps a fixed text operand in the same units as a numeric Found value |
 | `FORMAT_*` constants | The `DisplayValueFormat__c` API values |
 
@@ -674,6 +676,9 @@ values, so no format can move a check between pass and fail.
  than raising an error - `Currency` on a Salesforce Id stays the Id.
 - A `Date` is tested before a `Datetime` everywhere, because Apex reports a `Date` as an instance of
  `Datetime`; checking the other way round would shift a date by the user's time-zone offset.
+- An org with more than one currency renders ISO-first (`USD 70,000.00`); a single-currency org uses
+ the symbol. `RecordHealthCheckEngine` loads `CurrencyIsoCode` on the record in a multi-currency org
+ so an amount can be shown in the currency its own record uses.
 - Full contract: [Reference: Display value format](reference-display-value-format.md).
 
 ### `RecordHealthCheckSoqlTemplate`

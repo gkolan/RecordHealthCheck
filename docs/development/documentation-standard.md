@@ -130,7 +130,7 @@ metadata, user-facing runtime messages, API identifiers, or method names.
 | --- | --- |
 | Setup **labels**, picklist labels, and shipped field **Description** / help text | Admins see these in Salesforce; changing them is a product change |
 | User-facing messages (for example “Formula checks require Formula to be populated.”) | Runtime / validator copy |
-| Code identifiers (`emit`, `coercionLabel`, `MISSING_NO_MATCH_SENTINEL`, `flush`, …) | Renaming breaks callers and tests |
+| Code identifiers already in the codebase (`emit`, `coercionLabel`, `populateRequiredFields`, `flush`, …) | Renaming breaks callers and tests. This protects names that already exist; it is not licence to coin new jargon. Give a new identifier a plain name from the start. |
 | Salesforce platform terms (**Invocable**, `@AuraEnabled`, `WITH USER_MODE`, Platform Event, Custom Metadata, Developer Name, App Builder, FormulaEval, …) | Official product vocabulary |
 | Admin English **“populated”** meaning a field **has a value** (for example “Billing City is populated”) | Ordinary Salesforce Setup language, not “fill a DTO” |
 | Literal configuration example strings (for example `"City, State, and Country populated"`) | Must match what admins paste into Setup |

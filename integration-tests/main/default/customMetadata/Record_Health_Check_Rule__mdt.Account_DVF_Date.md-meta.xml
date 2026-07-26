@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Account DVF Currency</label>
+    <label>Account DVF Date</label>
     <protected>false</protected>
     <values>
         <field>Record_Health_Check_Set__c</field>
@@ -12,13 +12,13 @@
     </values>
     <values>
         <field>CheckTitle__c</field>
-        <value xsi:type="xsd:string">Annual Revenue Meets the Minimum</value>
+        <value xsi:type="xsd:string">Next Opportunity Has a Close Date</value>
     </values>
     <values>
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Query Rule with Display: Value Format set to Currency. Found and Expected both render as money instead of two bare numbers. In an org with more than one currency the amount reads in the Account's own currency.</value>
+    >Query Rule with Display: Value Format set to Date. The close date renders in the running user locale date format.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>
@@ -26,17 +26,17 @@
     </values>
     <values>
         <field>DisplayValueFormat__c</field>
-        <value xsi:type="xsd:string">CURRENCY</value>
+        <value xsi:type="xsd:string">DATE</value>
     </values>
     <values>
         <field>SourceQuery__c</field>
         <value
       xsi:type="xsd:string"
-    >SELECT AnnualRevenue FROM Account WHERE Id = {!record.Id}</value>
+    >SELECT CloseDate FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false ORDER BY CloseDate ASC LIMIT 1</value>
     </values>
     <values>
         <field>SourceQueryField__c</field>
-        <value xsi:type="xsd:string">AnnualRevenue</value>
+        <value xsi:type="xsd:string">CloseDate</value>
     </values>
     <values>
         <field>QueryResultHandling__c</field>
@@ -44,15 +44,7 @@
     </values>
     <values>
         <field>ComparisonOperator__c</field>
-        <value xsi:type="xsd:string">GREATER_THAN_OR_EQUAL</value>
-    </values>
-    <values>
-        <field>ExpectedValueSource__c</field>
-        <value xsi:type="xsd:string">FIXED_VALUE</value>
-    </values>
-    <values>
-        <field>ExpectedFixedValue__c</field>
-        <value xsi:type="xsd:string">50000</value>
+        <value xsi:type="xsd:string">IS_NOT_BLANK</value>
     </values>
     <values>
         <field>NoRowsResult__c</field>
@@ -60,27 +52,27 @@
     </values>
     <values>
         <field>EmptyValueHandling__c</field>
-        <value xsi:type="xsd:string">SKIP_RECORD</value>
+        <value xsi:type="xsd:string">AS_NO_MATCH</value>
     </values>
     <values>
         <field>FailureSeverity__c</field>
-        <value xsi:type="xsd:string">WARNING</value>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
     <values>
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!record.Name} has annual revenue below the minimum for this segment.</value>
+    >The next opportunity for {!record.Name} has no close date.</value>
     </values>
     <values>
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Could not read annual revenue for this account. Contact your administrator.</value>
+    >Could not read the opportunity close date. Contact your administrator.</value>
     </values>
     <values>
         <field>EvaluationOrder__c</field>
-        <value xsi:type="xsd:double">10</value>
+        <value xsi:type="xsd:double">100</value>
     </values>
     <values>
         <field>IsActive__c</field>

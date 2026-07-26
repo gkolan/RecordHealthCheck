@@ -24,6 +24,10 @@ metadata into the target org.
 ## Contents (high level)
 
 - Fixture Check Sets and Rules (not `Example_`-prefixed product samples)
+- `Account_Display_Formats`: one Check Set whose Rules cover every **Display: Value Format**
+  option across Query, Formula, and Compare two queries. Set it up with
+  `./scripts/setup-display-formats.sh`, which creates a scratch org, seeds the Account and
+  Opportunity the Rules read, and prints every Found and Expected chip.
 - `RHC_Event_Export__c` helper object for lifecycle-event export smoke tests
 - Platform-event triggers used only in CI orgs
 - Apex classes that exercise the Framework against those fixtures

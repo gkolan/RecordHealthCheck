@@ -174,8 +174,14 @@ private class RecordHealthCheckCoverageThresholdTest {
       'INVALID_SOQL_TEMPLATE',
       engine.checkSoqlApplicability(rule, new Account(Name = 'Test')).reasonCode
     );
+    // An org with more than one currency also loads CurrencyIsoCode, so a
+    // Currency value can be shown in the currency its own record uses.
+    Set<String> expectedRecordFields = new Set<String>{ 'Id' };
+    if (UserInfo.isMultiCurrencyOrganization()) {
+      expectedRecordFields.add('CurrencyIsoCode');
+    }
     System.assertEquals(
-      new Set<String>{ 'Id' },
+      expectedRecordFields,
       engine.collectRecordFields(
         new Record_Health_Check_Rule__mdt(EvaluationType__c = 'FORMULA'),
         Account.SObjectType

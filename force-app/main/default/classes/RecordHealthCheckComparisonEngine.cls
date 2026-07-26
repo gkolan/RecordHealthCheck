@@ -369,7 +369,20 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * rendering rules live in RecordHealthCheckDisplayFormat.
    */
   public static String formatValue(Object value, String displayFormat) {
-    return RecordHealthCheckDisplayFormat.render(value, displayFormat);
+    return formatValue(value, displayFormat, null);
+  }
+
+  /**
+   * Renders a single value using the Rule's Display: Value Format, showing a
+   * Currency value in the currency named by `isoCode`. Leave `isoCode` blank to
+   * use the running user's currency.
+   */
+  public static String formatValue(
+    Object value,
+    String displayFormat,
+    String isoCode
+  ) {
+    return RecordHealthCheckDisplayFormat.render(value, displayFormat, isoCode);
   }
 
   /** Renders a list for display, capped so a large query result stays readable. */
@@ -377,17 +390,25 @@ public with sharing class RecordHealthCheckComparisonEngine {
     return formatList(values, null);
   }
 
+  public static String formatList(List<Object> values, String displayFormat) {
+    return formatList(values, displayFormat, null);
+  }
+
   /**
    * Renders a list using the Rule's Display: Value Format, capped so a large
    * query result stays readable. Every entry uses the same format, so a list of
    * amounts reads consistently.
    */
-  public static String formatList(List<Object> values, String displayFormat) {
+  public static String formatList(
+    List<Object> values,
+    String displayFormat,
+    String isoCode
+  ) {
     if (values == null || values.isEmpty())
       return '(none)';
     List<String> parts = new List<String>();
     for (Integer i = 0; i < values.size() && i < LIST_PREVIEW_CAP; i++) {
-      parts.add(formatValue(values[i], displayFormat));
+      parts.add(formatValue(values[i], displayFormat, isoCode));
     }
     String joined = '[' + String.join(parts, ', ');
     if (values.size() > LIST_PREVIEW_CAP) {
@@ -402,18 +423,27 @@ public with sharing class RecordHealthCheckComparisonEngine {
     return describeExpected(operator, comparison, null);
   }
 
-  /** Expected-value description using the Rule's Display: Value Format. */
   public static String describeExpected(
     String operator,
     Object comparison,
     String displayFormat
+  ) {
+    return describeExpected(operator, comparison, displayFormat, null);
+  }
+
+  /** Expected-value description using the Rule's Display: Value Format. */
+  public static String describeExpected(
+    String operator,
+    Object comparison,
+    String displayFormat,
+    String isoCode
   ) {
     if (operator == 'IS_BLANK' || operator == 'IS_NOT_BLANK') {
       return operatorLabel(operator);
     }
     return operatorLabel(operator) +
       ' ' +
-      formatValue(comparison, displayFormat);
+      formatValue(comparison, displayFormat, isoCode);
   }
 
   public static String describeExpectedForActual(
@@ -438,12 +468,33 @@ public with sharing class RecordHealthCheckComparisonEngine {
     Object actual,
     String displayFormat
   ) {
+    return describeExpectedForActual(
+      operator,
+      comparison,
+      actual,
+      displayFormat,
+      null
+    );
+  }
+
+  public static String describeExpectedForActual(
+    String operator,
+    Object comparison,
+    Object actual,
+    String displayFormat,
+    String isoCode
+  ) {
     Object displayComparison = RecordHealthCheckDisplayFormat.alignExpectedToFound(
       comparison,
       actual,
       displayFormat
     );
-    return describeExpected(operator, displayComparison, displayFormat);
+    return describeExpected(
+      operator,
+      displayComparison,
+      displayFormat,
+      isoCode
+    );
   }
 
   /** Expected-value description for list operators (operand is a list). */
@@ -454,15 +505,24 @@ public with sharing class RecordHealthCheckComparisonEngine {
     return describeExpectedList(operator, comparison, null);
   }
 
-  /** Expected-value list description using the Rule's Display: Value Format. */
   public static String describeExpectedList(
     String operator,
     List<Object> comparison,
     String displayFormat
   ) {
+    return describeExpectedList(operator, comparison, displayFormat, null);
+  }
+
+  /** Expected-value list description using the Rule's Display: Value Format. */
+  public static String describeExpectedList(
+    String operator,
+    List<Object> comparison,
+    String displayFormat,
+    String isoCode
+  ) {
     return operatorLabel(operator) +
       ' ' +
-      formatList(comparison, displayFormat);
+      formatList(comparison, displayFormat, isoCode);
   }
 
   public static Boolean applyEmptyValueHandling(String nullBehavior) {

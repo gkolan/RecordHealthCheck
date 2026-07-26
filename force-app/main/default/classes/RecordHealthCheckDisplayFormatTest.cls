@@ -27,6 +27,28 @@ private class RecordHealthCheckDisplayFormatTest {
     return RecordHealthCheckTestDataFactory.createUserWithLocale(locale, alias);
   }
 
+  /**
+   * How an amount reads in this org: an org with more than one currency leads
+   * with the ISO code because a bare symbol would be ambiguous, and a
+   * single-currency org uses the symbol. Building the expectation the same way
+   * the renderer decides keeps these assertions true in both kinds of org.
+   */
+  private static String money(String isoCode, String amount) {
+    Map<String, String> symbols = new Map<String, String>{
+      'USD' => '$',
+      'EUR' => '€',
+      'JPY' => '¥',
+      'KRW' => '₩'
+    };
+    String symbol = symbols.get(isoCode);
+    if (symbol == null || UserInfo.isMultiCurrencyOrganization()) {
+      return isoCode + ' ' + amount;
+    }
+    return amount.startsWith('-')
+      ? '-' + symbol + amount.substring(1)
+      : symbol + amount;
+  }
+
   // ─── Auto ─────────────────────────────────────────────────────────────────
 
   @isTest
@@ -35,12 +57,12 @@ private class RecordHealthCheckDisplayFormatTest {
       System.assertEquals(
         '(blank)',
         RecordHealthCheckDisplayFormat.render(null, AUTO),
-        'A null value should read as the blank sentinel'
+        'A null value should read as the blank placeholder'
       );
       System.assertEquals(
         '(blank)',
         RecordHealthCheckDisplayFormat.render('   ', AUTO),
-        'Whitespace-only text should read as the blank sentinel'
+        'Whitespace-only text should read as the blank placeholder'
       );
       System.assertEquals(
         'Technology',
@@ -154,7 +176,7 @@ private class RecordHealthCheckDisplayFormatTest {
       System.assertEquals(
         'Yes',
         RecordHealthCheckDisplayFormat.render(true, 'PICKLIST_LABEL'),
-        'A format this release does not implement degrades to Auto'
+        'A format this release does not implement falls back to Auto'
       );
       System.assertEquals(
         '70,000',
@@ -258,33 +280,25 @@ private class RecordHealthCheckDisplayFormatTest {
         rendered.contains('70,000'),
         'The amount should still be grouped for the locale: ' + rendered
       );
-      if (iso == 'USD') {
-        System.assertEquals(
-          '$70,000.00',
-          rendered,
-          'A US dollar amount shows the symbol and two minor units'
-        );
-        System.assertEquals(
-          '-$1,250.50',
-          RecordHealthCheckDisplayFormat.render(-1250.5, CURRENCY_FORMAT),
-          'The minus sign stays ahead of the symbol'
-        );
-        System.assertEquals(
-          '$0.00',
-          RecordHealthCheckDisplayFormat.render(0, CURRENCY_FORMAT)
-        );
-        System.assertEquals(
-          '$50,000.00',
-          RecordHealthCheckDisplayFormat.render('50000', CURRENCY_FORMAT),
-          'A fixed metadata operand renders as money too'
-        );
-      } else {
-        System.assertEquals(
-          true,
-          rendered.contains(iso) || rendered.length() > '70,000'.length(),
-          'A non-USD org should still get a symbol or the ISO code: ' + rendered
-        );
-      }
+      System.assertEquals(
+        money(iso, '70,000.00'),
+        rendered,
+        'An amount shows the org currency and its two minor units'
+      );
+      System.assertEquals(
+        money(iso, '-1,250.50'),
+        RecordHealthCheckDisplayFormat.render(-1250.5, CURRENCY_FORMAT),
+        'A negative amount keeps its minus sign'
+      );
+      System.assertEquals(
+        money(iso, '0.00'),
+        RecordHealthCheckDisplayFormat.render(0, CURRENCY_FORMAT)
+      );
+      System.assertEquals(
+        money(iso, '50,000.00'),
+        RecordHealthCheckDisplayFormat.render('50000', CURRENCY_FORMAT),
+        'A fixed metadata operand renders as money too'
+      );
     }
   }
 
@@ -295,21 +309,20 @@ private class RecordHealthCheckDisplayFormatTest {
     // exercised in a single-currency org.
     System.runAs(userWithLocale('en_US', 'rhciso')) {
       System.assertEquals(
-        '$70,000.00',
-        RecordHealthCheckDisplayFormat.renderCurrency(70000, 'USD'),
-        'A listed symbol sits ahead of the amount'
+        money('USD', '70,000.00'),
+        RecordHealthCheckDisplayFormat.renderCurrency(70000, 'USD')
       );
       System.assertEquals(
-        '€1,234.56',
+        money('EUR', '1,234.56'),
         RecordHealthCheckDisplayFormat.renderCurrency(1234.56, 'EUR')
       );
       System.assertEquals(
-        '¥70,000',
+        money('JPY', '70,000'),
         RecordHealthCheckDisplayFormat.renderCurrency(70000, 'JPY'),
         'Yen has no minor unit, so no decimal places are shown'
       );
       System.assertEquals(
-        '₩1,500',
+        money('KRW', '1,500'),
         RecordHealthCheckDisplayFormat.renderCurrency(1500, 'KRW')
       );
       System.assertEquals(
@@ -323,21 +336,21 @@ private class RecordHealthCheckDisplayFormatTest {
         'The currency code is trimmed and matched without regard to case'
       );
       System.assertEquals(
-        '-$1,250.50',
+        money('USD', '-1,250.50'),
         RecordHealthCheckDisplayFormat.renderCurrency(-1250.5, 'USD'),
-        'The minus sign stays ahead of the symbol'
+        'A negative amount keeps its minus sign'
       );
       System.assertEquals(
-        '$0.00',
+        money('USD', '0.00'),
         RecordHealthCheckDisplayFormat.renderCurrency(0, 'USD')
       );
       System.assertEquals(
-        '$99.90',
+        money('USD', '99.90'),
         RecordHealthCheckDisplayFormat.renderCurrency(99.9, 'USD'),
         'A short fraction is padded out to the minor unit'
       );
       System.assertEquals(
-        '$1.24',
+        money('USD', '1.24'),
         RecordHealthCheckDisplayFormat.renderCurrency(1.235, 'USD'),
         'A sub-cent amount is rounded for display only'
       );
@@ -357,7 +370,7 @@ private class RecordHealthCheckDisplayFormatTest {
   static void currencyFollowsTheRunningUserLocale() {
     System.runAs(userWithLocale('de_DE', 'rhccde')) {
       System.assertEquals(
-        '€1.234,56',
+        money('EUR', '1.234,56'),
         RecordHealthCheckDisplayFormat.renderCurrency(1234.56, 'EUR'),
         'A German (Germany) user sees the locale grouping and decimal mark'
       );
@@ -553,7 +566,7 @@ private class RecordHealthCheckDisplayFormatTest {
       System.assertEquals(
         '(blank)',
         RecordHealthCheckDisplayFormat.render(null, format),
-        format + ' still uses the blank sentinel'
+        format + ' still uses the blank placeholder'
       );
       System.assertEquals(
         '(blank)',
@@ -635,10 +648,13 @@ private class RecordHealthCheckDisplayFormatTest {
         expected.startsWith('at least '),
         'The operator phrase still leads the Expected chip: ' + expected
       );
-      if (UserInfo.getDefaultCurrency() == 'USD') {
-        System.assertEquals('$70,000.00', found);
-        System.assertEquals('at least $50,000.00', expected);
-      }
+      String iso = UserInfo.getDefaultCurrency();
+      System.assertEquals(money(iso, '70,000.00'), found);
+      System.assertEquals(
+        'at least ' + money(iso, '50,000.00'),
+        expected,
+        'Both chips read in the same currency'
+      );
 
       System.assertEquals(
         '100,000',
@@ -725,6 +741,189 @@ private class RecordHealthCheckDisplayFormatTest {
         )
       );
     }
+  }
+
+  // ─── Format from the field definition ─────────────────────────────────────
+
+  @isTest
+  static void currencyAndPercentFieldsSuggestTheirOwnFormat() {
+    Map<String, Schema.SObjectField> opportunityFields = RecordHealthCheckDescribeCache.fieldMap(
+      Opportunity.SObjectType
+    );
+
+    System.assertEquals(
+      CURRENCY_FORMAT,
+      RecordHealthCheckDisplayFormat.formatForField(
+        RecordHealthCheckDescribeCache.describeField(
+          opportunityFields.get('Amount')
+        )
+      ),
+      'A Currency field should suggest Currency'
+    );
+    System.assertEquals(
+      PERCENT_FORMAT,
+      RecordHealthCheckDisplayFormat.formatForField(
+        RecordHealthCheckDescribeCache.describeField(
+          opportunityFields.get('Probability')
+        )
+      ),
+      'A Percent field should suggest Percent'
+    );
+    System.assertEquals(
+      null,
+      RecordHealthCheckDisplayFormat.formatForField(
+        RecordHealthCheckDescribeCache.describeField(
+          opportunityFields.get('Name')
+        )
+      ),
+      'A text field has no format of its own, so Auto keeps its wording'
+    );
+    System.assertEquals(
+      null,
+      RecordHealthCheckDisplayFormat.formatForField(null)
+    );
+  }
+
+  @isTest
+  static void autoTakesTheFormatFromTheQueriedField() {
+    Opportunity row = new Opportunity(Amount = 70000, Probability = 25);
+
+    System.assertEquals(
+      CURRENCY_FORMAT,
+      RecordHealthCheckDisplayFormat.formatForRow(AUTO, row, 'Amount'),
+      'On Auto a Currency field renders as money without a Rule change'
+    );
+    System.assertEquals(
+      PERCENT_FORMAT,
+      RecordHealthCheckDisplayFormat.formatForRow(null, row, 'Probability'),
+      'A blank format is Auto, so the field still decides'
+    );
+    System.assertEquals(
+      RAW_FORMAT,
+      RecordHealthCheckDisplayFormat.formatForRow(RAW_FORMAT, row, 'Amount'),
+      'A format the author named always wins over the field definition'
+    );
+    System.assertEquals(
+      NUMBER_FORMAT,
+      RecordHealthCheckDisplayFormat.formatForRow(NUMBER_FORMAT, row, 'Amount'),
+      'Naming Number on a Currency field drops the symbol, as asked'
+    );
+  }
+
+  @isTest
+  static void fieldLookupLeavesTheFormatAloneWhenThereIsNothingToDescribe() {
+    Opportunity row = new Opportunity(Amount = 70000);
+
+    System.assertEquals(
+      AUTO,
+      RecordHealthCheckDisplayFormat.formatForRow(AUTO, null, 'Amount'),
+      'No row means no field definition to read'
+    );
+    System.assertEquals(
+      AUTO,
+      RecordHealthCheckDisplayFormat.formatForRow(AUTO, row, null),
+      'No field path means nothing to describe'
+    );
+    System.assertEquals(
+      AUTO,
+      RecordHealthCheckDisplayFormat.formatForRow(AUTO, row, 'NotAField__c'),
+      'An unknown field is left alone rather than guessed at'
+    );
+    System.assertEquals(
+      AUTO,
+      RecordHealthCheckDisplayFormat.formatForRow(
+        AUTO,
+        row,
+        'Account.AnnualRevenue'
+      ),
+      'A relationship that was not queried yields no describe'
+    );
+    System.assertEquals(
+      AUTO,
+      RecordHealthCheckDisplayFormat.formatForRow(
+        AUTO,
+        row,
+        'NotARelation__r.Amount'
+      ),
+      'A relationship name that does not exist is left alone'
+    );
+
+    // An aggregate row has no single source field behind the value.
+    List<AggregateResult> totals = [
+      SELECT SUM(Amount) total
+      FROM Opportunity
+      WHERE Id = NULL
+    ];
+    System.assertEquals(
+      AUTO,
+      RecordHealthCheckDisplayFormat.formatForRow(
+        AUTO,
+        totals.isEmpty() ? null : totals[0],
+        'total'
+      ),
+      'An aggregate result has no field definition to read'
+    );
+  }
+
+  @isTest
+  static void recordCurrencyIsReadOnlyWhenTheOrgHasMoreThanOne() {
+    System.assertEquals(
+      null,
+      RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(null),
+      'No row means no currency to read'
+    );
+
+    if (!UserInfo.isMultiCurrencyOrganization()) {
+      System.assertEquals(
+        null,
+        RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+          new Opportunity(Amount = 70000)
+        ),
+        'With one currency in the org there is no per-record currency to read'
+      );
+      return;
+    }
+
+    // With more than one currency, an amount is shown in the currency its own
+    // record carries rather than the currency the reader happens to work in.
+    SObject row = (SObject) Type.forName('Opportunity').newInstance();
+    row.put('Amount', 70000);
+    row.put('CurrencyIsoCode', 'EUR');
+
+    System.assertEquals(
+      'EUR',
+      RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(row),
+      'The row currency is read from CurrencyIsoCode'
+    );
+    System.assertEquals(
+      'EUR 70,000.00',
+      RecordHealthCheckDisplayFormat.render(
+        70000,
+        CURRENCY_FORMAT,
+        RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(row)
+      ),
+      'A euro record reads in euros even for a user whose currency is different'
+    );
+    System.assertEquals(
+      UserInfo.getDefaultCurrency() + ' 70,000.00',
+      RecordHealthCheckDisplayFormat.render(70000, CURRENCY_FORMAT, null),
+      'With no record currency the running user currency is used'
+    );
+
+    // An aggregate row carries no currency field, so the running user currency
+    // is used rather than the read failing.
+    List<AggregateResult> totals = [
+      SELECT SUM(Amount) total
+      FROM Opportunity
+      WHERE Id = NULL
+    ];
+    System.assertEquals(
+      null,
+      RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+        totals.isEmpty() ? null : totals[0]
+      ),
+      'A summed total has no single record currency behind it'
+    );
   }
 
   // ─── Display only ─────────────────────────────────────────────────────────

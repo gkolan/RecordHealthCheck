@@ -15,6 +15,12 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 
 ### Changed
 
+- **Auto** now reads how a queried field is defined in Setup: a Currency field renders as money and
+  a Percent field gains a percent sign with no Rule change. Naming a format still wins over the
+  field definition.
+- In an org with more than one currency, an amount renders in the currency its own record uses, and
+  leads with the ISO code (`USD 70,000.00`) because a bare `$` cannot tell US, Australian, and
+  Canadian dollars apart on one card. Single-currency orgs keep the symbol (`$70,000.00`).
 - Number grouping now follows the running user's locale instead of always using a comma, so
   `70000.0` reads `70,000` for an English (US) user and `70.000` for a German (Germany) one. Chips
   for users outside English (US) locales may change separators.
