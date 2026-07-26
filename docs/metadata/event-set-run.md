@@ -4,7 +4,7 @@
 Set run. It is a high-volume Salesforce Platform Event with **Publish After Commit** behavior.
 
 Use the [lifecycle-events overview](../integration/lifecycle-events.md) for publication sources,
-opt-in behavior, transaction timing, and subscriber failure guidance.
+optional publication behavior, transaction timing, and subscriber failure guidance.
 
 ## When to use this event
 
@@ -19,8 +19,8 @@ one event per Rule.
 | Process orchestration | Start downstream work only after a deliberate Check Set run commits |
 | Completion reporting | Compare passed, failed, skipped, unable, and system-error counts without receiving Rule detail |
 
-Do not use this event when the current Salesforce transaction needs an immediate decision. Use the
-synchronous [Apex API](../reference/reference-apex-api.md) or [Flow action](../integration/flow-actions.md)
+For an immediate decision in the same transaction, use the synchronous
+[Apex API](../reference/reference-apex-api.md) or [Flow action](../integration/flow-actions.md)
 response instead.
 
 ## Publication conditions
@@ -52,7 +52,7 @@ Automatic Lightning record-page evaluation (`RUN_ON_LOAD`) never publishes. Subs
 
 | Setup label | API name | Type | Required/default | Meaning |
 | --- | --- | --- | --- | --- |
-| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level deduplication key. Do not substitute the Salesforce replay ID. |
+| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level unique key for consumers; keep the Salesforce replay ID for replay position only. |
 | Run ID | `RunId__c` | Text(120) | Required; supplied or generated | Correlates the Set event, Rule Result events, synchronous response, and Framework logs. |
 | Phase | `Phase__c` | Text(30) | Required; `COMPLETED` | Lifecycle phase. `COMPLETED` is the only supported value. |
 | Check Set API Name | `CheckSetDeveloperName__c` | Text(80) | Required | Check Set `DeveloperName`; stable across label changes. |
@@ -69,7 +69,7 @@ Automatic Lightning record-page evaluation (`RUN_ON_LOAD`) never publishes. Subs
 | Unable Count | `UnableCount__c` | Number(5,0) | Optional; generated | Rule results with `UNABLE_TO_EVALUATE`. |
 | System Error Count | `SystemErrorCount__c` | Number(5,0) | Optional; generated | Rule results with `ERROR`. |
 
-## Example payload
+## Example event body
 
 ```json
 {
@@ -98,12 +98,12 @@ Values are illustrative. Subscribers must tolerate additive fields within contra
 
 | Concern | Subscriber responsibility |
 | --- | --- |
-| Duplicate delivery | Deduplicate side effects with `EventId__c`; use the Salesforce replay ID for replay position. |
+| Duplicate delivery | Keep unique follow-on work with `EventId__c`; use the Salesforce replay ID for replay position. |
 | Retries | Treat delivery as at least once and make processing safe to repeat. |
 | Retention | Persist the event when history beyond Platform Event retention is required. |
 | Business data | Join under the subscriber's own sharing and field-access model. |
 | Missing Record ID | Allow `RecordId__c` to be blank for future invocation shapes. |
-| Rule-level causes | Do not infer them from counts; subscribe to Rule Result when details are required. |
+| Rule-level causes | Subscribe to Rule Result when you need Rule-level causes; Set Run counts summarize outcomes only. |
 
 ## Limits and security
 

@@ -51,7 +51,7 @@ do not publish.
 
 | Setup label | API name | Type | Required/default | Meaning |
 | --- | --- | --- | --- | --- |
-| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level deduplication key. |
+| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level unique key. |
 | Run ID | `RunId__c` | Text(120) | Required; supplied or generated | Correlates this result with its Check Set run, response, and Framework logs. |
 | Check Set API Name | `CheckSetDeveloperName__c` | Text(80) | Required | Parent Check Set `DeveloperName`. |
 | Rule API Name | `RuleDeveloperName__c` | Text(80) | Required | Finalized Rule `DeveloperName`. |
@@ -65,7 +65,7 @@ do not publish.
 | Core Version | `CoreVersion__c` | Text(20) | Required; `2.0.0` | Framework release that produced the event. |
 | Contains Restricted Detail | `ContainsRestrictedDetail__c` | Checkbox | Defaults to false | Indicates that restricted detail existed on the in-memory result. It does not publish that detail. |
 
-## Example payload
+## Example event body
 
 ```json
 {
@@ -97,20 +97,20 @@ Values are illustrative. Consumers must ignore additive fields they do not recog
 | `UNABLE_TO_EVALUATE` | Access, configuration, dependency, or available data prevented a reliable decision. Use `ReasonCode__c`. |
 | `ERROR` | An unexpected Framework, evaluator, or platform problem occurred. Investigate logs and the Log event. |
 
-Never treat every status other than `FAIL` as success. Never branch on display messages; they are
-intentionally absent from this contract.
+Route `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, and `ERROR` separately. Branch on Status,
+Reason Code, and Developer Name; display messages are intentionally absent from this contract.
 
 ## Subscriber design
 
 | Concern | Subscriber responsibility |
 | --- | --- |
-| Duplicate delivery | Deduplicate with `EventId__c` and make side effects safe to repeat. |
+| Duplicate delivery | Keep unique with `EventId__c` and make follow-on work safe to repeat. |
 | Routing | Use API values, not translated labels or administrator-authored text. |
 | Future values | Send unknown additive Reason Codes and statuses to a safe review path. |
 | Run correlation | Use `RunId__c` to group Rule Result events with their Set Run summary. |
 | Retention | Persist events when history beyond Platform Event retention is required. |
 | Additional data | Query under the subscriber's own security context. |
-| Restricted detail | Do not treat `ContainsRestrictedDetail__c = true` as permission to expose diagnostics. |
+| Restricted detail | Treat `ContainsRestrictedDetail__c = true` as a signal that restricted detail was withheld, not as permission to expose it. |
 
 ## Limits and security
 

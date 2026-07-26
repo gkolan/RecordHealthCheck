@@ -6,7 +6,7 @@ that someone new to the project can follow it step by step.
 
 Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before participating. By
 contributing, you agree that your contributions are licensed under the
-[Apache License, Version 2.0](LICENSE).
+[Apache License, Version 2.0](../LICENSE).
 
 ## Ways to contribute
 
@@ -15,7 +15,7 @@ contributing, you agree that your contributions are licensed under the
 | **Report a bug**            | Open a [Bug report](https://github.com/gkolan/RecordHealthCheck/issues/new?template=bug_report.yml) issue                     |
 | **Request a feature**       | Open a [Feature request](https://github.com/gkolan/RecordHealthCheck/issues/new?template=feature_request.yml) issue           |
 | **Ask a question**          | Start a [GitHub Discussion](https://github.com/gkolan/RecordHealthCheck/discussions) (or open an issue if Discussions is off) |
-| **Report a security issue** | **Do not** open a public issue: follow the [Security policy](SECURITY.md)                                                     |
+| **Report a security issue** | Report privately through the [Security policy](SECURITY.md) rather than a public issue                                        |
 | **Fix code or docs**        | Open a pull request (see below)                                                                                               |
 
 ## Reporting a bug: step by step
@@ -27,13 +27,13 @@ contributing, you agree that your contributions are licensed under the
    - What you expected vs. what happened.
    - The **Check Set** and **Rule** Developer Names involved (not screenshots of labels only).
    - The object and a sketch of the field/query values that triggered it.
-   - Whether **Show Troubleshooting Details** was on, and the `[RHC]` summary from the browser console
-     (see [Troubleshooting Details](docs/guides/show-diagnostics.md)). **Redact record data and Org IDs.**
+   - Whether **Show Diagnostics** was on, and the `[RHC]` summary from the browser console
+     (see [Troubleshoot with Show Diagnostics](../docs/guides/troubleshoot-with-show-diagnostics.md)). **Redact record data and Org IDs.**
    - Org type (Production / Sandbox / Scratch) and API version.
 4. Submit. A maintainer will triage and may ask for a minimal reproduction.
 
-**Never paste** Salesforce access tokens, session IDs, full Org IDs, or real customer
-record data into an issue.
+Omit Salesforce access tokens, session IDs, full Org IDs, and real customer
+record data from issues.
 
 ## Opening a pull request: step by step
 
@@ -62,7 +62,7 @@ record data into an issue.
    ```
 6. **Open the PR** against `main`. The PR template will prompt you for a summary,
    testing notes, and a checklist. Link the issue it closes (e.g. `Closes #12`).
-7. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs prettier, lint,
+7. CI ([`workflows/ci.yml`](workflows/ci.yml)) runs prettier, lint,
    Jest with coverage, and XML validation on every PR. Keep it green.
 
 A maintainer ([CODEOWNERS](CODEOWNERS) is auto-requested) will review. Address
@@ -73,20 +73,27 @@ feedback by pushing more commits to the same branch.
 - **Tests are required** for every behavior change: both a positive test and a
   misconfiguration/negative test where applicable.
 - **Coverage thresholds** are enforced by `coverageThreshold` in
-  [`jest.config.js`](jest.config.js): statements **85**, branches **75**,
-  functions **90**, lines **85**. `npm run test:unit:coverage` exits non-zero if
+  [`jest.config.js`](../jest.config.js). `npm run test:unit:coverage` exits non-zero if
   they are not met.
 - **Apex changes** must also pass the project Apex test suite and a validation
   deployment (`sf project deploy validate`) with `RunLocalTests` in a clean
   scratch org.
-- **Never weaken** CRUD/FLS enforcement, the 25-Rule run cap, the 5-way Apex
-  concurrency cap, debug-detail authorization, or result normalization just to
-  make a test pass.
+- Keep CRUD/FLS enforcement, the 25-Rule run cap, the 5-way Apex
+  concurrency cap, debug-detail authorization, and result normalization intact even when
+  that makes a test harder to write.
 - **New evaluator features** must update runtime validation, deploy-time
   validation, reason-code documentation, and both positive and misconfiguration
-  tests. Do not add another parser or comparison operator copy: extend the shared modules.
+  tests. Prefer extending the shared modules over adding another parser or comparison operator copy.
 
-See [`docs/reference/architecture-map.md`](docs/reference/architecture-map.md) to find where things live.
+See [`docs/reference/reference-architecture.md`](../docs/reference/reference-architecture.md)
+for the published Framework architecture and to find where things live.
+
+## Integration-test fixtures
+
+[`integration-tests/`](../integration-tests/) holds CI-only fixture metadata and is **not** part of
+the product install. Keep it out of `sfdx-project.json` `packageDirectories`. The release
+gate deploys it with an explicit `--source-dir integration-tests` after Core. See
+[`integration-tests/README.md`](../integration-tests/README.md).
 
 ## Documentation changes
 
@@ -97,5 +104,6 @@ Docs must match the code at the same commit. Follow these authoring standards:
 - **Code blocks**: introduce every block with a sentence ending in a colon; use fenced blocks with a language identifier (`bash`, `apex`, `sql`, `json`).
 - **No em-dashes**: replace each em-dash by hand with a period, comma, or parentheses, never a blanket swap to a colon.
 
-The design specification is canonical
-in [`docs/reference/record-health-check-design-spec.md`](docs/reference/record-health-check-design-spec.md).
+The public [architecture document](../docs/reference/reference-architecture.md) is the
+contributor-facing source of truth for Framework architecture and where code and docs live.
+Maintainer release steps are in [`RELEASING.md`](RELEASING.md).

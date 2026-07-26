@@ -5,14 +5,14 @@
 
 /**
  * Single source of truth for the framework's valid-value sets and numeric caps.
- * These were previously duplicated, verbatim, in both RecordHealthCheckConfigService
+ * These were previously duplicated, exactly, in both RecordHealthCheckConfigService
  * (runtime validation) and RecordHealthCheckMetadataValidator (deploy-time audit).
  * Duplication meant adding a new operator, behavior, or mode required editing
- * several files in lockstep — and missing one let the two validators silently
- * disagree. Centralizing them here removes that drift risk and makes the framework
- * easier to extend: add a value once and every validator sees it.
- * Public Set properties return defensive copies. Callers may safely mutate the
- * returned Set without changing the framework's canonical values for the
+ * several files together — and missing one let the two validators silently
+ * disagree. Keeping them in one place removes that risk of getting out of sync and
+ * makes the framework easier to extend: add a value once and every validator sees it.
+ * Public Set properties return defensive copies. Callers may safely change the
+ * returned Set without changing the framework's official values for the
  * transaction.
  * Operator/behavior *logic* (the if-chains in the engine and evaluators)
  * intentionally lives with the code that applies it; only the enumerations of
@@ -164,7 +164,7 @@ public with sharing class RecordHealthCheckConstants {
     }
   }
 
-  // ─── Applicability gate ────────────────────────────────────────────────────
+  // ─── Applicability check ───────────────────────────────────────────────────
 
   private static final Set<String> VALID_APPLICABILITY_MODES_INTERNAL = new Set<String>{
     'ALL_RECORDS',
@@ -179,7 +179,7 @@ public with sharing class RecordHealthCheckConstants {
 
   /**
    * Operators legal on ApplicabilityCountOperator__c (SOQL applicability mode).
-   * The applicability gate counts rows and compares the count to an integer
+   * The applicability check counts rows and compares the count to an integer
    * threshold, so only the ordered/equality operators apply — not the text or
    * list operators in VALID_OPERATORS. Mirrors
    * RecordHealthCheckEngine.applyApplicabilityComparison.

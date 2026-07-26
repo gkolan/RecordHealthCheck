@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** A parsed namespaced merge token and its source span. */
 public class RecordHealthCheckToken {
   public String expression;

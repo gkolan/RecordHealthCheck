@@ -69,10 +69,16 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Open the parent Account and enter Billing City. |
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | `Edit parent billing address` |
-| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.ParentId\|001000000000000AAA}/edit` |
+| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | Edit page for the parent Account, with a fallback Id: copy it from below the table |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `70` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
 | **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+
+Copy this value into **Action URL**:
+
+```text
+/lightning/r/Account/{!record.ParentId|001000000000000AAA}/edit
+```
 
 The applicability formula prevents the action link from rendering on a top-level Account with no
 Parent ID. Leave Found and Expected display formulas and Formula Result Type blank; Query and Apex

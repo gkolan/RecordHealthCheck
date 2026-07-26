@@ -91,7 +91,7 @@ Before activation, choose the policy that matches your process:
 | `context.recordId` | The Account being evaluated at run time |
 | `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
-Do not put the Account ID in the parameter JSON. Record Health Check supplies it automatically:
+Record Health Check supplies the Account ID automatically; leave it out of the parameter JSON:
 
 - On a Lightning record page, `context.recordId` is the ID of the open record.
 - From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
@@ -344,7 +344,7 @@ The context contains:
 | --- | --- | --- |
 | `recordId` | `Id` | Record being evaluated; use this value in SOQL |
 | `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; do not assume every field was loaded |
+| `record` | `SObject` | Partial current record; only requested fields are loaded |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
 
@@ -358,8 +358,8 @@ For a completed check, the class must return all three required values:
 | `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
 | `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
 
-Do not return `SKIP` from the class to represent applicability; configure **Applies To** on the
-Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
+For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
+runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
 [Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
@@ -403,8 +403,8 @@ Confirm the `Strategic` Type picklist API value in your org. Skip comes from app
 
 The applicability fields in **Configure the Rule** are required for the documented skip behavior.
 The pack supplies description, failure settings, applicability, order, and Active. The remaining
-rows document recommended choices. Do not add an Account view link merely to fill the action fields;
-it does not help a user understand which readiness item is missing.
+rows document recommended choices. Add an action link only when it helps the user fix the issue;
+an Account view link alone does not show which readiness item is missing.
 
 ## Check Set configuration
 
@@ -449,7 +449,7 @@ The readiness score follows the running user's Salesforce access.
 
 - A user who cannot see a qualifying related record may receive a lower score than an administrator for the same Account.
 
-- A lower user-mode score is not proof that the related record does not exist. Do not remove `WITH USER_MODE` to force equal scores.
+- A lower user-mode score is not proof that the related record does not exist. Keep `WITH USER_MODE` so scores reflect the running user's access.
 
 - The class reads data only and performs no DML or callouts.
 

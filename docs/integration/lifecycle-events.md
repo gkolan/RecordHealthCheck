@@ -4,7 +4,7 @@
 > On this page, decide whether a subscriber needs Check Set Run or Rule Result lifecycle events and enable an after-commit contract without making the Lightning, Flow, or Apex caller wait.
 
 Use lifecycle events when an independent subscriber needs completion information after an explicit
-Record Health Check run. This reference documents publication behavior, event payloads,
+Record Health Check run. This reference documents publication behavior, event bodies,
 permissions, retention, replay, and subscriber requirements.
 
 Start with the **Check Set Run** event when the subscriber needs one summary per review. Add **Rule
@@ -16,7 +16,7 @@ Result** events only when the subscriber needs per-Rule status, reason, and seve
 | --- | --- | --- |
 | One summary for a completed Check Set | [`Record_Health_Check_Set_Run__e`](../metadata/event-set-run.md) | Check Set **Publish Run Event** |
 | One result for each selected Rule | [`Record_Health_Check_Rule_Result__e`](../metadata/event-rule-result.md) | Rule **Publish Result Event** |
-| Restricted Framework error diagnostics | [`Record_Health_Check_Log__e`](../metadata/event-log.md) | Framework `ERROR` logging; not a lifecycle-result opt-in |
+| Restricted Framework error diagnostics | [`Record_Health_Check_Log__e`](../metadata/event-log.md) | Framework `ERROR` logging; not a lifecycle-result publication switch |
 | The immediate decision in the current transaction | Neither lifecycle event | Use the Lightning, Apex, or Flow response instead |
 
 The Set Run and Rule Result events are **high-volume Platform Events** configured as **Publish
@@ -49,8 +49,10 @@ For the end-to-end model, start with [Integrate Record Health Check](../integrat
 
 ## Prerequisites and sandbox quick start
 
-1. Assign subscriber access to the selected platform event and choose Flow, Apex, or Pub/Sub API as
-   the subscriber technology.
+1. Assign subscriber access to the selected platform event (object permissions on the event) and
+   choose Flow, Apex, or Pub/Sub API as the subscriber technology. Custom fields on these platform
+   events are not field-level-security permissionable; granting event object access is enough for
+   field visibility in subscriber UIs.
 2. In a sandbox, enable **Publish Run Event** on one Check Set. Leave Rule publication off for the
    first test.
 3. Subscribe before clicking Run or Rerun; automatic page load cannot publish.
@@ -84,7 +86,7 @@ Publish failures are logged and **do not** change Rule or Check Set results.
 
 Events are chunked in batches of **100** (`PUBLISH_CHUNK_SIZE`).
 
-## Opt-in switches (default off)
+## Publication switches (default off)
 
 Publication starts off because events consume the org's Platform Event allocation and may trigger
 subscriber automation, storage, notifications, or external processing. An administrator should
@@ -96,6 +98,13 @@ enable only the summary or per-Rule detail that a reviewed subscriber actually u
 | Rule | **Publish Result Event** (`PublishResultEvent__c`) | One `Record_Health_Check_Rule_Result__e` per server-finalized Rule result in a deliberate LWC, Apex, or Flow run |
 
 Page-load card evaluations never publish even if these checkboxes are on.
+
+For a user-initiated Lightning run with **Publish Run Event** enabled, the completion call
+re-evaluates the Check Set server-side before publishing trusted aggregate counts; it does not
+trust browser-supplied statuses. Each Rule therefore runs once for the progressive card result and
+again in the completion transaction. Keep Check Sets with publication enabled focused, especially when they use
+FormulaEval or expensive queries. When the switch is off, the completion call returns before this
+second pass.
 
 ## Contract versions on events
 
@@ -150,10 +159,10 @@ Salesforce data under their own security model using the Record ID, metadata Dev
 | Symptom | Likely cause | What to investigate |
 | --- | --- | --- |
 | No event after page open | Automatic runs are blocked from publishing | Click Run/Rerun or invoke Apex/Flow deliberately |
-| No event after an explicit run | Metadata switch is off, source is blocked, or transaction rolled back | Check the opt-in field, source, logs, and commit outcome |
-| Duplicate processing | Replay or subscriber retry delivered the event again | Deduplicate with `EventId__c`; make side effects safe to repeat |
-| Missing record context | The run had no single record, or a record ID was not available at publish | Correlate with `RunId__c` and metadata names; `RecordId__c` is populated only when available |
-| Subscriber failure | Subscriber limits, access, or business logic failed independently | Monitor and retry in the subscriber; do not reinterpret the completed health result |
+| No event after an explicit run | Metadata switch is off, source is blocked, or transaction rolled back | Check the publication field, source, logs, and commit outcome |
+| Duplicate processing | Replay or subscriber retry delivered the event again | Keep unique by `EventId__c`; make follow-on work safe to repeat |
+| Missing record context | The run had no single record, or a record ID was not available at publish | Correlate with `RunId__c` and metadata names; `RecordId__c` is set only when available |
+| Subscriber failure | Subscriber limits, access, or business logic failed independently | Monitor and retry in the subscriber; keep the completed health result as already finalized |
 
 ## Diagnostics events are a separate channel
 
@@ -163,14 +172,14 @@ carries restricted Framework `ERROR` diagnostics and uses **Publish Immediately*
 | Property | Lifecycle events (Set / Rule) | Diagnostics event (Log) |
 | --- | --- | --- |
 | Purpose | Completion facts | Errors that need reproducing |
-| Default | Opt-in per Set/Rule (off) | **On by default** (opt-out) |
+| Default | Optional per Set/Rule (off) | **On by default** (can be turned off) |
 | Publish behavior | Publish After Commit | **Publish Immediately**: survives the rollback a failing check triggers |
 | Carries error detail | No: record ID + counts/status only | Yes: record ID plus message, exception type, stack trace |
 | Level | All completed runs | `ERROR` only |
-| Access | Standard subscriber | **Restricted**: permission-gate the subscriber |
+| Access | Standard subscriber | **Restricted**: only grant access to the subscriber when appropriate |
 
 The Log event is not controlled by **Publish Run Event** or **Publish Result Event**. Its complete
-payload, security requirements, subscriber loop guard, possibilities, and known limitations are in
+event body, security requirements, subscriber loop guard, possibilities, and known limitations are in
 the [Log Platform Event reference](../metadata/event-log.md).
 
 ## Related

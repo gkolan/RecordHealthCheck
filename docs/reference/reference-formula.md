@@ -28,6 +28,9 @@ pass condition and can return `SKIPPED` without evaluating it.
 - Traverse supported parent relationships, such as `Parent.Parent.AnnualRevenue`.
 - Formula fields and roll-up summary fields can be operands; Record Health Check evaluates their
   current values.
+- When a referenced formula field depends on other fields, the Framework expands that dependency
+  chain while planning the record query (up to 10 levels). This lets FormulaEval regenerate
+  calculated values without requiring administrators to list each underlying field manually.
 - A record formula cannot aggregate child collections. Use a Query Rule or Apex when child records
   must be counted, summed, or grouped.
 
@@ -61,7 +64,7 @@ A null or non-Boolean pass-condition result does not become `FAIL`; the engine r
 ## Security and limits
 
 - Evaluation uses the running user's object, record, and field access.
-- Do not use a display formula to expose a value that the viewer should not see.
+- Use display formulas only for values the viewer is allowed to see.
 - Parent traversal depends on the relationship and referenced fields being available to the user.
 - Formula evaluation consumes Salesforce transaction resources; avoid repeating expensive logic
   across pass, Found, Expected, and applicability formulas.

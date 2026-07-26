@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 .rhc-theme--slds1 {
   --rhc-theme-card-background: var(--slds-g-color-neutral-base-100, #ffffff);
   --rhc-theme-card-border: var(--slds-g-color-border-base-2, #c9c7c5);

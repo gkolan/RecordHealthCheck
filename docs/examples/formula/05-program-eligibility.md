@@ -69,19 +69,25 @@ Keep the display formulas consistent with the Pass Condition. The engine does no
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Compares Number of Employees with a minimum of 10 and displays both values. |
 | **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Data Quality |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Warning |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name\|this record}` is below the staffing minimum. Compare Found and Expected, then update Employees. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | Names the record, then points to Found and Expected: copy it from below the table |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to compare employee count. Confirm the user can read Number of Employees. |
 | **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-check-rule.md#applies-to-applicabilitymode__c) | All records |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review Found and enter an employee count of at least 10. |
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | `Edit employee count` |
-| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/edit` |
+| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/edit` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `80` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
 | **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
 
-Query and Apex fields do not apply. Do not add **Display: Found Text** or **Display: Expected Text**;
-those fields belong to Query results, while this Verify with a formula uses display formulas.
+Copy this value into **Message When Failed**:
+
+```text
+{!record.Name|this record} is below the staffing minimum. Compare Found and Expected, then update Employees.
+```
+
+Query and Apex fields do not apply. Leave **Display: Found Text** / **Display: Expected Text** blank
+for Formula Rules; use the Found/Expected formulas instead.
 
 ## Check Set configuration
 

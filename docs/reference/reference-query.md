@@ -65,17 +65,17 @@ and return the candidate list from Comparison Query. Source Query is blank in th
 | **If Field Value Is Empty** | [`EmptyValueHandling__c`](../metadata/fields-check-rule.md#if-field-value-is-empty-emptyvaluehandling__c) | Ignore the row, compare blank, or force no match |
 | **Max Query Rows (1-2000)** | [`MaxQueryRows__c`](../metadata/fields-check-rule.md#max-query-rows-1-2000-maxqueryrows__c) | Defaults to `200`; maximum `2000` |
 
-No-row behavior is a business decision. Configure it explicitly where required; do not assume that
-zero rows always means failure.
+No-row behavior is a business decision. Configure it explicitly where required; zero rows can mean
+pass, fail, skip, or unable depending on the Rule.
 
 ## SOQL templates and security
 
-- Use `{!record.Id|001000000000000AAA}` and supported `{!record.FieldName|Fallback value}` tokens for current-record values.
+- Use `{!record.Id}` and supported `{!record.FieldName}` tokens for current-record values. Append a typed substitute when a blank bind needs one, such as `{!record.AnnualRevenue|0}`.
 - Use field API names, not labels, in SOQL.
 - Evaluation runs in the current user's access context and query execution uses the framework's
   user-mode security controls.
 - A missing object, field, record, or relationship permission can return `UNABLE_TO_EVALUATE`.
-- Query text comes from trusted Custom Metadata; do not construct it from untrusted user input.
+- Query text comes from trusted Custom Metadata; keep it in administrator configuration rather than building it from untrusted user input.
 - Keep the selected columns and row cap as small as the decision requires.
 
 ## Outcomes and testing

@@ -44,7 +44,7 @@ private class AccountStrategicReadinessCheckTest {
     );
 
     System.assertEquals('PASS', result.status);
-    // Values and value source are populated on a PASS too so a
+    // Values and value source are set on a PASS too so a
     // green row stays auditable through the disclosure.
     System.assertEquals('25', result.actualValue);
     System.assertNotEquals(null, result.actualValueSource);

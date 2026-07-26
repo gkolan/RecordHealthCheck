@@ -4,9 +4,9 @@
  */
 
 public with sharing class RecordHealthCheckCompareQueriesEvaluator {
-  private static final Integer DEFAULT_MAX_ROWS = 2000;
+  private static final Integer DEFAULT_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
 
-  // sentinel representing a missing value under Treat as not matching (AS_NO_MATCH) in a
+  // placeholder representing a missing value under Treat as not matching (AS_NO_MATCH) in a
   // list comparison. The reserved leading-space token will not realistically
   // collide with field data, and toStringList appends the side + a per-null index
   // so every missing value is distinct — a null then matches nothing, not even
@@ -94,7 +94,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     Boolean passed;
 
     if (mode == 'ONE_RESULT') {
-      // Tier 7 — both sides resolve to a single value.
+      // Single-result mode: both sides resolve to one value.
       // a zero-row query is governed by NoRowsResult__c, NOT by the
       // null-value behavior (EmptyValueHandling__c). evaluateSingleVsSingle
       // collapses an empty query and a present-but-null field to the same null
@@ -107,7 +107,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
       }
       passed = evaluateSingleVsSingle(rule, primaryRows, comparisonRows);
     } else if (mode == 'COMPARE_AS_LISTS') {
-      // Tier 9 — both sides resolve to lists; list-vs-list set operations
+      // List-result mode: both sides resolve to lists; list set operations
       passed = evaluateListVsList(rule, primaryRows, comparisonRows);
     } else {
       throw new RecordHealthCheckEvaluatorException(
@@ -115,20 +115,18 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         'Compare two queries does not support How To Interpret Query Results "' +
           mode +
           '".' +
-          ' Use Expect one row or aggregate result (Tier 7) or Compare query results as lists (Tier 9).'
+          ' Use Expect one row or aggregate result, or Compare query results as lists.'
       );
     }
 
     if (passed == null) {
-      // separate a genuine zero-rows result (governed by
-      // NoRowsResult__c) from a present-but-null value (governed by the null
-      // behavior, resolving to SKIPPED). For OneResult an empty query is already
-      // A null here is a present-row null field, not a zero-row query result.
-      // CompareAsLists returns null when a side is empty (zero rows).
+      // Separate a genuine zero-row result (governed by NoRowsResult__c) from a
+      // present-row null value (governed by EmptyValueHandling__c). OneResult
+      // routes empty queries above; CompareAsLists returns null for an empty side.
       Boolean zeroRows = primaryRows.isEmpty() || comparisonRows.isEmpty();
       return zeroRows
         ? buildEmptyOrNullResult(rule, result)
-        : buildNullIndeterminateResult(rule, result);
+        : buildNullIndeterminateResult(result);
     }
 
     // Capture actual vs expected from the rows already fetched (no extra query)
@@ -140,8 +138,8 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     } else {
       result.status = 'FAIL';
       result.severity = rule.FailureSeverity__c;
-      // Merge-field resolution is handled by the Engine
-      // but the SOQL evaluator also sets it here for consistency
+      // Merge-field resolution is handled by the engine; this evaluator still
+      // supplies the unresolved template for the shared finalization path.
       result.message = String.isNotBlank(rule.FailureMessage__c)
         ? rule.FailureMessage__c
         : 'Check failed.';
@@ -152,7 +150,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   // ─── Actual vs expected display values ────────────────────────────────────
 
   /**
-   * Populates result.actualValue / result.expectedValue from the rows already
+   * Sets result.actualValue / result.expectedValue from the rows already
    * fetched. Called only after the operator returned a determinate boolean, so
    * resolveSingleValue cannot throw here for the OneResult path.
    */
@@ -228,7 +226,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     return String.isNotBlank(field) ? field : fallback;
   }
 
-  // ─── Tier 7 — single-value vs single-value ────────────────────────────────
+  // ─── Single-value vs single-value ────────────────────────────────────────
 
   @TestVisible
   private Boolean evaluateSingleVsSingle(
@@ -304,7 +302,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     }
   }
 
-  // ─── Tier 9 — list vs list ────────────────────────────────────────────────
+  // ─── List vs list ────────────────────────────────────────────────────────
 
   @TestVisible
   private Boolean evaluateListVsList(
@@ -415,9 +413,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         }
         if (nullBehavior == 'AS_NO_MATCH') {
           // A missing value must match nothing — not even another missing value.
-          // Coercing to '' (the old behavior) let two null fields "match" as
-          // blanks and wrongly satisfy ListsOverlap / ExactListMatch. Emit a
-          // unique, non-data sentinel instead so each null stays distinct.
+          // Converting to '' (the old behavior) let two null fields "match" as
+          // blanks and wrongly satisfy ListsOverlap / ExactListMatch. Write a
+          // unique, non-data placeholder instead so each null stays distinct.
           values.add(MISSING_NO_MATCH_SENTINEL + side + ':' + missingIndex++);
           continue;
         }
@@ -465,38 +463,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
 
   @TestVisible
   private List<SObject> runQuery(String soql, Integer maxRows) {
-    String queryToRun;
-    try {
-      queryToRun = RecordHealthCheckSoqlTemplate.prepareForExecution(
-        soql,
-        maxRows + 1
-      );
-    } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      throw new RecordHealthCheckEvaluatorException(
-        ex.reasonCode,
-        ex.getMessage()
-      );
-    }
-
-    List<SObject> rows;
-    try {
-      rows = Database.query(queryToRun);
-    } catch (System.QueryException qex) {
-      throw new RecordHealthCheckEvaluatorException(
-        RecordHealthCheckValueResolver.classifyQueryException(qex),
-        qex.getMessage()
-      );
-    }
-
-    if (rows.size() > maxRows) {
-      throw new RecordHealthCheckEvaluatorException(
-        'GOVERNOR_LIMIT_RISK',
-        'Query returned more than ' +
-          maxRows +
-          ' rows. Reduce scope or lower Max Rows Override.'
-      );
-    }
-    return rows;
+    return RecordHealthCheckQueryEvaluatorSupport.runQuery(soql, maxRows);
   }
 
   // ─── Empty/null result helpers ────────────────────────────────────────────
@@ -506,28 +473,11 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     Record_Health_Check_Rule__mdt rule,
     RecordHealthCheckResult result
   ) {
-    String behavior = rule.NoRowsResult__c;
-    if (behavior == 'PASS' || behavior == 'Pass') {
-      result.status = 'PASS';
-    } else if (behavior == 'FAIL' || behavior == 'Fail') {
-      result.status = 'FAIL';
-      result.severity = rule.FailureSeverity__c;
-      result.message = String.isNotBlank(rule.FailureMessage__c)
-        ? rule.FailureMessage__c
-        : 'No matching records found.';
-    } else if (
-      behavior == 'UNABLE_TO_EVALUATE' ||
-      behavior == 'UnableToEvaluate'
-    ) {
-      result.status = 'UNABLE_TO_EVALUATE';
-      result.reasonCode = 'NO_ROWS_RETURNED';
-      result.message = safeCannotEvaluateMessage(rule);
-    } else {
-      result.status = 'SKIPPED';
-      result.reasonCode = 'APPLICABILITY_NOT_MET';
-      result.message = 'Check skipped: empty result per configuration.';
-    }
-    return result;
+    return RecordHealthCheckQueryEvaluatorSupport.buildEmptyResult(
+      rule,
+      result,
+      null
+    );
   }
 
   /**
@@ -537,19 +487,17 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
    */
   @TestVisible
   private RecordHealthCheckResult buildNullIndeterminateResult(
-    Record_Health_Check_Rule__mdt rule,
     RecordHealthCheckResult result
   ) {
-    result.status = 'SKIPPED';
-    result.reasonCode = 'VALUE_IS_EMPTY';
-    result.message = 'Check skipped: the value under test was empty.';
-    return result;
+    return RecordHealthCheckQueryEvaluatorSupport.buildNullIndeterminateResult(
+      result
+    );
   }
 
   @TestVisible
   private String safeCannotEvaluateMessage(Record_Health_Check_Rule__mdt rule) {
-    return String.isNotBlank(rule.UnableToEvaluateMessage__c)
-      ? rule.UnableToEvaluateMessage__c
-      : 'This check could not be evaluated. Contact your administrator.';
+    return RecordHealthCheckQueryEvaluatorSupport.safeCannotEvaluateMessage(
+      rule
+    );
   }
 }

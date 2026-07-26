@@ -10,20 +10,20 @@ Use this event for restricted technical operations and support, not readiness wo
 
 | Possibility | What the subscriber can do |
 | --- | --- |
-| Durable error history | Persist Framework errors beyond debug-log and Platform Event retention |
+| Persisted error history | Persist Framework errors beyond debug-log and Platform Event retention |
 | Technical alerting | Notify a restricted support channel when a new error Code or exception appears |
 | Incident correlation | Group errors by Run ID, Salesforce record, Check Set, Rule, user, and Core version |
 | Release monitoring | Compare error rates before and after a Framework or configuration deployment |
 | Reproduction support | Use record and metadata identifiers to reproduce a failure under controlled access |
 
-Do not use the Log event as a Rule result, audit history, or business-process command. Use Rule
-Result and Set Run events for finalized outcomes.
+Use the Log event for ERROR diagnostics; use Rule Result and Set Run events for finalized
+outcomes.
 
 ## How publication works
 
-`RecordHealthCheckLogger` buffers each Framework log entry whose level is `ERROR`. The public Apex,
-Flow, and Lightning boundaries call `flush()`, which publishes buffered events in chunks of 100 and
-clears the transaction buffer.
+`RecordHealthCheckLogger` holds each Framework log entry whose level is `ERROR`. The public Apex,
+Flow, and Lightning boundaries call `flush()`, which publishes held events in chunks of 100 and
+clears held entries for the transaction.
 
 | Behavior | Log event |
 | --- | --- |
@@ -31,7 +31,7 @@ clears the transaction buffer.
 | Publish behavior | Publish Immediately |
 | Default | Error-event publication enabled in Framework code |
 | Published levels | `ERROR` only |
-| Opt-in Custom Metadata field | None |
+| Optional Custom Metadata field | None |
 | Contract version | `1.0` |
 | Failure behavior | Best effort; publishing failure is logged and does not change the health-check result |
 
@@ -43,22 +43,22 @@ replacement for Salesforce debug logs and platform exception monitoring.
 
 | Setup label | API name | Type | Required/default | Meaning |
 | --- | --- | --- | --- | --- |
-| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level deduplication key. |
+| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level unique key. |
 | Run ID | `RunId__c` | Text(120) | Required; generated or inherited | Correlates errors from one Framework run. |
 | Occurred At | `OccurredAt__c` | DateTime | Required; generated | UTC event-construction time. |
 | Contract Version | `ContractVersion__c` | Text(10) | Required; `1.0` | Version of the diagnostics-event schema. |
 | Core Version | `CoreVersion__c` | Text(20) | Optional; Framework supplied | Framework release that produced the error. |
 | Level | `Level__c` | Text(10) | Required; `ERROR` | Log level. Core publishes only `ERROR` events. |
 | Code | `Code__c` | Text(120) | Optional | Stable or internal event code such as `APEX_EVALUATOR_ERROR` or `UNHANDLED_EXCEPTION`. |
-| Message | `Message__c` | Long Text Area(32,768) | Optional | Sanitized exception message or compact sorted field summary. |
+| Message | `Message__c` | Long Text Area(32,768) | Optional | Cleaned-up exception message or compact sorted field summary. |
 | Exception Type | `ExceptionType__c` | Text(120) | Optional | Apex exception type when an exception is available. |
-| Stack Trace | `StackTrace__c` | Long Text Area(32,768) | Optional | Sanitized Apex stack trace. |
+| Stack Trace | `StackTrace__c` | Long Text Area(32,768) | Optional | Cleaned-up Apex stack trace. |
 | Record ID | `RecordId__c` | Text(18) | Optional | Salesforce record being evaluated, when known. |
 | Check Set Developer Name | `CheckSetDeveloperName__c` | Text(120) | Optional | Check Set `DeveloperName` associated with the error. |
 | Rule Developer Name | `RuleDeveloperName__c` | Text(120) | Optional | Rule `DeveloperName` associated with the error. |
 | User ID | `UserId__c` | Text(18) | Optional | Running Salesforce user from `UserInfo.getUserId()`. |
 
-## Example payload
+## Example event body
 
 ```json
 {
@@ -74,13 +74,13 @@ replacement for Salesforce debug logs and platform exception monitoring.
   "RecordId__c": "001000000000001AAA",
   "UserId__c": "005000000000001AAA",
   "ExceptionType__c": "System.QueryException",
-  "Message__c": "Illustrative sanitized exception message",
-  "StackTrace__c": "Illustrative sanitized stack trace"
+  "Message__c": "Illustrative cleaned-up exception message",
+  "StackTrace__c": "Illustrative cleaned-up stack trace"
 }
 ```
 
-Never copy real stack traces, IDs, or production error messages into public documentation or an
-unrestricted support channel.
+Use illustrative cleaned-up values in public documentation and unrestricted support channels;
+keep real stack traces, IDs, and production error messages out of those surfaces.
 
 ## Security requirements
 
@@ -92,8 +92,8 @@ Treat the event and every persisted copy as restricted operational data.
 | Access | Grant event subscription and persisted-log access only to approved administrators or support staff. |
 | Subscriber permissions | Apply least privilege to the Apex class, Flow, integration user, and destination object. |
 | Retention | Define deletion requirements for persisted diagnostics. |
-| External sharing | Do not forward raw payloads to email, chat, tickets, or external systems without security review. |
-| Sanitization | Assume an exception message can still contain organization-specific identifiers. |
+| External sharing | Share Log event data only after a security review. |
+| Safe handling | Assume an exception message can still contain organization-specific identifiers. |
 | Custom additions | Keep Found, Expected, and source field values out of custom logging. |
 
 ## Subscriber loop protection
@@ -105,11 +105,11 @@ the subscriber from publishing another Log event onto the same channel.
 ```apex
 trigger RecordHealthCheckLogSubscriber on Record_Health_Check_Log__e (after insert) {
     RecordHealthCheckLogger.enterSubscriberContext();
-    // Hand off only to restricted, idempotent processing.
+    // Hand off only to restricted processing that is safe to run again.
 }
 ```
 
-The subscriber must also deduplicate by `EventId__c`, handle replay, and make side effects safe to
+The subscriber must also keep unique by `EventId__c`, handle replay, and make follow-on work safe to
 repeat.
 
 ## Known limitations

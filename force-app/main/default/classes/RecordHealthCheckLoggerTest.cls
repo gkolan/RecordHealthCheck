@@ -5,7 +5,7 @@
 
 @isTest
 private class RecordHealthCheckLoggerTest {
-  // The logger writes to the Apex debug log (a side effect we cannot read back in
+  // The logger writes to the Apex debug log (something we cannot read back in
   // a test context), so these tests exercise every branch for coverage and assert
   // that no path throws. The rendered output is verified by reading debug logs in
   // the org; here we guarantee the logging API is exception-safe for all inputs.
@@ -78,7 +78,7 @@ private class RecordHealthCheckLoggerTest {
     );
   }
 
-  // ─── Durable ERROR sink (Record_Health_Check_Log__e) ────────────────────────
+  // ─── Platform-event ERROR destination (Record_Health_Check_Log__e) ───────────
 
   @isTest
   static void errorBuffersEventWithReproContext() {
@@ -247,5 +247,21 @@ private class RecordHealthCheckLoggerTest {
       RecordHealthCheckLogger.pendingEventCount(),
       'flush() on an empty buffer is a no-op and does not throw.'
     );
+  }
+
+  @isTest
+  static void debugAndResetHooksRestoreLoggerState() {
+    RecordHealthCheckLogger.debugEnabled = true;
+    new RecordHealthCheckLogger('run-debug', 'Set', null)
+      .debug('Rule', 'DEBUG_BRANCH', null);
+    RecordHealthCheckLogger.publishErrorEvents = false;
+    RecordHealthCheckLogger.enterSubscriberContext();
+
+    RecordHealthCheckLogger.resetLogSinkForTest();
+
+    System.assertEquals(true, RecordHealthCheckLogger.publishErrorEvents);
+    System.assertEquals(false, RecordHealthCheckLogger.inSubscriberContext);
+    System.assertEquals(0, RecordHealthCheckLogger.pendingEventCount());
+    RecordHealthCheckLogger.debugEnabled = false;
   }
 }

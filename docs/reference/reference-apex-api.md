@@ -54,8 +54,8 @@ New to the model? Read [Integrate Record Health Check](../integration/README.md)
 - Calls run `with sharing` and evaluation uses the calling user's record and field access. The API
   does not elevate access.
 - Restricted diagnostic values are returned only when the user has the
-  `Record_Health_Check_View_Diagnostics` Custom Permission. Do not make business logic depend on those
-  optional values.
+  `Record_Health_Check_View_Diagnostics` Custom Permission. Keep business logic on public Status and
+  Reason Code fields.
 
 ## Quick examples
 
@@ -129,7 +129,7 @@ returns its own typed result:
 | `checkSetDeveloperName` | `String` | Yes for `runSet` | Exact Check Set `DeveloperName` visible to the caller |
 | `ruleDeveloperName` | `String` | Yes for `runRule` | Exact Rule `DeveloperName`; resolves its parent Check Set |
 | `recordId` | `Id` | Yes | Record evaluated in the running user's access context |
-| `recordIds` | `List<Id>` | Yes | Up to 200 IDs; results preserve input order |
+| `recordIds` | `List<Id>` | Yes | Results preserve input order; the planned-evaluation cap below determines the usable batch size |
 | `runId` | `String` | No | Caller correlation value; blank values are replaced with a generated ID |
 | `source` | `String` | Source-aware overloads only | One documented lifecycle source constant; blank or unknown values prevent publication |
 
@@ -157,24 +157,22 @@ RecordHealthCheckSetResult result = RecordHealthCheck.runSet(
 | Source-aware batch/async caller | `BATCH` |
 | Platform-event subscriber | `SUBSCRIBER`: publication blocked |
 
-Unknown and blank source values fail closed: evaluation can run, but lifecycle publication is
+Unknown and blank source values fall back to the safer default: evaluation can run, but lifecycle publication is
 blocked.
 
 ## Limits and transaction behavior
 
 | Limit | Value |
 | --- | --- |
-| Records per public call | 200 |
 | Planned Rule evaluations per call | 15 |
 
 Planned Set evaluations equal active Rules × records. Exceeding a cap throws
 `RecordHealthCheck.RecordHealthCheckRequestException`.
 
-The two caps protect different parts of the Salesforce transaction. The 200-record cap prevents an
-unbounded request collection from entering the Framework. The 15-evaluation cap limits the actual
-health-check work after the Framework expands a Check Set into Rules. One record evaluated against
-10 active Rules therefore plans 10 evaluations; two records plan 20 and are rejected before the
-Framework starts partial work.
+The evaluation cap limits health-check work after the Framework expands a Check Set into Rules.
+One record evaluated against 10 active Rules therefore plans 10 evaluations; two records plan 20
+and are rejected before the Framework starts partial work. The public Apex collection overloads do
+not impose a separate 200-record cap; the Flow invocable transport does.
 
 The Framework stops at a predictable boundary because each evaluation can read fields, execute a
 formula or SOQL, call custom Apex, and create a result. Allowing a caller to consume the remaining
@@ -199,14 +197,13 @@ usable response was returned for that invocation.
 | Symptom | Likely cause | What to investigate |
 | --- | --- | --- |
 | `RecordHealthCheckRequestException: Record IDs are required.` | A collection overload received `null` | Pass a non-null `List<Id>`; use an empty list only when no work is intended |
-| `RecordHealthCheckRequestException: A request can include at most 200 records.` | The collection exceeds the public record cap | Split the records into smaller transactions while also observing the evaluation cap |
 | `RecordHealthCheckRequestException: This request would run too many checks...` | Planned evaluations exceed 15 | Reduce records, use a smaller Check Set, or distribute work across transactions |
 | Configuration lookup exception | The API name is blank, misspelled, inactive, or unavailable to the caller | Verify the exact metadata `DeveloperName`, activation, and caller access |
 | Salesforce access exception or an `UNABLE_TO_EVALUATE` response | The running user cannot read the record, object, or required field | Grant only the required record/object/field access, then rerun as that user |
 | Uncatchable governor-limit exception | The calling transaction lacks remaining Salesforce limits | Reduce work per transaction or move the call to a transaction with adequate limits |
 
 Catch `RecordHealthCheck.RecordHealthCheckRequestException` only when the caller can correct or
-report the request. Do not convert a missing response into `PASS`.
+report the request. Treat a missing response as a fault or unable outcome and report the request.
 
 ```apex
 try {
@@ -280,10 +277,10 @@ directly by `runRule`.
 | `status` | `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR` |
 | `severity` | `CRITICAL`, `WARNING`, or `INFO` when applicable |
 | `reasonCode` | Stable machine-readable outcome reason |
-| `message` | User-facing text; do not use as an automation key |
+| `message` | User-facing text; branch automation on Status, Reason Code, and Developer Name |
 | `actualValue`, `expectedValue` | Security-filtered comparison values when available |
 | `expectedValueLabel` | Overrides the Expected caption, including authorized **Passes when** formula detail |
-| `actualValueDetail`, `expectedValueDetail` | Authorized source-detail strings; emitted only through enabled browser diagnostics |
+| `actualValueDetail`, `expectedValueDetail` | Authorized source-detail strings; included only through enabled browser diagnostics |
 | `adminDetailMessage` | Authorized troubleshooting text when Show Diagnostics is enabled |
 | `adminDetail` | Authorized structured diagnostics: restricted-detail flag, field names, Reason Code, and message |
 | `actionLabel`, `actionUrl` | Resolved read-only remediation link for `FAIL`; blank when unavailable or unsafe |
@@ -356,7 +353,7 @@ The API can produce these asynchronous outputs in addition to its synchronous re
 | `ContainsRestrictedDetail__c` | Restricted detail existed; the detail itself is never included |
 
 Events intentionally omit record ID, object API name, user ID, messages, queries, and field values.
-The [Platform events reference](../integration/lifecycle-events.md) remains the canonical behavioral overview,
+The [Platform events reference](../integration/lifecycle-events.md) remains the primary behavioral overview,
 retention, replay, and subscriber contract.
 
 ## Related

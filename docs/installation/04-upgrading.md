@@ -18,20 +18,20 @@ sandbox or scratch org made from a current production backup before changing pro
 ## What changes
 
 - Every field rename is listed in the [field-migration reference](#field-migration-reference). The current release does not read v1.x field API names.
-- Category values use the current vocabulary, and Severity `Error` is now `Critical`.
+- Category values use the current list of terms, and Severity `Error` is now `Critical`.
 - `MaxQueryRows__c` defaults to `200`, `EmptyValueHandling__c` to `AS_NO_MATCH`, and `EvaluationOrder__c` to `100`.
 - Values moving from Long Text Area to Text are limited to 255 characters; review them before deployment.
 - Apex identifiers using “comparator” or “scalar” were renamed to operator/single-value wording. `VALID_COMPARATORS`, `DUAL_QUERY_COMPARATORS`, and `VALID_APPLICABILITY_COMPARATORS` are now the corresponding `...OPERATORS` properties. `scalarFromRow` and `scalarList` are now `singleValueFromRow` and `singleValueList`.
 - Reason code `INVALID_COMPARATOR` is now `INVALID_OPERATOR`.
 - The public synchronous response contract is stable at `1.0` on `RecordHealthCheckResult` /
   `RecordHealthCheckSetResult` and grows additively. The independent lifecycle event contract is
-  also `1.0`, is opt-in, and
+  also `1.0`, is optional by default, and
   Publish After Commit. See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and
   [Platform events](../integration/lifecycle-events.md).
 
 ## Upgrade procedure
 
-1. Convert Custom Metadata source to the current field APIs and values before deployment. Do not deploy the destructive-change manifest until every record has been converted and validated.
+1. Convert Custom Metadata source to the current field APIs and values before deployment. Convert and validate every record before running the destructive-change manifest.
 2. Deploy the current source and run all local Apex tests.
 3. Run `scripts/apex/validateMetadata.apex` and resolve every invalid Rule or Check Set.
 4. Assign `Record_Health_Check_User` to viewers and `Record_Health_Check_Admin` only to administrators. Assign the diagnostics-detail Custom Permission only where justified.
@@ -149,7 +149,7 @@ sf project deploy start --manifest manifest/package.xml --test-level RunLocalTes
 sf apex run --file scripts/apex/validateMetadata.apex --target-org <validation-org>
 ```
 
-Retrieve the deployed metadata into an empty directory and compare it with the release source. Review expected org-normalized XML separately from unexpected drift.
+Retrieve the deployed metadata into an empty directory and compare it with the release source. Review expected org-normalized XML separately from unexpected differences.
 
 ## Rollback
 
@@ -161,11 +161,11 @@ Rollback is a restore operation, not a dual-read mode. If a release gate fails:
 4. Re-run the v1.x test and smoke suites.
 5. Preserve failed deployment, validation, and subscriber logs for root-cause analysis.
 
-Do not run the upgrade's destructive changes in production until the backup has been restore-tested and the release owner has approved the rollback evidence.
+Run the upgrade's destructive changes in production only after the backup has been restore-tested and the release owner has approved the rollback evidence.
 
 ## Next steps
 
 - [Create your first Rule](03-create-your-first-rule.md): verify the upgraded installation and first Rule
 - [Metadata reference](../metadata/README.md): review current field APIs and values
-- [Lifecycle events](../integration/lifecycle-events.md): validate opt-in publication and subscribers
+- [Lifecycle events](../integration/lifecycle-events.md): validate optional publication and subscribers
 - [Reason Codes](../reference/reference-reason-codes.md): update downstream status handling

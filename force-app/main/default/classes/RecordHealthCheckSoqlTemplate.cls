@@ -12,16 +12,16 @@
  * Previously this logic was duplicated (and subtly different) across
  * RecordHealthCheckSoqlEvaluator, RecordHealthCheckCompareQueriesEvaluator, and the
  * engine's applicability path, using substring/regex scans that ignored
- * parentheses. That allowed several real defects this class fixes
- * an ORDER BY / GROUP BY / LIMIT inside a child subquery becoming the
+ * parentheses. That allowed several real defects this class fixes:
+ * - an ORDER BY / GROUP BY / LIMIT inside a child subquery becoming the
  * insertion point for the outer WITH USER_MODE (invalid SOQL);
- * a subquery/literal containing LIMIT making the outer query look capped;
- * a child aggregate making the outer query look like a pure aggregate and
+ * - a subquery/literal containing LIMIT making the outer query look capped;
+ * - a child aggregate making the outer query look like a pure aggregate and
  * suppressing the cap;
- * an oversized outer LIMIT (e.g. 50000) consuming the governor limit before
+ * - an oversized outer LIMIT (e.g. 50000) consuming the governor limit before
  * the post-query size check;
- * keyword rejection firing on words such as "update" inside a string literal.
- * Methods are static and side-effect free. Callers map TemplateException.reasonCode
+ * - keyword rejection firing on words such as "update" inside a string literal.
+ * Methods are static and do not change state. Callers map TemplateException.reasonCode
  * onto their own result/exception types.
  */
 public with sharing class RecordHealthCheckSoqlTemplate {
@@ -188,33 +188,33 @@ public with sharing class RecordHealthCheckSoqlTemplate {
    * quotes (\') inside a literal are handled.
    */
   public static String maskStringLiterals(String soql) {
-    String masked = '';
+    List<String> masked = new List<String>();
     Boolean inQuote = false;
     Integer i = 0;
     while (i < soql.length()) {
       String ch = soql.substring(i, i + 1);
       if (inQuote) {
         if (ch == '\\' && i + 1 < soql.length()) {
-          masked += '  '; // mask the backslash and the escaped character
+          masked.add('  '); // mask the backslash and the escaped character
           i += 2;
         } else if (ch == '\'') {
-          masked += '\'';
+          masked.add('\'');
           inQuote = false;
           i++;
         } else {
-          masked += ' ';
+          masked.add(' ');
           i++;
         }
       } else if (ch == '\'') {
-        masked += '\'';
+        masked.add('\'');
         inQuote = true;
         i++;
       } else {
-        masked += ch;
+        masked.add(ch);
         i++;
       }
     }
-    return masked;
+    return String.join(masked, '');
   }
 
   /** True if the query has a depth-0 aggregate function or GROUP BY. */
@@ -287,7 +287,7 @@ public with sharing class RecordHealthCheckSoqlTemplate {
    * pure aggregates (depth-0 aggregate, no depth-0 GROUP BY) get no LIMIT (illegal);
    * an existing depth-0 LIMIT greater than cap is lowered to cap;
    * otherwise a LIMIT of cap is added (before a depth-0 OFFSET if present).
-   * Callers still probe with cap+1 by passing maxRows+1 — see the evaluators.
+   * Callers still try with cap+1 by passing maxRows+1 — see the evaluators.
    */
   @TestVisible
   private static String enforceRowCap(String soql, Integer cap) {

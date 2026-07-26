@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Test-only scratch-org harness that runs each Check Set or Rule separately. */
 public class RecordHealthCheckExhaustiveSmoke implements Queueable {
   private Id recordId;

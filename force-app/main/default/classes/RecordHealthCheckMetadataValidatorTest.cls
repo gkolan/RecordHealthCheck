@@ -15,8 +15,8 @@ private class RecordHealthCheckMetadataValidatorTest {
     System.assertNotEquals(null, issues);
   }
 
-  // validateAsJson() is the Apex/CI entry point (no longer @AuraEnabled, HI-2).
-  // It must still return well-formed JSON for setup tooling and CI.
+  // validateAsJson() is the Apex/CI entry point and is intentionally not Aura-enabled.
+  // It must still return valid JSON for setup tooling and CI.
   @isTest
   static void validateAsJsonReturnsSerializedIssues() {
     Test.startTest();
@@ -32,7 +32,7 @@ private class RecordHealthCheckMetadataValidatorTest {
   }
 
   // Guards the shipped examples: every active packaged Check Set and Rule must
-  // validate clean. If this fails, an example rule has drifted out of spec and
+  // validate clean. If this fails, an example rule has gotten out of sync with the spec and
   // would surface a runtime error to an admin who copied it. The failure
   // message lists each offending component so the fix is obvious.
   @isTest
@@ -96,7 +96,7 @@ private class RecordHealthCheckMetadataValidatorTest {
     );
 
     List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = new RecordHealthCheckMetadataValidator()
-      .validateRecordsForTest(
+      .validateRecords(
         new List<Record_Health_Check_Set__mdt>{ checkSet },
         new List<Record_Health_Check_Rule__mdt>()
       );

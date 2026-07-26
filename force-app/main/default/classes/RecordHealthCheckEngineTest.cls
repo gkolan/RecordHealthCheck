@@ -368,6 +368,20 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
+  @IsTest
+  static void bindTokensSupportsTokenInsideStringLiteral() {
+    Account accountRecord = new Account(Name = 'O\'Brien');
+    String bound = new RecordHealthCheckSoqlEvaluator()
+      .bindTokens(
+        'SELECT Id FROM Account WHERE Name LIKE \'%{!record.Name}%\'',
+        accountRecord
+      );
+    System.assertEquals(
+      'SELECT Id FROM Account WHERE Name LIKE \'%O\\\'Brien%\'',
+      bound
+    );
+  }
+
   @isTest
   static void bindTokensDoesNotReExpandTokenTextFromFieldValues() {
     Account accountRecord = new Account(
@@ -658,6 +672,16 @@ private class RecordHealthCheckEngineTest {
     source.actionLabel = 'Open account';
     source.actionUrl = '/lightning/r/Account/001xx/view';
     source.fixInstructions = 'Review the record.';
+    source.actualValueSource = new RecordHealthCheckValueSource.Detail(
+      'AnnualRevenue',
+      '100000',
+      null
+    );
+    source.expectedValueSource = new RecordHealthCheckValueSource.Detail(
+      'Fixed value',
+      '100000',
+      'numeric comparison'
+    );
 
     RecordHealthCheckResult copy = new RecordHealthCheckEngine()
       .copyResult(source);
@@ -666,6 +690,30 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals(source.actionLabel, copy.actionLabel);
     System.assertEquals(source.actionUrl, copy.actionUrl);
     System.assertEquals(source.fixInstructions, copy.fixInstructions);
+    System.assertEquals(
+      source.actualValueSource.sourceLabel,
+      copy.actualValueSource.sourceLabel
+    );
+    System.assertEquals(
+      source.expectedValueSource.coercionLabel,
+      copy.expectedValueSource.coercionLabel
+    );
+  }
+
+  @isTest
+  static void templateFailurePreservesSpecificReasonCode() {
+    RecordHealthCheckTemplateService.TemplateException ex = new RecordHealthCheckTemplateService.TemplateException(
+      'Completed text exceeded 20,000 characters.'
+    );
+    ex.reasonCode = 'RESOLVED_TEMPLATE_TOO_LONG';
+
+    RecordHealthCheckResult result = new RecordHealthCheckEngine()
+      .templateFailureResult(ex);
+
+    System.assertEquals('UNABLE_TO_EVALUATE', result.status);
+    System.assertEquals('RESOLVED_TEMPLATE_TOO_LONG', result.reasonCode);
+    System.assertEquals(ex.getMessage(), result.message);
+    System.assertEquals(ex.getMessage(), result.detailMessage);
   }
 
   @isTest

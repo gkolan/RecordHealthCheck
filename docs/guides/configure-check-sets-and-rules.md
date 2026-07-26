@@ -21,7 +21,7 @@ Lightning Web Component.
 | Choose how a Rule gets its answer | [What it can check](#2-what-it-can-check) | Select Verify with a formula, Verify with a query, Compare two queries, or Verify with Apex |
 | Make results understandable | [Result meanings](#5-result-meanings) | Distinguish business failures, skipped Rules, unavailable answers, and system problems |
 | Limit a Rule to the right records | [Applicability and dependencies](#10-applicability-and-dependencies) | Use formula, count-query, or Apex applicability without turning a non-applicable record into a failure |
-| Guide users toward a correction | [Configure action links](configure-action-links.md) | Add Fix Message and safe Action URL guidance to failed Rules |
+| Guide users toward a correction | [Configure action links](configure-action-links.md) | Add Fix Message, Action Label, and a safe Action URL to failed Rules |
 | Diagnose a problem before release | [Troubleshooting](#13-troubleshooting) | Investigate configuration, access, query, formula, Apex, and component issues |
 | Review production readiness | [Review checklist](#14-review-checklist) | Confirm security, behavior, messages, limits, and representative test coverage |
 
@@ -39,7 +39,7 @@ Lightning Web Component.
 | [8. Compare two queries Rules](#8-compare-two-queries-rules) | Dual-query patterns |
 | [9. Apex rules](#9-apex-rules) | Custom Apex patterns |
 | [10. Applicability and dependencies](#10-applicability-and-dependencies) | Gating and prerequisites |
-| [11. Merge tokens](#11-merge-tokens) | `{!record.Field}` in messages and SOQL <!-- merge-fallback-optional-example --> |
+| [11. Merge tokens](#11-merge-tokens) | `{!record.Field}` in messages and SOQL |
 | [12. Security and guardrails](#12-security-and-guardrails) | SOQL safety and permissions |
 | [13. Troubleshooting](#13-troubleshooting) | Symptoms, causes, and fixes |
 | [14. Review checklist](#14-review-checklist) | Pre-activation validation |
@@ -147,7 +147,7 @@ a billing country, and its revenue is at least 10% of the top-level portfolio Ac
     <tr><td>Display Found Formula</td><td><code>AnnualRevenue</code></td></tr>
     <tr><td>Display Expected Formula</td><td><code>Parent.Parent.AnnualRevenue * 0.10</code></td></tr>
     <tr><td>Formula Result Type</td><td><code>NUMBER</code></td></tr>
-    <tr><td>Message When Failed</td><td><code>{!record.Name|this record} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.</code></td></tr>
+    <tr><td>Message When Failed</td><td><code>{!record.Name} needs a contact channel, billing country, and revenue equal to at least 10% of its top-level portfolio account.</code></td></tr>
   </tbody>
 </table>
 
@@ -164,8 +164,8 @@ does not guarantee two Account parents.
 | Formula that depends on another formula | Reference the final field API name; the engine loads the dependency chain. |
 | Number, text, date, Boolean, or picklist calculation | Use its normal Salesforce formula type and functions. |
 
-Calculated dependencies can be nested to any depth. Do not rewrite the check to use the calculated
-field's underlying source fields.
+Calculated dependencies can be nested to any depth. Reference the calculated field's API name
+directly; the engine loads its dependency chain.
 
 ### Showing Found vs Expected (optional)
 
@@ -184,7 +184,7 @@ grandparent Account's revenue as **Expected**, while the complete Boolean formul
 pass/fail decision.
 
 > [!CAUTION]
-> **Keep Found/Expected consistent with Pass Condition.** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassConditionFormula__c` compares A to B, use A for `DisplayFoundFormula__c` and B for `DisplayExpectedFormula__c`. Otherwise a row can **pass while Found ≠ Expected** or fail while the values look equal. A safe habit: copy each side of the comparison in `PassConditionFormula__c` verbatim into the matching display formula.
+> **Keep Found/Expected consistent with Pass Condition.** Because the engine does not compare the two sides itself, nothing stops you from showing values that disagree with the actual result. If `PassConditionFormula__c` compares A to B, use A for `DisplayFoundFormula__c` and B for `DisplayExpectedFormula__c`. Otherwise a row can **pass while Found ≠ Expected** or fail while the values look equal. A safe habit: copy each side of the comparison in `PassConditionFormula__c` exactly into the matching display formula.
 
 | Situation | Configuration | Display behavior |
 | --- | --- | --- |
@@ -215,7 +215,7 @@ for result modes and edge cases.
 
 | Setup field | Value |
 | --- | --- |
-| Source Query | <code>SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id&#124;001000000000000AAA}</code> |
+| Source Query | <code>SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}</code> |
 | How To Read Query Results | `ONE_RESULT` |
 | Comparison Operator | `GREATER_THAN` |
 | Expected Value Source | `FIXED_VALUE` |
@@ -239,7 +239,7 @@ An alias is required except for bare `COUNT()`.
 
 | Setup field | Value |
 | --- | --- |
-| Source Query | <code>SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id&#124;001000000000000AAA} AND IsClosed = false</code> |
+| Source Query | <code>SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false</code> |
 | Source Query Field | `totalAmount` |
 | How To Read Query Results | `ONE_RESULT` |
 | Comparison Operator | `EQUALS` |
@@ -262,8 +262,8 @@ contract.
 
 | Setup field | Value |
 | --- | --- |
-| Source Query | <code>SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id&#124;001000000000000AAA}</code> |
-| Comparison Query | <code>SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id&#124;001000000000000AAA} AND IsClosed = false</code> |
+| Source Query | <code>SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}</code> |
+| Comparison Query | <code>SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false</code> |
 | How To Read Query Results | `ONE_RESULT` |
 | Comparison Operator | `GREATER_THAN_OR_EQUAL` |
 
@@ -300,12 +300,13 @@ Set **Prerequisite Rule** to the prerequisite `DeveloperName`. Use sparingly for
 ## 11. Merge tokens
 
 Merge tokens let one Rule speak about the record, its configuration, and its result without hard-coding those
-values. Use the namespace and property exactly as shown.
+values. Use the namespace and property exactly as shown. For the complete namespace, surface,
+fallback, and limit contract, see the [Merge-token reference](../reference/reference-merge-tokens.md).
 
 The fallback is optional. A token without one inserts the resolved value when populated and inserts blank text when
 the value is null, empty, or whitespace-only:
 
-`{!rhcRule.checkTitle}` <!-- merge-fallback-optional-example -->
+`{!rhcRule.checkTitle}`
 
 For example, adding ` needs attention.` after that token produces `Data quality needs attention.` when the Check
 Title is `Data quality`. If the Check Title is blank, it produces ` needs attention.`. Check Title is required on
@@ -331,10 +332,10 @@ Use any readable field API name from the current record. Relationship paths may 
 <table>
   <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
   <tbody>
-    <tr><td><code>{!record.Name|this record}</code></td><td>The current record's Name.</td><td><code>Review {!record.Name|this record} before approval.</code></td></tr>
-    <tr><td><code>{!record.FieldApiName|Fallback value}</code></td><td>Any readable field on the current record. Replace <code>FieldApiName</code> with the Salesforce API name.</td><td><code>{!record.Customer_Tier__c|Standard} customers require an annual review.</code></td></tr>
-    <tr><td><code>{!record.Owner.Name|an unassigned owner}</code></td><td>A field from a related record.</td><td><code>Ask {!record.Owner.Name|an unassigned owner} to confirm the account details.</code></td></tr>
-    <tr><td><code>{!record.Parent.Parent.Name|no top-level account}</code></td><td>A field reached through multiple lookup relationships.</td><td><code>Escalate the review to {!record.Parent.Parent.Name|no top-level account}.</code></td></tr>
+    <tr><td><code>{!record.Name}</code></td><td>The current record's Name.</td><td><code>Review {!record.Name} before approval.</code></td></tr>
+    <tr><td><code>{!record.FieldApiName}</code></td><td>Any readable field on the current record. Replace <code>FieldApiName</code> with the Salesforce API name. Append <code>|Fallback value</code> when a blank value needs a substitute.</td><td><code>{!record.Customer_Tier__c|Standard} customers require an annual review.</code></td></tr>
+    <tr><td><code>{!record.Owner.Name}</code></td><td>A field from a related record.</td><td><code>Ask {!record.Owner.Name} to confirm the account details.</code></td></tr>
+    <tr><td><code>{!record.Parent.Parent.Name}</code></td><td>A field reached through multiple lookup relationships.</td><td><code>Escalate the review to {!record.Parent.Parent.Name}.</code></td></tr>
   </tbody>
 </table>
 
@@ -343,14 +344,14 @@ Use any readable field API name from the current record. Relationship paths may 
 <table>
   <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
   <tbody>
-    <tr><td><code>{!rhcRule.developerName|rule unavailable}</code></td><td>The Rule's stable Developer Name.</td><td><code>Give support rule {!rhcRule.developerName|rule unavailable}.</code></td></tr>
-    <tr><td><code>{!rhcRule.masterLabel|Unnamed rule}</code></td><td>The Rule label shown in Setup.</td><td><code>Review the configuration for {!rhcRule.masterLabel|Unnamed rule}.</code></td></tr>
-    <tr><td><code>{!rhcRule.checkTitle|this check}</code></td><td>The user-facing Check Title.</td><td><code>{!rhcRule.checkTitle|This check} needs attention.</code></td></tr>
-    <tr><td><code>{!rhcRule.checkDescription|No description provided}</code></td><td>The Check Description.</td><td><code>Requirement: {!rhcRule.checkDescription|No description provided}.</code></td></tr>
-    <tr><td><code>{!rhcRule.category|general}</code></td><td>The Rule's Category label.</td><td><code>This is a {!rhcRule.category|general} readiness requirement.</code></td></tr>
-    <tr><td><code>{!rhcRule.evaluationType|not assigned}</code></td><td>The Evaluation Type label.</td><td><code>This requirement uses {!rhcRule.evaluationType|an unassigned evaluation method}.</code></td></tr>
-    <tr><td><code>{!rhcRule.failureSeverity|important}</code></td><td>The Failure Severity label.</td><td><code>This is a {!rhcRule.failureSeverity|important} issue.</code></td></tr>
-    <tr><td><code>{!rhcRule.evaluationOrder|not assigned}</code></td><td>The Rule's evaluation order.</td><td><code>This requirement runs at position {!rhcRule.evaluationOrder|not assigned}.</code></td></tr>
+    <tr><td><code>{!rhcRule.developerName}</code></td><td>The Rule's stable Developer Name.</td><td><code>Give support rule {!rhcRule.developerName}.</code></td></tr>
+    <tr><td><code>{!rhcRule.masterLabel}</code></td><td>The Rule label shown in Setup.</td><td><code>Review the configuration for {!rhcRule.masterLabel}.</code></td></tr>
+    <tr><td><code>{!rhcRule.checkTitle}</code></td><td>The user-facing Check Title.</td><td><code>{!rhcRule.checkTitle} needs attention.</code></td></tr>
+    <tr><td><code>{!rhcRule.checkDescription}</code></td><td>The Check Description.</td><td><code>Requirement: {!rhcRule.checkDescription}.</code></td></tr>
+    <tr><td><code>{!rhcRule.category}</code></td><td>The Rule's Category label.</td><td><code>This is a {!rhcRule.category} readiness requirement.</code></td></tr>
+    <tr><td><code>{!rhcRule.evaluationType}</code></td><td>The Evaluation Type label.</td><td><code>This requirement uses {!rhcRule.evaluationType}.</code></td></tr>
+    <tr><td><code>{!rhcRule.failureSeverity}</code></td><td>The Failure Severity label.</td><td><code>This is a {!rhcRule.failureSeverity} issue.</code></td></tr>
+    <tr><td><code>{!rhcRule.evaluationOrder}</code></td><td>The Rule's evaluation order.</td><td><code>This requirement runs at position {!rhcRule.evaluationOrder}.</code></td></tr>
   </tbody>
 </table>
 
@@ -359,11 +360,11 @@ Use any readable field API name from the current record. Relationship paths may 
 <table>
   <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
   <tbody>
-    <tr><td><code>{!rhcSet.developerName|set unavailable}</code></td><td>The Check Set's stable Developer Name.</td><td><code>Give support Check Set {!rhcSet.developerName|set unavailable}.</code></td></tr>
-    <tr><td><code>{!rhcSet.masterLabel|Unnamed check set}</code></td><td>The Check Set label shown in Setup.</td><td><code>Review the configuration for {!rhcSet.masterLabel|Unnamed check set}.</code></td></tr>
-    <tr><td><code>{!rhcSet.cardTitle|Record Health Check}</code></td><td>The title users see on the card.</td><td><code>Return to {!rhcSet.cardTitle|Record Health Check} after making the correction.</code></td></tr>
-    <tr><td><code>{!rhcSet.cardSubtitle|No additional details}</code></td><td>The subtitle users see on the card.</td><td><code>Review scope: {!rhcSet.cardSubtitle|No additional details}.</code></td></tr>
-    <tr><td><code>{!rhcSet.objectApiName|object unavailable}</code></td><td>The Salesforce object API name configured for the Check Set.</td><td><code>This requirement evaluates a {!rhcSet.objectApiName|record} record.</code></td></tr>
+    <tr><td><code>{!rhcSet.developerName}</code></td><td>The Check Set's stable Developer Name.</td><td><code>Give support Check Set {!rhcSet.developerName}.</code></td></tr>
+    <tr><td><code>{!rhcSet.masterLabel}</code></td><td>The Check Set label shown in Setup.</td><td><code>Review the configuration for {!rhcSet.masterLabel}.</code></td></tr>
+    <tr><td><code>{!rhcSet.cardTitle}</code></td><td>The title users see on the card.</td><td><code>Return to {!rhcSet.cardTitle} after making the correction.</code></td></tr>
+    <tr><td><code>{!rhcSet.cardSubtitle}</code></td><td>The subtitle users see on the card.</td><td><code>Review scope: {!rhcSet.cardSubtitle}.</code></td></tr>
+    <tr><td><code>{!rhcSet.objectApiName}</code></td><td>The Salesforce object API name configured for the Check Set.</td><td><code>This requirement evaluates a {!rhcSet.objectApiName} record.</code></td></tr>
   </tbody>
 </table>
 
@@ -374,13 +375,13 @@ These values are available after the Rule has been evaluated.
 <table>
   <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
   <tbody>
-    <tr><td><code>{!rhcResult.status|an unknown result}</code></td><td>The final status, such as Pass, Fail, Skipped, or Unable to Evaluate.</td><td><code>The review returned {!rhcResult.status|an unknown result}.</code></td></tr>
-    <tr><td><code>{!rhcResult.foundValue|not measured}</code></td><td>The value the Rule found.</td><td><code>Found {!rhcResult.foundValue|not measured} open cases.</code></td></tr>
-    <tr><td><code>{!rhcResult.foundValuePluralSuffix|s}</code></td><td>An empty value for one item or <code>s</code> for multiple items.</td><td><code>Found {!rhcResult.foundValue|no} issue{!rhcResult.foundValuePluralSuffix|s}.</code></td></tr>
-    <tr><td><code>{!rhcResult.expectedValue|the configured target}</code></td><td>The value the Rule expected.</td><td><code>Expected {!rhcResult.expectedValue|the configured target}.</code></td></tr>
-    <tr><td><code>{!rhcResult.failedRecordCount|0}</code></td><td>The number of returned records that failed.</td><td><code>{!rhcResult.failedRecordCount|No} contacts are missing email.</code></td></tr>
-    <tr><td><code>{!rhcResult.totalRecordCount|0}</code></td><td>The total number of returned records evaluated.</td><td><code>Reviewed {!rhcResult.totalRecordCount|no} related contacts.</code></td></tr>
-    <tr><td><code>{!rhcResult.reasonCode|reason unavailable}</code></td><td>The diagnostic Reason Code.</td><td><code>The check could not finish because {!rhcResult.reasonCode|the reason is unavailable}.</code></td></tr>
+    <tr><td><code>{!rhcResult.status}</code></td><td>The final status, such as Pass, Fail, Skipped, or Unable to Evaluate.</td><td><code>The review returned {!rhcResult.status}.</code></td></tr>
+    <tr><td><code>{!rhcResult.foundValue}</code></td><td>The value the Rule found.</td><td><code>Found {!rhcResult.foundValue} open cases.</code></td></tr>
+    <tr><td><code>{!rhcResult.foundValuePluralSuffix}</code></td><td>An empty value for one item or <code>s</code> for multiple items.</td><td><code>Found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix|s}.</code></td></tr>
+    <tr><td><code>{!rhcResult.expectedValue}</code></td><td>The value the Rule expected.</td><td><code>Expected {!rhcResult.expectedValue}.</code></td></tr>
+    <tr><td><code>{!rhcResult.failedRecordCount}</code></td><td>The number of returned records that failed.</td><td><code>{!rhcResult.failedRecordCount} contacts are missing email.</code></td></tr>
+    <tr><td><code>{!rhcResult.totalRecordCount}</code></td><td>The total number of returned records evaluated.</td><td><code>Reviewed {!rhcResult.totalRecordCount} related contacts.</code></td></tr>
+    <tr><td><code>{!rhcResult.reasonCode}</code></td><td>The diagnostic Reason Code.</td><td><code>The check could not finish because {!rhcResult.reasonCode}.</code></td></tr>
   </tbody>
 </table>
 
@@ -389,11 +390,11 @@ These values are available after the Rule has been evaluated.
 <table>
   <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
   <tbody>
-    <tr><td><code>{!rhcRun.runId|unavailable}</code></td><td>The identifier shared by checks in the same run.</td><td><code>If the problem continues, give support run {!rhcRun.runId|unavailable}.</code></td></tr>
-    <tr><td><code>{!rhcRun.source|an unknown source}</code></td><td>Where the run started, such as the record page, Apex, or Flow.</td><td><code>This review was started from {!rhcRun.source|an unknown source}.</code></td></tr>
-    <tr><td><code>{!rhcRun.startedAt|start time unavailable}</code></td><td>When the run started.</td><td><code>The review started at {!rhcRun.startedAt|an unknown time}.</code></td></tr>
-    <tr><td><code>{!rhcRun.completedAt|completion time unavailable}</code></td><td>When the run completed.</td><td><code>The review completed at {!rhcRun.completedAt|an unknown time}.</code></td></tr>
-    <tr><td><code>{!rhcRun.durationMs|0}</code></td><td>How many milliseconds the run took.</td><td><code>The review completed in {!rhcRun.durationMs|0} milliseconds.</code></td></tr>
+    <tr><td><code>{!rhcRun.runId}</code></td><td>The identifier shared by checks in the same run.</td><td><code>If the problem continues, give support run {!rhcRun.runId}.</code></td></tr>
+    <tr><td><code>{!rhcRun.source}</code></td><td>Where the run started, such as the record page, Apex, or Flow.</td><td><code>This review was started from {!rhcRun.source}.</code></td></tr>
+    <tr><td><code>{!rhcRun.startedAt}</code></td><td>When the run started.</td><td><code>The review started at {!rhcRun.startedAt}.</code></td></tr>
+    <tr><td><code>{!rhcRun.completedAt}</code></td><td>When the run completed.</td><td><code>The review completed at {!rhcRun.completedAt}.</code></td></tr>
+    <tr><td><code>{!rhcRun.durationMs}</code></td><td>How many milliseconds the run took.</td><td><code>The review completed in {!rhcRun.durationMs} milliseconds.</code></td></tr>
   </tbody>
 </table>
 
@@ -404,7 +405,7 @@ The field determines which contexts are valid:
 | Failure, unable-to-evaluate, not-applicable, fix, action-label, Found-text, and Expected-text fields | `record`, `rhcResult`, `rhcRun`, `rhcRule`, `rhcSet` |
 | Action URL | `record`, `rhcRun`, `rhcRule`, `rhcSet`; result tokens are intentionally rejected |
 | Source Query, Comparison Query, and applicability Count Query | `record` only |
-| Salesforce formula fields | Use Salesforce formula syntax directly; do not put merge tokens inside formulas |
+| Salesforce formula fields | Use Salesforce formula syntax directly; leave merge tokens for message and SOQL fields |
 
 - Use field API names exactly as shown in Setup; custom fields include the `__c` suffix.
 - Record tokens support text, ID/reference, number, currency, percent, checkbox, date, date/time, picklist,
@@ -433,10 +434,10 @@ SOQL examples live in the local [Query](../examples/README.md#query-examples) an
 **Message When Failed** and **Message When Unable To Evaluate** support multiple lines. Press **Enter** in Setup to start a new line; each line renders as a separate line on the card. Use a blank line (press Enter twice) to add spacing between paragraphs.
 
 ```text
-{!record.Name|this record} is out of balance.
+{!record.Name} is out of balance.
 
 Debit total: {!record.Debit_Total__c|0}
-Expected credit net: {!record.Credit_Net__c|0}
+Expected credit net: {!record.Credit_Net__c}
 
 Contact Finance to reconcile.
 ```
@@ -450,7 +451,7 @@ Contact Finance to reconcile.
 - Sharing, CRUD, and field access apply (`WITH USER_MODE` on dynamic SOQL).
 - Keep queries narrow: clear `WHERE` clauses, merge tokens instead of hard-coded Ids.
 - Editing `Record_Health_Check_Rule__mdt` is a privileged operation: anyone with Rule edit access can run SOQL as the viewing user.
-- Do not put secrets or stack traces in user-facing messages.
+- Keep user-facing messages free of secrets and stack traces.
 - Unsafe SOQL (DML keywords, `FOR UPDATE`, `ALL ROWS`) is rejected.
 
 ## 13. Troubleshooting
@@ -471,8 +472,8 @@ Contact Finance to reconcile.
 | System Error | Apex or framework exception | Apex class, Salesforce logs, and Show Diagnostics. |
 | Stale results after metadata edit | Component not reloaded | Refresh the record page. |
 | Stale results after inline edit | No auto-rerun on record save | Click **Rerun** or refresh the page. |
-| Prerequisite skipped | 25-check cap | Lower the prerequisite's Evaluation Order so it runs within the first 25, or reduce active Rules. |
-| Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Stay within `MAX_RECORDS_PER_CALL` (200) and `MAX_EVALUATIONS_PER_CALL` (15); prefer `runSet` with a focused Check Set; see [Apex API](../reference/reference-apex-api.md) or [Flow actions](../integration/flow-actions.md). |
+| Prerequisite skipped | Framework run cap | Lower the prerequisite's Evaluation Order so it falls within the configured execution window, or reduce active Rules. |
+| Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Keep Apex calls within `MAX_EVALUATIONS_PER_CALL` (15); Flow invocations also accept at most `MAX_FLOW_RECORDS_PER_CALL` (200) requests. Prefer `runSet` with a focused Check Set; see [Apex API](../reference/reference-apex-api.md) or [Flow actions](../integration/flow-actions.md). |
 | Check passes in UI but fails from custom automation | Different running user (FLS) | Automation runs as the integration or invoking user: verify field access. |
 | Expected a lifecycle event but none arrived | Publishing is off, the run was automatic page load, or the transaction rolled back | Enable **Publish Run Event** or **Publish Result Event**; use explicit Run/Rerun, Apex, or Flow; confirm the transaction committed; see [Platform events](../integration/lifecycle-events.md). |
 
@@ -519,14 +520,14 @@ Automation uses the public `RecordHealthCheck` Apex class or the separate Rule a
 3. LWC coordinates runs (dependencies, concurrent evaluations, display modes, run token).
 4. Apex evaluates each Rule (applicability, dependencies, evaluator routing).
 5. LWC renders results and summaries. Automatic runs publish nothing; explicit Run and Rerun
-   actions publish opted-in Rule events and one opted-in Set completion event.
+   actions publish enabled Rule events and one enabled Set completion event.
 
 **Programmatic flow (Apex / Flow):**
 
 1. Caller invokes `RecordHealthCheck.runRule`, `runSet`, Flow **Run Record Health Check Rule**, or Flow **Run Record Health Check Set**.
 2. The public Apex class enforces call limits and returns `RecordHealthCheckResult` or
    `RecordHealthCheckSetResult` (`contractVersion` `1.0`).
-3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` emits Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
+3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` publishes Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
 
 **Boundaries:**
 
@@ -538,7 +539,8 @@ Automation uses the public `RecordHealthCheck` Apex class or the separate Rule a
 - Read-only evaluation: no record mutations from checks.
 - Formula checks require API v63.0+ (FormulaEval). Package source API version is 66.0.
 - Up to **5** concurrent Apex evaluations per LWC run (queued beyond that) when Stop after a system error is off; fully sequential when it is on.
-- Apex and Flow callers must stay within 200 records and 15 Rule evaluations per request.
+- Apex callers must stay within 15 planned Rule evaluations per request. Flow invocations also
+  accept at most 200 request records per transaction.
 - `recordId` changes after connect reload definitions; record-save does not auto-rerun checks.
 - Server-side dependency gate re-evaluates prerequisites (safe for direct Apex calls; may duplicate work from the LWC path).
 - Unsupported Apex plugin status strings are rejected with `APEX_EVALUATOR_ERROR`.
@@ -552,20 +554,27 @@ must receive one Rule result before it can decide whether starting the next Rule
 | Scenario | Behavior |
 | -------- | -------- |
 | Child subquery with inner `ORDER BY`/`LIMIT` on any query-based check | Handled by depth-0-aware `RecordHealthCheckSoqlTemplate` on all paths |
-| Multi-select picklist tokens | Unquoted `{!record.Field\|Fallback value}` on a resolved multi-select expands to `('A', 'B')`; quoted `'{!record.Field\|Fallback value}'` keeps `'A;B;C'`. Relationship paths follow the same rules when the related record is loaded. |
-| Same `{!record.Field\|Fallback value}` token used quoted and unquoted in one SOQL template | Each form substituted independently (2026-06-22). `Name LIKE '{!record.Name\|this record}%'` works when the exact `'{!record.Name\|this record}'` substring appears in the template. |
+| Multi-select picklist tokens | An unquoted record field token on a resolved multi-select expands to `('A', 'B')`; the same token inside single quotes keeps `'A;B;C'`. Relationship paths follow the same rules when the related record is loaded. |
+| Same record field token used quoted and unquoted in one SOQL template | Each form is substituted independently (2026-06-22). See the quoted form below the table. |
 | Null field on existing row (multi-row Query) | Rows returned but value null + `SKIP_RECORD` → **SKIPPED** / `VALUE_IS_EMPTY` (not `NoRowsResult__c`) |
 | `COMPARE_TWO_QUERIES` empty query side (`ONE_RESULT`) | Governed by **`NoRowsResult__c`** before null-field logic: distinct from null on a returned row |
 | Semicolon-only multi-select bind | Value `;` alone can produce invalid `INCLUDES ()` SOQL: avoid blank multi-select values in bind tokens |
 | Apex plugin `context.record` | Engine loads merge/formula fields referenced in messages and applicability; plugins needing other fields must query by `context.recordId` |
 | Managed-package Apex class names | `Type.forName` without namespace may not resolve classes in a managed namespace: use fully qualified API names when required |
-| Prerequisite Rule outside the 25-check cap | Dependents skip with `DEPENDENCY_NOT_IN_RUN` (LWC only) |
+| Prerequisite Rule outside the Framework run cap | Dependents skip with `DEPENDENCY_NOT_IN_RUN` (LWC only) |
 | Stop after a system error | Stops only on `ERROR`, not `FAIL` or `UNABLE_TO_EVALUATE` |
 | Empty multi-row query result | Requires an explicit `NoRowsResult__c` value (`PASS` / `FAIL` / `SKIP` / `UNABLE_TO_EVALUATE`) |
 | Static comparison values with locale formatting | Untyped text: may fall through to string comparison |
+
+The quoted form is substituted only when that exact quoted token text appears in the template, as in
+this filter:
+
+```sql
+Name LIKE '{!record.Name|this record}%'
+```
 
 ## Related
 
 - [Create your first Rule](../installation/03-create-your-first-rule.md): first install and first Rule
 - [Examples library](../examples/README.md): practical patterns by Evaluation Type
-- [Architecture map](../reference/reference-architecture-map.md): Framework source ownership
+- [Architecture](../reference/reference-architecture.md): published Framework architecture and source ownership

@@ -11,6 +11,10 @@ The **Record Health Check** Lightning Web Component supports both experiences. A
 evaluation is read-only and never publishes. An explicit **Run** or **Rerun** is a deliberate user
 action and can publish when the Check Set and Rules opt in.
 
+The component is available only on Lightning record pages. App and Home pages do not provide the
+`recordId` required for evaluation, so the component intentionally does not appear in their App
+Builder palettes.
+
 ## Choose the run experience
 
 | User experience | Check Set setting | When to use it | Lifecycle events |
@@ -30,6 +34,8 @@ action and can publish when the Check Set and Rules opt in.
 - It does not block record save or automatically remediate failures.
 - Automatic page load is not consent to publish lifecycle events.
 - A completed card does not prove that an event subscriber processed anything.
+- It is not available on App Pages or Home Pages. The component evaluates one record, so it is
+  published only for record pages and does not appear in the App Builder palette elsewhere.
 
 New to the model? Read [Integrate Record Health Check](../integration/README.md) first.
 
@@ -37,8 +43,9 @@ New to the model? Read [Integrate Record Health Check](../integration/README.md)
 
 1. Assign **Record Health Check User** to the viewer and grant access to the record and fields used
    by the selected Rules.
-2. In Lightning App Builder, add **Record Health Check** to a record page and select an active Check
-   Set for that object.
+2. In Lightning App Builder, open a **record page** and add **Record Health Check**, then select an
+   active Check Set for that object. The component is listed only while you are editing a record
+   page; it is not offered on App Pages or Home Pages because it has no record to evaluate there.
 3. On the Check Set Custom Metadata record, set **When Checks Run** to **When the page opens** or
    **When the user clicks Run**.
 4. Save and activate the Lightning page, then open a matching record.
@@ -79,21 +86,22 @@ Rerun provide the deliberate boundary required before publication is eligible.
 | Check Set **When Checks Run** = **When the user clicks Run** (`RUN_ON_REQUEST`) | Wait for an explicit Run; publication can be enabled |
 | Run or Rerun button | Explicit user-initiated run; publication can be enabled |
 
-The visible output is the completed row list and summary counts. Results remain in component state;
-the component does not create a history record.
+The visible output is the completed row list and summary counts. Long Found and Expected values
+clamp to two lines; use the adjacent `+`/`−` control to expand or collapse the complete value.
+Results remain in component state; the component does not create a history record.
 
 ## Event outputs for Run and Rerun
 
 ### Check Set Run event
 
-After every row resolves, an opted-in Set can produce `Record_Health_Check_Set_Run__e` with
+After every row resolves, a Set with publication enabled can produce `Record_Health_Check_Set_Run__e` with
 `Phase__c = COMPLETED` and `Source__c = USER_INITIATED`. See
 [Check Set Run event fields](../metadata/event-set-run.md#fields)
 for the complete field list.
 
 ### Rule Result event
 
-Each server-finalized, opted-in Rule can produce `Record_Health_Check_Rule_Result__e` with
+Each server-finalized Rule with publication enabled can produce `Record_Health_Check_Rule_Result__e` with
 `Source__c = USER_INITIATED`. See
 [Rule Result event fields](../metadata/event-rule-result.md#fields)
 for the complete field list.
@@ -116,6 +124,10 @@ For an explicit run:
 
 Results the client determines without calling Apex, such as a dependency skip, count toward the Set
 totals but do not create a separate Rule Result event, because no server Rule evaluation finalized.
+
+Within one server evaluation, a prerequisite shared by multiple dependent Rules is memoized and
+evaluated once. The cache is cleared when that top-level evaluation finishes; a later Run or Rerun
+starts from current record data.
 
 ## Best-effort behavior
 

@@ -1,12 +1,13 @@
 # Account relationship and risk demo
 
-Create a complete 30-day scratch org with one command:
+Create a complete 30-day scratch org with one command. Set `DEV_HUB_ALIAS` to your
+Dev Hub org alias first:
 
 ```bash
-./scripts/setup-demo.sh rhc-demo
+DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-demo.sh rhc-demo
 ```
 
-Set a different Dev Hub when needed:
+Use a different scratch-org alias when needed:
 
 ```bash
 DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-demo.sh my-demo-alias

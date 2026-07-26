@@ -152,7 +152,7 @@ private class RecordHealthCheckCoverageTest {
     queryMissingMode.QueryResultHandling__c = null;
     assertUnable(
       service.validateRuleForEvaluation(queryMissingMode),
-      RecordHealthCheckConfigService.RC_UNABLE_TO_EVALUATE
+      RecordHealthCheckConfigService.RC_INVALID_CONFIG
     );
 
     Record_Health_Check_Rule__mdt queryBadListMode = queryRule(
@@ -170,7 +170,7 @@ private class RecordHealthCheckCoverageTest {
     queryMissingSource.ExpectedValueSource__c = null;
     assertUnable(
       service.validateRuleForEvaluation(queryMissingSource),
-      RecordHealthCheckConfigService.RC_UNABLE_TO_EVALUATE
+      RecordHealthCheckConfigService.RC_INVALID_CONFIG
     );
 
     Record_Health_Check_Rule__mdt queryMissingStatic = queryRule(
@@ -179,7 +179,7 @@ private class RecordHealthCheckCoverageTest {
     queryMissingStatic.ExpectedFixedValue__c = null;
     assertUnable(
       service.validateRuleForEvaluation(queryMissingStatic),
-      RecordHealthCheckConfigService.RC_UNABLE_TO_EVALUATE
+      RecordHealthCheckConfigService.RC_INVALID_CONFIG
     );
 
     Record_Health_Check_Rule__mdt queryMissingFormula = queryRule(
@@ -290,7 +290,7 @@ private class RecordHealthCheckCoverageTest {
     dualMissingMode.QueryResultHandling__c = null;
     assertUnable(
       service.validateRuleForEvaluation(dualMissingMode),
-      RecordHealthCheckConfigService.RC_UNABLE_TO_EVALUATE
+      RecordHealthCheckConfigService.RC_INVALID_CONFIG
     );
 
     Record_Health_Check_Rule__mdt dualBadMode = validDualRule('Dual_Bad_Mode');
@@ -540,7 +540,7 @@ private class RecordHealthCheckCoverageTest {
     crossSetSource.EvaluationOrder__c = 2;
     crossSetSource.PrerequisiteRule__c = 'Cross_Set_Target_For_Validator';
 
-    List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = validator.validateRecordsForTest(
+    List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = validator.validateRecords(
       checkSets,
       new List<Record_Health_Check_Rule__mdt>{
         missingBasics,
@@ -1195,7 +1195,7 @@ private class RecordHealthCheckCoverageTest {
       'SKIPPED'
     );
 
-    // Treat as not matching (AS_NO_MATCH) keeps null values as distinct sentinels (non-empty
+    // Treat as not matching (AS_NO_MATCH) keeps null values as distinct placeholders (non-empty
     // list), so an all-null primary cannot overlap a real comparison value.
     Record_Health_Check_Rule__mdt allNullNoMatch = allNullSkip.clone();
     allNullNoMatch.DeveloperName = 'D_List_All_Null_NoMatch';
@@ -1476,7 +1476,7 @@ private class RecordHealthCheckCoverageTest {
   @IsTest
   static void formulaEvaluatorHonorsDeclaredReturnType() {
     // a declared single-value return type (FormulaResultType__c) resolves
-    // the formula in a single FormulaEval call instead of probing up to eight types.
+    // the formula in a single FormulaEval call instead of trying up to eight types.
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckFormulaEvaluator evaluator = new RecordHealthCheckFormulaEvaluator();
 
@@ -1518,7 +1518,7 @@ private class RecordHealthCheckCoverageTest {
       'Declared Text type should resolve a string formula in one FormulaEval call.'
     );
 
-    // Auto (no declared type) probes multiple types but resolves the same value.
+    // Auto (no declared type) tries multiple types but resolves the same value.
     RecordHealthCheckFormulaEvaluator.formulaEvalCallCount = 0;
     RecordHealthCheckFormulaEvaluator.resolvedReturnTypeByFormula.clear();
     System.assertEquals(
@@ -1530,7 +1530,7 @@ private class RecordHealthCheckCoverageTest {
       'Auto (no declared type) should probe multiple return types.'
     );
 
-    // A mis-declared type ('NUMBER' for a text field) degrades to a full probe
+    // A mis-declared type ('NUMBER' for a text field) falls back to trying all return types
     // and still returns the correct value rather than failing the check.
     RecordHealthCheckFormulaEvaluator.formulaEvalCallCount = 0;
     RecordHealthCheckFormulaEvaluator.resolvedReturnTypeByFormula.clear();
@@ -2246,23 +2246,15 @@ private class RecordHealthCheckCoverageTest {
     }
     System.assertEquals(
       false,
-      RecordHealthCheckComparisonEngine.applyEmptyValueHandling(
-        'AS_NO_MATCH',
-        null,
-        'x'
-      )
+      RecordHealthCheckComparisonEngine.applyEmptyValueHandling('AS_NO_MATCH')
     );
     System.assertEquals(
       null,
-      RecordHealthCheckComparisonEngine.applyEmptyValueHandling(
-        'SKIP_RECORD',
-        null,
-        'x'
-      )
+      RecordHealthCheckComparisonEngine.applyEmptyValueHandling('SKIP_RECORD')
     );
     System.assertEquals(
       null,
-      RecordHealthCheckComparisonEngine.applyEmptyValueHandling(null, null, 'x')
+      RecordHealthCheckComparisonEngine.applyEmptyValueHandling(null)
     );
     System.assertEquals(
       false,
@@ -2345,16 +2337,39 @@ private class RecordHealthCheckCoverageTest {
       'No',
       RecordHealthCheckComparisonEngine.formatValue('False')
     );
-    // Bare numbers gain thousands separators; a Decimal's all-zero fraction is
-    // dropped, a real fraction survives, and numeric operand strings are grouped
-    // the same way so the two sides of a comparison stay consistent.
+    // Typed numbers gain thousands separators; digit-only strings retain their
+    // exact spelling because they may be postal codes, years, or identifiers.
     System.assertEquals(
       '70,000',
       RecordHealthCheckComparisonEngine.formatValue(70000.0)
     );
     System.assertEquals(
-      '500,000',
+      'to equal 100,000',
+      RecordHealthCheckComparisonEngine.describeExpectedForActual(
+        'EQUALS',
+        '100000',
+        Decimal.valueOf('100000')
+      )
+    );
+    System.assertEquals(
+      'to equal 0012345',
+      RecordHealthCheckComparisonEngine.describeExpectedForActual(
+        'EQUALS',
+        '0012345',
+        '0012345'
+      )
+    );
+    System.assertEquals(
+      '500000',
       RecordHealthCheckComparisonEngine.formatValue('500000')
+    );
+    System.assertEquals(
+      '0012345',
+      RecordHealthCheckComparisonEngine.formatValue('0012345')
+    );
+    System.assertEquals(
+      '90210',
+      RecordHealthCheckComparisonEngine.formatValue('90210')
     );
     System.assertEquals(
       '70,000.5',
@@ -2681,10 +2696,6 @@ private class RecordHealthCheckCoverageTest {
       formula.safeCannotEvaluateMessage(formulaMessageRule)
     );
     System.assertEquals(
-      accountRecord.BillingCity,
-      formula.resolveFieldPath(accountRecord, 'BillingCity')
-    );
-    System.assertEquals(
       'INVALID_FORMULA',
       formula.classifyFormulaException(
         new RecordHealthCheckFormulaEvaluator.FormulaEvaluationException(
@@ -2844,13 +2855,6 @@ private class RecordHealthCheckCoverageTest {
       ),
       'INVALID_FORMULA'
     );
-    System.assertEquals(
-      null,
-      formula.resolveFieldPath(
-        new Account(Name = 'No Parent'),
-        'Parent.BillingCity'
-      )
-    );
 
     RecordHealthCheckApexEvaluator evaluator = new RecordHealthCheckApexEvaluator();
     Record_Health_Check_Rule__mdt apex = apexRule(
@@ -2908,6 +2912,38 @@ private class RecordHealthCheckCoverageTest {
         accountRecord
       ),
       'APEX_CLASS_NOT_FOUND'
+    );
+    Record_Health_Check_Rule__mdt invalidArrayParameters = apexRule(
+      'A_Array_Params',
+      'AccountHasRecentActivityCheck',
+      null
+    );
+    invalidArrayParameters.ApexParametersJson__c = '["not-an-object"]';
+    assertReason(
+      evaluator.evaluate(
+        invalidArrayParameters,
+        accountRecord.Id,
+        accountRecord
+      ),
+      'INVALID_APEX_PARAMETERS'
+    );
+    Record_Health_Check_Rule__mdt malformedParameters = apexRule(
+      'A_Bad_Params',
+      'AccountHasRecentActivityCheck',
+      null
+    );
+    malformedParameters.ApexParametersJson__c = '{bad json';
+    assertReason(
+      evaluator.evaluate(malformedParameters, accountRecord.Id, accountRecord),
+      'INVALID_APEX_PARAMETERS'
+    );
+    assertReason(
+      evaluator.evaluate(
+        apexRule('A_No_Record', 'AccountHasRecentActivityCheck', null),
+        null,
+        accountRecord
+      ),
+      'APEX_EVALUATOR_ERROR'
     );
 
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
@@ -3082,12 +3118,7 @@ private class RecordHealthCheckCoverageTest {
     );
     RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
     Set<String> blankFieldSet = new Set<String>();
-    engine.addReadableField(
-      blankFieldSet,
-      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
-        .fields.getMap(),
-      null
-    );
+    engine.addReadableField(blankFieldSet, Account.SObjectType, null);
     System.assertEquals(0, blankFieldSet.size());
 
     Record_Health_Check_Rule__mdt skippedRule = queryRule('Isolated_Skipped');
@@ -3198,6 +3229,126 @@ private class RecordHealthCheckCoverageTest {
       false,
       soql.isMultiSelectPicklist(accountRecord, 'Parent.Name')
     );
+    System.assertEquals(
+      '(\'Alpha\', \'Beta\')',
+      soql.buildMultiSelectIncludesClause('Alpha;; Beta;')
+    );
+    Record_Health_Check_Rule__mdt namingRule = queryRule('Naming');
+    namingRule.SourceQuery__c = null;
+    System.assertEquals('records', soql.pluralizeObject(namingRule));
+    namingRule.SourceQuery__c = 'SELECT Id FROM Category';
+    System.assertEquals('Categories', soql.pluralizeObject(namingRule));
+    namingRule.SourceQuery__c = 'SELECT Id FROM Box';
+    System.assertEquals('Boxes', soql.pluralizeObject(namingRule));
+    namingRule.SourceQuery__c = 'SELECT Id FROM Widget';
+    System.assertEquals('Widgets', soql.pluralizeObject(namingRule));
+
+    Record_Health_Check_Rule__mdt sourceRule = queryRule('Sources');
+    sourceRule.ExpectedValueSource__c = 'FIXED_VALUE';
+    System.assertEquals(
+      'Fixed value',
+      soql.describeComparisonSource(sourceRule)
+    );
+    sourceRule.ExpectedValueSource__c = 'RECORD_FORMULA';
+    System.assertEquals(
+      'Formula on this record',
+      soql.describeComparisonSource(sourceRule)
+    );
+    sourceRule.ExpectedValueSource__c = 'COMPARISON_QUERY';
+    sourceRule.ComparisonQueryField__c = 'Amount';
+    System.assertEquals(
+      'Comparison query (Amount)',
+      soql.describeComparisonSource(sourceRule)
+    );
+    sourceRule.ExpectedValueSource__c = 'UNRECOGNIZED';
+    System.assertEquals('Amount', soql.describeComparisonSource(sourceRule));
+    sourceRule.ComparisonQueryField__c = null;
+    System.assertEquals(
+      'Comparison',
+      soql.describeComparisonSource(sourceRule)
+    );
+
+    System.assertEquals(
+      true,
+      soql.coerceFallbackValue(currentUser, 'IsActive', 'true')
+    );
+    System.assertEquals(
+      Date.today(),
+      soql.coerceFallbackValue(
+        opportunityRecord,
+        'CloseDate',
+        String.valueOf(Date.today())
+      )
+    );
+    System.assertEquals(
+      42,
+      soql.coerceFallbackValue(accountRecord, 'NumberOfEmployees', '42')
+    );
+    System.assertEquals(
+      Decimal.valueOf('12.5'),
+      soql.coerceFallbackValue(accountRecord, 'AnnualRevenue', '12.5')
+    );
+    System.assertEquals(
+      Time.newInstance(9, 8, 7, 120),
+      soql.parseTimeFallback('09:08:07.12Z')
+    );
+    System.assertEquals(
+      Schema.DisplayType.STRING,
+      soql.terminalFieldType(accountRecord, 'MissingField')
+    );
+    System.assertEquals(
+      Schema.DisplayType.STRING,
+      soql.terminalFieldType(accountRecord, 'Parent.Name')
+    );
+    System.assertEquals(
+      null,
+      soql.coerceFallbackValue(accountRecord, 'Name', '  ')
+    );
+    System.assertEquals(
+      Time.newInstance(9, 8, 7, 123),
+      soql.parseTimeFallback('09:08:07.1239')
+    );
+    try {
+      soql.coerceFallbackValue(currentUser, 'IsActive', 'maybe');
+      System.assert(false, 'Expected invalid Boolean fallback to fail.');
+    } catch (RecordHealthCheckEvaluatorException ex) {
+      System.assertEquals('MISSING_BIND_VALUE', ex.reasonCode);
+    }
+    try {
+      soql.parseTimeFallback('09:08');
+      System.assert(false, 'Expected invalid time fallback to fail.');
+    } catch (RecordHealthCheckEvaluatorException ex) {
+      System.assertEquals('MISSING_BIND_VALUE', ex.reasonCode);
+    }
+
+    System.assertEquals(null, engine.describeFieldPath(null, 'Name'));
+    System.assertEquals(0, engine.scanFormulaFieldTokens(null).size());
+    engine.resolveEvalResultMessage(
+      null,
+      queryRule('Null_Result'),
+      accountRecord
+    );
+    Record_Health_Check_Rule__mdt defaultMessageRule = queryRule(
+      'Default_Message'
+    );
+    defaultMessageRule.FailureMessage__c = null;
+    RecordHealthCheckResult defaultMessageResult = new RecordHealthCheckResult();
+    defaultMessageResult.status = 'FAIL';
+    engine.resolveEvalResultMessage(
+      defaultMessageResult,
+      defaultMessageRule,
+      accountRecord
+    );
+    System.assertEquals('Check failed.', defaultMessageResult.message);
+    defaultMessageRule.ActionUrl__c =
+      '/lightning/r/Account/' + accountRecord.Id;
+    defaultMessageRule.ActionLabel__c = null;
+    engine.populateRemediationAction(
+      defaultMessageResult,
+      defaultMessageRule,
+      accountRecord
+    );
+    System.assertEquals('Fix this', defaultMessageResult.actionLabel);
 
     RecordHealthCheckCompareQueriesEvaluator compareQueries = new RecordHealthCheckCompareQueriesEvaluator();
     System.assertEquals(
@@ -3246,14 +3397,6 @@ private class RecordHealthCheckCoverageTest {
     System.assertEquals(
       'Name: ',
       evaluator.resolveMergeFields('Name: {!record.Name}', nullTextAccount)
-    );
-    Account child = (Account) JSON.deserialize(
-      '{"attributes":{"type":"Account"},"Parent":{"attributes":{"type":"Account"},"Name":"Parent"}}',
-      Account.class
-    );
-    System.assertEquals(
-      'Parent',
-      evaluator.resolveFieldPath(child, 'Parent.Name')
     );
     RecordHealthCheckResult result = evaluator.applyEvaluationException(
       baseRule('Formula_Limit', 'FORMULA'),
@@ -3463,7 +3606,7 @@ private class RecordHealthCheckCoverageTest {
     rule.ComparisonQueryField__c = null;
     rules.add(rule);
 
-    List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = validator.validateRecordsForTest(
+    List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = validator.validateRecords(
       new List<Record_Health_Check_Set__mdt>{
         new Record_Health_Check_Set__mdt(
           DeveloperName = String.valueOf(setId),
@@ -3589,18 +3732,7 @@ private class RecordHealthCheckCoverageTest {
     engine.addReadableField(plannedFields, Account.SObjectType, null);
     engine.addReadableField(plannedFields, Account.SObjectType, 'Parent.Name');
     engine.addReadableField(plannedFields, Account.SObjectType, 'Bogus.Name');
-    engine.addReadableField(
-      plannedFields,
-      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
-        .fields.getMap(),
-      'Parent.Name'
-    );
-    engine.addReadableField(
-      plannedFields,
-      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
-        .fields.getMap(),
-      'Name'
-    );
+    engine.addReadableField(plannedFields, Account.SObjectType, 'Name');
     System.assert(plannedFields.contains('Parent.Name'));
     System.assert(plannedFields.contains('Name'));
 
@@ -4008,7 +4140,7 @@ private class RecordHealthCheckCoverageTest {
       'Echoed pass/fail condition carries the "Passes when" key, not "Expected"'
     );
 
-    // An unresolvable Found/Expected formula degrades to the default — it must
+    // An unresolvable Found/Expected formula falls back to the default — it must
     // never throw or change pass/fail.
     Record_Health_Check_Rule__mdt bad = new Record_Health_Check_Rule__mdt(
       EvaluationType__c = 'FORMULA',

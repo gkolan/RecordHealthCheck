@@ -9,5 +9,5 @@ troubleshooting detail and comparison diagnostic details are restricted by the
 `Record_Health_Check_View_Diagnostics` Custom Permission; reports that show them
 reaching an unauthorized user are considered security issues.
 
-Do not include Salesforce access tokens, session IDs, customer record data, or
-logs containing sensitive values in a report.
+Omit Salesforce access tokens, session IDs, customer record data, and
+logs containing sensitive values from a report.

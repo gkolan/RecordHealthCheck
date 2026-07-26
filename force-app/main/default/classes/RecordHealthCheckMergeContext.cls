@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Typed sources available to namespaced merge-token resolution. */
 public class RecordHealthCheckMergeContext {
   public SObject record;

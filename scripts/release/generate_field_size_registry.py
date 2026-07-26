@@ -3,13 +3,17 @@
 
 Run from the repository root with:
   python3 scripts/release/generate_field_size_registry.py
+  python3 scripts/release/generate_field_size_registry.py --check
 
 The script reads metadata and rewrites only the generated registry. It has no
-network dependencies and is idempotent.
+network dependencies and is idempotent. `--check` exits non-zero when the
+committed page would change.
 """
 
 from pathlib import Path
+import argparse
 import re
+import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,12 +35,13 @@ def behavior(field):
         )
     if field in {
         "CardSubtitle__c", "CheckDescription__c", "FailureMessage__c",
+        "ApplicabilityNotMetMessage__c",
         "UnableToEvaluateMessage__c", "FixMessage__c", "ActionLabel__c",
         "DisplayFoundText__c", "DisplayExpectedText__c",
     }:
         return (
             "20,000",
-            "The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text",
+            "The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text",
         )
     return ("Not applicable", "The Framework uses the saved value as-is")
 
@@ -130,32 +135,32 @@ lines = [
     "# Reference: Field limits",
     "",
     "> [!NOTE]",
-    "> On this page, distinguish what Salesforce can store from what the Framework can safely resolve, then fix the field, completed text, or action URL responsible for a rejected value or `ERROR`.",
+    "> On this page, distinguish what Salesforce can store from what the Framework can safely resolve, then fix the field, completed text, or action URL responsible for a rejected value or `UNABLE_TO_EVALUATE` result.",
     "",
     "<!-- Generated from shipped Salesforce metadata by scripts/release/generate_field_size_registry.py. -->",
     "",
-    "Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `ERROR` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name}`.",
+    "Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `UNABLE_TO_EVALUATE` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name}`.",
     "",
     "## Start with what happened",
     "",
     "| What you observe | Which limit matters | What to do |",
     "| --- | --- | --- |",
     "| Salesforce will not save or deploy the Custom Metadata value | **What Salesforce accepts** | Find the field below and shorten or correct the value so it matches the Salesforce field type and limit. |",
-    "| A Rule returns `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG` | **Completed text limit** | Shorten the configured text or the Salesforce values inserted by its merge tokens. |",
+    "| A Rule returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG` | **Completed text limit** | Shorten the configured text or the Salesforce values inserted by its merge tokens. |",
     "| A failed Rule does not show its configured action link | The `ActionUrl__c` limit and URL rules | Keep the final URL within 2,000 characters and use a same-org relative URL or an `https://` URL. |",
     "",
     "## Why the Framework limits completed text",
     "",
-    "Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name}` is replaced with the current record's Name.",
+    "Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name}` is replaced with the current record's Name when populated. Append `|Fallback text` when a blank value needs a substitute, as in `{!record.Name|Unnamed record}`.",
     "",
     "A saved template can therefore be short while the completed text becomes much larger. `FailureMessage__c` might contain `Account {!record.Name} needs review.`, but the Account Name is not inserted until the Rule runs.",
     "",
     "The Framework limits one completed value to 20,000 characters so a merge token cannot create an unexpectedly large result, response payload, or demand on Salesforce transaction resources. A predictable ceiling also keeps the Lightning card and calling integrations from receiving unbounded display text.",
     "",
-    "When completed text crosses the limit, the Framework returns `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`. It does not cut the message to fit because truncated failure guidance, values, or instructions could mislead the user. **Not applicable** in the tables means the field does not accept Framework merge tokens, so only the Salesforce limit matters.",
+    "When completed text crosses the limit, the Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`. It does not cut the message to fit because truncated failure guidance, values, or instructions could mislead the user. **Not applicable** in the tables means the field does not accept Framework merge tokens, so only the Salesforce limit matters.",
     "",
     "> [!NOTE]",
-    "> Display text can contain at most 100 merge tokens, and the completed text can contain at most 20,000 characters. The Framework returns `ERROR` instead of silently shortening text. Action URLs receive an additional safety check and a 2,000-character limit before the link is shown.",
+    "> Display text can contain at most 100 merge tokens, and the completed text can contain at most 20,000 characters. The Framework returns `UNABLE_TO_EVALUATE` instead of silently shortening text. Action URLs receive an additional safety check and a 2,000-character limit before the link is shown.",
     "",
     "## Check Set text limits",
     "",
@@ -187,7 +192,7 @@ lines += [
     "",
     "Salesforce rejects a value that does not fit its Custom Metadata field. The Framework does not receive that configuration, so correct the source value and deploy again.",
     "",
-    "When inserted values make display text longer than 20,000 characters, the Rule returns `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`. Shorten the configured message or review the Salesforce fields used by its merge tokens. The Framework does not cut off the message because partial guidance could mislead the user.",
+    "When inserted values make display text longer than 20,000 characters, the Rule returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`. Shorten the configured message or review the Salesforce fields used by its merge tokens. The Framework does not cut off the message because partial guidance could mislead the user.",
     "",
     "When an action URL is unsafe or longer than 2,000 characters, the Rule can still return `FAIL` and show its Fix Message, but the Framework leaves out the link. An authorized administrator can use Show Diagnostics to investigate the resolved URL.",
     "",
@@ -196,9 +201,41 @@ lines += [
     "- [Check Set fields](../metadata/fields-check-set.md)",
     "- [Rule fields](../metadata/fields-check-rule.md)",
     "- [Configuration guide](../guides/configure-check-sets-and-rules.md)",
-    "- [Architecture map](reference-architecture-map.md)",
+    "- [Architecture](reference-architecture.md)",
     "",
 ]
-OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-OUTPUT.write_text("\n".join(lines), encoding="utf-8")
-print(f"Wrote {OUTPUT.relative_to(ROOT)} with {len(rows)} fields")
+content = "\n".join(lines)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit 0 when OUTPUT matches generated content; otherwise print a diff hint and exit 1.",
+    )
+    args = parser.parse_args(argv)
+
+    if args.check:
+        if not OUTPUT.is_file():
+            print(f"Missing {OUTPUT.relative_to(ROOT)}; run without --check to generate it.", file=sys.stderr)
+            return 1
+        existing = OUTPUT.read_text(encoding="utf-8")
+        if existing == content:
+            print(f"{OUTPUT.relative_to(ROOT)} is up to date ({len(rows)} fields).")
+            return 0
+        print(
+            f"{OUTPUT.relative_to(ROOT)} is out of date with shipped Custom Metadata. "
+            "Run: python3 scripts/release/generate_field_size_registry.py",
+            file=sys.stderr,
+        )
+        return 1
+
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT.write_text(content, encoding="utf-8")
+    print(f"Wrote {OUTPUT.relative_to(ROOT)} with {len(rows)} fields")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

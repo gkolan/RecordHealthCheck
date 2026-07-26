@@ -81,7 +81,7 @@ patterns that you can adapt.
   targets the record page object. Create a Check Set before configuring the component.
 - **Check Set is not found:** confirm the Check Set metadata was deployed and is active.
 - **Rule is skipped:** review **Applies To**, dependencies, and whether the record meets the applicability condition.
-- **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!record.Id|001000000000000AAA}` when it filters records for the open record.
+- **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!record.Id}` when it filters records for the open record. For an optional parent lookup, use a typed fallback such as `{!record.ParentId|001000000000000AAA}`.
 - **SOQL query returns more than one row:** use an aggregate such as `COUNT()` or choose **How To Read Query Results** = **Any record passes** (`ANY_ROW_PASSES`).
 - **Formula errors:** confirm the formula returns true/false for pass/fail and uses valid field API names.
 - **User does not see troubleshooting details:** confirm **Show Diagnostics** is checked on the Check Set and the user has the Permission Set named `Record_Health_Check_Admin`.

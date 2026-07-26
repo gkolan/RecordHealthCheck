@@ -53,7 +53,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Check Set** | [`Record_Health_Check_Set__c`](../../metadata/fields-check-rule.md#check-set-record_health_check_set__c) | `Account_Related_Record_Review` |
 | **Check Title** | [`CheckTitle__c`](../../metadata/fields-check-rule.md#check-title-checktitle__c) | All Open Opportunities Have Positive Amount |
 | **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c) | Verify with a query |
-| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT Amount FROM Opportunity WHERE AccountId = {!record.Id\|001000000000000AAA} AND IsClosed = false` |
+| **Source Query** | [`SourceQuery__c`](../../metadata/fields-check-rule.md#source-query-sourcequery__c) | `SELECT Amount FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
 | **Source Query Field** | [`SourceQueryField__c`](../../metadata/fields-check-rule.md#source-query-field-sourcequeryfield__c) | `Amount` |
 | **How To Read Query Results** | [`QueryResultHandling__c`](../../metadata/fields-check-rule.md#how-to-read-query-results-queryresulthandling__c) | Every record passes |
 | **Comparison Operator** | [`ComparisonOperator__c`](../../metadata/fields-check-rule.md#comparison-operator-comparisonoperator__c) | Greater than |
@@ -62,8 +62,14 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **If Query Finds No Records** | [`NoRowsResult__c`](../../metadata/fields-check-rule.md#if-query-finds-no-records-norowsresult__c) | Skip |
 | **If Field Value Is Empty** | [`EmptyValueHandling__c`](../../metadata/fields-check-rule.md#if-field-value-is-empty-emptyvaluehandling__c) | Treat as not matching |
 | **Max Query Rows (1-2000)** | [`MaxQueryRows__c`](../../metadata/fields-check-rule.md#max-query-rows-1-2000-maxqueryrows__c) | `200`; raise only after confirming Accounts can exceed this many open Opportunities |
-| **Display: Found Text** | [`DisplayFoundText__c`](../../metadata/fields-check-rule.md#display-found-text-displayfoundtext__c) | `{!rhcResult.failedRecordCount\|0} of {!rhcResult.totalRecordCount\|0} open opportunities need Amount` |
+| **Display: Found Text** | [`DisplayFoundText__c`](../../metadata/fields-check-rule.md#display-found-text-displayfoundtext__c) | Count of open opportunities missing Amount out of the total: copy it from below the table |
 | **Display: Expected Text** | [`DisplayExpectedText__c`](../../metadata/fields-check-rule.md#display-expected-text-displayexpectedtext__c) | `Every open opportunity has Amount greater than zero` |
+
+Copy this value into **Display: Found Text**:
+
+```text
+{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount|0} open opportunities need Amount
+```
 
 ## Optional configuration
 
@@ -78,7 +84,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Use Found to see how many open Opportunities need Amount, then correct each one. |
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | `Review open opportunities` |
-| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/related/Opportunities/view` |
+| **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Opportunities/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `70` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
 | **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |

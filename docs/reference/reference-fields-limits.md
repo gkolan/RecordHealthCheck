@@ -1,32 +1,32 @@
 # Reference: Field limits
 
 > [!NOTE]
-> On this page, distinguish what Salesforce can store from what the Framework can safely resolve, then fix the field, completed text, or action URL responsible for a rejected value or `ERROR`.
+> On this page, distinguish what Salesforce can store from what the Framework can safely resolve, then fix the field, completed text, or action URL responsible for a rejected value or `UNABLE_TO_EVALUATE` result.
 
 <!-- Generated from shipped Salesforce metadata by scripts/release/generate_field_size_registry.py. -->
 
-Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `ERROR` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name|this record}`.
+Use this page when Salesforce will not save or deploy a Custom Metadata value, when a Rule returns `UNABLE_TO_EVALUATE` because displayed text became too long, or when a configured action link does not appear. Most fields have only the Salesforce limit. A smaller group can grow when the Framework inserts record or result values into merge tokens such as `{!record.Name}`.
 
 ## Start with what happened
 
 | What you observe | Which limit matters | What to do |
 | --- | --- | --- |
 | Salesforce will not save or deploy the Custom Metadata value | **What Salesforce accepts** | Find the field below and shorten or correct the value so it matches the Salesforce field type and limit. |
-| A Rule returns `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG` | **Completed text limit** | Shorten the configured text or the Salesforce values inserted by its merge tokens. |
+| A Rule returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG` | **Completed text limit** | Shorten the configured text or the Salesforce values inserted by its merge tokens. |
 | A failed Rule does not show its configured action link | The `ActionUrl__c` limit and URL rules | Keep the final URL within 2,000 characters and use a same-org relative URL or an `https://` URL. |
 
 ## Why the Framework limits completed text
 
-Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name|this record}` is replaced with the current record's Name.
+Some fields contain a message template rather than the final words a user sees. The Framework creates the **completed text** by replacing merge tokens with Salesforce data. For example, `{!record.Name}` is replaced with the current record's Name when populated. Append `|Fallback text` when a blank value needs a substitute, as in `{!record.Name|Unnamed record}`.
 
-A saved template can therefore be short while the completed text becomes much larger. `FailureMessage__c` might contain `Account {!record.Name|this record} needs review.`, but the Account Name is not inserted until the Rule runs.
+A saved template can therefore be short while the completed text becomes much larger. `FailureMessage__c` might contain `Account {!record.Name} needs review.`, but the Account Name is not inserted until the Rule runs.
 
 The Framework limits one completed value to 20,000 characters so a merge token cannot create an unexpectedly large result, response payload, or demand on Salesforce transaction resources. A predictable ceiling also keeps the Lightning card and calling integrations from receiving unbounded display text.
 
-When completed text crosses the limit, the Framework returns `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`. It does not cut the message to fit because truncated failure guidance, values, or instructions could mislead the user. **Not applicable** in the tables means the field does not accept Framework merge tokens, so only the Salesforce limit matters.
+When completed text crosses the limit, the Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`. It does not cut the message to fit because truncated failure guidance, values, or instructions could mislead the user. **Not applicable** in the tables means the field does not accept Framework merge tokens, so only the Salesforce limit matters.
 
 > [!NOTE]
-> Display text can contain at most 100 merge tokens, and the completed text can contain at most 20,000 characters. The Framework returns `ERROR` instead of silently shortening text. Action URLs receive an additional safety check and a 2,000-character limit before the link is shown.
+> Display text can contain at most 100 merge tokens, and the completed text can contain at most 20,000 characters. The Framework returns `UNABLE_TO_EVALUATE` instead of silently shortening text. Action URLs receive an additional safety check and a 2,000-character limit before the link is shown.
 
 ## Check Set text limits
 
@@ -34,7 +34,7 @@ These are the Check Set fields where character count can prevent a value from be
 
 | Field API name | Salesforce field type | What Salesforce accepts | Completed text limit | If the value is too long |
 | --- | --- | ---: | ---: | --- |
-| [`CardSubtitle__c`](../metadata/fields-check-set.md#card-subtitle-cardsubtitle__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`CardSubtitle__c`](../metadata/fields-check-set.md#card-subtitle-cardsubtitle__c) | Text | 255 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 | [`CardTitle__c`](../metadata/fields-check-set.md#card-title-cardtitle__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
 | [`ObjectApiName__c`](../metadata/fields-check-set.md#object-objectapiname__c) | Text | 80 | Not applicable | The Framework uses the saved value as-is |
 
@@ -44,30 +44,31 @@ These are the Rule fields where character count can prevent a value from being s
 
 | Field API name | Salesforce field type | What Salesforce accepts | Completed text limit | If the value is too long |
 | --- | --- | ---: | ---: | --- |
-| [`ActionLabel__c`](../metadata/fields-check-rule.md#action-label-actionlabel__c) | Text | 80 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`ActionLabel__c`](../metadata/fields-check-rule.md#action-label-actionlabel__c) | Text | 80 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 | [`ActionUrl__c`](../metadata/fields-check-rule.md#action-url-actionurl__c) | LongTextArea | 32768 | 2,000 | The Framework leaves out a URL over 2,000 characters or one that fails its safety checks |
 | [`ApexClass__c`](../metadata/fields-check-rule.md#apex-class-apexclass__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
 | [`ApexParametersJson__c`](../metadata/fields-check-rule.md#apex-parameters-json-apexparametersjson__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
 | [`ApplicabilityCountQuery__c`](../metadata/fields-check-rule.md#applies-when-count-query-applicabilitycountquery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
 | [`ApplicabilityFormula__c`](../metadata/fields-check-rule.md#applies-when-formula-applicabilityformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`CheckDescription__c`](../metadata/fields-check-rule.md#check-description-checkdescription__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`ApplicabilityNotMetMessage__c`](../metadata/fields-check-rule.md#message-when-not-applicable-applicabilitynotmetmessage__c) | LongTextArea | 32768 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`CheckDescription__c`](../metadata/fields-check-rule.md#check-description-checkdescription__c) | Text | 255 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 | [`CheckTitle__c`](../metadata/fields-check-rule.md#check-title-checktitle__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
 | [`ComparisonQueryField__c`](../metadata/fields-check-rule.md#comparison-query-field-comparisonqueryfield__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
 | [`ComparisonQuery__c`](../metadata/fields-check-rule.md#comparison-query-comparisonquery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
 | [`DisplayExpectedFormula__c`](../metadata/fields-check-rule.md#display-expected-formula-displayexpectedformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`DisplayExpectedText__c`](../metadata/fields-check-rule.md#display-expected-text-displayexpectedtext__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`DisplayExpectedText__c`](../metadata/fields-check-rule.md#display-expected-text-displayexpectedtext__c) | Text | 255 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 | [`DisplayFoundFormula__c`](../metadata/fields-check-rule.md#display-found-formula-displayfoundformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`DisplayFoundText__c`](../metadata/fields-check-rule.md#display-found-text-displayfoundtext__c) | Text | 255 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`DisplayFoundText__c`](../metadata/fields-check-rule.md#display-found-text-displayfoundtext__c) | Text | 255 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 | [`ExpectedFixedValue__c`](../metadata/fields-check-rule.md#expected-value-fixed-expectedfixedvalue__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
 | [`ExpectedRecordFormula__c`](../metadata/fields-check-rule.md#expected-value-formula-expectedrecordformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`FailureMessage__c`](../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`FailureMessage__c`](../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | LongTextArea | 32768 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 | [`FindInListFormula__c`](../metadata/fields-check-rule.md#value-to-find-in-the-list-formula-findinlistformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`FixMessage__c`](../metadata/fields-check-rule.md#fix-message-fixmessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`FixMessage__c`](../metadata/fields-check-rule.md#fix-message-fixmessage__c) | LongTextArea | 32768 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 | [`PassConditionFormula__c`](../metadata/fields-check-rule.md#pass-condition-passconditionformula__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
 | [`PrerequisiteRule__c`](../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
 | [`SourceQueryField__c`](../metadata/fields-check-rule.md#source-query-field-sourcequeryfield__c) | Text | 255 | Not applicable | The Framework uses the saved value as-is |
 | [`SourceQuery__c`](../metadata/fields-check-rule.md#source-query-sourcequery__c) | LongTextArea | 32768 | Not applicable | The Framework uses the saved value as-is |
-| [`UnableToEvaluateMessage__c`](../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | LongTextArea | 32768 | 20,000 | The Framework reports `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
+| [`UnableToEvaluateMessage__c`](../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | LongTextArea | 32768 | 20,000 | The Framework returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`; it does not shorten the text |
 
 ## Fields controlled by something other than character count
 
@@ -82,13 +83,13 @@ These fields are still constrained, but making their text shorter will not solve
 | Rule | Checkbox | true/false | [`IsActive__c`](../metadata/fields-check-rule.md#active-isactive__c), [`PublishResultEvent__c`](../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) |
 | Rule | Metadata relationship | Must name a Check Set | [`Record_Health_Check_Set__c`](../metadata/fields-check-rule.md#check-set-record_health_check_set__c) |
 
-This page covers all **12 Check Set fields** and **41 Rule fields** in the shipped Custom Metadata definitions.
+This page covers all **12 Check Set fields** and **42 Rule fields** in the shipped Custom Metadata definitions.
 
 ## If the limit is exceeded
 
 Salesforce rejects a value that does not fit its Custom Metadata field. The Framework does not receive that configuration, so correct the source value and deploy again.
 
-When inserted values make display text longer than 20,000 characters, the Rule returns `ERROR` with `RESOLVED_TEMPLATE_TOO_LONG`. Shorten the configured message or review the Salesforce fields used by its merge tokens. The Framework does not cut off the message because partial guidance could mislead the user.
+When inserted values make display text longer than 20,000 characters, the Rule returns `UNABLE_TO_EVALUATE` with `RESOLVED_TEMPLATE_TOO_LONG`. Shorten the configured message or review the Salesforce fields used by its merge tokens. The Framework does not cut off the message because partial guidance could mislead the user.
 
 When an action URL is unsafe or longer than 2,000 characters, the Rule can still return `FAIL` and show its Fix Message, but the Framework leaves out the link. An authorized administrator can use Show Diagnostics to investigate the resolved URL.
 
@@ -97,4 +98,4 @@ When an action URL is unsafe or longer than 2,000 characters, the Rule can still
 - [Check Set fields](../metadata/fields-check-set.md)
 - [Rule fields](../metadata/fields-check-rule.md)
 - [Configuration guide](../guides/configure-check-sets-and-rules.md)
-- [Architecture map](reference-architecture-map.md)
+- [Architecture](reference-architecture.md)

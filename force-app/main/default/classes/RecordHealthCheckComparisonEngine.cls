@@ -81,13 +81,13 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * Null signals the caller to use EmptyResultBehavior to set the final status.
    */
   public static Boolean resolveEmptyBehavior(String behavior) {
-    if (behavior == 'PASS' || behavior == 'Pass')
+    if (behavior == 'PASS')
       return true;
-    if (behavior == 'FAIL' || behavior == 'Fail')
+    if (behavior == 'FAIL')
       return false;
-    if (behavior == 'SKIP' || behavior == 'Skip')
+    if (behavior == 'SKIP')
       return null;
-    if (behavior == 'UNABLE_TO_EVALUATE' || behavior == 'UnableToEvaluate')
+    if (behavior == 'UNABLE_TO_EVALUATE')
       return null;
     // No explicit config — treat as indeterminate (Skip is the CMT default)
     return null;
@@ -123,11 +123,7 @@ public with sharing class RecordHealthCheckComparisonEngine {
         primary = primary != null ? primary : '';
         comparison = comparison != null ? comparison : '';
       } else {
-        return applyEmptyValueHandling(
-          rule.EmptyValueHandling__c,
-          primary,
-          comparison
-        );
+        return applyEmptyValueHandling(rule.EmptyValueHandling__c);
       }
     }
 
@@ -356,12 +352,12 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * values are returned without decorative quotes because the comparison chip's
    * background and horizontal padding already distinguish values from prose.
    *
-   * Values are humanized for readability: numbers gain thousands
+   * Values are humanized for readability: typed numbers gain thousands
    * separators, Booleans read Yes/No, and dates/datetimes render in the running
    * user's locale and time zone. Typed values (a checkbox or datetime field, a
-   * single-value formula) are converted directly; the same shapes arriving as metadata
-   * operand *strings* (the Expected side) are matched textually so both sides of
-   * one comparison humanize the same way.
+   * single-value formula) are converted directly. Boolean and temporal metadata
+   * strings are recognized textually; numeric metadata strings require actual-value
+   * type context through describeExpectedForActual so identifiers stay unchanged.
    */
   public static String formatValue(Object value) {
     if (value == null)
@@ -377,8 +373,20 @@ public with sharing class RecordHealthCheckComparisonEngine {
     }
     if (value instanceof Datetime) {
       // .format() honors the user's locale and time zone; String.valueOf would
-      // emit a raw GMT "2026-07-04 17:30:00".
+      // return a raw GMT "2026-07-04 17:30:00".
       return ((Datetime) value).format();
+    }
+
+    // Only values that retain a numeric Apex type are safe to group. A digit-only
+    // String may instead be a postal code, year, or identifier whose spelling is
+    // significant (including leading zeroes).
+    if (
+      value instanceof Integer ||
+      value instanceof Long ||
+      value instanceof Decimal ||
+      value instanceof Double
+    ) {
+      return humanizeNumber(String.valueOf(value));
     }
 
     String s = String.valueOf(value);
@@ -398,9 +406,6 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * multi-select last since only it keys off a delimiter that plain text may hold.
    */
   private static String humanizeString(String s) {
-    String asNumber = humanizeNumber(s);
-    if (asNumber != null)
-      return asNumber;
     String asBoolean = humanizeBooleanText(s);
     if (asBoolean != null)
       return asBoolean;
@@ -410,9 +415,9 @@ public with sharing class RecordHealthCheckComparisonEngine {
     return humanizeMultiSelect(s);
   }
 
-  // Matches a plain integer or decimal (optionally signed). Anything with letters,
-  // separators, currency symbols, or exponents falls through untouched so IDs,
-  // codes, and pre-formatted text keep their exact spelling.
+  // Matches a plain integer or decimal (optionally signed) when an actual numeric
+  // value provides type context. Anything else stays untouched so IDs, codes, and
+  // pre-formatted text keep their exact spelling.
   private static final Pattern NUMERIC_PATTERN = Pattern.compile(
     '^-?\\d+(\\.\\d+)?$'
   );
@@ -549,6 +554,36 @@ public with sharing class RecordHealthCheckComparisonEngine {
     return operatorLabel(operator) + ' ' + formatValue(comparison);
   }
 
+  /**
+   * Describes an expected operand using the actual value's retained Apex type.
+   * Fixed Custom Metadata operands arrive as strings; when the actual value is
+   * numeric, parsing an otherwise numeric operand restores symmetric grouping.
+   * String actual values remain untouched so postal codes and identifiers keep
+   * their exact spelling and leading zeroes.
+   */
+  public static String describeExpectedForActual(
+    String operator,
+    Object comparison,
+    Object actual
+  ) {
+    Object displayComparison = comparison;
+    if (
+      isNumericValue(actual) &&
+      comparison instanceof String &&
+      NUMERIC_PATTERN.matcher(String.valueOf(comparison).trim()).matches()
+    ) {
+      displayComparison = Decimal.valueOf(String.valueOf(comparison).trim());
+    }
+    return describeExpected(operator, displayComparison);
+  }
+
+  private static Boolean isNumericValue(Object value) {
+    return value instanceof Integer ||
+      value instanceof Long ||
+      value instanceof Decimal ||
+      value instanceof Double;
+  }
+
   /** Expected-value description for list operators (operand is a list). */
   public static String describeExpectedList(
     String operator,
@@ -557,11 +592,7 @@ public with sharing class RecordHealthCheckComparisonEngine {
     return operatorLabel(operator) + ' ' + formatList(comparison);
   }
 
-  public static Boolean applyEmptyValueHandling(
-    String nullBehavior,
-    Object primary,
-    Object comparison
-  ) {
+  public static Boolean applyEmptyValueHandling(String nullBehavior) {
     if (nullBehavior == 'AS_NO_MATCH')
       return false;
     if (nullBehavior == 'SKIP_RECORD')

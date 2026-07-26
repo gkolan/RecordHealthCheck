@@ -5,6 +5,7 @@
 
 public class RecordHealthCheckResult {
   public static final String CONTRACT_VERSION = '1.0';
+  public static final String PASSES_WHEN_LABEL = 'Passes when';
 
   @AuraEnabled
   public String contractVersion = CONTRACT_VERSION;
@@ -15,8 +16,6 @@ public class RecordHealthCheckResult {
   // a technical explanation, so the engine gates it (and the raw expectedValue it
   // labels) behind Record_Health_Check_View_Diagnostics — business users see the
   // failure message and any display-formula Found/Expected chips only.
-  public static final String PASSES_WHEN_LABEL = 'Passes when';
-
   @AuraEnabled
   public String ruleDeveloperName;
   // Server-side only (not @AuraEnabled): the record this result was evaluated
@@ -31,7 +30,7 @@ public class RecordHealthCheckResult {
   @AuraEnabled
   public String message;
   @AuraEnabled
-  public String actualValue; // what the record/query produced — populated on a determinate PASS/FAIL
+  public String actualValue; // what the record/query produced — set on a determinate PASS/FAIL
   @AuraEnabled
   public String expectedValue; // the operator + comparison operand the value was tested against
   @AuraEnabled
@@ -40,14 +39,14 @@ public class RecordHealthCheckResult {
   public String actualValueDetail; // value-source note for the Found side — gated by Record_Health_Check_View_Diagnostics
   @AuraEnabled
   public String expectedValueDetail; // value-source note for the Expected side — gated by the same permission
-  // Structured value source the evaluators populate; the engine renders these into
+  // Structured value source the evaluators fill in; the engine renders these into
   // the two *Detail strings above and gates them by permission. Intentionally not
   // @AuraEnabled — the public contract is the rendered strings, not this shape.
   public RecordHealthCheckValueSource.Detail actualValueSource;
   public RecordHealthCheckValueSource.Detail expectedValueSource;
   public String detailMessage; // intentionally not @AuraEnabled — raw exception text, internal only
   @AuraEnabled
-  public String adminDetailMessage; // populated from detailMessage when ShowDiagnostics__c is on
+  public String adminDetailMessage; // set from detailMessage when ShowDiagnostics__c is on
   @AuraEnabled
   public RecordHealthCheckAdminDetail adminDetail; // null unless authorized diagnostics is active
   @AuraEnabled

@@ -3,10 +3,6 @@
     {
       "path": "force-app",
       "default": true
-    },
-    {
-      "path": "integration-tests",
-      "default": false
     }
   ],
   "name": "RecordHealthCheck",

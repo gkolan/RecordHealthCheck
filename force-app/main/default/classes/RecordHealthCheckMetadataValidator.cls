@@ -4,7 +4,7 @@
  */
 
 public with sharing class RecordHealthCheckMetadataValidator {
-  // ─── Validation issue DTO ─────────────────────────────────────────────────
+  // ─── Validation issue data holder ─────────────────────────────────────────
 
   public class ValidationIssue {
     public String severity; // ERROR, WARNING
@@ -30,7 +30,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
 
   // Valid-value sets and caps are owned by RecordHealthCheckConstants so this
   // deploy-time validator and RecordHealthCheckConfigService (runtime) can never
-  // drift. Local aliases keep the call sites below readable.
+  // get out of sync. Local aliases keep the call sites below readable.
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps the baseline + Check Set + dependency-graph checks (inline) plus a
   // collect-all adapter (toIssue). The operator/source/null-empty value sets live with
@@ -117,13 +117,13 @@ public with sharing class RecordHealthCheckMetadataValidator {
         DeveloperName ASC
     ];
 
-    return validateRecordsForTest(checkSets, allRules);
+    return validateRecords(checkSets, allRules);
   }
 
   /**
    * Machine-readable entry point for setup tooling and CI.
    *
-   * Deliberately NOT `@AuraEnabled` (HI-2): this serializes the full validation
+   * Deliberately not `@AuraEnabled`: this serializes the full validation
    * of every Check Set and Rule — query, Apex class, and formula surfaces —
    * which is admin/setup information, not per-record data. Exposing it to the
    * LWC/Aura surface would hand that config detail to any user who can invoke
@@ -136,7 +136,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   }
 
   @TestVisible
-  private List<ValidationIssue> validateRecordsForTest(
+  private List<ValidationIssue> validateRecords(
     List<Record_Health_Check_Set__mdt> checkSets,
     List<Record_Health_Check_Rule__mdt> allRules
   ) {
@@ -202,7 +202,9 @@ public with sharing class RecordHealthCheckMetadataValidator {
                 'WARNING',
                 includedRule.DeveloperName,
                 'PrerequisiteRule__c',
-                'The dependency is outside the first-25 execution window, so this rule will be skipped.',
+                'The dependency is outside the first-' +
+                  RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS +
+                  ' execution window, so this rule will be skipped.',
                 'DEPENDENCY_NOT_IN_RUN'
               )
             );
@@ -381,7 +383,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
         err(
           rule,
           'FailureSeverity__c',
-          'Severity must be Error, Warning, or Info.',
+          'Severity must be CRITICAL, WARNING, or INFO.',
           'INVALID_CONFIG'
         )
       );
@@ -452,7 +454,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
     }
 
     // MaxRows, empty-value handling, and empty-result behavior are validated for all
-    // check types at top level. Shared producers emit the findings; toIssue maps
+    // check types at top level. Shared producers report the findings; toIssue maps
     // each to this class's reason code / field.
     addIssues(
       issues,
@@ -531,7 +533,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
 
   /**
    * Maps a shared Finding to this deploy-time path's ERROR ValidationIssue (field name, message
-   * reason code). This switch is the ONLY place MetadataValidator's output vocabulary lives — the
+   * reason code). This switch is the ONLY place MetadataValidator's output terms live — the
    * decision tree that produced the finding is shared. Field names / messages / reason codes here
    * are byte-for-byte the originals so packaged metadata still validates clean and the
    * reason-code-membership tests still pass.
@@ -542,7 +544,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
   ) {
     String val = finding.offendingValue;
     switch on finding.code {
-      // ── Applicability gate ──
+      // ── Applicability check ──
       when APPLICABILITY_FORMULA_MISSING {
         return err(
           rule,
@@ -858,7 +860,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'INVALID_CONFIG'
         );
       }
-      when NULL_BEHAVIOR_INVALID {
+      when EMPTY_VALUE_HANDLING_INVALID {
         return err(
           rule,
           'EmptyValueHandling__c',
@@ -868,7 +870,7 @@ public with sharing class RecordHealthCheckMetadataValidator {
           'INVALID_CONFIG'
         );
       }
-      when EMPTY_BEHAVIOR_INVALID {
+      when NO_ROWS_RESULT_INVALID {
         return err(
           rule,
           'NoRowsResult__c',

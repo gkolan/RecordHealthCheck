@@ -4,6 +4,7 @@
  */
 
 public with sharing class RecordHealthCheckConfigService {
+  private static Map<String, Boolean> rulePublicationCache = new Map<String, Boolean>();
   // ─── Reason codes ──────────────────────────────────────────
 
   public static final String RC_CONFIG_NOT_FOUND = 'CONFIG_NOT_FOUND';
@@ -20,7 +21,7 @@ public with sharing class RecordHealthCheckConfigService {
 
   // Valid-value sets and caps are owned by RecordHealthCheckConstants so this
   // runtime validator and RecordHealthCheckMetadataValidator (deploy-time) can
-  // never drift. Local aliases keep the call sites below readable.
+  // never get out of sync. Local aliases keep the call sites below readable.
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps only the baseline checks below (inline) plus a first-fail adapter
   // (toResult). The operator/source/null-empty value sets live with those producers.
@@ -101,18 +102,10 @@ public with sharing class RecordHealthCheckConfigService {
   }
 
   /**
-   * @deprecated Prefer getCheckSetAvailabilityForObject; kept for callers that
-   * only need the active-set boolean.
-   */
-  public Boolean hasActiveCheckSetForObject(String objectApiName) {
-    return getCheckSetAvailabilityForObject(objectApiName).hasActive;
-  }
-
-  /**
    * Loads and validates a Check Set and its active rules.
-   * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND
+   * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND,
    * CONFIG_INACTIVE, OBJECT_MISMATCH, NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS).
-   * Returns a fully populated RecordHealthCheckDefinitionResponse on success.
+   * Returns a fully filled-in RecordHealthCheckDefinitionResponse on success.
    */
   public RecordHealthCheckDefinitionResponse getDefinitionResponse(
     String checkSetDeveloperName,
@@ -227,12 +220,19 @@ public with sharing class RecordHealthCheckConfigService {
     response.stopOnFirstError = checkSet.StopOnSystemError__c;
     response.showDiagnostics =
       checkSet.ShowDiagnostics__c == true &&
-      RecordHealthCheckAccess.canViewDebugDetails();
+      RecordHealthCheckAccess.canViewDetails();
     response.totalAvailableCheckCount = totalAvailable;
+    response.frameworkMaxChecks = RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS;
     response.checksOmittedByLimit = checksOmitted;
     response.inactiveRuleCount = inactiveRuleCount;
+    // Rule names are configuration detail, so they ride along only for the
+    // diagnostics audience that already sees troubleshooting fields.
+    response.inactiveRuleLabels = (response.showDiagnostics == true &&
+      inactiveRuleCount > 0)
+      ? inactiveRuleLabels(checkSetDeveloperName)
+      : new List<String>();
 
-    // Emit WARN when active rules exceed FRAMEWORK_MAX_CHECKS, so truncation is
+    // Log WARN when active rules exceed FRAMEWORK_MAX_CHECKS, so truncation is
     // visible server-side and not only in the LWC "First 25 of N shown" badge.
     if (checksOmitted) {
       logCheckLimitExceeded(checkSetDeveloperName, recordId, totalAvailable);
@@ -293,9 +293,8 @@ public with sharing class RecordHealthCheckConfigService {
     }
 
     if (String.isBlank(checkSet.ObjectApiName__c)) {
-      // A blank Base Object is a misconfiguration of an existing Check Set, not a
-      // missing Check Set — classify it as INVALID_CONFIG for consistency with the
-      // Blank object name is INVALID_CONFIG, not CONFIG_NOT_FOUND.
+      // A blank Base Object misconfigures an existing Check Set; it does not mean
+      // the Check Set is missing, so classify it as INVALID_CONFIG.
       throw new ConfigException(
         'Check Set "' +
           checkSetDeveloperName +
@@ -415,6 +414,36 @@ public with sharing class RecordHealthCheckConfigService {
     ];
   }
 
+  /**
+   * Display names of the inactive Rules, for the diagnostics "N Inactive"
+   * tooltip. Capped at the framework check limit so a long-neglected Check Set
+   * cannot grow an unbounded tooltip; the pill still shows the exact count.
+   */
+  @TestVisible
+  private List<String> inactiveRuleLabels(String checkSetDeveloperName) {
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
+    List<Record_Health_Check_Rule__mdt> inactiveRules = [
+      SELECT DeveloperName, MasterLabel, CheckTitle__c
+      FROM Record_Health_Check_Rule__mdt
+      WHERE
+        Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
+        AND IsActive__c = FALSE
+      ORDER BY EvaluationOrder__c ASC NULLS LAST, DeveloperName ASC
+      LIMIT :FRAMEWORK_MAX_CHECKS
+    ];
+    List<String> labels = new List<String>();
+    for (Record_Health_Check_Rule__mdt rule : inactiveRules) {
+      labels.add(
+        String.isNotBlank(rule.CheckTitle__c)
+          ? rule.CheckTitle__c
+          : (String.isNotBlank(rule.MasterLabel)
+              ? rule.MasterLabel
+              : rule.DeveloperName)
+      );
+    }
+    return labels;
+  }
+
   @TestVisible
   private List<Record_Health_Check_Rule__mdt> selectRulesForRun(
     List<Record_Health_Check_Rule__mdt> allRules
@@ -466,7 +495,7 @@ public with sharing class RecordHealthCheckConfigService {
       return buildUnableResult(
         rule,
         RC_INVALID_CONFIG,
-        'Severity must be Error, Warning, or Info.'
+        'Severity must be CRITICAL, WARNING, or INFO.'
       );
     }
 
@@ -569,6 +598,7 @@ public with sharing class RecordHealthCheckConfigService {
         ApplicabilityCountQuery__c,
         ApplicabilityCountOperator__c,
         ApplicabilityCountThreshold__c,
+        PublishResultEvent__c,
         Record_Health_Check_Set__c,
         Record_Health_Check_Set__r.DeveloperName,
         Record_Health_Check_Set__r.MasterLabel,
@@ -602,7 +632,24 @@ public with sharing class RecordHealthCheckConfigService {
         tokenIssue.reasonCode
       );
     }
+    rulePublicationCache.put(
+      checkSetDeveloperName + ':' + ruleDeveloperName,
+      rule.PublishResultEvent__c == true
+    );
     return rule;
+  }
+
+  public static Map<String, Boolean> cachedRulePublicationSettings(
+    String checkSetDeveloperName,
+    Set<String> ruleDeveloperNames
+  ) {
+    Map<String, Boolean> found = new Map<String, Boolean>();
+    for (String ruleName : ruleDeveloperNames) {
+      String key = checkSetDeveloperName + ':' + ruleName;
+      if (rulePublicationCache.containsKey(key))
+        found.put(ruleName, rulePublicationCache.get(key));
+    }
+    return found;
   }
 
   // ─── Per-type validation — first-fail adapter over RecordHealthCheckRuleValidator ───
@@ -611,8 +658,8 @@ public with sharing class RecordHealthCheckConfigService {
   // are appended only for Query / CompareTwoQueries.
 
   /**
-   * Validates the ApplicabilityMode gate (Formula / SOQL sub-fields). Returns null when the
-   * gate is well-formed (or mode is Always/blank). Kept @TestVisible for parity with prior API.
+   * Validates the ApplicabilityMode check (Formula / SOQL sub-fields). Returns null when the
+   * check is valid (or mode is Always/blank). Kept @TestVisible for parity with prior API.
    */
   @TestVisible
   private RecordHealthCheckResult validateApplicability(
@@ -670,7 +717,7 @@ public with sharing class RecordHealthCheckConfigService {
 
   /**
    * Maps a shared Finding to this runtime path's UNABLE_TO_EVALUATE reason code and detail
-   * message. This switch is the ONLY place the runtime output vocabulary lives — the decision
+   * message. This switch is the ONLY place the runtime output terms live — the decision
    * tree that produced the finding is shared. Reason codes and messages here are byte-for-byte
    * the originals so the engine and every pinned test see identical results.
    */
@@ -680,7 +727,7 @@ public with sharing class RecordHealthCheckConfigService {
   ) {
     String val = finding.offendingValue;
     switch on finding.code {
-      // ── Applicability gate ──
+      // ── Applicability check ──
       when APPLICABILITY_FORMULA_MISSING {
         return buildUnableResult(
           rule,
@@ -793,7 +840,7 @@ public with sharing class RecordHealthCheckConfigService {
       when MULTI_ROWS_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'How To Interpret Query Results is required for Query checks.'
         );
       }
@@ -814,7 +861,7 @@ public with sharing class RecordHealthCheckConfigService {
       when COMPARE_AGAINST_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'Expected Value Comes From is required for Query checks except IsBlank/IsNotBlank.'
         );
       }
@@ -828,7 +875,7 @@ public with sharing class RecordHealthCheckConfigService {
       when FIXED_VALUE_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'Expected Value is required when Expected Value Comes From is A fixed value.'
         );
       }
@@ -899,7 +946,7 @@ public with sharing class RecordHealthCheckConfigService {
       when DUAL_MULTI_ROWS_MISSING {
         return buildUnableResult(
           rule,
-          RC_UNABLE_TO_EVALUATE,
+          RC_INVALID_CONFIG,
           'How To Interpret Query Results is required for Compare two queries checks.'
         );
       }
@@ -956,7 +1003,7 @@ public with sharing class RecordHealthCheckConfigService {
             '.'
         );
       }
-      when NULL_BEHAVIOR_INVALID {
+      when EMPTY_VALUE_HANDLING_INVALID {
         return buildUnableResult(
           rule,
           'INVALID_CONFIG',
@@ -965,7 +1012,7 @@ public with sharing class RecordHealthCheckConfigService {
             '" is not recognized. Valid values: Ignore the record, Treat as blank, Treat as not matching.'
         );
       }
-      when EMPTY_BEHAVIOR_INVALID {
+      when NO_ROWS_RESULT_INVALID {
         return buildUnableResult(
           rule,
           'INVALID_CONFIG',

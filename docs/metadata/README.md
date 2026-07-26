@@ -32,7 +32,7 @@ publication contract and security profile.
 | [Check Set fields](fields-check-set.md) | Every field on the Check Set type |
 | [Rule fields](fields-check-rule.md) | Every field on the Rule type |
 | [Reason Codes](../reference/reference-reason-codes.md) | Stable codes for skipped, unable, setup, and error outcomes |
-| [Lifecycle-events overview](../integration/lifecycle-events.md) | Publication behavior, source rules, opt-in choices, and subscriber failures |
+| [Lifecycle-events overview](../integration/lifecycle-events.md) | Publication behavior, source rules, optional publication choices, and subscriber failures |
 | [Check Set Run Platform Event](event-set-run.md) | Every field, summary-event possibilities, examples, limits, and subscriber design |
 | [Rule Result Platform Event](event-rule-result.md) | Every field, status interpretation, routing possibilities, limits, and subscriber design |
 | [Log Platform Event](event-log.md) | Every diagnostic field, security requirements, loop protection, and limitations |

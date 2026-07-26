@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /** Run timing and source values exposed to lifecycle events and merge tokens. */
 public class RecordHealthCheckRunContext {
   public String runId;

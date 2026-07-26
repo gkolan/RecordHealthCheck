@@ -2,7 +2,7 @@
 
 This page preserves the exact contract for every Rule field: the label shown in Setup, API name,
 type, default, allowed values, runtime behavior, and an example. Use the decision path first, then
-open an individual field when you need the authoritative detail.
+open an individual field when you need the full detail.
 
 ## Build a Rule in the order it runs
 
@@ -251,17 +251,17 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 Examples:
 
 ```text
-{!record.Name|This account} has {!record.NumberOfEmployees|no recorded} employees and is owned by {!record.Owner.Name|an unassigned owner}.
+{!record.Name} has {!record.NumberOfEmployees|no recorded} employees and is owned by {!record.Owner.Name}.
 
-{!rhcRule.checkTitle|This check} found a {!rhcRule.failureSeverity|business-critical} {!rhcRule.category|readiness} issue for {!record.Name|this record}.
+{!rhcRule.checkTitle} found a {!rhcRule.failureSeverity} {!rhcRule.category} issue for {!record.Name}.
 
-{!record.Name|This record} does not meet the requirements in {!rhcSet.cardTitle|Record Health Check}.
+{!record.Name} does not meet the requirements in {!rhcSet.cardTitle}.
 
-Found {!rhcResult.foundValue|no measured value}; expected {!rhcResult.expectedValue|a configured target}.
+Found {!rhcResult.foundValue}; expected {!rhcResult.expectedValue}.
 
-{!rhcResult.failedRecordCount|No} of {!rhcResult.totalRecordCount|the related} contacts for {!record.Name|this account} are missing email.
+{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount} contacts for {!record.Name} are missing email.
 
-The check returned {!rhcResult.status|an unknown result}. If you need help, reference run {!rhcRun.runId|not available}.
+The check returned {!rhcResult.status}. If you need help, reference run {!rhcRun.runId}.
 ```
 
 ### Message When Unable To Evaluate (`UnableToEvaluateMessage__c`)
@@ -282,13 +282,13 @@ The check returned {!rhcResult.status|an unknown result}. If you need help, refe
 Examples:
 
 ```text
-We could not evaluate {!record.Name|this account} for parent account {!record.Parent.Name|not assigned}.
+We could not evaluate {!record.Name} for parent account {!record.Parent.Name|not assigned}.
 
-{!rhcRule.checkTitle|This check} could not be completed in {!rhcSet.cardTitle|Record Health Check}.
+{!rhcRule.checkTitle} could not be completed in {!rhcSet.cardTitle}.
 
-We could not confirm the requirement for {!record.Name|this record} ({!rhcResult.reasonCode|reason unavailable}).
+We could not confirm the requirement for {!record.Name} ({!rhcResult.reasonCode}).
 
-Try again later. If the problem continues, give support run {!rhcRun.runId|not available}, started at {!rhcRun.startedAt|an unknown time}.
+Try again later. If the problem continues, give support run {!rhcRun.runId}, started at {!rhcRun.startedAt}.
 ```
 
 ### Fix Message (`FixMessage__c`)
@@ -309,15 +309,15 @@ Try again later. If the problem continues, give support run {!rhcRun.runId|not a
 Examples:
 
 ```text
-Ask {!record.Owner.Name|the account team} to update the phone number for {!record.Name|this account}; the current value is {!record.Phone|not provided}.
+Ask {!record.Owner.Name} to update the phone number for {!record.Name}; the current value is {!record.Phone|not provided}.
 
-Change the found value of {!rhcResult.foundValue|not measured} to the expected value of {!rhcResult.expectedValue|the approved target}.
+Change the found value of {!rhcResult.foundValue} to the expected value of {!rhcResult.expectedValue}.
 
-Resolve the {!rhcRule.failureSeverity|important} issue identified by {!rhcRule.checkTitle|this check}.
+Resolve the {!rhcRule.failureSeverity} issue identified by {!rhcRule.checkTitle}.
 
-Complete this correction, then rerun {!rhcSet.cardTitle|Record Health Check}.
+Complete this correction, then rerun {!rhcSet.cardTitle}.
 
-If the values still look wrong, contact Operations with run {!rhcRun.runId|not available}.
+If the values still look wrong, contact Operations with run {!rhcRun.runId}.
 ```
 
 ### Action Label (`ActionLabel__c`)
@@ -331,19 +331,19 @@ If the values still look wrong, contact Operations with run {!rhcRun.runId|not a
 | Always required | No |
 | Default | No default |
 | Used when | Optional when Action URL is set; blank defaults to **Fix this**. |
-| Description | <p>Optional user-facing text for the action link displayed when this Rule fails. Use a short verb phrase that describes the destination.</p><p>Merge tokens are resolved before display and may traverse relationships.</p><p>Action URL controls whether the link appears. When Action URL is set and this field is blank, the link is labeled "Fix this".</p> |
+| Description | <p>Optional user-facing text for the action link displayed when this Rule fails. Use a short verb phrase that describes the destination.</p><p>It supports the display merge tokens documented in the <a href="../guides/configure-check-sets-and-rules.md#11-merge-tokens">merge-token guide</a> (same rules as Fix Message). The field is 80 characters, so keep labels short.</p><p>Action URL controls whether the link appears. When Action URL is set and this field is blank, the link is labeled "Fix this".</p> |
 | Help text | <p>Optional text for the failure action link. Supports merge tokens with optional fallback text. Requires Action URL; blank uses "Fix this".</p> |
 | Allowed values | Any value valid for the field type |
 
 Examples:
 
 ```text
-Review {!record.Name|this record}
-Contact {!record.Owner.Name|the account team}
-Fix {!rhcRule.checkTitle|this requirement}
-Return to {!rhcSet.cardTitle|health checks}
-Correct {!rhcResult.foundValue|the} open case{!rhcResult.foundValuePluralSuffix|s}
-Review run {!rhcRun.runId|details}
+Review {!record.Name}
+Contact {!record.Owner.Name}
+Fix {!rhcRule.checkTitle}
+Return to {!rhcSet.cardTitle}
+Correct {!rhcResult.foundValue} open case{!rhcResult.foundValuePluralSuffix|s}
+Review run {!rhcRun.runId}
 ```
 
 ### Action URL (`ActionUrl__c`)
@@ -364,14 +364,14 @@ Review run {!rhcRun.runId|details}
 Examples:
 
 ```text
-/lightning/r/Account/{!record.Id|001000000000000AAA}/view
-/lightning/r/Account/{!record.Id|001000000000000AAA}/edit
-/lightning/r/Account/{!record.Id|001000000000000AAA}/related/Contacts/view
-/lightning/o/Contact/new?defaultFieldValues=AccountId={!record.Id|001000000000000AAA},LastName=New%20contact
+/lightning/r/Account/{!record.Id}/view
+/lightning/r/Account/{!record.Id}/edit
+/lightning/r/Account/{!record.Id}/related/Contacts/view
+/lightning/o/Contact/new?defaultFieldValues=AccountId={!record.Id},LastName=New%20contact
 ```
 
 ```text
-/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id|001000000000000AAA},Subject=Review%20{!record.Name|this account},Origin=Web,Description=Rule%20{!rhcRule.developerName|unknown}%20in%20{!rhcSet.developerName|Record Health Check}
+/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id},Subject=Review%20{!record.Name|this account},Origin=Web,Description=Rule%20{!rhcRule.developerName}%20in%20{!rhcSet.developerName}
 ```
 
 
@@ -516,13 +516,13 @@ Examples:
 Examples:
 
 ```sql
-SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id|001000000000000AAA}
+SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}
 SELECT Id FROM Account WHERE Industry = {!record.Industry|Technology}
-SELECT Id FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND OwnerId = {!record.Owner.ManagerId|005000000000000AAA}
-SELECT Id FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND Amount >= {!record.AnnualRevenue|0}
-SELECT Id FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND CreatedDate >= {!record.CreatedDate|2026-01-01T00:00:00Z}
-SELECT Id FROM Account WHERE IsDeleted = {!record.IsDeleted|false}
-SELECT Id FROM Account WHERE Name LIKE '{!record.Name|Unnamed}%'
+SELECT Id FROM Opportunity WHERE AccountId = {!record.Id} AND OwnerId = {!record.Owner.ManagerId}
+SELECT Id FROM Opportunity WHERE AccountId = {!record.Id} AND Amount >= {!record.AnnualRevenue|0}
+SELECT Id FROM Opportunity WHERE AccountId = {!record.Id} AND CreatedDate >= {!record.CreatedDate}
+SELECT Id FROM Account WHERE IsDeleted = {!record.IsDeleted}
+SELECT Id FROM Account WHERE Name LIKE '{!record.Name}%'
 ```
 
 ### Source Query Field (`SourceQueryField__c`)
@@ -543,7 +543,7 @@ SELECT Id FROM Account WHERE Name LIKE '{!record.Name|Unnamed}%'
 Example: use `totalAmount` for the aliased aggregate below. Leave this field blank for bare `COUNT()`.
 
 ```sql
-SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA}
+SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id}
 ```
 
 ### Comparison Query (`ComparisonQuery__c`)
@@ -564,10 +564,10 @@ SELECT SUM(Amount) totalAmount FROM Opportunity WHERE AccountId = {!record.Id|00
 Examples:
 
 ```sql
-SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND IsClosed = false
+SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false
 SELECT AnnualRevenue FROM Account WHERE Id = {!record.ParentId|001000000000000AAA}
-SELECT EndDate FROM Contract WHERE AccountId = {!record.Id|001000000000000AAA} AND Status = 'Activated' ORDER BY EndDate LIMIT 1
-SELECT MailingState FROM Contact WHERE AccountId = {!record.Id|001000000000000AAA} AND MailingState != null
+SELECT EndDate FROM Contract WHERE AccountId = {!record.Id} AND Status = 'Activated' ORDER BY EndDate LIMIT 1
+SELECT MailingState FROM Contact WHERE AccountId = {!record.Id} AND MailingState != null
 ```
 
 ### Comparison Query Field (`ComparisonQueryField__c`)
@@ -588,7 +588,7 @@ SELECT MailingState FROM Contact WHERE AccountId = {!record.Id|001000000000000AA
 Example: use `comparisonTotal` for the aliased aggregate below.
 
 ```sql
-SELECT SUM(Amount) comparisonTotal FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND IsClosed = false
+SELECT SUM(Amount) comparisonTotal FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false
 ```
 
 ### Value to find in the list (formula) (`FindInListFormula__c`)
@@ -769,13 +769,13 @@ Examples:
 Examples:
 
 ```text
-{!rhcResult.failedRecordCount|No} of {!rhcResult.totalRecordCount|the related} contacts for {!record.Name|this account} are missing email.
+{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount} contacts for {!record.Name} are missing email.
 
-{!rhcRule.checkTitle|This check} found {!rhcResult.foundValue|no} issue{!rhcResult.foundValuePluralSuffix|s}.
+{!rhcRule.checkTitle} found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix|s}.
 
-{!rhcSet.cardTitle|Record Health Check}: {!rhcResult.failedRecordCount|No} related records need attention.
+{!rhcSet.cardTitle}: {!rhcResult.failedRecordCount} related records need attention.
 
-Found during run {!rhcRun.runId|not available}.
+Found during run {!rhcRun.runId}.
 ```
 
 ### Display: Expected Text (`DisplayExpectedText__c`)
@@ -796,15 +796,15 @@ Found during run {!rhcRun.runId|not available}.
 Examples:
 
 ```text
-Expected {!rhcResult.expectedValue|the approved value} for every contact related to {!record.Name|this account}.
+Expected {!rhcResult.expectedValue} for every contact related to {!record.Name}.
 
-All {!rhcResult.totalRecordCount|related} contacts should have an email address.
+All {!rhcResult.totalRecordCount} contacts should have an email address.
 
-{!rhcRule.checkTitle|This check} expects every related record to pass.
+{!rhcRule.checkTitle} expects every related record to pass.
 
-Meet the standard defined by {!rhcSet.cardTitle|Record Health Check}.
+Meet the standard defined by {!rhcSet.cardTitle}.
 
-Expectation evaluated from {!rhcRun.source|an unknown source} run {!rhcRun.runId|not available}.
+Expectation evaluated from {!rhcRun.source} run {!rhcRun.runId}.
 ```
 
 
@@ -843,13 +843,13 @@ Expectation evaluated from {!rhcRun.source|an unknown source} run {!rhcRun.runId
 Examples:
 
 ```text
-{!record.Name|This account} is a {!record.Type|type not assigned} account; this requirement applies only to channel partners.
+{!record.Name} is a {!record.Type} account; this requirement applies only to channel partners.
 
-{!record.Name|This account} belongs to {!record.Parent.Name|no parent account}; this check runs only for independent accounts.
+{!record.Name} belongs to {!record.Parent.Name|no parent account}; this check runs only for independent accounts.
 
-{!rhcRule.checkTitle|This check} in {!rhcSet.cardTitle|Record Health Check} does not apply to this segment.
+{!rhcRule.checkTitle} in {!rhcSet.cardTitle} does not apply to this segment.
 
-The applicability condition was not met during {!rhcRun.source|an unknown source} run {!rhcRun.runId|not available}.
+The applicability condition was not met during {!rhcRun.source} run {!rhcRun.runId}.
 ```
 
 ### Applies When (Formula) (`ApplicabilityFormula__c`)
@@ -886,11 +886,11 @@ The applicability condition was not met during {!rhcRun.source|an unknown source
 Examples:
 
 ```sql
-SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND IsClosed = false
-SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id|001000000000000AAA} AND Owner.ManagerId = {!record.Owner.ManagerId|005000000000000AAA}
-SELECT COUNT() FROM Contract WHERE AccountId = {!record.Id|001000000000000AAA} AND EndDate <= {!record.LastActivityDate|2099-12-31}
-SELECT COUNT() FROM Case WHERE AccountId = {!record.Id|001000000000000AAA} AND Priority = 'High' AND CreatedDate >= {!record.CreatedDate|2026-01-01T00:00:00Z}
-SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id|001000000000000AAA} AND MailingState = {!record.BillingState|Illinois}
+SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false
+SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND Owner.ManagerId = {!record.Owner.ManagerId|005000000000000AAA}
+SELECT COUNT() FROM Contract WHERE AccountId = {!record.Id} AND EndDate <= {!record.LastActivityDate|2099-12-31}
+SELECT COUNT() FROM Case WHERE AccountId = {!record.Id} AND Priority = 'High' AND CreatedDate >= {!record.CreatedDate|2026-01-01T00:00:00Z}
+SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id} AND MailingState = {!record.BillingState|Illinois}
 ```
 
 ### Count Must Be (`ApplicabilityCountOperator__c`)

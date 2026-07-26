@@ -1,4 +1,9 @@
-/** Best-effort, opt-in lifecycle publication for deliberately initiated runs. */
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/** Best-effort, optional lifecycle publication for deliberately initiated runs. */
 public with sharing class RecordHealthCheckLifecyclePublisher {
   public static final String CONTRACT_VERSION = '1.0';
   public static final String CORE_VERSION = '2.0.0';
@@ -8,7 +13,6 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
   public static final String SOURCE_SCHEDULED = 'SCHEDULED';
   public static final String SOURCE_BATCH = 'BATCH';
   public static final String SOURCE_RUN_ON_LOAD = 'RUN_ON_LOAD';
-  public static final String SOURCE_SUBSCRIBER = 'SUBSCRIBER';
   public static final Integer PUBLISH_CHUNK_SIZE = 100;
   private static final Set<String> PUBLISHABLE_SOURCES = new Set<String>{
     SOURCE_APEX_API,
@@ -24,8 +28,6 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
   private static Boolean publishRunSettingOverride;
   @TestVisible
   private static Set<String> publishRuleNamesOverride;
-  @TestVisible
-  private static Integer inspectedPublishFailures = 0;
 
   public static void publishCompletedSet(
     RecordHealthCheckSetResult response,
@@ -33,19 +35,7 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
   ) {
     if (!canPublish(source) || response == null)
       return;
-    Boolean publishEnabled = publishRunSettingOverride;
-    if (publishEnabled == null) {
-      // code-analyzer-suppress-next-line ApexCRUDViolation: This reads the core-owned Custom Metadata publication switch; no business record data is queried.
-      List<Record_Health_Check_Set__mdt> settings = [
-        SELECT PublishRunEvent__c
-        FROM Record_Health_Check_Set__mdt
-        WHERE DeveloperName = :response.checkSetDeveloperName
-        LIMIT 1
-      ];
-      publishEnabled =
-        !settings.isEmpty() && settings[0].PublishRunEvent__c == true;
-    }
-    if (publishEnabled != true)
+    if (!isRunPublicationEnabled(response.checkSetDeveloperName))
       return;
 
     Record_Health_Check_Set_Run__e eventRecord = new Record_Health_Check_Set_Run__e(
@@ -71,6 +61,19 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
     publishSetEvents(new List<Record_Health_Check_Set_Run__e>{ eventRecord });
   }
 
+  public static Boolean isRunPublicationEnabled(String checkSetDeveloperName) {
+    if (publishRunSettingOverride != null)
+      return publishRunSettingOverride;
+    // code-analyzer-suppress-next-line ApexCRUDViolation: This reads the core-owned Custom Metadata publication switch; no business record data is queried.
+    List<Record_Health_Check_Set__mdt> settings = [
+      SELECT PublishRunEvent__c
+      FROM Record_Health_Check_Set__mdt
+      WHERE DeveloperName = :checkSetDeveloperName
+      LIMIT 1
+    ];
+    return !settings.isEmpty() && settings[0].PublishRunEvent__c == true;
+  }
+
   public static void publishRuleResults(
     String checkSetDeveloperName,
     String runId,
@@ -86,16 +89,28 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
     Set<String> enabled = publishRuleNamesOverride;
     if (enabled == null) {
       enabled = new Set<String>();
-      // code-analyzer-suppress-next-line ApexCRUDViolation: This reads core-owned Custom Metadata publication switches; no business record data is queried.
-      for (Record_Health_Check_Rule__mdt rule : [
-        SELECT DeveloperName
-        FROM Record_Health_Check_Rule__mdt
-        WHERE
-          Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
-          AND DeveloperName IN :names
-          AND PublishResultEvent__c = TRUE
-      ]) {
-        enabled.add(rule.DeveloperName);
+      Map<String, Boolean> cached = RecordHealthCheckConfigService.cachedRulePublicationSettings(
+        checkSetDeveloperName,
+        names
+      );
+      Set<String> unresolved = names.clone();
+      unresolved.removeAll(cached.keySet());
+      for (String name : cached.keySet()) {
+        if (cached.get(name) == true)
+          enabled.add(name);
+      }
+      if (!unresolved.isEmpty()) {
+        // code-analyzer-suppress-next-line ApexCRUDViolation: This reads core-owned Custom Metadata publication switches; no business record data is queried.
+        for (Record_Health_Check_Rule__mdt rule : [
+          SELECT DeveloperName
+          FROM Record_Health_Check_Rule__mdt
+          WHERE
+            Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
+            AND DeveloperName IN :unresolved
+            AND PublishResultEvent__c = TRUE
+        ]) {
+          enabled.add(rule.DeveloperName);
+        }
       }
     }
 
@@ -141,7 +156,7 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
       '-' +
       String.valueOf(suffix).left(20) +
       '-' +
-      String.valueOf(Math.abs(Crypto.getRandomInteger()));
+      EncodingUtil.convertToHex(Crypto.generateAesKey(128)).left(8);
   }
 
   private static void publishSetEvents(
@@ -182,7 +197,6 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
     for (Database.SaveResult saveResult : saveResults) {
       if (saveResult.isSuccess())
         continue;
-      inspectedPublishFailures++;
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.WARN,
         null,

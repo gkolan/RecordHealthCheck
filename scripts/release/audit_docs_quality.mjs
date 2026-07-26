@@ -17,7 +17,11 @@ const files = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
-    if (entryPath === path.join(docsRoot, "slides")) continue;
+    if (
+      entryPath === path.join(docsRoot, "slides") ||
+      entryPath === path.join(docsRoot, "audits")
+    )
+      continue;
     if (entry.isDirectory()) walk(entryPath);
     else if (entry.name.endsWith(".md")) files.push(entryPath);
   }
@@ -50,7 +54,8 @@ function localLinksResolve(file, markdown) {
 
 function tablesAreReadable(markdown) {
   const columnCount = (row) =>
-    row.replaceAll("\\|", "").split("|").slice(1, -1).length;
+    row.replaceAll("&#124;", "").replaceAll("\\|", "").split("|").slice(1, -1)
+      .length;
   const lines = markdown.split(/\r?\n/);
   for (let index = 0; index < lines.length - 1; index += 1) {
     if (

@@ -1,9 +1,10 @@
 # Record Health Check
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Salesforce API](https://img.shields.io/badge/Salesforce%20API-66.0-00A1E0.svg)](sfdx-project.json)
+[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE)
 [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
-[![Deploy to Salesforce](https://img.shields.io/badge/Deploy%20to-Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
+[![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
+[![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
+[![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
 
 > **Make informed decisions before taking action on Salesforce data.**
 >
@@ -22,6 +23,12 @@ data that existed before the Rules were created, without writing to the record.
 > [!NOTE]
 > Record Health Check provides advisory guidance; it never blocks a save. When Salesforce must
 > prevent a record change, use a Validation Rule, Flow, or Apex trigger instead.
+
+[Documentation](docs/README.md) ·
+[How it works](docs/installation/01-how-it-works.md) ·
+[Install](docs/installation/02-install-and-verify.md) ·
+[Examples](docs/examples/README.md) ·
+[Try the demo](docs/installation/05-create-rhc-scratch-org.md)
 
 ## Demo
 
@@ -57,70 +64,43 @@ data that existed before the Rules were created, without writing to the record.
 - **Custom Apex** evaluates recent Tasks and Events within a configurable 90-day window.
 - **Applicability rules** skip channel governance for a direct customer and explain why.
 
-## Start here
-
-Choose the path that matches where you are today. You do not need to read the documentation in
-order.
-
-| If you want to…                     | Start here                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| Understand the Framework            | [See how Record Health Check works](docs/installation/01-how-it-works.md) |
-| Build a Check Set or Rule           | [Learn from a working example](docs/examples/README.md)                   |
-| Find configuration or API specifics | [Search the documentation](docs/README.md)                                |
-
-## Install
-
-Start in a **sandbox**. The deployment installs the Framework and the clearly prefixed `Example_`
-Check Set, Rules, and Apex evaluator. It does not create Acme demo records in an existing org;
-those deterministic records are provisioned only by the dedicated scratch-org setup script.
-
-> [!NOTE]
-> **Upgrading an existing installation?** This release uses updated Custom Metadata field API
-> names. Review the [upgrade guide](docs/installation/04-upgrading.md) for the field mapping and
-> upgrade steps.
-
-### Deploy to a sandbox
-
-[![Deploy to Sandbox](https://img.shields.io/badge/Deploy%20to-Sandbox-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
-
-The button opens Salesforce authentication and starts the deployment. Prefer the Salesforce CLI?
-
-```bash
-git clone https://github.com/gkolan/RecordHealthCheck.git
-cd RecordHealthCheck
-sf project deploy start --manifest manifest/package.xml
-```
-
-### After installing
-
-1. Assign the **`Record_Health_Check_User`** permission set.
-2. [Create your first Check Set and Rule](docs/installation/03-create-your-first-rule.md) in
-   Salesforce Setup.
-3. Add the **recordHealthCheck** component to a Lightning record page.
-4. Select the Check Set in Lightning App Builder, save the page, and activate it.
-
-For the complete first-run demo used by this project, follow [Create the demo scratch org](docs/installation/05-create-rhc-scratch-org.md).
-
-For permissions, verification, and other deployment methods, follow
-[Install and verify](docs/installation/02-install-and-verify.md).
-
 ## What you get
 
-Record Health Check gives administrators a configurable Framework and gives users focused guidance
-without leaving the Salesforce record page.
+Record Health Check is a metadata-driven Framework you deploy as source. Administrators define the
+questions; users get advisory answers on the record page without blocked saves or silent field
+writes.
 
-| Framework capability           | What it gives your org                                                                                                                                                            |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lightning record-page card     | Runs the selected Check Set and presents each Rule result where users already work                                                                                                |
-| Custom Metadata configuration  | Lets administrators define, review, and deploy Check Sets and Rules without changing the Lightning component                                                                      |
-| Four Evaluation Types          | Checks the current record with Formula, related data with Query, two SOQL results with Compare two queries, or custom logic with Apex                                             |
-| Guided remediation             | Explains failed Rules with fix instructions and, when useful, an optional read-only **Fix it** link                                                                               |
-| SLDS 1 and SLDS 2 support      | Lets administrators choose the card's visual treatment for each placement in Lightning App Builder; see [Choose the card design system](docs/guides/choose-card-design-system.md) |
-| User and Admin permission sets | Provides clear starting access for people who run health checks and administrators who configure the Framework                                                                    |
+### On the record page
+
+| What users see                                        | Why it helps                                                                                |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A Check Set card on the Lightning record page         | Guidance appears where people already work, not in a separate report or dashboard           |
+| Pass, Fail, Skipped, or Unable to Check for each Rule | Outcomes stay honest: not applicable and "could not evaluate" are not forced into pass/fail |
+| Severity, Found, and Expected on issues               | Failures show what was observed versus what the Rule required                               |
+| Fix instructions and an optional **Fix it** link      | Remediation stays in-product and read-only; the Framework never writes the record           |
+
+### For administrators
+
+| What you configure                      | Why it helps                                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Check Sets and Rules in Custom Metadata | Version, review, and deploy readiness logic like other Salesforce metadata                           |
+| Four Evaluation Types                   | Formula on the current record, Query over related data, Compare two queries, or custom Apex          |
+| Applicability conditions                | Skip Rules that do not apply (for example Partner-only checks on a Customer Account) and explain why |
+| Run timing and card display             | Run on open or on demand; control how passed and skipped Rules appear                                |
+| SLDS 1 or SLDS 2 card treatment         | Match each placement to your org's design system in App Builder                                      |
+
+### Also in the package
+
+- Shipped `Example_` Account Check Set, Rules, and Apex evaluator so a sandbox install is immediately demonstrable
+- `Record_Health_Check_User` and `Record_Health_Check_Admin` permission sets (runner vs configure/troubleshoot)
+- Opt-in platform events for Set runs and Rule results, plus Apex and Flow entry points for automation
+- Diagnostics gated by permission so troubleshooting detail stays off everyday cards
+
+Start with [How it works](docs/installation/01-how-it-works.md), [Install](docs/installation/02-install-and-verify.md), or the [examples library](docs/examples/README.md).
 
 ## Contributing
 
-Planning to contribute? See [Contributing](CONTRIBUTING.md) for local checks, testing requirements,
+Planning to contribute? See [Contributing](.github/CONTRIBUTING.md) for local checks, testing requirements,
 and pull request guidance.
 
 ## License

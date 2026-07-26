@@ -77,9 +77,12 @@ public with sharing class RecordHealthCheckApexEvaluator {
       return result;
     }
 
-    Object instance;
+    Object instance = RecordHealthCheckConfigValidator.takeValidatedPlugin(
+      rule.ApexClass__c
+    );
     try {
-      instance = evaluatorType.newInstance();
+      if (instance == null)
+        instance = evaluatorType.newInstance();
     } catch (Exception ex) {
       result.status = 'UNABLE_TO_EVALUATE';
       result.reasonCode = 'APEX_CLASS_NOT_FOUND';

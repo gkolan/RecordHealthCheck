@@ -115,7 +115,7 @@ may use the same Salesforce object, but they do not repeat the same Rule pattern
 | [Forecast amounts](query/04-forecast-amounts.md) | Numeric `ALL_ROWS_PASS` with result-summary merge tokens |
 | [Placeholder email cleanup](query/05-placeholder-contact-emails.md) | Text exclusion, ignored blank fields, and a prerequisite Rule |
 | [Account Owner team membership](query/06-account-owner-team-membership.md) | Query list-membership mode using a record formula and Comparison Query |
-| [Case review capacity](query/07-high-priority-case-capacity.md) | Aggregate upper limit plus opt-in Rule Result and Check Set Run lifecycle events |
+| [Case review capacity](query/07-high-priority-case-capacity.md) | Aggregate upper limit plus optional Rule Result and Check Set Run lifecycle events |
 | [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) | Aggregate alias, two-query equality, and count-query applicability |
 | [Open-pipeline product continuity](compare-two-queries/02-open-pipeline-product-continuity.md) | Two lists compared with **Lists overlap** |
 | [Account Team coverage](compare-two-queries/03-account-team-opportunity-coverage.md) | Two lists compared with **Lists contain all** and no-row failure |

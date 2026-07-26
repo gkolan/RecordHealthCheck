@@ -19,7 +19,7 @@ external site, or prefilled create page instead of requiring the user to search 
 | Explain what the user should correct | **Fix Message** (`FixMessage__c`) |
 | Give the destination a clear button label | **Action Label** (`ActionLabel__c`) |
 | Open a verified Salesforce or HTTPS destination | **Action URL** (`ActionUrl__c`) |
-| Reuse the current record or parent values in guidance | `{!record.FieldApiName\|Fallback value}` merge tokens |
+| Reuse the current record or parent values in guidance | Merge tokens for record and parent fields, each with an optional fallback value |
 
 These settings are configured on the Rule:
 
@@ -46,13 +46,16 @@ If **Action Label** is blank and the URL is valid, the link label defaults to `F
 
 ## Allowed URL formats
 
-Use one of these formats:
+Record Health Check checks the resolved Action URL, after merge tokens are inserted and
+URL-encoded, against these rules.
+
+Allowed:
 
 - Same-org relative Lightning paths that start with `/lightning/`
 - Other same-org relative paths that start with `/`
 - External `https://` URLs
 
-Do not use:
+Rejected by URL safety checks:
 
 - `http://`
 - `javascript:`
@@ -60,43 +63,74 @@ Do not use:
 - `mailto:`
 - Protocol-relative URLs such as `//example.com`
 - URLs containing backslashes
-- URLs that resolve to more than 2000 characters
+- URLs that resolve to more than 2,000 characters
 
-Unsafe URLs are dropped. Fix Message can still render.
+Unsafe URLs are dropped. **Fix Message** can still render.
 
 ## Merge tokens
 
-Action URLs and Fix Message support merge tokens from the current record:
+**Action Label**, **Fix Message**, and **Action URL** all support merge tokens. Action Label and
+Fix Message use display tokens (including result tokens after the Rule finishes). Action URL uses
+URL tokens and URL-encodes each inserted value. Result tokens are not allowed in Action URL.
 
 ```text
-{!record.Id|001000000000000AAA}
-{!record.Name|this record}
-{!record.OwnerId|005000000000000AAA}
-{!record.Owner.ManagerId|005000000000000AAA}
-{!record.ParentId|001000000000000AAA}
+{!record.Id}
+{!record.Name}
+{!record.OwnerId}
+{!record.ParentId}
 {!record.Parent.Parent.Name|no top-level account}
 {!record.Parent.Customer_Tier__c|Standard}
 ```
 
-The engine resolves token values before showing the link. Values substituted into URLs are URL-encoded.
-Relationship paths can traverse up to five levels. Custom fields are supported when the field exists
-in the target org and the running user can read it; replace `Customer_Tier__c` with a real field API
-name from your data model.
+Action Label examples (keep them short; the field is 80 characters):
+
+```text
+Review {!record.Name}
+Edit {!record.Name|this account}
+Open {!rhcRule.checkTitle}
+```
+
+The engine resolves token values before showing the label or link. Values substituted into URLs are
+URL-encoded. Relationship paths can traverse up to five levels. Custom fields are supported when the
+field exists in the target org and the running user can read it; replace `Customer_Tier__c` with a
+real field API name from your data model.
+
+For the full namespace list and fallback rules, see
+[Reference: Merge tokens](../reference/reference-merge-tokens.md).
 
 ## Common link patterns
 
+Copy a pattern below and replace placeholder Ids and API names with values from the target org. See
+[Allowed URL formats](#allowed-url-formats) for which URLs the Framework accepts.
+
 | Goal | Action URL pattern |
 | --- | --- |
-| Create a Case with Account, Subject, and Origin defaults | `/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id\|001000000000000AAA},Subject=Review%20{!record.Name\|this record},Origin=Web` |
+| Create a Case with Account, Subject, and Origin defaults | Case create URL with prefilled Account, Subject, and Origin: copy it from below the table |
 | Open a Knowledge article | `/lightning/r/Knowledge__kav/ka0xxxxxxxxxxxxxxx/view` |
-| Open an external support playbook | `https://support.example.com/account-readiness?accountId={!record.Id\|001000000000000AAA}` |
-| View the current Account | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/view` |
-| Edit the current Account | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/edit` |
-| Open the Account's Contacts related list | `/lightning/r/Account/{!record.Id\|001000000000000AAA}/related/Contacts/view` |
-| Open a report filtered by record ID | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id\|001000000000000AAA}` |
-| Open a report with record and parent filters | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id\|001000000000000AAA}&fv1={!record.Parent.Name\|no parent account}` |
+| Open an external support playbook | `https://support.example.com/account-readiness?accountId={!record.Id}` |
+| Open an external Confluence or wiki page | `https://wiki.example.com/data-quality/account-readiness` |
+| Open an external status or runbook page | `https://status.example.com/incidents/account-tier` |
+| View the current Account | `/lightning/r/Account/{!record.Id}/view` |
+| Edit the current Account | `/lightning/r/Account/{!record.Id}/edit` |
+| Open the Account's Contacts related list | `/lightning/r/Account/{!record.Id}/related/Contacts/view` |
+| Open a report filtered by record ID | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}` |
+| Open a report with record and parent filters | Report URL that passes the record Id and the parent account name: copy it from below the table |
 | Open a Contact list view | `/lightning/o/Contact/list?filterName=Recent` |
 | Open an internal Lightning page | `/lightning/n/Data_Quality_Playbook` |
+
+The two patterns that use a fallback value are written out here so you can copy them exactly:
+
+**Create a Case with prefilled values**
+
+```text
+/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id},Subject=Review%20{!record.Name|this record},Origin=Web
+```
+
+**Open a report with record and parent filters**
+
+```text
+/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}&fv1={!record.Parent.Name|no parent account}
+```
 
 Replace the placeholder `00O...`, `ka0...`, object, relationship, field, and page API names with
 values that exist in the target org. A default-field-values URL prefills the create form; the user
@@ -104,15 +138,17 @@ still reviews and saves the record.
 
 ## Report links
 
-Lightning report links can include filter values such as `fv0`, `fv1`, and `fv2`.
+Lightning report links can pass filter values as `fv0`, `fv1`, `fv2`, and so on. `fv0` is the first
+filter on the report, `fv1` is the second, and each later number maps to the next filter.
 
 Example:
 
 ```text
-/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id|001000000000000AAA}
+/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}&fv1={!record.Parent.Name|no parent account}
 ```
 
-Use this when the report's first filter expects the current record Id.
+Use this when the report's first filter expects the current record Id and its second filter expects
+the parent account name.
 
 Report Ids are created when the report is deployed or created in the org. To get the Id:
 
@@ -128,46 +164,31 @@ A report link is org-specific. A report Id from one org does not work in another
 
 Use this when a failed Rule means a user needs to fix related Contacts.
 
-Action Label:
-`View contacts to fix`
-
-Action URL:
-`/lightning/r/Account/{!record.Id|001000000000000AAA}/related/Contacts/view`
-
-Fix Message:
-`Open the account's contacts and add the missing email addresses.`
-
-This pattern ships in the `Example_Contacts_Have_Email` sample Rule.
+| Setup field | Value |
+| --- | --- |
+| Action Label | `View contacts to fix` |
+| Action URL | `/lightning/r/Account/{!record.Id}/related/Contacts/view` |
+| Fix Message | `Open the contacts for {!record.Name} and add the missing email addresses.` |
 
 ### High-priority open Cases
 
 Use this when a failed Rule means a user needs to review a filtered report.
 
-Action Label:
-`View high-priority cases`
-
-Action URL:
-`/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id|001000000000000AAA}`
-
-Fix Message:
-`Review the open high-priority cases before your next renewal or executive conversation.`
-
-This pattern ships in the `Example_No_High_Priority_Issues` sample Rule. Replace the report Id with the Id from your org.
+| Setup field | Value |
+| --- | --- |
+| Action Label | `View high-priority cases` |
+| Action URL | `/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}` |
+| Fix Message | `Review the open high-priority cases for {!record.Name} before your next renewal or executive conversation.` |
 
 ### External playbook
 
 Use this when the next step is a help page outside Salesforce.
 
-Action Label:
-`Open data quality playbook`
-
-Action URL:
-`https://example.com/data-quality-playbook`
-
-Fix Message:
-`Review the playbook before changing ownership or account tier fields.`
-
-Only `https://` external links are allowed.
+| Setup field | Value |
+| --- | --- |
+| Action Label | `Open data quality playbook` |
+| Action URL | `https://example.com/data-quality-playbook` |
+| Fix Message | `Review the playbook before changing ownership or account tier fields for {!record.Name\|this account}.` |
 
 ## Review checklist
 

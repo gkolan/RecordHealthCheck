@@ -1,3 +1,8 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @IsTest
 private class RecordHealthCheckTemplateServiceTest {
   @IsTest
@@ -341,6 +346,14 @@ private class RecordHealthCheckTemplateServiceTest {
       'Description|Data Quality|Compare Two Queries|42|',
       RecordHealthCheckTemplateService.resolveDisplay(
         '{!rhcRule.checkDescription}|{!rhcRule.category}|{!rhcRule.evaluationType}|{!rhcRule.evaluationOrder}|{!record.Parent.Name}',
+        context
+      )
+    );
+    rule.Category__c = null;
+    System.assertEquals(
+      '',
+      RecordHealthCheckTemplateService.resolveDisplay(
+        '{!rhcRule.category}',
         context
       )
     );

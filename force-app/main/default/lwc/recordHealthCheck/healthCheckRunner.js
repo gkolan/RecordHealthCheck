@@ -122,7 +122,11 @@ export class HealthCheckRunner {
     const runCheck = this._makeRunCheck(taskMap, checkMap, cycleNames, token);
 
     for (const check of this.host.checks) {
-      runCheck(check);
+      runCheck(check).catch(() => {
+        if (token === this._runToken) {
+          this._runInProgress = false;
+        }
+      });
     }
   }
 
@@ -130,7 +134,7 @@ export class HealthCheckRunner {
    * Builds the recursive task launcher shared by the concurrent and sequential
    * run paths. Each check's promise is memoized in taskMap so a check is only
    * evaluated once even when several dependents point at it; cycle members
-   * short-circuit to an already-resolved promise (their result is pre-seeded).
+   * return early with an already-resolved promise (their result is pre-seeded).
    */
   _makeRunCheck(taskMap, checkMap, cycleNames, token) {
     const runCheck = (check) => {
@@ -211,7 +215,7 @@ export class HealthCheckRunner {
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
-          "DEPENDENCY_NOT_PASSED",
+          "PREREQUISITE_NOT_MET",
           `Skipped because "${prereqLabel}" did not pass.`
         );
         this._resultBuffer[check.developerName] = skipped;
@@ -359,7 +363,7 @@ export class HealthCheckRunner {
   }
 
   _resetEvaluationPool() {
-    // Do not zero _activeEvaluations; abandoned runs decrement on settle.
+    // Leave _activeEvaluations alone; abandoned runs decrement on settle.
     for (const pending of this._evaluationQueue) {
       pending.resolve(false);
     }

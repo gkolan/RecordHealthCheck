@@ -52,8 +52,8 @@ A Salesforce administrator opens a record whose approval has stopped moving.
 | `context.recordId` | The record being evaluated at run time |
 | `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
-Do not put the evaluated record ID in the parameter JSON. Record Health Check supplies it
-automatically:
+Record Health Check supplies the evaluated record ID automatically; leave it out of the parameter
+JSON:
 
 - On a Lightning record page, `context.recordId` is the ID of the open record.
 - From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
@@ -244,7 +244,7 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       inactiveNames.add(assignee.Name);
     }
 
-    // Populate on pass and fail so an entitled viewer can audit a green row too.
+    // Set Found/Expected on pass and fail so an entitled viewer can audit a green row too.
     populateComparison(result, inactiveNames.size());
 
     if (inactiveNames.isEmpty()) {
@@ -378,7 +378,7 @@ The context contains:
 | --- | --- | --- |
 | `recordId` | `Id` | Record being evaluated; use this value in SOQL |
 | `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; do not assume every field was loaded |
+| `record` | `SObject` | Partial current record; only requested fields are loaded |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
 
@@ -392,8 +392,8 @@ For a completed check, the class must return all three required values:
 | `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
 | `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
 
-Do not return `SKIP` from the class to represent applicability; configure **Applies To** on the
-Rule so Record Health Check skips before Apex runs. The framework supplies the label, severity,
+For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
+runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
 duration, and other card details. An invalid status, blank Found value, blank Expected value, or
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
 [Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
@@ -483,7 +483,7 @@ The approval and User queries run in user mode, so the result follows the runnin
 
 - The configured approval object, assignment and status fields, and the matching User records.
 
-- Hidden approval rows or User records do not appear in the result. Do not change the queries to system mode to expose them through the card.
+- Hidden approval rows or User records do not appear in the result. Queries run in user mode so hidden rows stay out of the card.
 
 - The plugin can name inactive Users. Confirm that the running user is allowed to see those names.
 

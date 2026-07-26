@@ -4,11 +4,11 @@
  */
 
 /**
- * Shared value extraction, coercion, and comparison for the SOQL evaluators.
+ * Shared value extraction, conversion, and comparison for the SOQL evaluators.
  * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckCompareQueriesEvaluator
  * previously carried their own copies of single-value/list extraction, QueryException
- * classification, type coercion, equality, and ordered comparison — and the copies
- * had drifted (notably Date/DateTime coercion). Centralizing them here
+ * classification, type conversion, equality, and ordered comparison — and the copies
+ * had gotten out of sync (notably Date/DateTime conversion). Keeping them in one place
  * guarantees single-query and compare-queries checks behave identically.
  * Apex boxes Date values through the Datetime branch when they are held as Object
  * so temporal comparisons consistently use Datetime semantics after the numeric
@@ -34,7 +34,10 @@ public with sharing class RecordHealthCheckValueResolver {
   public static Object singleValueFromRow(SObject row, String fieldName) {
     if (row instanceof AggregateResult) {
       AggregateResult ar = (AggregateResult) row;
-      return String.isBlank(fieldName) ? ar.get('expr0') : ar.get(fieldName);
+      if (String.isNotBlank(fieldName))
+        return ar.get(fieldName);
+      Map<String, Object> populated = ar.getPopulatedFieldsAsMap();
+      return populated.isEmpty() ? null : populated.values()[0];
     }
     if (String.isBlank(fieldName)) {
       throw new ResolverException(
@@ -60,26 +63,6 @@ public with sharing class RecordHealthCheckValueResolver {
     List<Object> values = new List<Object>();
     for (SObject row : rows) {
       values.add(singleValueFromRow(row, fieldName));
-    }
-    return values;
-  }
-
-  /**
-   * Resolves a list of string values, one per row. Null is included as '' so list
-   * operators can distinguish [A, null, B] from [A, B] rather than silently
-   * collapsing them.
-   */
-  public static List<String> stringList(List<SObject> rows, String fieldName) {
-    if (String.isBlank(fieldName)) {
-      throw new ResolverException(
-        'INVALID_SOQL_TEMPLATE',
-        'A query field is required for list comparison queries.'
-      );
-    }
-    List<String> values = new List<String>();
-    for (SObject row : rows) {
-      Object val = singleValueFromRow(row, fieldName);
-      values.add(val != null ? String.valueOf(val) : '');
     }
     return values;
   }
@@ -143,7 +126,7 @@ public with sharing class RecordHealthCheckValueResolver {
     }
     // Apex boxes Date values through the Datetime branch above, which also
     // normalizes Date/Datetime pairs before comparison.
-    // Coerce both sides to Id before comparison, so a 15-char and an 18-char form of
+    // Convert both sides to Id before comparison, so a 15-char and an 18-char form of
     // the same Id match (String.valueOf would often compare them as unequal).
     if (primary instanceof Id || comparison instanceof Id) {
       try {
@@ -229,7 +212,7 @@ public with sharing class RecordHealthCheckValueResolver {
     );
   }
 
-  // ─── Coercion (strict — see class header) ──────────────────────────────────
+  // ─── Conversion (strict — see class header) ────────────────────────────────
 
   public static Boolean isNumericObject(Object value) {
     return value instanceof Integer ||

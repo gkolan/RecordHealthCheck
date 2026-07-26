@@ -66,17 +66,17 @@ the plugin; a missing ID is rejected earlier with public reason `NO_RECORD_CONTE
 
 ## 2. Reading fields on the current record
 
-### `context.record` is partial: Do not assume all fields are loaded
+### `context.record` is partial: Only requested fields are loaded
 
 The engine loads only fields it knows the Rule needs:
 
 | Source on the Rule | Fields added to `context.record` |
 | ------------------ | -------------------------------- |
-| `{!record.Field\|Fallback value}` merge tokens in **Message When Failed** / **Message When Unable To Evaluate** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
+| Record field merge tokens in **Message When Failed** / **Message When Unable To Evaluate** | Those token paths (e.g. `Name`, `Customer_Tier__c`) |
 | **Applies When (Formula)** | Fields referenced in that formula |
 | SOQL templates on Query rules | Merge tokens in those queries |
 
-For a typical **Apex** Rule with applicability **Always** and message `{!record.Name|this record} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
+For a typical **Apex** Rule with applicability **Always** and message `{!record.Name} has no recent activity`, `context.record` may contain only **`Id`** and **`Name`**.
 
 `BillingCity`, custom fields, or `Parent.BillingCity` are **not** guaranteed on `context.record` unless they appear in merge tokens or applicability formulas on that Rule.
 
@@ -336,7 +336,7 @@ return result;
 On **`FAIL`**, the evaluator sets:
 
 - **`severity`** from Rule `FailureSeverity__c` (not set by the plugin)
-- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field|Fallback value}` merge tokens resolved
+- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field}` merge tokens (optional `|Fallback value`) resolved
 
 ### Found / Expected (required for PASS / FAIL)
 
@@ -362,7 +362,7 @@ See the [Rule field reference](../metadata/fields-check-rule.md) for comparison 
 
 ### Diagnostic detail (optional)
 
-When the check can explain where a value came from, populate `actualValueSource` /
+When the check can explain where a value came from, set `actualValueSource` /
 `expectedValueSource` with `RecordHealthCheckValueSource.Detail`. These never render on the card.
 See [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md#what-you-see-in-the-browser-console) for who
 can see them and when.
@@ -413,13 +413,13 @@ Any other string → evaluator converts to `ERROR` / `APEX_EVALUATOR_ERROR`.
 | `durationMs` | Evaluator |
 | `reasonCode` | Framework (plugins rarely need this) |
 
-## 7. Canonical basic example
+## 7. Primary basic example
 
 Use the complete [Recent Account activity example](../examples/apex/01-recent-activity.md).
 It is intentionally the one complete example shared by these plugin pages: it shows a
 `public with sharing` implementation, user-mode aggregate SOQL, two independently overridable JSON
 parameters, safe defaults, `PASS`/`FAIL`, and required Found/Expected values. Keeping the complete
-class in one place prevents the short contract and detailed reference from drifting.
+class in one place prevents the short contract and detailed reference from getting out of sync.
 
 ## 8. Checklist before deploy
 

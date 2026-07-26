@@ -103,7 +103,7 @@ hover Rule titles, and follow the configured action links to exercise the same f
 
 ## Step 3: Rerun or troubleshoot setup
 
-The data seeding is idempotent for the named Acme records, but the top-level script does not reuse an org alias.
+The data seeding is safe to run again for the named Acme records, but the top-level script does not reuse an org alias.
 For a failed setup, inspect the failing CLI command, correct the cause, and run the setup again with a fresh
 alias. The script prints each operation before executing it, so the last printed operation identifies the failed
 stage.

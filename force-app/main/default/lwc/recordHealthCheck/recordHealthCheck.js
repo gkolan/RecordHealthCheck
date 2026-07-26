@@ -29,6 +29,7 @@ const RHC_DIAG_TABLE_COLUMNS = [
 // Pointer hover waits before the tooltip fades in so quick row scans do not flash
 // popovers. Keyboard focus keeps a shorter CSS dwell (see recordHealthCheck.css).
 const TOOLTIP_HOVER_DWELL_MS = 600;
+const ESTIMATED_TOOLTIP_HEIGHT = 180;
 
 const SETUP_ERROR_CODES = new Set([
   "SETUP_REQUIRED",
@@ -106,7 +107,9 @@ export default class RecordHealthCheck extends LightningElement {
   @track showDiagnostics = false;
   @track totalCheckCount = 0;
   @track totalAvailableCheckCount = 0;
+  @track frameworkMaxChecks = 25;
   @track inactiveRuleCount = 0;
+  @track inactiveRuleLabels = [];
   @track completedCheckCount = 0;
   @track runComplete = false;
   /** Stays true after the first completed run until definitions reload — drives
@@ -137,7 +140,12 @@ export default class RecordHealthCheck extends LightningElement {
   _pendingTooltipAnchors = new Set();
   _summaryStatsSource = null;
   _summaryStatsTooltipSignature = "";
+  _inactiveStatSignature = "";
   _summaryStatsCache = [];
+  _visibleChecksSource = null;
+  _visibleChecksSignature = "";
+  _visibleChecksCache = [];
+  _resizeFrame;
 
   connectedCallback() {
     this._connected = true;
@@ -152,13 +160,17 @@ export default class RecordHealthCheck extends LightningElement {
   disconnectedCallback() {
     this._connected = false;
     window.removeEventListener("resize", this._handleViewportResize);
+    if (this._resizeFrame) {
+      cancelAnimationFrame(this._resizeFrame);
+      this._resizeFrame = null;
+    }
     this._loadToken++;
     if (this._initialLoadTimer) {
       clearTimeout(this._initialLoadTimer);
       this._initialLoadTimer = null;
     }
     // Bump the run token and clear the concurrency pool so any in-flight
-    // evaluation resolves to a discarded result instead of mutating a dead component.
+    // evaluation resolves to a discarded result instead of changing a dead component.
     this._runner.invalidate();
     if (this._tooltipListenersBound) {
       this.template.removeEventListener("mouseover", this._positionTooltip);
@@ -238,7 +250,6 @@ export default class RecordHealthCheck extends LightningElement {
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
     // Roomy enough for the multi-line summary/rule bubbles; below this we flip.
-    const ESTIMATED_TOOLTIP_HEIGHT = 180;
     const flipUp =
       spaceBelow < ESTIMATED_TOOLTIP_HEIGHT && spaceAbove > spaceBelow;
     anchor.classList.toggle("rhc-tooltip-anchor--flip-up", flipUp);
@@ -412,10 +423,19 @@ export default class RecordHealthCheck extends LightningElement {
         typeof response.totalAvailableCheckCount === "number"
           ? response.totalAvailableCheckCount
           : response.checks.length;
+      this.frameworkMaxChecks =
+        typeof response.frameworkMaxChecks === "number"
+          ? response.frameworkMaxChecks
+          : 25;
       this.inactiveRuleCount =
         typeof response.inactiveRuleCount === "number"
           ? response.inactiveRuleCount
           : 0;
+      // Names arrive only for the diagnostics audience; without them the pill
+      // still renders, just without a hover list.
+      this.inactiveRuleLabels = Array.isArray(response.inactiveRuleLabels)
+        ? response.inactiveRuleLabels.filter((name) => !!name)
+        : [];
       this.checksOmittedByLimit = response.checksOmittedByLimit || false;
 
       // Build per-check rows — all start PENDING
@@ -452,7 +472,7 @@ export default class RecordHealthCheck extends LightningElement {
   /**
    * Blank checkSetName is ambiguous until we ask Apex what Check Sets exist for
    * this object. Active sets → SETUP_REQUIRED (pick one). Inactive only →
-   * INACTIVE_CHECK_SETS_ONLY. None at all → NO_ACTIVE_CHECK_SETS. Probe failures
+   * INACTIVE_CHECK_SETS_ONLY. None at all → NO_ACTIVE_CHECK_SETS. Lookup failures
    * and missing recordId fall back to SETUP_REQUIRED so we never falsely claim
    * the org has no Check Sets.
    */
@@ -468,7 +488,7 @@ export default class RecordHealthCheck extends LightningElement {
           hasInactive: response?.hasInactive === true
         };
       } catch {
-        // Probe failed (e.g. transient Apex error) — fall back to SETUP_REQUIRED
+        // Lookup failed (e.g. transient Apex error) — fall back to SETUP_REQUIRED
         // rather than falsely claiming the org has no Check Sets for this object.
         availability = { hasActive: true, hasInactive: false };
       }
@@ -554,6 +574,21 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   get visibleChecks() {
+    const signature = JSON.stringify([
+      this.revealMode,
+      this.successDisplayMode,
+      this.skippedDisplayMode,
+      this.showDiagnostics,
+      this.comparisonDisplay,
+      this._expandedNames,
+      this._runner.isRunning
+    ]);
+    if (
+      this._visibleChecksSource === this.checks &&
+      this._visibleChecksSignature === signature
+    ) {
+      return this._visibleChecksCache;
+    }
     let filtered;
     if (this.isAllAtOnce) {
       filtered = this.checks.filter((c) => {
@@ -587,7 +622,9 @@ export default class RecordHealthCheck extends LightningElement {
       });
     }
     // Annotate each check with computed display properties for the template
-    return filtered.map((c) =>
+    this._visibleChecksSource = this.checks;
+    this._visibleChecksSignature = signature;
+    this._visibleChecksCache = filtered.map((c) =>
       annotateCheck(
         c,
         this.showDiagnostics,
@@ -595,6 +632,7 @@ export default class RecordHealthCheck extends LightningElement {
         this._isRowExpanded(c.developerName)
       )
     );
+    return this._visibleChecksCache;
   }
 
   // Whether a row's comparison detail is currently expanded. Carets default to
@@ -647,7 +685,14 @@ export default class RecordHealthCheck extends LightningElement {
   // render. Re-measure explicitly so a newly overflowing value gains its +/-
   // affordance (and a value that now fits loses it) immediately.
   _handleViewportResize = () => {
-    this._measureClampedValues();
+    if (this._resizeFrame) {
+      return;
+    }
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this._resizeFrame = requestAnimationFrame(() => {
+      this._resizeFrame = null;
+      this._measureClampedValues();
+    });
   };
 
   // Expand or re-clamp a single value chip in place. Imperative because the
@@ -680,18 +725,18 @@ export default class RecordHealthCheck extends LightningElement {
   // limit badge).
   get checkCountPhrase() {
     if (this.checksOmittedByLimit) {
-      return `the first 25 of ${this.totalAvailableCheckCount} checks`;
+      return `the first ${this.frameworkMaxChecks} of ${this.totalAvailableCheckCount} checks`;
     }
     const n = this.totalCheckCount;
     return `${n} ${n === 1 ? "check" : "checks"}`;
   }
 
   get limitNoticeLabel() {
-    return `First 25 of ${this.totalAvailableCheckCount} shown`;
+    return `First ${this.frameworkMaxChecks} of ${this.totalAvailableCheckCount} shown`;
   }
 
   get limitNoticeTitle() {
-    return `Showing the first 25 of ${this.totalAvailableCheckCount} active rules.`;
+    return `Showing the first ${this.frameworkMaxChecks} of ${this.totalAvailableCheckCount} active rules.`;
   }
 
   get showActionButton() {
@@ -713,17 +758,6 @@ export default class RecordHealthCheck extends LightningElement {
 
   get preRunHintText() {
     return `Click Run to evaluate ${this.checkCountPhrase}.`;
-  }
-
-  get showInactiveRulesNotice() {
-    return (
-      !this.isLoading && !this.hasComponentError && this.inactiveRuleCount > 0
-    );
-  }
-
-  get inactiveRulesNotice() {
-    const n = this.inactiveRuleCount;
-    return `${n} inactive ${n === 1 ? "rule" : "rules"} omitted.`;
   }
 
   get showSummaryStats() {
@@ -804,18 +838,52 @@ export default class RecordHealthCheck extends LightningElement {
   get summaryStats() {
     const tooltipKeys = this._summaryTooltipKeys();
     const tooltipSignature = tooltipKeys.join("|");
+    const inactiveStat = this._inactiveRuleStat();
+    const inactiveSignature = inactiveStat
+      ? `${inactiveStat.label}|${inactiveStat.tooltip}`
+      : "";
     if (
       this._summaryStatsSource !== this.checks ||
-      this._summaryStatsTooltipSignature !== tooltipSignature
+      this._summaryStatsTooltipSignature !== tooltipSignature ||
+      this._inactiveStatSignature !== inactiveSignature
     ) {
       this._summaryStatsSource = this.checks;
       this._summaryStatsTooltipSignature = tooltipSignature;
-      this._summaryStatsCache = buildSummaryStats(
-        this.checks,
-        new Set(tooltipKeys)
-      );
+      this._inactiveStatSignature = inactiveSignature;
+      const stats = buildSummaryStats(this.checks, new Set(tooltipKeys));
+      this._summaryStatsCache = inactiveStat ? [inactiveStat, ...stats] : stats;
     }
     return this._summaryStatsCache;
+  }
+
+  /**
+   * Inactive rules are configuration housekeeping a regular user cannot act on,
+   * so the count no longer sits in the card header. Under diagnostics it leads
+   * the stats bar as a neutral pill whose hover lists the omitted rule names,
+   * matching how the Passed/Skipped pills reveal their rows.
+   */
+  _inactiveRuleStat() {
+    if (!this.showDiagnostics || this.inactiveRuleCount < 1) return null;
+    const n = this.inactiveRuleCount;
+    const names = this.inactiveRuleLabels || [];
+    const undisclosed = n - names.length;
+    const listed = undisclosed > 0 ? [...names, `+${undisclosed} more`] : names;
+    const hasTooltip = names.length > 0;
+    const baseClass = "rhc-stat rhc-stat--inactive";
+    return {
+      key: "inactive",
+      label: `${n} Inactive`,
+      cssClass: hasTooltip
+        ? `${baseClass} rhc-tooltip-anchor rhc-tooltip-anchor--footer rhc-tooltip-anchor--stat`
+        : baseClass,
+      tooltip: hasTooltip
+        ? `${n} inactive ${n === 1 ? "rule" : "rules"} omitted: ${listed.join(
+            ", "
+          )}`
+        : null,
+      tabIndex: hasTooltip ? "0" : null,
+      iconClass: "rhc-status-icon rhc-status-icon--inactive"
+    };
   }
 
   get showLimitNotice() {

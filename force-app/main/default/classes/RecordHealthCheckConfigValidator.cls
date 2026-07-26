@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** Shared, side-effect-free validation primitives used at runtime and in CI. */
+/** Shared validation helpers used at runtime and in CI; they do not change org data. */
 public with sharing class RecordHealthCheckConfigValidator {
+  private static Map<String, RecordHealthCheckRule> validatedPluginInstances = new Map<String, RecordHealthCheckRule>();
   public static RecordHealthCheckTokenIssue firstTemplateIssue(
     Record_Health_Check_Rule__mdt rule
   ) {
@@ -77,11 +78,22 @@ public with sharing class RecordHealthCheckConfigValidator {
       return false;
     try {
       Type pluginType = Type.forName(className);
-      return pluginType != null &&
-        pluginType.newInstance() instanceof RecordHealthCheckRule;
+      if (pluginType == null)
+        return false;
+      Object instance = pluginType.newInstance();
+      if (!(instance instanceof RecordHealthCheckRule))
+        return false;
+      validatedPluginInstances.put(className, (RecordHealthCheckRule) instance);
+      return true;
     } catch (Exception ex) {
       return false;
     }
+  }
+
+  public static RecordHealthCheckRule takeValidatedPlugin(String className) {
+    RecordHealthCheckRule instance = validatedPluginInstances.get(className);
+    validatedPluginInstances.remove(className);
+    return instance;
   }
 
   public static Boolean isJsonObject(String jsonText) {

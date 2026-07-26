@@ -58,8 +58,10 @@ $RECYCLE.BIN/
 
 # Internal / local-only files — kept on your machine, never published.
 # Remove an entry below if you decide you DO want it in the public repo.
-/docs/development/
+/docs/development/*
+!/docs/development/documentation-standard.md
 /spec/
+/specs/
 /releases/
 .backups/
 tasks/
@@ -113,17 +115,27 @@ scripts/*
 # Release-gate scripts used by package.json and CI are public and tracked.
 !scripts/release/
 !scripts/release/**
-# Reproducible V2 demo scratch-org provisioning.
-!scripts/setup-v2-demo.sh
+# Reproducible demo scratch-org provisioning (see docs/installation/05-*).
+!scripts/setup-demo.sh
 # Exception: the metadata validator is a release-gate dependency referenced by
 # .github/workflows/salesforce-validate.yml and the V2 upgrade docs, so it must
 # be tracked. Everything else under scripts/ stays local.
 !scripts/apex/
 scripts/apex/*
 !scripts/apex/validateMetadata.apex
-!scripts/apex/*V2Demo*.apex
+!scripts/apex/setupDemoData.apex
+!scripts/apex/setupDemoUser.apex
+!scripts/apex/deactivateDemoUser.apex
+!scripts/apex/verifyDemo.apex
 !scripts/demo/
 !scripts/demo/**
+
+# Point-in-time maintainer audit / review write-ups at repo root (keep under tasks/).
+/*-AUDIT-*.md
+/AUDIT-*.md
+/CODE-REVIEW-*.md
+/DOCUMENTATION-AUDIT-*.md
+/FIX-VERIFICATION-*.md
 
 # Internal planning / roadmap docs — kept local, not published with the project.
 docs/spec/
