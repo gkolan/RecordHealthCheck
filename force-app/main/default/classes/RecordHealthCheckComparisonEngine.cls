@@ -352,191 +352,42 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * values are returned without decorative quotes because the comparison chip's
    * background and horizontal padding already distinguish values from prose.
    *
-   * Values are humanized for readability: typed numbers gain thousands
-   * separators, Booleans read Yes/No, and dates/datetimes render in the running
-   * user's locale and time zone. Typed values (a checkbox or datetime field, a
-   * single-value formula) are converted directly. Boolean and temporal metadata
-   * strings are recognized textually; numeric metadata strings require actual-value
-   * type context through describeExpectedForActual so identifiers stay unchanged.
+   * This overload renders with Display: Value Format on "Auto". Callers that
+   * have the Rule pass its DisplayValueFormat__c to the overload below.
    */
   public static String formatValue(Object value) {
-    if (value == null)
-      return '(blank)';
-
-    // Typed values carry their Apex type here, so humanize them before
-    // String.valueOf flattens them into a raw, unformatted string.
-    if (value instanceof Boolean) {
-      return ((Boolean) value) ? 'Yes' : 'No';
-    }
-    if (value instanceof Date) {
-      return ((Date) value).format();
-    }
-    if (value instanceof Datetime) {
-      // .format() honors the user's locale and time zone; String.valueOf would
-      // return a raw GMT "2026-07-04 17:30:00".
-      return ((Datetime) value).format();
-    }
-
-    // Only values that retain a numeric Apex type are safe to group. A digit-only
-    // String may instead be a postal code, year, or identifier whose spelling is
-    // significant (including leading zeroes).
-    if (
-      value instanceof Integer ||
-      value instanceof Long ||
-      value instanceof Decimal ||
-      value instanceof Double
-    ) {
-      return humanizeNumber(String.valueOf(value));
-    }
-
-    String s = String.valueOf(value);
-    if (s == null || s.trim() == '')
-      return '(blank)';
-    String humanized = humanizeString(s);
-    if (humanized != null)
-      s = humanized;
-    return s;
+    return formatValue(value, null);
   }
 
   /**
-   * Humanizes a raw display string that arrived without its Apex type (a metadata
-   * operand, or a value already flattened by String.valueOf). Tries each shape in
-   * order and returns the first match, or null when the text should stand as-is.
-   * Number is tried first (its pattern excludes the others); Boolean before date;
-   * multi-select last since only it keys off a delimiter that plain text may hold.
+   * Renders a single value using the Rule's Display: Value Format.
+   *
+   * On "Auto" the value is humanized from its Apex type: numbers gain the
+   * running user's grouping separators, Booleans read Yes/No, and dates and
+   * date/times render in the user's locale and time zone. A named format
+   * (Currency, Percent, Raw, …) overrides that and is applied instead. The
+   * rendering rules live in RecordHealthCheckDisplayFormat.
    */
-  private static String humanizeString(String s) {
-    String asBoolean = humanizeBooleanText(s);
-    if (asBoolean != null)
-      return asBoolean;
-    String asDate = humanizeDateText(s);
-    if (asDate != null)
-      return asDate;
-    return humanizeMultiSelect(s);
-  }
-
-  // Matches a plain integer or decimal (optionally signed) when an actual numeric
-  // value provides type context. Anything else stays untouched so IDs, codes, and
-  // pre-formatted text keep their exact spelling.
-  private static final Pattern NUMERIC_PATTERN = Pattern.compile(
-    '^-?\\d+(\\.\\d+)?$'
-  );
-
-  // ISO date (YYYY-MM-DD) and datetime (date + space/T + HH:MM:SS) — the shapes a
-  // date/datetime operand or a String.valueOf'd temporal value takes. Trailing
-  // fractional seconds / zone offsets are tolerated but ignored; groups feed
-  // Date/Datetime.newInstance so parsing is deterministic and never locale-bound.
-  private static final Pattern DATE_PATTERN = Pattern.compile(
-    '^(\\d{4})-(\\d{2})-(\\d{2})$'
-  );
-  private static final Pattern DATETIME_PATTERN = Pattern.compile(
-    '^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2}):(\\d{2}).*$'
-  );
-
-  /** Boolean operand text → Yes/No; null when the string is not a boolean. */
-  private static String humanizeBooleanText(String raw) {
-    String s = raw.trim();
-    if (s.equalsIgnoreCase('true'))
-      return 'Yes';
-    if (s.equalsIgnoreCase('false'))
-      return 'No';
-    return null;
-  }
-
-  /**
-   * ISO date/datetime text → the running user's locale/time-zone format (e.g.
-   * "7/4/2026" or "7/4/2026, 5:30 PM"). Returns null when the string is not an
-   * ISO temporal value so ordinary text is left alone.
-   */
-  private static String humanizeDateText(String raw) {
-    String s = raw.trim();
-    Matcher dt = DATETIME_PATTERN.matcher(s);
-    if (dt.matches()) {
-      return Datetime.newInstance(
-          Integer.valueOf(dt.group(1)),
-          Integer.valueOf(dt.group(2)),
-          Integer.valueOf(dt.group(3)),
-          Integer.valueOf(dt.group(4)),
-          Integer.valueOf(dt.group(5)),
-          Integer.valueOf(dt.group(6))
-        )
-        .format();
-    }
-    Matcher d = DATE_PATTERN.matcher(s);
-    if (d.matches()) {
-      return Date.newInstance(
-          Integer.valueOf(d.group(1)),
-          Integer.valueOf(d.group(2)),
-          Integer.valueOf(d.group(3))
-        )
-        .format();
-    }
-    return null;
-  }
-
-  /**
-   * Semicolon-delimited multi-select picklist text → a comma-separated list
-   * ("Hot;Warm;Cold" → "Hot, Warm, Cold"). Returns null when there is no
-   * delimiter so single values fall through unchanged.
-   */
-  private static String humanizeMultiSelect(String raw) {
-    if (!raw.contains(';'))
-      return null;
-    List<String> cleaned = new List<String>();
-    for (String part : raw.split(';')) {
-      String trimmed = part.trim();
-      if (trimmed != '')
-        cleaned.add(trimmed);
-    }
-    return cleaned.isEmpty() ? null : String.join(cleaned, ', ');
-  }
-
-  /**
-   * Renders a bare number for humans: groups the integer part with thousands
-   * separators and drops a fractional part that is all zeros, so a Decimal
-   * "70000.0" reads "70,000" and a metadata operand string "500000" reads
-   * "500,000". A genuine fraction like "70000.5" keeps its digits ("70,000.5").
-   * Returns null when the input is not a plain number, signalling the caller to
-   * leave the original string alone.
-   */
-  private static String humanizeNumber(String raw) {
-    if (raw == null)
-      return null;
-    String s = raw.trim();
-    if (!NUMERIC_PATTERN.matcher(s).matches())
-      return null;
-
-    Boolean negative = s.startsWith('-');
-    if (negative)
-      s = s.substring(1);
-
-    String intPart = s;
-    String fracPart = '';
-    Integer dot = s.indexOf('.');
-    if (dot >= 0) {
-      intPart = s.substring(0, dot);
-      // Trim trailing zeros so a scale-1 Decimal's ".0" disappears while real
-      // fractional digits survive.
-      fracPart = s.substring(dot + 1).replaceFirst('0+$', '');
-    }
-
-    // Insert a comma before every group of three digits that is followed only by
-    // complete groups of three — standard right-to-left thousands grouping.
-    String grouped = intPart.replaceAll('(\\d)(?=(\\d{3})+$)', '$1,');
-
-    String out = (negative ? '-' : '') + grouped;
-    if (fracPart != '')
-      out += '.' + fracPart;
-    return out;
+  public static String formatValue(Object value, String displayFormat) {
+    return RecordHealthCheckDisplayFormat.render(value, displayFormat);
   }
 
   /** Renders a list for display, capped so a large query result stays readable. */
   public static String formatList(List<Object> values) {
+    return formatList(values, null);
+  }
+
+  /**
+   * Renders a list using the Rule's Display: Value Format, capped so a large
+   * query result stays readable. Every entry uses the same format, so a list of
+   * amounts reads consistently.
+   */
+  public static String formatList(List<Object> values, String displayFormat) {
     if (values == null || values.isEmpty())
       return '(none)';
     List<String> parts = new List<String>();
     for (Integer i = 0; i < values.size() && i < LIST_PREVIEW_CAP; i++) {
-      parts.add(formatValue(values[i]));
+      parts.add(formatValue(values[i], displayFormat));
     }
     String joined = '[' + String.join(parts, ', ');
     if (values.size() > LIST_PREVIEW_CAP) {
@@ -548,40 +399,51 @@ public with sharing class RecordHealthCheckComparisonEngine {
 
   /** Expected-value description: operator phrase plus the comparison operand. */
   public static String describeExpected(String operator, Object comparison) {
+    return describeExpected(operator, comparison, null);
+  }
+
+  /** Expected-value description using the Rule's Display: Value Format. */
+  public static String describeExpected(
+    String operator,
+    Object comparison,
+    String displayFormat
+  ) {
     if (operator == 'IS_BLANK' || operator == 'IS_NOT_BLANK') {
       return operatorLabel(operator);
     }
-    return operatorLabel(operator) + ' ' + formatValue(comparison);
+    return operatorLabel(operator) +
+      ' ' +
+      formatValue(comparison, displayFormat);
   }
 
-  /**
-   * Describes an expected operand using the actual value's retained Apex type.
-   * Fixed Custom Metadata operands arrive as strings; when the actual value is
-   * numeric, parsing an otherwise numeric operand restores symmetric grouping.
-   * String actual values remain untouched so postal codes and identifiers keep
-   * their exact spelling and leading zeroes.
-   */
   public static String describeExpectedForActual(
     String operator,
     Object comparison,
     Object actual
   ) {
-    Object displayComparison = comparison;
-    if (
-      isNumericValue(actual) &&
-      comparison instanceof String &&
-      NUMERIC_PATTERN.matcher(String.valueOf(comparison).trim()).matches()
-    ) {
-      displayComparison = Decimal.valueOf(String.valueOf(comparison).trim());
-    }
-    return describeExpected(operator, displayComparison);
+    return describeExpectedForActual(operator, comparison, actual, null);
   }
 
-  private static Boolean isNumericValue(Object value) {
-    return value instanceof Integer ||
-      value instanceof Long ||
-      value instanceof Decimal ||
-      value instanceof Double;
+  /**
+   * Describes an expected operand so it reads in the same units as the Found
+   * value. Fixed Custom Metadata operands arrive as strings; on "Auto", an
+   * otherwise numeric operand is parsed back to a number when the actual value is
+   * numeric, so Expected "100000" groups like Found "100,000". String actual
+   * values are left untouched, keeping postal codes and identifiers exact. A
+   * named format already renders both sides the same way and needs no alignment.
+   */
+  public static String describeExpectedForActual(
+    String operator,
+    Object comparison,
+    Object actual,
+    String displayFormat
+  ) {
+    Object displayComparison = RecordHealthCheckDisplayFormat.alignExpectedToFound(
+      comparison,
+      actual,
+      displayFormat
+    );
+    return describeExpected(operator, displayComparison, displayFormat);
   }
 
   /** Expected-value description for list operators (operand is a list). */
@@ -589,7 +451,18 @@ public with sharing class RecordHealthCheckComparisonEngine {
     String operator,
     List<Object> comparison
   ) {
-    return operatorLabel(operator) + ' ' + formatList(comparison);
+    return describeExpectedList(operator, comparison, null);
+  }
+
+  /** Expected-value list description using the Rule's Display: Value Format. */
+  public static String describeExpectedList(
+    String operator,
+    List<Object> comparison,
+    String displayFormat
+  ) {
+    return operatorLabel(operator) +
+      ' ' +
+      formatList(comparison, displayFormat);
   }
 
   public static Boolean applyEmptyValueHandling(String nullBehavior) {

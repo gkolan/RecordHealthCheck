@@ -97,6 +97,7 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L2 | [`RecordHealthCheckReasonCodes`](#recordhealthcheckreasoncodes) | Selected stable reason-code helpers |
 | L2 | [`RecordHealthCheckSetAvailability`](#recordhealthchecksetavailability) | Whether an object has active/inactive Check Sets |
 | L2 | [`RecordHealthCheckComparisonEngine`](#recordhealthcheckcomparisonengine) | Operators, equality, empty/null behavior |
+| L2 | [`RecordHealthCheckDisplayFormat`](#recordhealthcheckdisplayformat) | Renders Found and Expected values for the card chips |
 | L2 | [`RecordHealthCheckSoqlTemplate`](#recordhealthchecksoqltemplate) | Safe SOQL preparation (`WITH USER_MODE`, row limit, keyword rejection) |
 | L2 | [`RecordHealthCheckValueResolver`](#recordhealthcheckvalueresolver) | Extract, convert, and compare query values |
 | L2 | [`RecordHealthCheckDescribeCache`](#recordhealthcheckdescribecache) | Schema describe cache for the current transaction |
@@ -636,14 +637,44 @@ and `EmptyValueHandling__c` / `NoRowsResult__c` resolution. Throws
 | `valuesEqual(...)` | Typed equality |
 | `resolveEmptyBehavior(...)` | `EmptyValueHandling__c` / `NoRowsResult__c` resolution |
 | `formatValue(...)` / `formatList(...)` | Human-readable display formatting |
+| `describeExpected(...)` / `describeExpectedForActual(...)` | Operator phrase plus the formatted operand |
 
 **Notable behavior:**
-- **Example:** `formatValue` humanizes typed values for display - a `Boolean` renders as `Yes`/`No`,
- a numeric type gains thousands separators (dropping an all-zero fractional part, so Decimal
- `70000.0` reads `70,000`), and a semicolon-delimited multi-select picklist string
- (`"Hot;Warm;Cold"`) becomes `"Hot, Warm, Cold"`. `formatList` limits the rendered preview to
- `LIST_PREVIEW_CAP` (`10`) entries and appends `… (N total)` beyond that, so a large query result
- stays readable in the UI.
+- Each display method has an overload that takes the Rule's `DisplayValueFormat__c`. The no-format
+ overloads render on `Auto`. The rendering itself lives in
+ [`RecordHealthCheckDisplayFormat`](#recordhealthcheckdisplayformat); this class owns the operator
+ phrasing and the list preview cap.
+- **Example:** `formatList` limits the rendered preview to `LIST_PREVIEW_CAP` (`10`) entries and
+ appends `… (N total)` beyond that, so a large query result stays readable in the UI. Full
+ contract: [Reference: Display value format](reference-display-value-format.md).
+
+### `RecordHealthCheckDisplayFormat`
+
+**Role:** Renders Found and Expected values as the text shown on the card chips.
+**Type:** Shared service · `public with sharing`
+
+Applies the Rule's **Display: Value Format** (`DisplayValueFormat__c`). On `Auto` a value is
+humanized from its Apex type; a named format such as `Currency` or `Raw` overrides that. Formatting
+is display only - `RecordHealthCheckComparisonEngine` decides pass and fail from the raw typed
+values, so no format can move a check between pass and fail.
+
+**Key members:**
+
+| Member | Purpose |
+| --- | --- |
+| `render(value, format)` | One value rendered for the chosen format |
+| `renderCurrency(amount, isoCode)` | Money in a named currency |
+| `alignExpectedToFound(...)` | Keeps a fixed text operand in the same units as a numeric Found value |
+| `FORMAT_*` constants | The `DisplayValueFormat__c` API values |
+
+**Notable behavior:**
+- Numbers are grouped through `Decimal.format()`, so separators follow the running user's locale:
+ `70000.0` reads `70,000` for an English (US) user and `70.000` for a German (Germany) one.
+- A named format that cannot apply to a value returns the value with its original spelling rather
+ than raising an error - `Currency` on a Salesforce Id stays the Id.
+- A `Date` is tested before a `Datetime` everywhere, because Apex reports a `Date` as an instance of
+ `Datetime`; checking the other way round would shift a date by the user's time-zone offset.
+- Full contract: [Reference: Display value format](reference-display-value-format.md).
 
 ### `RecordHealthCheckSoqlTemplate`
 

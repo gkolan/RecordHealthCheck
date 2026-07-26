@@ -4,6 +4,25 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 
 ## Unreleased
 
+### Added
+
+- **Display: Value Format** (`DisplayValueFormat__c`) on the Rule lets an administrator declare how
+  Found and Expected are written on the card: Number, Currency, Percent, Checkbox, Date, Date/Time,
+  Text, or Raw. One format covers both sides, so the two values always read in the same units. It
+  works on Query, Formula, and Compare two queries Rules, and never changes pass or fail. Existing
+  Rules default to **Auto** and keep their current wording. See
+  [Reference: Display value format](docs/reference/reference-display-value-format.md).
+
+### Changed
+
+- Number grouping now follows the running user's locale instead of always using a comma, so
+  `70000.0` reads `70,000` for an English (US) user and `70.000` for a German (Germany) one. Chips
+  for users outside English (US) locales may change separators.
+- Found and Expected rendering moved out of `RecordHealthCheckComparisonEngine` into a new
+  `RecordHealthCheckDisplayFormat` class. `formatValue`, `formatList`, `describeExpected`,
+  `describeExpectedForActual`, and `describeExpectedList` keep their existing signatures and gain an
+  overload that takes the Rule's format, so no caller has to change.
+
 ### Removed
 
 - Removed a sample report that hardcoded a real Account Id, and removed personal DevHub

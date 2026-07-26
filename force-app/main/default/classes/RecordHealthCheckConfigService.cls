@@ -583,6 +583,7 @@ public with sharing class RecordHealthCheckConfigService {
         EmptyValueHandling__c,
         DisplayFoundText__c,
         DisplayExpectedText__c,
+        DisplayValueFormat__c,
         FailureMessage__c,
         UnableToEvaluateMessage__c,
         ActionLabel__c,

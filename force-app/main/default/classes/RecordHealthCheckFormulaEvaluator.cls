@@ -167,7 +167,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       );
       if (found != ABSENT) {
         result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
-          found
+          found,
+          rule.DisplayValueFormat__c
         );
         result.actualValueSource = new RecordHealthCheckValueSource.Detail(
           'Found formula',
@@ -185,7 +186,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       );
       if (expected != ABSENT) {
         result.expectedValue = RecordHealthCheckComparisonEngine.formatValue(
-          expected
+          expected,
+          rule.DisplayValueFormat__c
         );
         result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
           'Expected formula',

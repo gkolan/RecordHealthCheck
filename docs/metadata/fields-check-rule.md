@@ -45,7 +45,8 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 | [Fix Message](#fix-message-fixmessage__c) | `FixMessage__c` | What users see |
 | [Action Label](#action-label-actionlabel__c) | `ActionLabel__c` | What users see |
 | [Action URL](#action-url-actionurl__c) | `ActionUrl__c` | What users see |
-| [Evaluation Type](#evaluation-type-evaluationtype__c) | `EvaluationType__c` | Check type (`EvaluationType__c`) |
+| [Evaluation Type](#evaluation-type-evaluationtype__c) | `EvaluationType__c` | Check type and value display |
+| [Display: Value Format](#display-value-format-displayvalueformat__c) | `DisplayValueFormat__c` | Check type and value display |
 | [Pass Condition](#pass-condition-passconditionformula__c) | `PassConditionFormula__c` | Check fields on this record (`FORMULA`) |
 | [Display: Found Formula](#display-found-formula-displayfoundformula__c) | `DisplayFoundFormula__c` | Check fields on this record (`FORMULA`) |
 | [Display: Expected Formula](#display-expected-formula-displayexpectedformula__c) | `DisplayExpectedFormula__c` | Check fields on this record (`FORMULA`) |
@@ -375,7 +376,7 @@ Examples:
 ```
 
 
-## 3. Check type (`EvaluationType__c`)
+## 3. Check type and value display
 
 ### Evaluation Type (`EvaluationType__c`)
 
@@ -391,6 +392,29 @@ Examples:
 | Description | <p>How this check decides pass or fail. Required - there is no default, so you must choose one, and your choice determines which other fields you fill in (complete only the matching section).</p><ul><li>"Verify with a formula" evaluates a true/false formula on the current record - fill in "Pass Condition".</li><li>"Verify with a query" runs one SOQL query and compares its result - fill in "Source Query", "Comparison Operator", and "Expected Value Comes From".</li><li>"Compare two queries" compares the results of two SOQL queries - fill in "Source Query" and "Comparison Query".</li><li>"Verify with Apex" runs your own Apex class - fill in "Apex Class".</li></ul> |
 | Help text | Required. Choose Formula for record fields, Query for related or aggregate data, Compare two queries for two result sets, or Apex for logic the other options cannot express. |
 | Allowed values | **Verify with a formula**: `FORMULA`<br>**Verify with a query**: `QUERY`<br>**Compare two queries**: `COMPARE_TWO_QUERIES`<br>**Verify with Apex**: `APEX` |
+
+### Display: Value Format (`DisplayValueFormat__c`)
+
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Display: Value Format** |
+| API name | `DisplayValueFormat__c` |
+| Type | Picklist |
+| Capacity | Restricted picklist |
+| Always required | No |
+| Default | **Auto**: `AUTO` |
+| Used when | Optional on any Rule. Apex Rules that set their own Found and Expected strings are not affected. |
+| Description | <p>Display only. Controls how the Found and Expected values are written on the card - for example as currency, a number, or a percentage. Both sides use the same format, so the two values always read in the same units. It applies to list entries and to the operator phrase as well.</p><p>It never changes whether the check passes or fails. Leave "Auto" unless you want a specific look, such as showing Annual Revenue as currency or an external Id as raw text.</p> |
+| Help text | <p>Display only. Does not change pass or fail. Sets how Found and Expected are written, such as "Currency" for Annual Revenue, "Number" for an employee count, or "Raw" for an external Id.</p><p>Leave "Auto" unless you need a specific look.</p> |
+| Allowed values | **Auto**: `AUTO`<br>**Number**: `NUMBER`<br>**Currency**: `CURRENCY`<br>**Percent**: `PERCENT`<br>**Checkbox**: `BOOLEAN`<br>**Date**: `DATE`<br>**Date/Time**: `DATETIME`<br>**Text**: `TEXT`<br>**Raw**: `RAW` |
+
+This is a different setting from [Formula Result Type](#formula-result-type-formularesulttype__c),
+which declares the type a formula returns so the Rule can calculate with it. A Formula Rule can set
+Formula Result Type to **Number** and Display: Value Format to **Currency** at the same time.
+
+Naming a format that cannot apply to a value is not an error - the value keeps its original
+spelling. Full contract:
+[Reference: Display value format](../reference/reference-display-value-format.md).
 
 
 ## 4. Check fields on this record (`FORMULA`)

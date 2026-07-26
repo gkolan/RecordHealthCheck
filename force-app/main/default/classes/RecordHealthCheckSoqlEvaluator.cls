@@ -268,23 +268,32 @@ public with sharing class RecordHealthCheckSoqlEvaluator {
         : RecordHealthCheckComparisonEngine.describeExpectedForActual(
             rule.ComparisonOperator__c,
             comparisonValue,
-            firstDisplayValue(primaryValue, primaryList)
+            firstDisplayValue(primaryValue, primaryList),
+            rule.DisplayValueFormat__c
           );
     } else {
       String rawActualValue = primaryList != null
-        ? RecordHealthCheckComparisonEngine.formatList(primaryList)
-        : RecordHealthCheckComparisonEngine.formatValue(primaryValue);
+        ? RecordHealthCheckComparisonEngine.formatList(
+            primaryList,
+            rule.DisplayValueFormat__c
+          )
+        : RecordHealthCheckComparisonEngine.formatValue(
+            primaryValue,
+            rule.DisplayValueFormat__c
+          );
       String rawExpectedValue;
       if (isListOperator) {
         rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
           rule.ComparisonOperator__c,
-          comparisonList
+          comparisonList,
+          rule.DisplayValueFormat__c
         );
       } else {
         rawExpectedValue = RecordHealthCheckComparisonEngine.describeExpectedForActual(
           rule.ComparisonOperator__c,
           comparisonValue,
-          firstDisplayValue(primaryValue, primaryList)
+          firstDisplayValue(primaryValue, primaryList),
+          rule.DisplayValueFormat__c
         );
       }
       result.actualValue = String.isNotBlank(rule.DisplayFoundText__c)

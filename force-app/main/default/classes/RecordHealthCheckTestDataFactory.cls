@@ -82,6 +82,39 @@ public class RecordHealthCheckTestDataFactory {
     return accountRecord;
   }
 
+  /**
+   * A user pinned to a locale, for tests that assert on grouping separators or
+   * date formats. Running those assertions under System.runAs keeps them stable
+   * in an org whose default locale is not English (US).
+   *
+   * The insert runs as the current user so User DML does not mix with SObject
+   * DML in the calling test.
+   */
+  public static User createUserWithLocale(String localeSidKey, String alias) {
+    Profile standardProfile = [
+      SELECT Id
+      FROM Profile
+      WHERE Name = 'Standard User'
+      LIMIT 1
+    ];
+    String token = uniqueToken();
+    User localeUser = new User(
+      ProfileId = standardProfile.Id,
+      LastName = 'Display Format',
+      Alias = alias,
+      Email = 'rhc.' + alias + '@example.invalid',
+      Username = 'rhc.' + alias + '.' + token + '@example.invalid',
+      EmailEncodingKey = 'UTF-8',
+      LanguageLocaleKey = 'en_US',
+      LocaleSidKey = localeSidKey,
+      TimeZoneSidKey = 'America/Los_Angeles'
+    );
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      insert localeUser;
+    }
+    return localeUser;
+  }
+
   public static Account createDeletedAccount(String name) {
     Account accountRecord = createAccount(name);
     delete accountRecord;

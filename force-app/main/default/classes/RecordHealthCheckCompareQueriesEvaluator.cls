@@ -174,11 +174,13 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         'comparison'
       );
       result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
-        primaryValue
+        primaryValue,
+        rule.DisplayValueFormat__c
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpected(
         rule.ComparisonOperator__c,
-        comparisonValue
+        comparisonValue,
+        rule.DisplayValueFormat__c
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
@@ -201,11 +203,13 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         rule.ComparisonQueryField__c
       );
       result.actualValue = RecordHealthCheckComparisonEngine.formatList(
-        primaryList
+        primaryList,
+        rule.DisplayValueFormat__c
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
         rule.ComparisonOperator__c,
-        comparisonList
+        comparisonList,
+        rule.DisplayValueFormat__c
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
