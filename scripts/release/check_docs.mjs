@@ -44,7 +44,8 @@ function walk(directory) {
     const entryPath = path.join(directory, entry.name);
     if (
       entryPath === path.join(docsRoot, "slides") ||
-      entryPath === path.join(docsRoot, "audits")
+      entryPath === path.join(docsRoot, "audits") ||
+      entryPath === path.join(docsRoot, "development")
     )
       continue;
     if (entry.isDirectory()) walk(entryPath);

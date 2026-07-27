@@ -5,9 +5,7 @@
 
 **Version:** 2.0.0 (2026-07-13)
 
-This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see the [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-check-rule.md) references. When writing explanatory prose (not Setup labels or API names), follow
-[plain technical language](../development/documentation-standard.md#prefer-plain-technical-language-avoid-cs-jargon)
-in the [Documentation standard](../development/documentation-standard.md).
+This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-check-rule.md) references. Write explanations in direct, plain language and define Salesforce terms when a reader may not know them.
 
 ## 1. What this product does
 

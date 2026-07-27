@@ -61,10 +61,6 @@ $RECYCLE.BIN/
 # Internal / local-only files — kept on your machine, never published.
 # Remove an entry below if you decide you DO want it in the public repo.
 /docs/development/*
-!/docs/development/code-coverage-statistics.md
-!/docs/development/documentation-standard.md
-!/docs/development/salesforce-engineering-standard.md
-!/docs/development/salesforce-naming-and-metadata-writing-standard.md
 /spec/
 /specs/
 /releases/
