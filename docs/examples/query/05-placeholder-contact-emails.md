@@ -72,7 +72,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 Copy this value into **Display: Found Text**:
 
 ```text
-{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount|0} contact emails use the placeholder domain
+{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount fallback="0"} contact emails use the placeholder domain
 ```
 
 ## Optional configuration

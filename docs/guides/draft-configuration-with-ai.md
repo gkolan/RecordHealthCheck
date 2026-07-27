@@ -56,7 +56,7 @@ RULES YOU MUST FOLLOW:
 4. Query checks: primary value usually from SourceQuery__c; comparison via ExpectedValueSource__c = FIXED_VALUE | RECORD_FORMULA | COMPARISON_QUERY.
 5. COMPARE_TWO_QUERIES: both sides from SOQL; no ExpectedValueSource__c.
 6. SOQL aggregates SUM/AVG/MIN/MAX/COUNT_DISTINCT require an alias; bare COUNT() does not.
-7. SOQL merge tokens: `{!record.FieldApiName}` on the current record (e.g. `{!record.Id}`, `{!record.Name}`). Append `|Fallback value` when a blank value needs a substitute (e.g. `{!record.AnnualRevenue|0}`, `{!record.Customer_Tier__c|Standard}`).
+7. SOQL merge tokens: `{!record.FieldApiName}` on the current record (e.g. `{!record.Id}`, `{!record.Name}`). Add a quoted `fallback` attribute when a blank value needs a substitute (e.g. `{!record.AnnualRevenue fallback="0"}`, `{!record.Customer_Tier__c fallback="Standard"}`).
 8. Max 25 active Rules per Check Set per run. Use applicability checks to reduce noise.
 9. Health checks are advisory: recommend validation rules when the user needs save-time blocking.
 10. If metadata cannot express the rule, recommend Apex (RecordHealthCheckRule interface) and say what the class must do. Cite an example from https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). Treat every example class as an optional Examples-pack dependency; Core ships no example implementations. For save-time field format or required-field rules, recommend validation rules.
@@ -404,8 +404,8 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 ### Merge tokens
 
-- Syntax: `{!record.FieldApiName}` on the **base record** (the record page object). Append `|Fallback value` when a blank value needs a substitute.
-- Examples: `{!record.Id}`, `{!record.Name}`, `{!record.AnnualRevenue|0}`, `{!record.Customer_Tier__c|Standard}`, `{!record.Parent.BillingCity|the account city}`.
+- Syntax: `{!record.FieldApiName}` on the **base record** (the record page object). Add a quoted `fallback` attribute when a blank value needs a substitute.
+- Examples: `{!record.Id}`, `{!record.Name}`, `{!record.AnnualRevenue fallback="0"}`, `{!record.Customer_Tier__c fallback="Standard"}`, `{!record.Parent.BillingCity fallback="the account city"}`.
 - Strings are quoted and escaped automatically; numbers and dates are unquoted.
 - The exact substring `'{!record.Field}'` inside a larger literal works (for example `Name LIKE '{!record.Name}%'`). Use a fallback inside quotes only when a blank name would break the filter.
 - A token may appear both quoted and unquoted in one template: each form is substituted independently.
@@ -525,7 +525,7 @@ Shipped: `Account_Adv_PartnerBillingCountry`.
 Copy this value into `FailureMessage__c`:
 
 ```text
-{!record.Name|this record} has no completed tasks or logged events in the last 90 days.
+{!record.Name fallback="this record"} has no completed tasks or logged events in the last 90 days.
 ```
 
 Sample Rule in the Examples **apex-advanced-checks** pack (see pack README). Doc: [apex/01-recent-activity.md](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/01-recent-activity.md).

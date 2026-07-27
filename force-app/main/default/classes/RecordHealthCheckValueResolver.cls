@@ -34,8 +34,9 @@ public with sharing class RecordHealthCheckValueResolver {
   public static Object singleValueFromRow(SObject row, String fieldName) {
     if (row instanceof AggregateResult) {
       AggregateResult ar = (AggregateResult) row;
-      if (String.isNotBlank(fieldName))
+      if (String.isNotBlank(fieldName)) {
         return ar.get(fieldName);
+      }
       Map<String, Object> populated = ar.getPopulatedFieldsAsMap();
       return populated.isEmpty() ? null : populated.values()[0];
     }
@@ -178,14 +179,18 @@ public with sharing class RecordHealthCheckValueResolver {
 
   @TestVisible
   private static Boolean orderedDecimal(String operator, Decimal p, Decimal c) {
-    if (operator == 'GREATER_THAN')
+    if (operator == 'GREATER_THAN') {
       return p > c;
-    if (operator == 'GREATER_THAN_OR_EQUAL')
+    }
+    if (operator == 'GREATER_THAN_OR_EQUAL') {
       return p >= c;
-    if (operator == 'LESS_THAN')
+    }
+    if (operator == 'LESS_THAN') {
       return p < c;
-    if (operator == 'LESS_THAN_OR_EQUAL')
+    }
+    if (operator == 'LESS_THAN_OR_EQUAL') {
       return p <= c;
+    }
     throw new ResolverException(
       'INVALID_OPERATOR',
       'Comparison operator "' + operator + '" is not an ordered operator.'
@@ -198,14 +203,18 @@ public with sharing class RecordHealthCheckValueResolver {
     Datetime p,
     Datetime c
   ) {
-    if (operator == 'GREATER_THAN')
+    if (operator == 'GREATER_THAN') {
       return p > c;
-    if (operator == 'GREATER_THAN_OR_EQUAL')
+    }
+    if (operator == 'GREATER_THAN_OR_EQUAL') {
       return p >= c;
-    if (operator == 'LESS_THAN')
+    }
+    if (operator == 'LESS_THAN') {
       return p < c;
-    if (operator == 'LESS_THAN_OR_EQUAL')
+    }
+    if (operator == 'LESS_THAN_OR_EQUAL') {
       return p <= c;
+    }
     throw new ResolverException(
       'INVALID_OPERATOR',
       'Comparison operator "' + operator + '" is not an ordered operator.'

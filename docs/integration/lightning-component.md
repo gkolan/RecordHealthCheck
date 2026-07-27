@@ -9,7 +9,7 @@ publish lifecycle events.
 
 The **Record Health Check** Lightning Web Component supports both experiences. Automatic page-load
 evaluation is read-only and never publishes. An explicit **Run** or **Rerun** is a deliberate user
-action and can publish when the Check Set and Rules opt in.
+action and can publish when the Check Set and Rules enable publication.
 
 The component is available only on Lightning record pages. App and Home pages do not provide the
 `recordId` required for evaluation, so the component intentionally does not appear in their App

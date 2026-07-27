@@ -68,7 +68,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 Copy this value into **Display: Found Text**:
 
 ```text
-{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount|0} open opportunities need Amount
+{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount fallback="0"} open opportunities need Amount
 ```
 
 ## Optional configuration

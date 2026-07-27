@@ -73,7 +73,7 @@ These values improve presentation. Change them for your process, or leave an opt
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Info |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | On `{!record.Name\|this record}`, open pipeline products do not overlap the products recorded on closed-won Opportunities. Confirm whether the proposal should include an existing product. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | On `{!record.Name fallback="this record"}`, open pipeline products do not overlap the products recorded on closed-won Opportunities. Confirm whether the proposal should include an existing product. |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Compares open-pipeline Product IDs with previously purchased Product IDs. |
 | **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Consistency |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to compare the query results. Confirm the user can read every object and field named in both queries. |

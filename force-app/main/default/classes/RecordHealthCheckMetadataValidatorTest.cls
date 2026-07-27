@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckMetadataValidatorTest {
-  @isTest
+  @IsTest
   static void validateReturnsAListForPackagedMetadata() {
     Test.startTest();
     List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = new RecordHealthCheckMetadataValidator()
@@ -17,7 +17,7 @@ private class RecordHealthCheckMetadataValidatorTest {
 
   // validateAsJson() is the Apex/CI entry point and is intentionally not Aura-enabled.
   // It must still return valid JSON for setup tooling and CI.
-  @isTest
+  @IsTest
   static void validateAsJsonReturnsSerializedIssues() {
     Test.startTest();
     String jsonText = RecordHealthCheckMetadataValidator.validateAsJson();
@@ -35,7 +35,7 @@ private class RecordHealthCheckMetadataValidatorTest {
   // validate clean. If this fails, an example rule has gotten out of sync with the spec and
   // would surface a runtime error to an admin who copied it. The failure
   // message lists each offending component so the fix is obvious.
-  @isTest
+  @IsTest
   static void packagedActiveMetadataHasNoValidationErrors() {
     Test.startTest();
     List<RecordHealthCheckMetadataValidator.ValidationIssue> issues = new RecordHealthCheckMetadataValidator()
@@ -65,7 +65,7 @@ private class RecordHealthCheckMetadataValidatorTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void validationIssueStoresConstructorValues() {
     RecordHealthCheckMetadataValidator.ValidationIssue issue = new RecordHealthCheckMetadataValidator.ValidationIssue(
       'ERROR',
@@ -82,7 +82,7 @@ private class RecordHealthCheckMetadataValidatorTest {
     System.assertEquals('REASON', issue.reasonCode);
   }
 
-  @isTest
+  @IsTest
   static void validateRejectsUnrecognizedComparisonDisplay() {
     Record_Health_Check_Set__mdt checkSet = new Record_Health_Check_Set__mdt(
       DeveloperName = 'Bad_Comparison_Display',

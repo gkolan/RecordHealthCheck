@@ -78,15 +78,15 @@ URL tokens and URL-encodes each inserted value. Result tokens are not allowed in
 {!record.Name}
 {!record.OwnerId}
 {!record.ParentId}
-{!record.Parent.Parent.Name|no top-level account}
-{!record.Parent.Customer_Tier__c|Standard}
+{!record.Parent.Parent.Name fallback="no top-level account"}
+{!record.Parent.Customer_Tier__c fallback="Standard"}
 ```
 
 Action Label examples (keep them short; the field is 80 characters):
 
 ```text
 Review {!record.Name}
-Edit {!record.Name|this account}
+Edit {!record.Name fallback="this account"}
 Open {!rhcRule.checkTitle}
 ```
 
@@ -123,13 +123,13 @@ The two patterns that use a fallback value are written out here so you can copy 
 **Create a Case with prefilled values**
 
 ```text
-/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id},Subject=Review%20{!record.Name|this record},Origin=Web
+/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id},Subject=Review%20{!record.Name fallback="this record"},Origin=Web
 ```
 
 **Open a report with record and parent filters**
 
 ```text
-/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}&fv1={!record.Parent.Name|no parent account}
+/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}&fv1={!record.Parent.Name fallback="no parent account"}
 ```
 
 Replace the placeholder `00O...`, `ka0...`, object, relationship, field, and page API names with
@@ -144,7 +144,7 @@ filter on the report, `fv1` is the second, and each later number maps to the nex
 Example:
 
 ```text
-/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}&fv1={!record.Parent.Name|no parent account}
+/lightning/r/Report/00Oxxxxxxxxxxxxxxx/view?fv0={!record.Id}&fv1={!record.Parent.Name fallback="no parent account"}
 ```
 
 Use this when the report's first filter expects the current record Id and its second filter expects
@@ -188,7 +188,7 @@ Use this when the next step is a help page outside Salesforce.
 | --- | --- |
 | Action Label | `Open data quality playbook` |
 | Action URL | `https://example.com/data-quality-playbook` |
-| Fix Message | `Review the playbook before changing ownership or account tier fields for {!record.Name\|this account}.` |
+| Fix Message | `Review the playbook before changing ownership or account tier fields for {!record.Name fallback="this account"}.` |
 
 ## Review checklist
 

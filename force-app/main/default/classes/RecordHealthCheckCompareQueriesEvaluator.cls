@@ -179,40 +179,22 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
       primaryRow,
       rule.SourceQueryField__c
     );
-    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
-      primaryRow
+    // When the primary query read the record the card is on, that record's
+    // currency is this amount's currency.
+    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFor(
+      primaryRow,
+      record
     );
-    if (
-      String.isBlank(displayIsoCode) &&
-      primaryRow != null &&
-      record != null &&
-      primaryRow.getSObjectType() == record.getSObjectType()
-    ) {
-      // Same rule as the single-query evaluator: when the primary query read the
-      // record the card is on, that record's currency is this amount's currency.
-      displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
-        record
-      );
-    }
 
     // The two sides are separate queries and can hold separate currencies — a
     // pipeline total converted to the corporate currency against a record's own
     // amount, for instance. They share one format, but each keeps its own
     // currency so neither number is labelled with the other's.
     SObject comparisonRow = comparisonRows.isEmpty() ? null : comparisonRows[0];
-    String comparisonIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
-      comparisonRow
+    String comparisonIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFor(
+      comparisonRow,
+      record
     );
-    if (
-      String.isBlank(comparisonIsoCode) &&
-      comparisonRow != null &&
-      record != null &&
-      comparisonRow.getSObjectType() == record.getSObjectType()
-    ) {
-      comparisonIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
-        record
-      );
-    }
 
     if (mode == 'ONE_RESULT') {
       Object primaryValue = resolveSingleValue(
@@ -225,14 +207,26 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         rule.ComparisonQueryField__c,
         'comparison'
       );
-      result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
+      Object displayPrimaryValue = RecordHealthCheckDisplayFormat.valueForDisplay(
         primaryValue,
+        rule.DisplayValueFormat__c,
+        primaryRow,
+        rule.SourceQueryField__c
+      );
+      Object displayComparisonValue = RecordHealthCheckDisplayFormat.valueForDisplay(
+        comparisonValue,
+        rule.DisplayValueFormat__c,
+        comparisonRow,
+        rule.ComparisonQueryField__c
+      );
+      result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
+        displayPrimaryValue,
         displayFormat,
         displayIsoCode
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpected(
         rule.ComparisonOperator__c,
-        comparisonValue,
+        displayComparisonValue,
         displayFormat,
         comparisonIsoCode
       );
@@ -256,16 +250,34 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         comparisonRows,
         rule.ComparisonQueryField__c
       );
-      result.actualValue = RecordHealthCheckComparisonEngine.formatList(
+      List<Object> displayPrimaryList = RecordHealthCheckDisplayFormat.valuesForDisplay(
         primaryList,
+        rule.DisplayValueFormat__c,
+        primaryRows,
+        rule.SourceQueryField__c
+      );
+      List<Object> displayComparisonList = RecordHealthCheckDisplayFormat.valuesForDisplay(
+        comparisonList,
+        rule.DisplayValueFormat__c,
+        comparisonRows,
+        rule.ComparisonQueryField__c
+      );
+      // Each entry is labelled with the currency of the row it came from, so a
+      // list mixing currencies does not read as if it were all in the first
+      // row's.
+      result.actualValue = RecordHealthCheckComparisonEngine.formatList(
+        displayPrimaryList,
         displayFormat,
-        displayIsoCode
+        RecordHealthCheckDisplayFormat.currencyIsoCodesFor(primaryRows, record)
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
         rule.ComparisonOperator__c,
-        comparisonList,
+        displayComparisonList,
         displayFormat,
-        comparisonIsoCode
+        RecordHealthCheckDisplayFormat.currencyIsoCodesFor(
+          comparisonRows,
+          record
+        )
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
@@ -278,6 +290,14 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         null
       );
     }
+
+    // Author wording replaces what the Framework wrote on either side. The value
+    // source details above keep the raw values for a diagnostics viewer.
+    RecordHealthCheckTemplateService.applyFoundExpectedText(
+      rule,
+      record,
+      result
+    );
   }
 
   // Prefers the field name (what the viewer recognizes) as the value source
@@ -308,8 +328,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
 
     if (primaryValue == null || comparisonValue == null) {
       String nb = rule.EmptyValueHandling__c;
-      if (nb == 'SKIP_RECORD')
+      if (nb == 'SKIP_RECORD') {
         return null;
+      }
       if (nb == 'AS_BLANK') {
         primaryValue = primaryValue != null ? primaryValue : '';
         comparisonValue = comparisonValue != null ? comparisonValue : '';
@@ -414,8 +435,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     if (operator == 'LISTS_OVERLAP') {
       // At least one value appears in both lists.
       for (String val : primarySet) {
-        if (comparisonSet.contains(val))
+        if (comparisonSet.contains(val)) {
           return true;
+        }
       }
       return false;
     }
@@ -423,8 +445,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     if (operator == 'LISTS_CONTAIN_ALL') {
       // Every primary value appears in the comparison list.
       for (String val : primarySet) {
-        if (!comparisonSet.contains(val))
+        if (!comparisonSet.contains(val)) {
           return false;
+        }
       }
       return true;
     }
@@ -512,11 +535,13 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     Map<String, Integer> left,
     Map<String, Integer> right
   ) {
-    if (left.size() != right.size())
+    if (left.size() != right.size()) {
       return false;
+    }
     for (String key : left.keySet()) {
-      if (!right.containsKey(key) || right.get(key) != left.get(key))
+      if (!right.containsKey(key) || right.get(key) != left.get(key)) {
         return false;
+      }
     }
     return true;
   }

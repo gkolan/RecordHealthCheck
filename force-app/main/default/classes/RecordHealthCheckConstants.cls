@@ -27,6 +27,9 @@ public with sharing class RecordHealthCheckConstants {
   /** Maximum rows any single check query may return before it is rejected. */
   public static final Integer FRAMEWORK_MAX_ROWS = 2000;
 
+  /** Maximum values shown in a Found or Expected list preview. */
+  public static final Integer DISPLAY_LIST_PREVIEW_CAP = 10;
+
   // ─── Check Set level ───────────────────────────────────────────────────────
 
   private static final Set<String> VALID_DISPLAY_MODES_INTERNAL = new Set<String>{

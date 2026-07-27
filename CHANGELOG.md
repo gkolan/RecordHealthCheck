@@ -7,17 +7,40 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 ### Added
 
 - **Display: Value Format** (`DisplayValueFormat__c`) on the Rule lets an administrator declare how
-  Found and Expected are written on the card: Number, Currency, Percent, Checkbox, Date, Date/Time,
-  Text, or Raw. One format covers both sides, so the two values always read in the same units. It
+  Found and Expected are written on the card: Number, Currency, Percent, Ratio as Percent,
+  Checkbox, Date, Date/Time, Text, or Raw. One format covers both sides, so the two values always read in the same units. It
   works on Query, Formula, and Compare two queries Rules, and never changes pass or fail. Existing
   Rules default to **Auto** and keep their current wording. See
   [Reference: Display value format](docs/reference/reference-display-value-format.md).
+- **Ratio as Percent** (`RATIO_PERCENT`) renders `0.75` as `75%` without changing Salesforce-style
+  `PERCENT`, which continues to render `12.5` as `12.5%`.
+- Raw record merge tokens accept strict quoted attributes such as
+  `{!record.Amount format="CURRENCY" fallback="Not available"}`. Format values use canonical,
+  uppercase API names; the former pipe syntax is not supported.
+- Apex plugins can opt into shared typed-value formatting while existing explicit Found and
+  Expected strings remain authoritative.
+- The release gate now inventories every packageable `force-app` member against
+  `manifest/package.xml`, preventing missing or stale manifest entries from reaching an install.
+- The release gate also verifies each permission set's entry-point classes, event objects, and
+  custom permissions, and enforces a 200-character description safety budget below Salesforce's
+  255-character deployment limit.
 
 ### Changed
+
+- Added a documented Code Analyzer release profile, a current SLDS linter gate, and an all-severity
+  CI failure threshold. Generic rule exclusions and their measured starting counts are recorded in
+  the code analysis standard.
+
+- Boolean Yes/No text and comparison operator wording now come from translatable Custom Labels.
+- Naming Checkbox now renders typed or text `1` as Yes and `0` as No. Auto leaves text `1` and `0`
+  unchanged because they may represent counts or codes.
 
 - **Auto** now reads how a queried field is defined in Setup: a Currency field renders as money and
   a Percent field gains a percent sign with no Rule change. Naming a format still wins over the
   field definition.
+- On Auto, picklist and multi-select picklist values now read as the labels visible to the running
+  user instead of stored API names. Unknown or retired values keep their API spelling, and
+  comparisons still use API values.
 - In an org with more than one currency, an amount renders in the currency its own record uses, and
   leads with the ISO code (`USD 70,000.00`) because a bare `$` cannot tell US, Australian, and
   Canadian dollars apart on one card. Single-currency orgs keep the symbol (`$70,000.00`).
@@ -25,6 +48,25 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
   original spelling. It previously rolled over to a real date the record never held.
 - An aggregate such as `SUM(Amount)` is labelled with the org's corporate currency, which is what
   Salesforce converts it to, rather than the running user's currency.
+- Each side of a comparison keeps its own currency. On a Compare two queries Rule, and on a Query
+  Rule whose Expected value comes from a comparison query, the Expected chip now reads in the
+  currency of the row it came from instead of borrowing the Found side's, so a corporate-currency
+  total is no longer labelled with the currency of the record it is compared against.
+- On Auto, an Expected value aligned to a Found value keeps its leading zeros: `00100` stays
+  `00100` rather than being read as the number `100`.
+- A list preview labels each entry with the currency of the row it came from, so a list mixing euro
+  and dollar records no longer reads as if it were all in the first row's currency.
+- **Display: Found Text** and **Display: Expected Text** now apply on Formula and Compare two
+  queries Rules as well as Query Rules, anywhere the Framework writes the Found and Expected
+  values. They previously did nothing outside Query, with no warning. An Apex Rule writes its own
+  values and is unaffected. On a Formula Rule, Expected wording replaces the "Passes when" echo and
+  the row returns to the plain Expected caption.
+- On a list-membership check, Auto reads the field definition from the record when **Find in List
+  Formula** names a field, so a Find in List Formula of `AnnualRevenue` reads as money with no Rule
+  change.
+- A `Time` field reads as a 24-hour clock time (`17:30`) instead of the stored `17:30:00.000Z`.
+- A number shows at most six decimal places on a chip, rounded for display only. Values between
+  four and six decimal places previously lost digits to `Decimal.format()`, which keeps three.
 - Number grouping now follows the running user's locale instead of always using a comma, so
   `70000.0` reads `70,000` for an English (US) user and `70.000` for a German (Germany) one. Chips
   for users outside English (US) locales may change separators.
@@ -32,9 +74,27 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
   `RecordHealthCheckDisplayFormat` class. `formatValue`, `formatList`, `describeExpected`,
   `describeExpectedForActual`, and `describeExpectedList` keep their existing signatures and gain an
   overload that takes the Rule's format, so no caller has to change.
+- The shipped pipeline-risk example now demonstrates Currency formatting on both sides and the
+  strict `format="CURRENCY" fallback="Not available"` record-token syntax. Its deterministic demo
+  verifier asserts the rendered Found, Expected, and failure-message values.
+
+### Fixed
+
+- Removed Code Analyzer findings for Apex annotation casing, missing control-flow braces, field
+  placement, unused test values, hardcoded test IDs, trigger logic, and SLDS styling values.
+- Limited list display preparation to the ten entries the card can show, while retaining the true
+  list total, and made the corporate-currency query explicitly use user access.
+
+- The install manifest now lists `RecordHealthCheckQueryEvaluatorSupport`, without which a fresh
+  install failed to compile the Query and Compare two queries evaluators.
+- Multi-currency rendering now checks whether `CurrencyIsoCode` was selected before reading it,
+  avoiding caught `SObjectException` noise while preserving the documented fallback behavior.
 
 ### Removed
 
+- Removed the legacy `{!record.Field|Fallback text}` merge-token form. Existing templates using it
+  must be changed before upgrade to `{!record.Field fallback="Fallback text"}`. Validation reports
+  the old form as `MALFORMED_TOKEN`; there is intentionally no compatibility parser.
 - Removed a sample report that hardcoded a real Account Id, and removed personal DevHub
   backup manifests that did not belong in the product repository.
 - Removed an unused root stylesheet left over from an unpublished docs site scaffold.

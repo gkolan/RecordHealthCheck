@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckApiTest {
-  @testSetup
+  @TestSetup
   static void setup() {
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 
-  @isTest
+  @IsTest
   static void runOneLinerReturnsAResult() {
     Account acct = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -34,7 +34,7 @@ private class RecordHealthCheckApiTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void runWithExplicitRunIdIsAccepted() {
     Account acct = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -49,7 +49,7 @@ private class RecordHealthCheckApiTest {
     System.assertEquals('Account_DQ_BillingCity', correlated.ruleDeveloperName);
   }
 
-  @isTest
+  @IsTest
   static void runSurfacesUnknownRuleAsReason() {
     Account acct = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -68,10 +68,11 @@ private class RecordHealthCheckApiTest {
     System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
   }
 
-  @isTest
+  @IsTest
   static void runSetReturnsVersionedCountsAndResults() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
     Test.startTest();
@@ -99,7 +100,7 @@ private class RecordHealthCheckApiTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void bulkRuleRunPreservesInputOrderAndVersion() {
     Account first = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Account second = RecordHealthCheckTestDataFactory.createAccount(
@@ -118,7 +119,7 @@ private class RecordHealthCheckApiTest {
     System.assertEquals('1.0', responses[1].contractVersion);
   }
 
-  @isTest
+  @IsTest
   static void bulkRequestFailsBeforeRunningWhenEvaluationBudgetIsExceeded() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     List<Id> recordIds = new List<Id>();
@@ -146,7 +147,7 @@ private class RecordHealthCheckApiTest {
     Test.stopTest();
   }
 
-  @isTest
+  @IsTest
   static void runRuleFlowActionReturnsOneAlignedResponsePerRequest() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckRunRuleFlowAction.Request request = new RecordHealthCheckRunRuleFlowAction.Request();
@@ -165,10 +166,11 @@ private class RecordHealthCheckApiTest {
     System.assertNotEquals(null, responses[0].resultJson);
   }
 
-  @isTest
+  @IsTest
   static void runSetFlowActionReturnsSetCounts() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckRunSetFlowAction.Request setRequest = new RecordHealthCheckRunSetFlowAction.Request();
     setRequest.checkSetDeveloperName = 'Account_Data_Quality';

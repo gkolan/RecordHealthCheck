@@ -13,6 +13,31 @@ const markdownFiles = [];
 const narrativeHeaders = /^(notes?|description|purpose|detail)$/i;
 const apiName = /\b[A-Za-z][A-Za-z0-9_]*__(?:c|mdt|e)\b/g;
 const retiredExamplesRepository = ["RecordHealthCheck", "Examples"].join("-");
+const plainLanguageAvoidList = [
+  "payload",
+  "short-circuit",
+  "idempotent",
+  "sentinel",
+  "headroom",
+  "allowlist",
+  "allowlisted",
+  "verbatim",
+  "lockstep",
+  "canonical",
+  "authoritative",
+  "opt-in",
+  "well-formed",
+  "fail-fast",
+  "buffered",
+  "transaction-scoped",
+  "package surface",
+  "integration surface",
+  "fluent builder",
+  "result shell",
+  "row cap",
+  "request caps",
+  "invocation"
+];
 
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -74,7 +99,7 @@ for (const file of projectMarkdownFiles) {
   if (file.startsWith(`${docsRoot}${path.sep}`)) {
     // Lead with bare tokens (`{!record.Name}`); fallback is optional. Require at
     // least one fallback example on any page that shows merge tokens, so readers
-    // still see the `|Fallback text` form without repeating it on every tag.
+    // still see the quoted fallback attribute without repeating it on every tag.
     let countedMergeToken = false;
     let countedFallbackToken = false;
     for (const match of markdown.matchAll(/\{!([^}\n]+)\}/g)) {
@@ -101,11 +126,7 @@ for (const file of projectMarkdownFiles) {
       // Rejected legacy examples such as `{!Id}` are not teaching tokens.
       if (exampleContext.includes("legacy-token-ok")) continue;
       countedMergeToken = true;
-      if (
-        body.includes("|") ||
-        body.includes("\\|") ||
-        body.includes("&#124;")
-      ) {
+      if (/\bfallback\s*=\s*"/.test(body)) {
         countedFallbackToken = true;
       }
     }
@@ -121,6 +142,23 @@ for (const file of projectMarkdownFiles) {
     failures.push(
       `${relativeFile}: remove references to the retired external examples repository`
     );
+  }
+  const isPlainLanguageSource =
+    file.startsWith(`${docsRoot}${path.sep}`) &&
+    file !== path.join(docsRoot, "development/documentation-standard.md") &&
+    !file.startsWith(path.join(docsRoot, "metadata") + path.sep);
+  if (isPlainLanguageSource) {
+    for (const avoided of plainLanguageAvoidList) {
+      const pattern = new RegExp(
+        `\\b${avoided.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replaceAll("-", "[- ]")}\\b`,
+        "i"
+      );
+      if (pattern.test(markdown)) {
+        failures.push(
+          `${relativeFile}: replace plain-language avoid-list term "${avoided}"`
+        );
+      }
+    }
   }
 }
 
@@ -190,6 +228,37 @@ for (const [eventName, referenceName] of [
     const api = fieldFile.replace(/\.field-meta\.xml$/, "");
     if (!eventReference.includes(`\`${api}\``))
       failures.push(`${referenceName}: missing shipped event field ${api}`);
+  }
+}
+
+// Every production Apex class must remain visible in both source-ownership
+// references. This catches a new class that compiles and ships but is absent
+// from the class guide or architecture map.
+const apexClassesDirectory = path.join(root, "force-app/main/default/classes");
+const productionApexClasses = fs
+  .readdirSync(apexClassesDirectory)
+  .filter(
+    (name) =>
+      name.endsWith(".cls") &&
+      !name.endsWith("Test.cls") &&
+      !name.includes("Coverage") &&
+      name !== "RecordHealthCheckTestDataFactory.cls"
+  )
+  .map((name) => name.replace(/\.cls$/, ""));
+for (const referenceName of [
+  "reference-apex-classes.md",
+  "reference-architecture.md"
+]) {
+  const reference = fs.readFileSync(
+    path.join(docsRoot, "reference", referenceName),
+    "utf8"
+  );
+  for (const apexClass of productionApexClasses) {
+    if (!reference.includes(`\`${apexClass}\``)) {
+      failures.push(
+        `${referenceName}: missing production Apex class ${apexClass}`
+      );
+    }
   }
 }
 

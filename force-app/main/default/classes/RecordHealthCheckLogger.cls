@@ -127,8 +127,9 @@ public with sharing class RecordHealthCheckLogger {
     Map<String, Object> fields,
     Exception ex
   ) {
-    if (lvl == Level.DEBUG && !debugEnabled)
+    if (lvl == Level.DEBUG && !debugEnabled) {
       return;
+    }
     String line = render(lvl, checkName, event, fields, ex);
 
     // The ONE place that decides where framework logs go. To switch to Nebula
@@ -357,8 +358,9 @@ public with sharing class RecordHealthCheckLogger {
 
   @TestVisible
   private static String sanitize(String value, Integer maxLength) {
-    if (value == null)
+    if (value == null) {
       return null;
+    }
     String cleaned = value.replaceAll('[\\r\\n\\t]', ' ').trim();
     Integer effectiveMax = maxLength == null || maxLength < 1 ? 500 : maxLength;
     return cleaned.length() <= effectiveMax

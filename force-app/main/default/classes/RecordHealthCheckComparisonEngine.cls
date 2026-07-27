@@ -30,14 +30,18 @@ public with sharing class RecordHealthCheckComparisonEngine {
     String pStr = String.valueOf(primary);
     String cStr = String.valueOf(comparison);
 
-    if (operator == 'EQUALS')
+    if (operator == 'EQUALS') {
       return valuesEqual(primary, comparison);
-    if (operator == 'NOT_EQUALS')
+    }
+    if (operator == 'NOT_EQUALS') {
       return !valuesEqual(primary, comparison);
-    if (operator == 'CONTAINS')
+    }
+    if (operator == 'CONTAINS') {
       return pStr.contains(cStr);
-    if (operator == 'DOES_NOT_CONTAIN')
+    }
+    if (operator == 'DOES_NOT_CONTAIN') {
       return !pStr.contains(cStr);
+    }
 
     if (
       operator != 'GREATER_THAN' &&
@@ -81,14 +85,18 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * Null signals the caller to use EmptyResultBehavior to set the final status.
    */
   public static Boolean resolveEmptyBehavior(String behavior) {
-    if (behavior == 'PASS')
+    if (behavior == 'PASS') {
       return true;
-    if (behavior == 'FAIL')
+    }
+    if (behavior == 'FAIL') {
       return false;
-    if (behavior == 'SKIP')
+    }
+    if (behavior == 'SKIP') {
       return null;
-    if (behavior == 'UNABLE_TO_EVALUATE')
+    }
+    if (behavior == 'UNABLE_TO_EVALUATE') {
       return null;
+    }
     // No explicit config — treat as indeterminate (Skip is the CMT default)
     return null;
   }
@@ -97,10 +105,12 @@ public with sharing class RecordHealthCheckComparisonEngine {
 
   public static Boolean applyUnaryComparison(String operator, Object value) {
     Boolean isBlank = (value == null || String.valueOf(value).trim() == '');
-    if (operator == 'IS_BLANK')
+    if (operator == 'IS_BLANK') {
       return isBlank;
-    if (operator == 'IS_NOT_BLANK')
+    }
+    if (operator == 'IS_NOT_BLANK') {
       return !isBlank;
+    }
     // An unrecognized unary operator is a configuration error, not an
     // indeterminate value. Fail loudly so it surfaces as UNABLE rather than
     // being misrouted into the empty/zero-rows behavior.
@@ -146,14 +156,17 @@ public with sharing class RecordHealthCheckComparisonEngine {
       Boolean sawEvaluableRecord = false;
       for (Object val : primaryList) {
         Boolean match = applyRecordComparison(rule, val, comparisonValue);
-        if (match == null)
+        if (match == null) {
           continue;
+        }
         sawEvaluableRecord = true;
-        if (match == true)
+        if (match == true) {
           return true;
+        }
       }
-      if (!sawEvaluableRecord)
+      if (!sawEvaluableRecord) {
         return null;
+      }
       return false;
     }
 
@@ -161,14 +174,17 @@ public with sharing class RecordHealthCheckComparisonEngine {
       Boolean sawEvaluableRecord = false;
       for (Object val : primaryList) {
         Boolean match = applyRecordComparison(rule, val, comparisonValue);
-        if (match == null)
+        if (match == null) {
           continue;
+        }
         sawEvaluableRecord = true;
-        if (match != true)
+        if (match != true) {
           return false;
+        }
       }
-      if (!sawEvaluableRecord)
+      if (!sawEvaluableRecord) {
         return null;
+      }
       return true;
     }
 
@@ -239,12 +255,15 @@ public with sharing class RecordHealthCheckComparisonEngine {
   ) {
     if (primary == null) {
       String nb = rule.EmptyValueHandling__c;
-      if (nb == 'SKIP_RECORD')
+      if (nb == 'SKIP_RECORD') {
         return null;
-      if (nb == 'AS_NO_MATCH')
+      }
+      if (nb == 'AS_NO_MATCH') {
         return false;
-      if (nb == 'AS_BLANK')
+      }
+      if (nb == 'AS_BLANK') {
         primary = '';
+      }
     }
     return applySingleComparison(operator, primary, comparison, rule);
   }
@@ -274,8 +293,9 @@ public with sharing class RecordHealthCheckComparisonEngine {
       // case-insensitive comparison
       String pLower = pStr.toLowerCase();
       for (Object item : comparisonList) {
-        if (item != null && String.valueOf(item).toLowerCase() == pLower)
+        if (item != null && String.valueOf(item).toLowerCase() == pLower) {
           return true;
+        }
       }
       return false;
     }
@@ -284,8 +304,9 @@ public with sharing class RecordHealthCheckComparisonEngine {
       // case-insensitive comparison
       String pLower = pStr.toLowerCase();
       for (Object item : comparisonList) {
-        if (item != null && String.valueOf(item).toLowerCase() == pLower)
+        if (item != null && String.valueOf(item).toLowerCase() == pLower) {
           return false;
+        }
       }
       return true;
     }
@@ -301,8 +322,6 @@ public with sharing class RecordHealthCheckComparisonEngine {
   // non-passing result so the user sees what the record produced versus what
   // the rule required, without an admin hand-authoring it into FailureMessage__c.
 
-  private static final Integer LIST_PREVIEW_CAP = 10;
-
   /**
    * Maps a operator API name to a sentence-friendly verb phrase. The phrases
    * are designed to read naturally after the word "expected" when the LWC wraps
@@ -310,36 +329,51 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * "expected to equal …", "expected at least 2", "expected to be one of […]".
    */
   public static String operatorLabel(String operator) {
-    if (operator == 'EQUALS')
-      return 'to equal';
-    if (operator == 'NOT_EQUALS')
-      return 'to not equal';
-    if (operator == 'CONTAINS')
-      return 'to contain';
-    if (operator == 'DOES_NOT_CONTAIN')
-      return 'to not contain';
-    if (operator == 'GREATER_THAN')
-      return 'more than';
-    if (operator == 'GREATER_THAN_OR_EQUAL')
-      return 'at least';
-    if (operator == 'LESS_THAN')
-      return 'less than';
-    if (operator == 'LESS_THAN_OR_EQUAL')
-      return 'at most';
-    if (operator == 'IS_BLANK')
-      return 'to be blank';
-    if (operator == 'IS_NOT_BLANK')
-      return 'to not be blank';
-    if (operator == 'LIST_CONTAINS_ANY')
-      return 'to be one of';
-    if (operator == 'LIST_CONTAINS_NONE')
-      return 'to be none of';
-    if (operator == 'LISTS_OVERLAP')
-      return 'to overlap with';
-    if (operator == 'LISTS_CONTAIN_ALL')
-      return 'to contain all of';
-    if (operator == 'LISTS_MATCH_EXACTLY')
-      return 'to exactly match';
+    if (operator == 'EQUALS') {
+      return System.Label.RHC_Operator_Equals;
+    }
+    if (operator == 'NOT_EQUALS') {
+      return System.Label.RHC_Operator_NotEquals;
+    }
+    if (operator == 'CONTAINS') {
+      return System.Label.RHC_Operator_Contains;
+    }
+    if (operator == 'DOES_NOT_CONTAIN') {
+      return System.Label.RHC_Operator_DoesNotContain;
+    }
+    if (operator == 'GREATER_THAN') {
+      return System.Label.RHC_Operator_GreaterThan;
+    }
+    if (operator == 'GREATER_THAN_OR_EQUAL') {
+      return System.Label.RHC_Operator_GreaterThanOrEqual;
+    }
+    if (operator == 'LESS_THAN') {
+      return System.Label.RHC_Operator_LessThan;
+    }
+    if (operator == 'LESS_THAN_OR_EQUAL') {
+      return System.Label.RHC_Operator_LessThanOrEqual;
+    }
+    if (operator == 'IS_BLANK') {
+      return System.Label.RHC_Operator_IsBlank;
+    }
+    if (operator == 'IS_NOT_BLANK') {
+      return System.Label.RHC_Operator_IsNotBlank;
+    }
+    if (operator == 'LIST_CONTAINS_ANY') {
+      return System.Label.RHC_Operator_ListContainsAny;
+    }
+    if (operator == 'LIST_CONTAINS_NONE') {
+      return System.Label.RHC_Operator_ListContainsNone;
+    }
+    if (operator == 'LISTS_OVERLAP') {
+      return System.Label.RHC_Operator_ListsOverlap;
+    }
+    if (operator == 'LISTS_CONTAIN_ALL') {
+      return System.Label.RHC_Operator_ListsContainAll;
+    }
+    if (operator == 'LISTS_MATCH_EXACTLY') {
+      return System.Label.RHC_Operator_ListsMatchExactly;
+    }
     // an unknown operator falls back to its
     // raw API name. Config validation blocks unknown operators upstream, so this
     // is purely defensive; surfacing the literal name keeps a misconfiguration
@@ -391,7 +425,7 @@ public with sharing class RecordHealthCheckComparisonEngine {
   }
 
   public static String formatList(List<Object> values, String displayFormat) {
-    return formatList(values, displayFormat, null);
+    return formatList(values, displayFormat, (String) null);
   }
 
   /**
@@ -404,14 +438,53 @@ public with sharing class RecordHealthCheckComparisonEngine {
     String displayFormat,
     String isoCode
   ) {
-    if (values == null || values.isEmpty())
+    return formatList(values, displayFormat, isoCode, null);
+  }
+
+  /**
+   * Renders a list where each entry has its own currency, taken from the row it
+   * came from — a list of amounts in euros and dollars is labelled entry by
+   * entry rather than all in the first row's currency. `isoCodes` runs parallel
+   * to `values`; an entry with no currency of its own falls back to `isoCode`.
+   */
+  public static String formatList(
+    List<Object> values,
+    String displayFormat,
+    List<String> isoCodes
+  ) {
+    return formatList(values, displayFormat, null, isoCodes);
+  }
+
+  private static String formatList(
+    List<Object> values,
+    String displayFormat,
+    String isoCode,
+    List<String> isoCodes
+  ) {
+    if (values == null || values.isEmpty()) {
       return '(none)';
+    }
     List<String> parts = new List<String>();
-    for (Integer i = 0; i < values.size() && i < LIST_PREVIEW_CAP; i++) {
-      parts.add(formatValue(values[i], displayFormat, isoCode));
+    for (
+      Integer i = 0;
+      i < values.size() &&
+      i < RecordHealthCheckConstants.DISPLAY_LIST_PREVIEW_CAP;
+      i++
+    ) {
+      String entryIsoCode = isoCodes != null &&
+        i < isoCodes.size()
+        ? isoCodes[i]
+        : null;
+      parts.add(
+        formatValue(
+          values[i],
+          displayFormat,
+          String.isBlank(entryIsoCode) ? isoCode : entryIsoCode
+        )
+      );
     }
     String joined = '[' + String.join(parts, ', ');
-    if (values.size() > LIST_PREVIEW_CAP) {
+    if (values.size() > RecordHealthCheckConstants.DISPLAY_LIST_PREVIEW_CAP) {
       // Ellipsis sits inside the bracket without an extra comma gap.
       joined += ' … (' + values.size() + ' total)';
     }
@@ -510,7 +583,12 @@ public with sharing class RecordHealthCheckComparisonEngine {
     List<Object> comparison,
     String displayFormat
   ) {
-    return describeExpectedList(operator, comparison, displayFormat, null);
+    return describeExpectedList(
+      operator,
+      comparison,
+      displayFormat,
+      (String) null
+    );
   }
 
   /** Expected-value list description using the Rule's Display: Value Format. */
@@ -525,11 +603,28 @@ public with sharing class RecordHealthCheckComparisonEngine {
       formatList(comparison, displayFormat, isoCode);
   }
 
+  /**
+   * Expected-value list description where each entry carries the currency of
+   * the row it came from.
+   */
+  public static String describeExpectedList(
+    String operator,
+    List<Object> comparison,
+    String displayFormat,
+    List<String> isoCodes
+  ) {
+    return operatorLabel(operator) +
+      ' ' +
+      formatList(comparison, displayFormat, isoCodes);
+  }
+
   public static Boolean applyEmptyValueHandling(String nullBehavior) {
-    if (nullBehavior == 'AS_NO_MATCH')
+    if (nullBehavior == 'AS_NO_MATCH') {
       return false;
-    if (nullBehavior == 'SKIP_RECORD')
+    }
+    if (nullBehavior == 'SKIP_RECORD') {
       return null;
+    }
     // blank EmptyValueHandling__c aligns with CMT field default (SkipRecordsWithMissingValue → Skip)
     return null;
   }

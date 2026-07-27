@@ -80,11 +80,13 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
   }
 
   private Integer resolveStaleDays(Map<String, Object> parameters) {
-    if (parameters == null)
+    if (parameters == null) {
       return DEFAULT_STALE_DAYS;
+    }
     Object raw = parameters.get('staleDays');
-    if (raw == null)
+    if (raw == null) {
       return DEFAULT_STALE_DAYS;
+    }
     try {
       Integer parsed = Integer.valueOf(String.valueOf(raw));
       return parsed >= MIN_STALE_DAYS &&

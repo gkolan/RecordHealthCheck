@@ -61,11 +61,13 @@ public with sharing class AccountHasRecentActivityCheck implements RecordHealthC
   }
 
   private Integer resolveDaysBack(Map<String, Object> parameters) {
-    if (parameters == null)
+    if (parameters == null) {
       return DEFAULT_DAYS_BACK;
+    }
     Object raw = parameters.get('daysBack');
-    if (raw == null)
+    if (raw == null) {
       return DEFAULT_DAYS_BACK;
+    }
     try {
       Integer parsed = Integer.valueOf(String.valueOf(raw));
       return parsed >= MIN_DAYS_BACK &&

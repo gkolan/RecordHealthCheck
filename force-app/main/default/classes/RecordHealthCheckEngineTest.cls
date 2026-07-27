@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckEngineTest {
-  @testSetup
+  @TestSetup
   static void setup() {
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 
-  @isTest
+  @IsTest
   static void evaluateReturnsUnableWhenRuleIsMissing() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -25,10 +25,11 @@ private class RecordHealthCheckEngineTest {
     System.assertNotEquals(null, result.durationMs);
   }
 
-  @isTest
+  @IsTest
   static void evaluateReturnsUnableWhenRuleIsInactive() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
     Test.startTest();
@@ -45,10 +46,11 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals('This rule is inactive.', result.message);
   }
 
-  @isTest
+  @IsTest
   static void evaluateRunsQueryCheckAgainstSharedAccountData() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
     Test.startTest();
@@ -65,7 +67,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals('Query', result.evaluatorType);
   }
 
-  @isTest
+  @IsTest
   static void queryEvaluatorComparesRelatedSumToFormulaResult() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckTestDataFactory.createOpportunity(
@@ -117,7 +119,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void queryEvaluatorSkipsNullRowsForAllRecordsMatch() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckTestDataFactory.createEmailCoverageContacts(
@@ -152,7 +154,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void dualQueryExactListMatchHonorsDuplicateCounts() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckTestDataFactory.createMatchingCityContacts(
@@ -190,7 +192,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void dualQueryOrderedComparisonSupportsDateTimeValues() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -225,7 +227,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void evaluateRejectsRuleFromDifferentCheckSet() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -240,7 +242,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
   }
 
-  @isTest
+  @IsTest
   static void applicabilityBranchesReturnSkipUnableOrProceed() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
@@ -284,7 +286,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals('INVALID_CONFIG', invalidMode.reasonCode);
   }
 
-  @isTest
+  @IsTest
   static void soqlApplicabilityDefensiveBranchesReturnUnable() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
@@ -322,10 +324,11 @@ private class RecordHealthCheckEngineTest {
    * Second top-level evaluate() in the same transaction must not return a
    * memoized result from the first call.
    */
-  @isTest
+  @IsTest
   static void secondTopLevelEvaluateReEvaluatesAfterRecordChange() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
@@ -351,7 +354,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void bindTokensMixedQuotedAndUnquotedSubstitutesBoth() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
@@ -382,7 +385,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void bindTokensDoesNotReExpandTokenTextFromFieldValues() {
     Account accountRecord = new Account(
       Name = '{!record.Website}',
@@ -404,7 +407,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void bindTokensUsesTypedFallbacksForBlankValues() {
     Account accountRecord = new Account(
       Name = null,
@@ -414,7 +417,7 @@ private class RecordHealthCheckEngineTest {
     );
     RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
     String bound = evaluator.bindTokens(
-      'SELECT Id FROM Account WHERE Name = {!record.Name|Unnamed Account} AND Description = {!record.Description|Needs review} AND AnnualRevenue >= {!record.AnnualRevenue|500000} AND NumberOfEmployees >= {!record.NumberOfEmployees|100}',
+      'SELECT Id FROM Account WHERE Name = {!record.Name fallback="Unnamed Account"} AND Description = {!record.Description fallback="Needs review"} AND AnnualRevenue >= {!record.AnnualRevenue fallback="500000"} AND NumberOfEmployees >= {!record.NumberOfEmployees fallback="100"}',
       accountRecord
     );
 
@@ -427,7 +430,7 @@ private class RecordHealthCheckEngineTest {
     System.assert(
       evaluator
         .bindTokens(
-          'SELECT Id FROM Account WHERE AnnualRevenue = {!record.AnnualRevenue|500000}',
+          'SELECT Id FROM Account WHERE AnnualRevenue = {!record.AnnualRevenue fallback="500000"}',
           populatedZero
         )
         .contains('AnnualRevenue = 0'),
@@ -438,7 +441,7 @@ private class RecordHealthCheckEngineTest {
     System.assert(
       evaluator
         .bindTokens(
-          'SELECT Id FROM User WHERE IsActive = {!record.IsActive|true}',
+          'SELECT Id FROM User WHERE IsActive = {!record.IsActive fallback="true"}',
           inactiveUser
         )
         .contains('IsActive = false'),
@@ -447,19 +450,19 @@ private class RecordHealthCheckEngineTest {
 
     Opportunity opportunityRecord = new Opportunity();
     String temporal = evaluator.bindTokens(
-      'SELECT Id FROM Opportunity WHERE CloseDate = {!record.CloseDate|2026-12-31} AND CreatedDate >= {!record.CreatedDate|2026-01-01T00:00:00Z}',
+      'SELECT Id FROM Opportunity WHERE CloseDate = {!record.CloseDate fallback="2026-12-31"} AND CreatedDate >= {!record.CreatedDate fallback="2026-01-01T00:00:00Z"}',
       opportunityRecord
     );
     System.assert(temporal.contains('CloseDate = 2026-12-31'));
     System.assert(temporal.contains('CreatedDate >= 2026-01-01T00:00:00Z'));
   }
 
-  @isTest
+  @IsTest
   static void bindTokensRejectsFallbackWithWrongFieldType() {
     try {
       new RecordHealthCheckSoqlEvaluator()
         .bindTokens(
-          'SELECT Id FROM Account WHERE AnnualRevenue >= {!record.AnnualRevenue|not-a-number}',
+          'SELECT Id FROM Account WHERE AnnualRevenue >= {!record.AnnualRevenue fallback="not-a-number"}',
           new Account()
         );
       System.assert(false, 'Expected an invalid numeric fallback to fail.');
@@ -468,7 +471,7 @@ private class RecordHealthCheckEngineTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void bindTokensRejectsSemicolonOnlyMultiSelectSegments() {
     RecordHealthCheckSoqlEvaluator evaluator = new RecordHealthCheckSoqlEvaluator();
     try {
@@ -486,7 +489,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualNormalizesDateAndDatetime() {
     Date d = Date.newInstance(2024, 6, 15);
     Datetime dt = Datetime.newInstance(2024, 6, 15, 0, 0, 0);
@@ -496,7 +499,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualNormalizesIdAndString() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     System.assertEquals(
@@ -508,7 +511,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void multiRowFoundSummaryIsDerivedAndOverridable() {
     Account acc = RecordHealthCheckTestDataFactory.createAccount(
       'Summary Test Co'
@@ -544,8 +547,8 @@ private class RecordHealthCheckEngineTest {
     RecordHealthCheckResult derived = new RecordHealthCheckSoqlEvaluator()
       .evaluate(rule, acc.Id, acc);
 
-    rule.DisplayFoundText__c = '{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount} contacts missing email';
-    rule.DisplayExpectedText__c = 'every contact has an email';
+    rule.DisplayFoundText__c = '{!rhcResult.foundValue} ({!rhcResult.failedRecordCount}/{!rhcResult.totalRecordCount})';
+    rule.DisplayExpectedText__c = '{!rhcResult.expectedValue} across {!rhcResult.totalRecordCount} contacts';
     RecordHealthCheckResult overridden = new RecordHealthCheckSoqlEvaluator()
       .evaluate(rule, acc.Id, acc);
     Test.stopTest();
@@ -558,18 +561,18 @@ private class RecordHealthCheckEngineTest {
     );
 
     System.assertEquals(
-      '1 of 2 contacts missing email',
+      '1 of 2 Contacts did not pass (1/2)',
       overridden.actualValue,
-      'Override should resolve {!rhcResult.failedRecordCount}/{!rhcResult.totalRecordCount} tokens'
+      'A summary override can read both the framework value and row counts'
     );
     System.assertEquals(
-      'every contact has an email',
+      derived.expectedValue + ' across 2 contacts',
       overridden.expectedValue,
-      'Expected override should replace the derived condition'
+      'Expected gets the same complete token context as Found'
     );
   }
 
-  @isTest
+  @IsTest
   static void sanitizeActionUrlAcceptsRelativeAndHttps() {
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
     System.assertEquals(
@@ -584,7 +587,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void sanitizeActionUrlRejectsUnsafeSchemesAndLength() {
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
     System.assertEquals(
@@ -634,7 +637,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void remediationActionPopulatedAndTokenResolvedOnFail() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
@@ -662,7 +665,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals('Review the record.', result.fixInstructions);
   }
 
-  @isTest
+  @IsTest
   static void copyResultPreservesRemediationAndPassesWhenFields() {
     RecordHealthCheckResult source = new RecordHealthCheckResult();
     source.ruleDeveloperName = 'Cached_Check';
@@ -700,7 +703,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void templateFailurePreservesSpecificReasonCode() {
     RecordHealthCheckTemplateService.TemplateException ex = new RecordHealthCheckTemplateService.TemplateException(
       'Completed text exceeded 20,000 characters.'
@@ -716,7 +719,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals(ex.getMessage(), result.detailMessage);
   }
 
-  @isTest
+  @IsTest
   static void dependencyCacheHitPreservesRemediationFields() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     String checkSetDeveloperName = 'Account_Data_Quality';
@@ -760,7 +763,7 @@ private class RecordHealthCheckEngineTest {
     RecordHealthCheckEngine.transactionResultCache.clear();
   }
 
-  @isTest
+  @IsTest
   static void remediationActionAbsentOnPass() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
@@ -782,7 +785,7 @@ private class RecordHealthCheckEngineTest {
     System.assertEquals(null, result.fixInstructions);
   }
 
-  @isTest
+  @IsTest
   static void remediationUnsafeUrlSuppressedButKeepsInstructions() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
@@ -821,7 +824,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void remediationBlankUrlTokenUsesFallbackOrSuppressesLink() {
     Account accountRecord = new Account(Name = 'Independent Account');
     RecordHealthCheckResult result = new RecordHealthCheckResult();
@@ -839,14 +842,14 @@ private class RecordHealthCheckEngineTest {
 
     result = new RecordHealthCheckResult();
     result.status = 'FAIL';
-    rule.ActionUrl__c = '/find?parent={!record.ParentId|unassigned}';
+    rule.ActionUrl__c = '/find?parent={!record.ParentId fallback="unassigned"}';
     new RecordHealthCheckEngine()
       .populateRemediationAction(result, rule, accountRecord);
     System.assertEquals('/find?parent=unassigned', result.actionUrl);
     System.assertEquals('Review parent', result.actionLabel);
   }
 
-  @isTest
+  @IsTest
   static void resolveUrlMergeFieldsEncodesValues() {
     Account accountRecord = new Account(Name = 'Acme & Co');
     String resolved = new RecordHealthCheckFormulaEvaluator()
@@ -858,7 +861,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void failMessagePreservesNonBlankEvaluatorMessageOverMetadata() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
@@ -878,7 +881,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void failMessageFallsBackToMetadataWhenEvaluatorMessageBlank() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
@@ -896,7 +899,7 @@ private class RecordHealthCheckEngineTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void mergeFieldsDoNotReExpandTokenTextFromFieldValues() {
     Account accountRecord = new Account(
       Name = 'Acme',
@@ -936,6 +939,147 @@ private class RecordHealthCheckEngineTest {
       ApplicabilityMode__c = 'ALL_RECORDS',
       ApplicabilityCountOperator__c = 'GREATER_THAN',
       ApplicabilityCountThreshold__c = 0
+    );
+  }
+
+  // ─── Auto on a list-membership check ──────────────────────────────────────
+
+  @IsTest
+  static void listMembershipAutoReadsTheFieldTheFormulaNames() {
+    Account acc = RecordHealthCheckTestDataFactory.getHealthyAccount();
+
+    // The value under test comes from the record, not a query row, so Auto reads
+    // the field definition from the record: a Find in List Formula naming a
+    // Currency field reads as money with no Rule change.
+    Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
+      DeveloperName = 'Test_List_Membership_Auto',
+      MasterLabel = 'Test List Membership Auto',
+      CheckTitle__c = 'List Membership Auto',
+      EvaluationType__c = 'QUERY',
+      FailureSeverity__c = 'WARNING',
+      FindInListFormula__c = 'AnnualRevenue',
+      FormulaResultType__c = 'Number',
+      ComparisonQuery__c = 'SELECT AnnualRevenue FROM Account WHERE Id = {!record.Id}',
+      ComparisonQueryField__c = 'AnnualRevenue',
+      ComparisonOperator__c = 'LIST_CONTAINS_ANY',
+      QueryResultHandling__c = 'COMPARE_AS_LISTS',
+      NoRowsResult__c = 'FAIL',
+      EmptyValueHandling__c = 'AS_NO_MATCH',
+      FailureMessage__c = 'Revenue is not in the list.',
+      EvaluationOrder__c = 10
+    );
+
+    Test.startTest();
+    RecordHealthCheckResult result = new RecordHealthCheckSoqlEvaluator()
+      .evaluate(rule, acc.Id, acc);
+    Test.stopTest();
+
+    System.assertEquals(
+      RecordHealthCheckDisplayFormat.render(
+        acc.AnnualRevenue,
+        'CURRENCY',
+        RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(acc)
+      ),
+      result.actualValue,
+      'Auto reads Currency from the field the Find in List Formula names'
+    );
+  }
+
+  // ─── Author wording for Found and Expected ────────────────────────────────
+
+  @IsTest
+  static void formulaCheckTakesAuthorWordingForFoundAndExpected() {
+    Account acc = RecordHealthCheckTestDataFactory.getHealthyAccount();
+
+    Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
+      DeveloperName = 'Test_Formula_Display_Text',
+      MasterLabel = 'Test Formula Display Text',
+      CheckTitle__c = 'Formula Display Text',
+      EvaluationType__c = 'FORMULA',
+      FailureSeverity__c = 'WARNING',
+      PassConditionFormula__c = 'NOT(ISBLANK(BillingCity))',
+      DisplayFoundFormula__c = 'BillingCity',
+      FailureMessage__c = 'Billing City is missing.',
+      EvaluationOrder__c = 10
+    );
+
+    Test.startTest();
+    RecordHealthCheckResult framework = new RecordHealthCheckFormulaEvaluator()
+      .evaluate(rule, acc.Id, acc);
+
+    rule.DisplayFoundText__c = 'Billing City: {!rhcResult.foundValue}';
+    rule.DisplayExpectedText__c = 'A billing city on file';
+    rule.DisplayExpectedFormula__c = 'BillingState';
+    RecordHealthCheckResult authored = new RecordHealthCheckFormulaEvaluator()
+      .evaluate(rule, acc.Id, acc);
+    Test.stopTest();
+
+    System.assertEquals(
+      rule.PassConditionFormula__c,
+      framework.expectedValue,
+      'Without author wording a Formula check echoes its pass condition'
+    );
+    System.assertEquals(
+      'Billing City: ' + framework.actualValue,
+      authored.actualValue,
+      'Display: Found Text applies on a Formula check, not only on Query'
+    );
+    System.assertEquals(
+      'A billing city on file',
+      authored.expectedValue,
+      'Display: Expected Text replaces the pass-condition echo'
+    );
+    System.assertEquals(
+      null,
+      authored.expectedValueLabel,
+      'Author wording is not a "Passes when" condition, so the caption goes back to Expected'
+    );
+  }
+
+  @IsTest
+  static void compareTwoQueriesTakesAuthorWordingForFoundAndExpected() {
+    Account acc = RecordHealthCheckTestDataFactory.getHealthyAccount();
+
+    Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
+      DeveloperName = 'Test_Compare_Queries_Display_Text',
+      MasterLabel = 'Test Compare Queries Display Text',
+      CheckTitle__c = 'Compare Queries Display Text',
+      EvaluationType__c = 'COMPARE_TWO_QUERIES',
+      FailureSeverity__c = 'WARNING',
+      SourceQuery__c = 'SELECT COUNT(Id) totalCount FROM Contact WHERE AccountId = {!record.Id}',
+      SourceQueryField__c = 'totalCount',
+      ComparisonQuery__c = 'SELECT COUNT(Id) totalCount FROM Contact WHERE AccountId = {!record.Id}',
+      ComparisonQueryField__c = 'totalCount',
+      QueryResultHandling__c = 'ONE_RESULT',
+      ComparisonOperator__c = 'EQUALS',
+      NoRowsResult__c = 'FAIL',
+      EmptyValueHandling__c = 'AS_NO_MATCH',
+      FailureMessage__c = 'Counts do not match.',
+      EvaluationOrder__c = 10,
+      DisplayFoundText__c = 'Contacts on file: {!rhcResult.foundValue}',
+      DisplayExpectedText__c = 'The same number of contacts'
+    );
+
+    Test.startTest();
+    RecordHealthCheckResult result = new RecordHealthCheckCompareQueriesEvaluator()
+      .evaluate(rule, acc.Id, acc);
+    Test.stopTest();
+
+    System.assertEquals(
+      'PASS',
+      result.status,
+      'The check should evaluate: ' + result.detailMessage
+    );
+    System.assertEquals(
+      true,
+      result.actualValue.startsWith('Contacts on file: '),
+      'Display: Found Text applies on a Compare two queries check: ' +
+      result.actualValue
+    );
+    System.assertEquals(
+      'The same number of contacts',
+      result.expectedValue,
+      'Display: Expected Text replaces what the Framework wrote'
     );
   }
 }

@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckConfigServiceTest {
-  @testSetup
+  @TestSetup
   static void setup() {
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 
-  @isTest
+  @IsTest
   static void getDefinitionResponseLoadsSettingsAndAppliesCheckLimit() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
@@ -43,7 +44,7 @@ private class RecordHealthCheckConfigServiceTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void validateRejectsUnrecognizedComparisonDisplay() {
     // A fully-valid Set except for an unrecognized ComparisonDisplay reaches the
     // strict validation branch. Blank is treated as the OnDemand default for
@@ -58,7 +59,9 @@ private class RecordHealthCheckConfigServiceTest {
       FoundExpectedDisplay__c = 'Bogus'
     );
     // Account key prefix — no DML needed to get an Account-typed Id.
-    Id accountId = '001000000000001AAA';
+    Id accountId =
+      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+        .getKeyPrefix() + '000000000000';
 
     try {
       new RecordHealthCheckConfigService()
@@ -79,10 +82,11 @@ private class RecordHealthCheckConfigServiceTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void getDefinitionResponseRejectsObjectMismatch() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
     try {
@@ -99,7 +103,7 @@ private class RecordHealthCheckConfigServiceTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void getDefinitionResponseRejectsMissingRecordContext() {
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
@@ -114,7 +118,7 @@ private class RecordHealthCheckConfigServiceTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void validateRuleForEvaluationReturnsUnableForInvalidQueryRule() {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       DeveloperName = 'Invalid_Query_Test',

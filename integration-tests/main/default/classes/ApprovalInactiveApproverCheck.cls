@@ -232,7 +232,8 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
           settings.maxNames = parsed;
         }
       } catch (Exception ex) {
-        // Invalid maxNames is non-fatal: leave settings.maxNames at its default.
+        // Invalid maxNames is non-fatal: restore the documented default explicitly.
+        settings.maxNames = DEFAULT_MAX_NAMES;
       }
     }
     return settings;

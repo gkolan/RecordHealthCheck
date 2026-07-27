@@ -28,6 +28,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
   public static final String FORMAT_NUMBER = 'NUMBER';
   public static final String FORMAT_CURRENCY = 'CURRENCY';
   public static final String FORMAT_PERCENT = 'PERCENT';
+  public static final String FORMAT_RATIO_PERCENT = 'RATIO_PERCENT';
   public static final String FORMAT_BOOLEAN = 'BOOLEAN';
   public static final String FORMAT_DATE = 'DATE';
   public static final String FORMAT_DATETIME = 'DATETIME';
@@ -45,6 +46,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
     FORMAT_NUMBER,
     FORMAT_CURRENCY,
     FORMAT_PERCENT,
+    FORMAT_RATIO_PERCENT,
     FORMAT_BOOLEAN,
     FORMAT_DATE,
     FORMAT_DATETIME,
@@ -53,6 +55,11 @@ public with sharing class RecordHealthCheckDisplayFormat {
   };
 
   public static final String BLANK_TEXT = '(blank)';
+
+  private static final Integer MAX_DECIMAL_PLACES = 6;
+  private static Boolean corporateCurrencyLoaded = false;
+  private static String corporateCurrencyCode;
+  private static Boolean multiCurrency;
 
   // ─── Value shapes ─────────────────────────────────────────────────────────
 
@@ -147,6 +154,26 @@ public with sharing class RecordHealthCheckDisplayFormat {
     if (value == null) {
       return BLANK_TEXT;
     }
+    if (value instanceof DisplayLiteral) {
+      return ((DisplayLiteral) value).text;
+    }
+    // Apex can lose generic-list type information after a value crosses an
+    // Object boundary. Confirm its Apex shape, then cast without a JSON
+    // round-trip so typed Date, Datetime, and Time entries keep their types.
+    String apexShape = String.valueOf(value);
+    if (apexShape.startsWith('[') || apexShape.startsWith('(')) {
+      try {
+        return RecordHealthCheckComparisonEngine.formatList(
+          (List<Object>) value,
+          format,
+          isoCode
+        );
+      } catch (System.TypeException ignored) {
+        // A strongly typed list that Apex will not widen is left unchanged.
+        // Returning a misleading, timezone-shifted value would be worse than
+        // preserving the plugin's original representation.
+      }
+    }
 
     String chosen = resolveFormat(format);
 
@@ -166,6 +193,10 @@ public with sharing class RecordHealthCheckDisplayFormat {
     if (chosen == FORMAT_PERCENT) {
       Decimal amount = toDisplayDecimal(value);
       return amount == null ? unchanged(value) : renderNumber(amount) + '%';
+    }
+    if (chosen == FORMAT_RATIO_PERCENT) {
+      Decimal ratio = toDisplayDecimal(value);
+      return ratio == null ? unchanged(value) : renderNumber(ratio * 100) + '%';
     }
     if (chosen == FORMAT_BOOLEAN) {
       String asBoolean = renderBoolean(value);
@@ -193,6 +224,11 @@ public with sharing class RecordHealthCheckDisplayFormat {
     return KNOWN_FORMATS.contains(trimmed) ? trimmed : FORMAT_AUTO;
   }
 
+  /** True only for a canonical uppercase Display: Value Format API name. */
+  public static Boolean isFormatApiName(String format) {
+    return String.isNotBlank(format) && KNOWN_FORMATS.contains(format);
+  }
+
   /**
    * The value with its original spelling, used both for Text and Raw and as the
    * landing place when a named format does not fit the value. Whitespace-only
@@ -213,7 +249,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
    */
   private static String renderAuto(Object value) {
     if (value instanceof Boolean) {
-      return ((Boolean) value) ? 'Yes' : 'No';
+      return ((Boolean) value) ? System.Label.RHC_Yes : System.Label.RHC_No;
     }
     if (value instanceof Date) {
       return ((Date) value).format();
@@ -223,8 +259,12 @@ public with sharing class RecordHealthCheckDisplayFormat {
       // would return a raw GMT "2026-07-04 17:30:00".
       return ((Datetime) value).format();
     }
+    if (value instanceof Time) {
+      return renderTime((Time) value);
+    }
     if (isNumeric(value)) {
-      return renderNumber(Decimal.valueOf(String.valueOf(value)));
+      Decimal amount = toDisplayDecimal(value);
+      return amount == null ? unchanged(value) : renderNumber(amount);
     }
 
     String s = String.valueOf(value);
@@ -249,10 +289,15 @@ public with sharing class RecordHealthCheckDisplayFormat {
   /**
    * Groups a number for the running user's locale and drops a fractional part
    * that is all zeros, so a Decimal "70000.0" reads "70,000" for an English (US)
-   * user and "70.000" for a German one. A real fraction keeps its digits.
+   * user and "70.000" for a German one. A real fraction keeps its digits, up to
+   * the display cap.
+   *
+   * The digits are laid out by renderFixedScale rather than Decimal.format(),
+   * which keeps only three decimal places: "1.12345" would read "1.123", losing
+   * digits the record holds well inside the cap.
    */
   private static String renderNumber(Decimal amount) {
-    return amount.setScale(decimalPlacesToShow(amount)).format();
+    return renderFixedScale(amount, decimalPlacesToShow(amount));
   }
 
   /**
@@ -291,14 +336,53 @@ public with sharing class RecordHealthCheckDisplayFormat {
     return sample.length() >= 2 ? sample.substring(1, 2) : '.';
   }
 
-  /** Decimal places left once trailing zeros are dropped. */
+  /**
+   * True when display text represents exactly one in the running user's
+   * locale. This is used for grammar after a rendered count: the same text can
+   * mean one in one locale and one thousand in another.
+   */
+  public static Boolean isDisplayedNumberOne(String raw) {
+    if (String.isBlank(raw)) {
+      return false;
+    }
+
+    String normalized = raw.trim();
+    String groupingMarks = Decimal.valueOf('1000')
+      .format()
+      .replaceAll('[0-9]', '');
+    if (groupingMarks != '') {
+      normalized = normalized.replace(groupingMarks.substring(0, 1), '');
+    }
+
+    String decimalMark = localeDecimalMark();
+    if (decimalMark != '.') {
+      normalized = normalized.replace(decimalMark, '.');
+    }
+    try {
+      return Decimal.valueOf(normalized) == 1;
+    } catch (Exception ignored) {
+      return false;
+    }
+  }
+
+  /**
+   * The most decimal places a chip shows. A Decimal field can hold far more
+   * than a card row can carry, and a number that runs past the chip is harder
+   * to read than a rounded one. Rounding here is display only: the comparison
+   * has already been made on the full value.
+   */
+  /**
+   * Decimal places left once trailing zeros are dropped, capped so a
+   * high-scale number does not run off the chip.
+   */
   private static Integer decimalPlacesToShow(Decimal amount) {
     String plain = amount.toPlainString();
     Integer dot = plain.indexOf('.');
     if (dot < 0) {
       return 0;
     }
-    return plain.substring(dot + 1).replaceFirst('0+$', '').length();
+    Integer places = plain.substring(dot + 1).replaceFirst('0+$', '').length();
+    return places > MAX_DECIMAL_PLACES ? MAX_DECIMAL_PLACES : places;
   }
 
   /**
@@ -311,7 +395,13 @@ public with sharing class RecordHealthCheckDisplayFormat {
    */
   private static Decimal toDisplayDecimal(Object value) {
     if (isNumeric(value)) {
-      return Decimal.valueOf(String.valueOf(value));
+      try {
+        return Decimal.valueOf(String.valueOf(value));
+      } catch (Exception ignored) {
+        // A Double can carry a value Decimal cannot represent (for example a
+        // non-finite value). Display formatting must never change check status.
+        return null;
+      }
     }
     if (!(value instanceof String)) {
       return null;
@@ -326,7 +416,11 @@ public with sharing class RecordHealthCheckDisplayFormat {
     if (intPart.length() > 1 && intPart.startsWith('0')) {
       return null;
     }
-    return Decimal.valueOf(s);
+    try {
+      return Decimal.valueOf(s);
+    } catch (Exception ignored) {
+      return null;
+    }
   }
 
   private static Boolean isNumeric(Object value) {
@@ -383,6 +477,116 @@ public with sharing class RecordHealthCheckDisplayFormat {
   }
 
   /**
+   * Replaces a stored picklist API value with the label visible to the running
+   * user when Auto has the queried field definition available. Multi-select
+   * values keep their stored order. Their labels are marked as final display
+   * text so a semicolon that belongs to a translated label is not mistaken for
+   * another stored-value delimiter.
+   *
+   * A named format, a non-picklist field, or a value absent from the field
+   * definition keeps its original spelling. Comparison code continues to use
+   * the untouched value; this method is only for the display copy.
+   */
+  public static Object valueForDisplay(
+    Object value,
+    String authorFormat,
+    SObject row,
+    String fieldPath
+  ) {
+    if (value == null || resolveFormat(authorFormat) != FORMAT_AUTO) {
+      return value;
+    }
+    Schema.DescribeFieldResult field = describeQueryField(row, fieldPath);
+    return valueForDisplay(value, field);
+  }
+
+  /** Display copy of a value using a field definition already read by the caller. */
+  private static Object valueForDisplay(
+    Object value,
+    Schema.DescribeFieldResult field
+  ) {
+    if (field == null) {
+      return value;
+    }
+    Schema.DisplayType fieldType = field.getType();
+    if (
+      fieldType != Schema.DisplayType.PICKLIST &&
+      fieldType != Schema.DisplayType.MULTIPICKLIST
+    ) {
+      return value;
+    }
+
+    Map<String, String> labelsByValue = new Map<String, String>();
+    for (Schema.PicklistEntry entry : field.getPicklistValues()) {
+      labelsByValue.put(entry.getValue(), entry.getLabel());
+    }
+
+    String stored = String.valueOf(value);
+    if (fieldType == Schema.DisplayType.PICKLIST) {
+      return labelsByValue.containsKey(stored)
+        ? labelsByValue.get(stored)
+        : value;
+    }
+
+    List<String> labels = new List<String>();
+    for (String part : stored.split(';')) {
+      String apiValue = part.trim();
+      if (apiValue == '') {
+        continue;
+      }
+      labels.add(
+        labelsByValue.containsKey(apiValue)
+          ? labelsByValue.get(apiValue)
+          : apiValue
+      );
+    }
+    return labels.isEmpty()
+      ? value
+      : new DisplayLiteral(String.join(labels, ', '));
+  }
+
+  /** Text already prepared for display and therefore not subject to Auto sniffing. */
+  private class DisplayLiteral {
+    private String text;
+    private DisplayLiteral(String value) {
+      text = value;
+    }
+  }
+
+  /** Display-only picklist labels for values and rows that run in parallel. */
+  public static List<Object> valuesForDisplay(
+    List<Object> values,
+    String authorFormat,
+    List<SObject> rows,
+    String fieldPath
+  ) {
+    if (values == null) {
+      return null;
+    }
+    Integer previewSize = Math.min(
+      values.size(),
+      RecordHealthCheckConstants.DISPLAY_LIST_PREVIEW_CAP
+    );
+    Schema.DescribeFieldResult field;
+    if (resolveFormat(authorFormat) == FORMAT_AUTO && rows != null) {
+      for (Integer i = 0; i < previewSize && i < rows.size(); i++) {
+        field = describeQueryField(rows[i], fieldPath);
+        if (field != null) {
+          break;
+        }
+      }
+    }
+    // Keep the full list so the renderer can report its true total, but prepare
+    // only the entries it can display.
+    List<Object> displayed = new List<Object>();
+    displayed.addAll(values);
+    for (Integer i = 0; i < previewSize; i++) {
+      displayed.set(i, valueForDisplay(values[i], field));
+    }
+    return displayed;
+  }
+
+  /**
    * The Setup definition of the field a query read, or null when there is none
    * to describe: an aggregate result has no single source field, and a field
    * path that does not resolve is left alone rather than guessed at.
@@ -421,9 +625,11 @@ public with sharing class RecordHealthCheckDisplayFormat {
 
   /**
    * The currency a row's amounts belong to, for an org with more than one
-   * currency. Returns null in a single-currency org, and for rows that do not
-   * carry CurrencyIsoCode — an aggregate result, or a query that did not select
-   * it — so the caller falls back to the running user's currency.
+   * currency. An aggregate row reports the corporate currency, because that is
+   * what Salesforce converts aggregate amounts into. Returns null in a
+   * single-currency org, and for a row that does not carry CurrencyIsoCode
+   * because the query did not select it, so the caller falls back to the
+   * running user's currency.
    *
    * Reading the row rather than the running user keeps an amount in its own
    * currency: a card should not relabel an amount in euros as dollars because
@@ -439,13 +645,103 @@ public with sharing class RecordHealthCheckDisplayFormat {
       // running user's currency would put their code on someone else's number.
       return corporateCurrency();
     }
-    try {
-      Object iso = row.get('CurrencyIsoCode');
-      return iso == null ? null : String.valueOf(iso);
-    } catch (System.SObjectException ex) {
-      // The row did not select CurrencyIsoCode, or has no such field.
+    Map<String, Object> populated = row.getPopulatedFieldsAsMap();
+    if (!populated.containsKey('CurrencyIsoCode')) {
+      // The row did not select CurrencyIsoCode, or its object has no such field.
       return null;
     }
+    Object iso = populated.get('CurrencyIsoCode');
+    return iso == null ? null : String.valueOf(iso);
+  }
+
+  /**
+   * The currency for each row of a list, in row order, so a list of amounts in
+   * different currencies is labelled entry by entry rather than all in the
+   * first row's currency. Returns null when there are no rows to read, and a
+   * list of nulls in a single-currency org, where every entry uses the running
+   * user's currency.
+   */
+  public static List<String> currencyIsoCodesFor(
+    List<SObject> rows,
+    SObject record
+  ) {
+    return currencyIsoCodesFor(rows, record, null);
+  }
+
+  /** Currency for each row, resolved from the object owning the field path. */
+  public static List<String> currencyIsoCodesFor(
+    List<SObject> rows,
+    SObject record,
+    String fieldPath
+  ) {
+    if (rows == null) {
+      return null;
+    }
+    List<String> isoCodes = new List<String>();
+    Integer previewSize = Math.min(
+      rows.size(),
+      RecordHealthCheckConstants.DISPLAY_LIST_PREVIEW_CAP
+    );
+    for (Integer i = 0; i < previewSize; i++) {
+      isoCodes.add(currencyIsoCodeFor(rows[i], record, fieldPath));
+    }
+    return isoCodes;
+  }
+
+  /**
+   * The currency for one side of a comparison: the queried row's own currency,
+   * or the card record's currency when the query read that same record without
+   * selecting CurrencyIsoCode. A query over a different object stays on the
+   * running user's currency rather than borrowing an unrelated record's.
+   */
+  public static String currencyIsoCodeFor(SObject row, SObject record) {
+    return currencyIsoCodeFor(row, record, null);
+  }
+
+  /**
+   * Currency for a queried value. A relationship path reads the currency from
+   * the related row that owns its terminal field, never from the outer row.
+   */
+  public static String currencyIsoCodeFor(
+    SObject row,
+    SObject record,
+    String fieldPath
+  ) {
+    SObject valueRow = rowForFieldPath(row, fieldPath);
+    String isoCode = currencyIsoCodeFrom(valueRow);
+    if (
+      String.isBlank(isoCode) &&
+      valueRow != null &&
+      record != null &&
+      valueRow.getSObjectType() == record.getSObjectType()
+    ) {
+      isoCode = currencyIsoCodeFrom(record);
+    }
+    return isoCode;
+  }
+
+  /** Row that owns the terminal field; null when a relationship was not loaded. */
+  private static SObject rowForFieldPath(SObject row, String fieldPath) {
+    if (
+      row == null ||
+      String.isBlank(fieldPath) ||
+      row instanceof AggregateResult
+    ) {
+      return row;
+    }
+    SObject current = row;
+    List<String> parts = fieldPath.trim().split('\\.');
+    for (Integer i = 0; i < parts.size() - 1; i++) {
+      try {
+        current = current.getSObject(parts[i]);
+      } catch (System.SObjectException ignored) {
+        return null;
+      }
+      if (current == null) {
+        return null;
+      }
+    }
+    return current;
   }
 
   /**
@@ -453,9 +749,6 @@ public with sharing class RecordHealthCheckDisplayFormat {
    * has a single currency, or when the corporate row cannot be read — the caller
    * then falls back to the running user's currency.
    */
-  private static Boolean corporateCurrencyLoaded = false;
-  private static String corporateCurrencyCode;
-
   private static String corporateCurrency() {
     if (corporateCurrencyLoaded) {
       return corporateCurrencyCode;
@@ -467,9 +760,9 @@ public with sharing class RecordHealthCheckDisplayFormat {
     try {
       // CurrencyType only exists in an org with more than one currency, so the
       // query is built at run time rather than compiled against the type.
-      // code-analyzer-suppress-next-line ApexCRUDViolation: CurrencyType is org configuration read for display only.
       List<SObject> corporate = Database.query(
-        'SELECT IsoCode FROM CurrencyType WHERE IsCorporate = TRUE LIMIT 1'
+        'SELECT IsoCode FROM CurrencyType WHERE IsCorporate = TRUE LIMIT 1',
+        AccessLevel.USER_MODE
       );
       if (!corporate.isEmpty()) {
         corporateCurrencyCode = String.valueOf(corporate[0].get('IsoCode'));
@@ -494,8 +787,6 @@ public with sharing class RecordHealthCheckDisplayFormat {
    * Whether this org has more than one currency. Read once per transaction
    * because it cannot change while a card is running.
    */
-  private static Boolean multiCurrency;
-
   private static Boolean isMultiCurrencyOrg() {
     if (multiCurrency == null) {
       multiCurrency = UserInfo.isMultiCurrencyOrganization();
@@ -514,7 +805,7 @@ public with sharing class RecordHealthCheckDisplayFormat {
    * so the symbol reads better there ("$70,000.00"). A currency with no symbol
    * on file always uses the ISO code.
    */
-  public static String renderCurrency(Decimal amount, String isoCode) {
+  private static String renderCurrency(Decimal amount, String isoCode) {
     if (amount == null) {
       return BLANK_TEXT;
     }
@@ -542,20 +833,28 @@ public with sharing class RecordHealthCheckDisplayFormat {
   /** Yes/No for a Boolean or boolean-shaped text; null when neither. */
   private static String renderBoolean(Object value) {
     if (value instanceof Boolean) {
-      return ((Boolean) value) ? 'Yes' : 'No';
+      return ((Boolean) value) ? System.Label.RHC_Yes : System.Label.RHC_No;
     }
-    return value instanceof String
-      ? renderBooleanText((String) value)
-      : renderBooleanText(String.valueOf(value));
+    String raw = value instanceof String
+      ? (String) value
+      : String.valueOf(value);
+    String normalized = raw.trim();
+    if (normalized == '1') {
+      return System.Label.RHC_Yes;
+    }
+    if (normalized == '0') {
+      return System.Label.RHC_No;
+    }
+    return renderBooleanText(raw);
   }
 
   private static String renderBooleanText(String raw) {
     String s = raw.trim();
     if (s.equalsIgnoreCase('true')) {
-      return 'Yes';
+      return System.Label.RHC_Yes;
     }
     if (s.equalsIgnoreCase('false')) {
-      return 'No';
+      return System.Label.RHC_No;
     }
     return null;
   }
@@ -589,6 +888,10 @@ public with sharing class RecordHealthCheckDisplayFormat {
     if (value instanceof Datetime) {
       return ((Datetime) value).format();
     }
+    if (value instanceof Time) {
+      // A Time field carries a time of day and no date.
+      return renderTime((Time) value);
+    }
     String s = String.valueOf(value);
     Datetime parsed = parseDatetime(s);
     if (parsed != null) {
@@ -596,6 +899,27 @@ public with sharing class RecordHealthCheckDisplayFormat {
     }
     Date asDate = parseDate(s);
     return asDate == null ? null : asDate.format();
+  }
+
+  /**
+   * A Time field as a 24-hour clock reading, `17:30` or `17:30:45` when there
+   * are seconds. `String.valueOf` on a Time writes the storage form
+   * `17:30:00.000Z`, which reads as machine output on a card.
+   *
+   * The clock is 24-hour for every locale. Apex can format a time of day only
+   * as part of a date, and inventing a date to borrow its locale format would
+   * shift the reading by the running user's time-zone offset.
+   */
+  private static String renderTime(Time value) {
+    String reading = twoDigits(value.hour()) + ':' + twoDigits(value.minute());
+    if (value.second() == 0 && value.millisecond() == 0) {
+      return reading;
+    }
+    return reading + ':' + twoDigits(value.second());
+  }
+
+  private static String twoDigits(Integer part) {
+    return part < 10 ? '0' + part : String.valueOf(part);
   }
 
   /** ISO date or datetime text in the running user's locale; null for other text. */

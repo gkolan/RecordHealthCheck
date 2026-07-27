@@ -265,7 +265,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 Copy this value into **Message When Failed**:
 
 ```text
-{!record.Name|this record} has no completed tasks or logged events in the last 90 days. Log a completed Task or Event inside the look-back window.
+{!record.Name fallback="this record"} has no completed tasks or logged events in the last 90 days. Log a completed Task or Event inside the look-back window.
 ```
 
 Change `daysBack` to change the window without redeploying the class.

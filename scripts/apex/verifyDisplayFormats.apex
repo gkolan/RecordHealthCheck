@@ -36,6 +36,11 @@ RecordHealthCheckDefinitionResponse definition = RecordHealthCheckController.get
   target.Id,
   'display-format-verify'
 );
+System.assertEquals(
+  13,
+  definition.checks.size(),
+  'The maintained display-format fixture must contain all 13 Rules.'
+);
 
 System.debug(
   LoggingLevel.INFO,
@@ -78,6 +83,7 @@ Set<String> allFormats = new Set<String>{
   'NUMBER',
   'CURRENCY',
   'PERCENT',
+  'RATIO_PERCENT',
   'BOOLEAN',
   'DATE',
   'DATETIME',
@@ -86,6 +92,11 @@ Set<String> allFormats = new Set<String>{
 };
 Set<String> missing = new Set<String>(allFormats);
 missing.removeAll(formatsSeen);
+System.assertEquals(
+  new Set<String>(),
+  missing,
+  'The fixture is missing Display: Value Format coverage.'
+);
 
 System.debug(
   LoggingLevel.INFO,

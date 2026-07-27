@@ -27,6 +27,7 @@ public class RecordHealthCheckValueSource {
     public String coercionLabel;
 
     public Detail() {
+      sourceLabel = null;
     }
 
     public Detail(

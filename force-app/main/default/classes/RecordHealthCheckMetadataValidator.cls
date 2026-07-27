@@ -4,6 +4,15 @@
  */
 
 public with sharing class RecordHealthCheckMetadataValidator {
+  private static final Set<String> VALID_DISPLAY_MODES = RecordHealthCheckConstants.VALID_DISPLAY_MODES;
+  private static final Set<String> VALID_TRIGGER_MODES = RecordHealthCheckConstants.VALID_TRIGGER_MODES;
+  private static final Set<String> VALID_REVEAL_MODES = RecordHealthCheckConstants.VALID_REVEAL_MODES;
+  private static final Set<String> VALID_COMPARISON_DISPLAYS = RecordHealthCheckConstants.VALID_COMPARISON_DISPLAYS;
+  private static final Set<String> VALID_APPLICABILITY_MODES = RecordHealthCheckConstants.VALID_APPLICABILITY_MODES;
+  private static final Set<String> VALID_CHECK_TYPES = RecordHealthCheckConstants.VALID_CHECK_TYPES;
+  private static final Set<String> VALID_SEVERITIES = RecordHealthCheckConstants.VALID_SEVERITIES;
+  private static final Integer FRAMEWORK_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
+
   // ─── Validation issue data holder ─────────────────────────────────────────
 
   public class ValidationIssue {
@@ -35,15 +44,6 @@ public with sharing class RecordHealthCheckMetadataValidator {
   // this class keeps the baseline + Check Set + dependency-graph checks (inline) plus a
   // collect-all adapter (toIssue). The operator/source/null-empty value sets live with
   // those producers.
-  private static final Set<String> VALID_DISPLAY_MODES = RecordHealthCheckConstants.VALID_DISPLAY_MODES;
-  private static final Set<String> VALID_TRIGGER_MODES = RecordHealthCheckConstants.VALID_TRIGGER_MODES;
-  private static final Set<String> VALID_REVEAL_MODES = RecordHealthCheckConstants.VALID_REVEAL_MODES;
-  private static final Set<String> VALID_COMPARISON_DISPLAYS = RecordHealthCheckConstants.VALID_COMPARISON_DISPLAYS;
-  private static final Set<String> VALID_APPLICABILITY_MODES = RecordHealthCheckConstants.VALID_APPLICABILITY_MODES;
-  private static final Set<String> VALID_CHECK_TYPES = RecordHealthCheckConstants.VALID_CHECK_TYPES;
-  private static final Set<String> VALID_SEVERITIES = RecordHealthCheckConstants.VALID_SEVERITIES;
-  private static final Integer FRAMEWORK_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
-
   // ─── Public API ───────────────────────────────────────────────────────────
 
   /**

@@ -647,8 +647,9 @@ public with sharing class RecordHealthCheckConfigService {
     Map<String, Boolean> found = new Map<String, Boolean>();
     for (String ruleName : ruleDeveloperNames) {
       String key = checkSetDeveloperName + ':' + ruleName;
-      if (rulePublicationCache.containsKey(key))
+      if (rulePublicationCache.containsKey(key)) {
         found.put(ruleName, rulePublicationCache.get(key));
+      }
     }
     return found;
   }

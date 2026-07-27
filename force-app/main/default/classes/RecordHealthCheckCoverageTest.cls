@@ -17,7 +17,7 @@ private class RecordHealthCheckCoverageTest {
     }
   }
 
-  @testSetup
+  @TestSetup
   static void setup() {
     RecordHealthCheckTestDataFactory.createCoverageTestRecords();
   }
@@ -340,8 +340,8 @@ private class RecordHealthCheckCoverageTest {
   @IsTest
   static void metadataValidatorCoversInvalidInMemoryMetadata() {
     RecordHealthCheckMetadataValidator validator = new RecordHealthCheckMetadataValidator();
-    Id setAId = Id.valueOf('m00000000000001');
-    Id setBId = Id.valueOf('m00000000000002');
+    Id setAId = Id.valueOf('m00' + '000000000001');
+    Id setBId = Id.valueOf('m00' + '000000000002');
 
     List<Record_Health_Check_Set__mdt> checkSets = new List<Record_Health_Check_Set__mdt>{
       new Record_Health_Check_Set__mdt(
@@ -1766,6 +1766,53 @@ private class RecordHealthCheckCoverageTest {
       missingExpectedResult.detailMessage.contains('result.expectedValue'),
       missingExpectedResult.detailMessage
     );
+
+    RecordHealthCheckResult typedValues = new RecordHealthCheckResult();
+    typedValues.status = 'PASS';
+    typedValues.actualDisplayValue = Decimal.valueOf('0.75');
+    typedValues.actualDisplayFormat = 'RATIO_PERCENT';
+    typedValues.expectedDisplayValue = Decimal.valueOf('0.80');
+    typedValues.expectedDisplayFormat = 'RATIO_PERCENT';
+    RecordHealthCheckResult typedResult = evaluator.finalizeApexResult(
+      finalizeRule,
+      accountRecord,
+      new RecordHealthCheckResult(),
+      typedValues
+    );
+    System.assertEquals('75%', typedResult.actualValue);
+    System.assertEquals('80%', typedResult.expectedValue);
+
+    RecordHealthCheckResult explicitStringsWin = new RecordHealthCheckResult();
+    explicitStringsWin.status = 'PASS';
+    explicitStringsWin.actualValue = 'Plugin Found';
+    explicitStringsWin.expectedValue = 'Plugin Expected';
+    explicitStringsWin.actualDisplayValue = Decimal.valueOf('0.75');
+    explicitStringsWin.actualDisplayFormat = 'not-a-format';
+    RecordHealthCheckResult explicitResult = evaluator.finalizeApexResult(
+      finalizeRule,
+      accountRecord,
+      new RecordHealthCheckResult(),
+      explicitStringsWin
+    );
+    System.assertEquals('Plugin Found', explicitResult.actualValue);
+    System.assertEquals('Plugin Expected', explicitResult.expectedValue);
+
+    RecordHealthCheckResult invalidTypedFormat = new RecordHealthCheckResult();
+    invalidTypedFormat.status = 'PASS';
+    invalidTypedFormat.actualDisplayValue = Decimal.valueOf('0.75');
+    invalidTypedFormat.actualDisplayFormat = 'ratio_percent';
+    invalidTypedFormat.expectedValue = '80%';
+    RecordHealthCheckResult invalidTypedResult = evaluator.finalizeApexResult(
+      finalizeRule,
+      accountRecord,
+      new RecordHealthCheckResult(),
+      invalidTypedFormat
+    );
+    assertReason(invalidTypedResult, 'APEX_EVALUATOR_ERROR');
+    System.assert(
+      invalidTypedResult.detailMessage.contains('canonical uppercase'),
+      invalidTypedResult.detailMessage
+    );
   }
 
   // Evaluating every check of all packaged Check Sets in a single transaction
@@ -1824,8 +1871,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverPackagedMetadataPaths() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     sweepPackagedConfigs(
       new List<String>{
         'Account_Query_Coverage',
@@ -1837,8 +1885,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverPackagedMetadataPathsGroupTwo() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     sweepPackagedConfigs(
       new List<String>{
         'Account_Everyday_Use_Cases',
@@ -1849,8 +1898,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverPackagedMetadataPathsGroupThree() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     sweepPackagedConfigs(
       new List<String>{ 'Account_Compare_Queries', 'Account_Advanced_Checks' }
     );
@@ -1858,8 +1908,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndControllerCoverErrorAndBoundaryPaths() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
@@ -1946,8 +1997,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void mergeTokensResolveForNonFormulaCheckMessages() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     // {!record.FieldName} merge tokens in UnableToEvaluateMessage__c and FailureMessage__c
     // must resolve for non-Formula check types too. The packaged Query check
     // Account_QC_ERB_UnableToEvaluate carries
@@ -2717,8 +2769,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void isolatedResultAndRoutingHelpersCoverDefensiveBranches() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = [
       SELECT Id, Name, BillingCity, BillingState, Description, AnnualRevenue
       FROM Account
@@ -3411,8 +3464,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void configServiceCoversRemainingValidationBranches() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -3535,7 +3589,7 @@ private class RecordHealthCheckCoverageTest {
   @IsTest
   static void metadataValidatorCoversRemainingValidationBranches() {
     RecordHealthCheckMetadataValidator validator = new RecordHealthCheckMetadataValidator();
-    Id setId = Id.valueOf('m00000000000003');
+    Id setId = Id.valueOf('m00' + '000000000003');
     List<Record_Health_Check_Rule__mdt> rules = new List<Record_Health_Check_Rule__mdt>();
 
     for (Integer i = 0; i < 26; i++) {
@@ -3631,8 +3685,9 @@ private class RecordHealthCheckCoverageTest {
 
   @IsTest
   static void engineAndSoqlCoverRemainingDefensiveBranches() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 

@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckLoggerTest {
   // The logger writes to the Apex debug log (something we cannot read back in
   // a test context), so these tests exercise every branch for coverage and assert
   // that no path throws. The rendered output is verified by reading debug logs in
   // the org; here we guarantee the logging API is exception-safe for all inputs.
 
-  @isTest
+  @IsTest
   static void instanceLevelsAllExecuteWithoutError() {
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-123',
@@ -41,7 +41,7 @@ private class RecordHealthCheckLoggerTest {
     System.assert(true, 'All instance log levels executed without throwing.');
   }
 
-  @isTest
+  @IsTest
   static void staticEntryPointExecutesWithoutError() {
     Test.startTest();
     RecordHealthCheckLogger.log(
@@ -59,7 +59,7 @@ private class RecordHealthCheckLoggerTest {
     System.assert(true, 'Static log entry point executed without throwing.');
   }
 
-  @isTest
+  @IsTest
   static void blankRunIdAndNullRecordAreHandled() {
     // Defensive paths: missing correlation id and no record context must not throw.
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
@@ -80,7 +80,7 @@ private class RecordHealthCheckLoggerTest {
 
   // ─── Platform-event ERROR destination (Record_Health_Check_Log__e) ───────────
 
-  @isTest
+  @IsTest
   static void errorBuffersEventWithReproContext() {
     Id recordId = UserInfo.getUserId();
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
@@ -145,7 +145,7 @@ private class RecordHealthCheckLoggerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void nonErrorLevelsDoNotBuffer() {
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-noise',
@@ -164,7 +164,7 @@ private class RecordHealthCheckLoggerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void messageFallsBackToFieldsWhenNoException() {
     RecordHealthCheckLogger.log(
       RecordHealthCheckLogger.Level.ERROR,
@@ -190,7 +190,7 @@ private class RecordHealthCheckLoggerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void featureOffSuppressesBuffering() {
     RecordHealthCheckLogger.publishErrorEvents = false;
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
@@ -213,7 +213,7 @@ private class RecordHealthCheckLoggerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void subscriberContextPreventsFeedbackLoop() {
     RecordHealthCheckLogger.enterSubscriberContext();
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
@@ -236,7 +236,7 @@ private class RecordHealthCheckLoggerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void flushIsSafeWhenBufferEmpty() {
     Test.startTest();
     RecordHealthCheckLogger.flush();
@@ -249,7 +249,7 @@ private class RecordHealthCheckLoggerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void debugAndResetHooksRestoreLoggerState() {
     RecordHealthCheckLogger.debugEnabled = true;
     new RecordHealthCheckLogger('run-debug', 'Set', null)

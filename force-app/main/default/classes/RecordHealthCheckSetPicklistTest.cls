@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckSetPicklistTest {
-  @isTest
+  @IsTest
   static void scopesRowsToPageObject() {
     VisualEditor.DesignTimePageContext ctx = new VisualEditor.DesignTimePageContext();
     ctx.entityName = 'Account';
@@ -42,7 +42,7 @@ private class RecordHealthCheckSetPicklistTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void emptyForUnknownObjectAndNullContextIsSafe() {
     VisualEditor.DesignTimePageContext ctx = new VisualEditor.DesignTimePageContext();
     ctx.entityName = 'ZZ_No_Such_Object__x';

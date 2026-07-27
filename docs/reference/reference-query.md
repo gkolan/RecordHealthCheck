@@ -70,13 +70,13 @@ pass, fail, skip, or unable depending on the Rule.
 
 ## SOQL templates and security
 
-- Use `{!record.Id}` and supported `{!record.FieldName}` tokens for current-record values. Append a typed substitute when a blank bind needs one, such as `{!record.AnnualRevenue|0}`.
+- Use `{!record.Id}` and supported `{!record.FieldName}` tokens for current-record values. Append a typed substitute when a blank bind needs one, such as `{!record.AnnualRevenue fallback="0"}`.
 - Use field API names, not labels, in SOQL.
 - Evaluation runs in the current user's access context and query execution uses the framework's
   user-mode security controls.
 - A missing object, field, record, or relationship permission can return `UNABLE_TO_EVALUATE`.
 - Query text comes from trusted Custom Metadata; keep it in administrator configuration rather than building it from untrusted user input.
-- Keep the selected columns and row cap as small as the decision requires.
+- Keep the selected columns and row limit as small as the decision requires.
 
 ## Outcomes and testing
 

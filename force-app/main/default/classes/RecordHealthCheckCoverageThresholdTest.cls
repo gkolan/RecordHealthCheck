@@ -42,8 +42,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void facadeCoversEmptyNullAndLookupBranches() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     System.assertEquals(
       'Account_Data_Quality',
@@ -101,8 +102,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void coversSmallValidatorAndControllerBranches() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     RecordHealthCheckConfigService configService = new RecordHealthCheckConfigService();
     RecordHealthCheckSetAvailability blankAvailability = configService.getCheckSetAvailabilityForObject(
       ' '
@@ -144,8 +146,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void engineMapsDeletedRecordsToNotAccessible() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account deletedAccount = RecordHealthCheckTestDataFactory.createDeletedAccount(
       'Delete me'
     );
@@ -340,8 +343,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void setFlowActionCoversNullSuccessAndRecordLimit() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     System.assertEquals(
       0,
       RecordHealthCheckRunSetFlowAction.runSet(null).size()

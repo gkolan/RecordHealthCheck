@@ -8,6 +8,14 @@ Use this standard across the documentation tree. It adapts the recurring practic
 to Salesforce-native APIs and applies progressive disclosure to administrator, installation, and
 reference pages.
 
+Use the [Salesforce naming and metadata writing standard](salesforce-naming-and-metadata-writing-standard.md)
+when creating Apex identifiers, labels, API names, descriptions, help text, picklist values, or
+Custom Metadata Types. This page governs how documentation presents those names and values.
+Use the [Salesforce engineering standard](salesforce-engineering-standard.md) for reusable Apex,
+security, testing, Metadata API, permission, and deployment requirements.
+Use the [code analysis standard](code-analysis-standard.md) for automated documentation and source
+checks and for the review required before excluding a rule.
+
 ## Standards for every page
 
 - Begin every page with one native GitHub **Note** immediately after the page title. Its single
@@ -40,9 +48,9 @@ reference pages.
 - In `docs/metadata`, use a purpose-first prefix so related references sort together: `fields-*`
   for Custom Metadata field catalogs and `event-*` for Platform Event references. Put cross-cutting
   Framework limits in `docs/reference`.
-- Lead merge-token examples with the bare form (`{!record.Name}`). Treat `|Fallback text` as
+- Lead merge-token examples with the bare form (`{!record.Name}`). Treat the quoted `fallback` attribute as
   optional. Any page that shows merge tokens must include at least one fallback example, such as
-  `{!record.Name|this record}`, without putting a fallback on every tag. `{!record.Id}` stays bare.
+  `{!record.Name fallback="this record"}`, without putting a fallback on every tag. `{!record.Id}` stays bare.
   See [Reference: Merge tokens](../reference/reference-merge-tokens.md).
 
 ## Write for the person doing the work
@@ -272,6 +280,11 @@ text, allowed values, dependencies or conditional use, and realistic examples wh
 information. Checkbox and picklist fields do not repeat their allowed values as examples. Picklist
 allowed values and defaults show both the Setup label and stored API value.
 
+Document a Description as the administrator-facing explanation of purpose and important
+dependencies. Document inline help as the guidance shown when a person enters or chooses a value.
+Do not use one as a copy of the other. When object fields or validation rules change, verify that the
+object Description and its reference page still describe the current behavior.
+
 Descriptions and help text use short paragraphs by default. Use bullets only for genuine choices,
 independent requirements, or procedures; do not turn every sentence into a bullet.
 
@@ -371,6 +384,8 @@ exact, and that the final navigation points to the next likely task.
 ## Related
 
 - [Documentation index](../README.md)
+- [Salesforce naming and metadata writing standard](salesforce-naming-and-metadata-writing-standard.md)
+- [Salesforce engineering standard](salesforce-engineering-standard.md)
 - [Integration overview](../integration/README.md)
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
 - [Architecture reference](../reference/reference-architecture.md)

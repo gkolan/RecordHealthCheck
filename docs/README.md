@@ -102,6 +102,17 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 - [Documentation standard](development/documentation-standard.md) - page structure, terminology, and
  [plain technical language](development/documentation-standard.md#prefer-plain-technical-language-avoid-cs-jargon)
  (CS jargon to avoid in explanations, and what to write instead)
+- [Salesforce naming and metadata writing standard](development/salesforce-naming-and-metadata-writing-standard.md) -
+ reusable conventions for Apex names, Salesforce labels and API names, descriptions, help text,
+ and stored values
+- [Salesforce engineering standard](development/salesforce-engineering-standard.md) - reusable Apex,
+ metadata, security, testing, permission, and deployment requirements
+- [Code coverage statistics](development/code-coverage-statistics.md) - package-only Apex and
+ JavaScript source size, test totals, coverage, and the lowest covered Apex class
+- [Code analysis standard](development/code-analysis-standard.md) - enabled release checks,
+ documented rule exceptions, and what a clean scan means
+- [Deployment readiness standard](development/deployment-readiness-standard.md) - required Core,
+ integration, currency, skill-guided, test, and final analyzer gates
 
 ## Related
 

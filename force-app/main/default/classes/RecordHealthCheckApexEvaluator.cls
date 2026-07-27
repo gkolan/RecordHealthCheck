@@ -81,8 +81,9 @@ public with sharing class RecordHealthCheckApexEvaluator {
       rule.ApexClass__c
     );
     try {
-      if (instance == null)
+      if (instance == null) {
         instance = evaluatorType.newInstance();
+      }
     } catch (Exception ex) {
       result.status = 'UNABLE_TO_EVALUATE';
       result.reasonCode = 'APEX_CLASS_NOT_FOUND';
@@ -223,6 +224,19 @@ public with sharing class RecordHealthCheckApexEvaluator {
       return fallbackResult;
     }
 
+    String displayContractError = applyTypedDisplayValues(apexResult);
+    if (displayContractError != null) {
+      fallbackResult.status = 'ERROR';
+      fallbackResult.reasonCode = 'APEX_EVALUATOR_ERROR';
+      fallbackResult.message = safeCannotEvaluateMessage(rule);
+      fallbackResult.detailMessage =
+        '"' +
+        rule.ApexClass__c +
+        '" ' +
+        displayContractError;
+      return fallbackResult;
+    }
+
     // Determinate Apex results must provide the comparison values the UI needs
     // for the standard Found / Expected display. The interface cannot enforce
     // field population at compile time, so the evaluator enforces it here.
@@ -268,6 +282,43 @@ public with sharing class RecordHealthCheckApexEvaluator {
     apexResult.evaluatorType = 'APEX';
 
     return apexResult;
+  }
+
+  private static String applyTypedDisplayValues(
+    RecordHealthCheckResult apexResult
+  ) {
+    if (
+      String.isBlank(apexResult.actualValue) &&
+      apexResult.actualDisplayValue != null
+    ) {
+      if (!isValidPluginFormat(apexResult.actualDisplayFormat)) {
+        return 'returned an invalid actualDisplayFormat. Use a canonical uppercase format API name.';
+      }
+      apexResult.actualValue = RecordHealthCheckDisplayFormat.render(
+        apexResult.actualDisplayValue,
+        apexResult.actualDisplayFormat,
+        apexResult.actualCurrencyIsoCode
+      );
+    }
+    if (
+      String.isBlank(apexResult.expectedValue) &&
+      apexResult.expectedDisplayValue != null
+    ) {
+      if (!isValidPluginFormat(apexResult.expectedDisplayFormat)) {
+        return 'returned an invalid expectedDisplayFormat. Use a canonical uppercase format API name.';
+      }
+      apexResult.expectedValue = RecordHealthCheckDisplayFormat.render(
+        apexResult.expectedDisplayValue,
+        apexResult.expectedDisplayFormat,
+        apexResult.expectedCurrencyIsoCode
+      );
+    }
+    return null;
+  }
+
+  private static Boolean isValidPluginFormat(String formatName) {
+    return (String.isBlank(formatName) ||
+    RecordHealthCheckDisplayFormat.isFormatApiName(formatName));
   }
 
   private String safeCannotEvaluateMessage(Record_Health_Check_Rule__mdt rule) {

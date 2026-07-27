@@ -66,7 +66,7 @@ Confirm the `Partner` picklist API value in your org before relying on the appli
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Requires Billing Country only when Account Type is Partner. |
 | **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Required Field Completeness |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Critical |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | Partner account `{!record.Name\|this record}` must have Billing Country set. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | Partner account `{!record.Name fallback="this record"}` must have Billing Country set. |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check Partner billing requirements. Confirm the user can read Type and Billing Country. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Enter Billing Country on this Partner Account. |

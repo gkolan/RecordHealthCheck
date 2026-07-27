@@ -101,6 +101,6 @@ fi
 echo
 echo "    sf org open --target-org $TARGET_ALIAS"
 echo
-echo "The 'Account Display Formats' Check Set covers all nine Display: Value Format"
+echo "The 'Account Display Formats' Check Set covers all ten Display: Value Format"
 echo "options. Add the Record Health Check component to the Account record page and"
 echo "point it at that Check Set to see them rendered."

@@ -8,11 +8,11 @@
  * Pure string logic, so no DML/SOQL is needed. Covers clauses inside subqueries,
  * keywords inside string literals, and oversized or nested LIMITs.
  */
-@isTest
+@IsTest
 private class RecordHealthCheckSoqlTemplateTest {
   // ─── maskStringLiterals / depthAt ──────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void maskBlanksLiteralContentsAndPreservesLength() {
     String input = 'A = \'xy\' B';
     String masked = RecordHealthCheckSoqlTemplate.maskStringLiterals(input);
@@ -24,7 +24,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void depthAtTracksParentheses() {
     String masked = 'SELECT Id, (SELECT Id) FROM A';
     System.assertEquals(
@@ -42,7 +42,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   // ─── assertSingleOuterSelect ───────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void singleOuterSelectWithSubqueryIsValid() {
     // Inner SELECT is at depth 1, so this is a single outer SELECT — no exception.
     RecordHealthCheckSoqlTemplate.assertSingleOuterSelect(
@@ -50,7 +50,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void multipleOuterSelectsRejected() {
     try {
       RecordHealthCheckSoqlTemplate.assertSingleOuterSelect(
@@ -64,7 +64,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   // ─── rewriteBareCount ──────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void bareCountRewrittenToCountId() {
     System.assertEquals(
       'SELECT COUNT(Id) FROM Contact',
@@ -76,7 +76,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   // ─── enforceRowCap ─────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void plainQueryGetsCap() {
     String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
       'SELECT Id FROM Account',
@@ -85,7 +85,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     System.assert(out.toUpperCase().endsWith('LIMIT 2000'), out);
   }
 
-  @isTest
+  @IsTest
   static void oversizedOuterLimitIsLowered() {
     String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
       'SELECT Id FROM Account LIMIT 50000',
@@ -95,7 +95,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     System.assert(!out.contains('50000'), 'Oversized limit must be lowered.');
   }
 
-  @isTest
+  @IsTest
   static void smallExistingLimitUntouched() {
     String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
       'SELECT Id FROM Account LIMIT 10',
@@ -104,7 +104,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     System.assertEquals('SELECT Id FROM Account LIMIT 10', out);
   }
 
-  @isTest
+  @IsTest
   static void childSubqueryLimitDoesNotCountAsOuterCap() {
     String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
       'SELECT Id, (SELECT Id FROM Contacts LIMIT 5) FROM Account',
@@ -114,7 +114,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     System.assert(out.toUpperCase().endsWith('LIMIT 2000'), 'Outer cap added.');
   }
 
-  @isTest
+  @IsTest
   static void pureAggregateGetsNoLimit() {
     String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
       'SELECT COUNT(Id) FROM Contact WHERE AccountId = \'001\'',
@@ -126,7 +126,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void groupByGetsCap() {
     String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
       'SELECT AccountId, COUNT(Id) FROM Contact GROUP BY AccountId',
@@ -137,7 +137,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   // ─── injectUserMode ────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void userModeAppendedWhenNoTailClause() {
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id FROM Account WHERE Id = \'001\''
@@ -145,7 +145,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     System.assert(out.endsWith('WITH USER_MODE'), out);
   }
 
-  @isTest
+  @IsTest
   static void userModeInsertedBeforeOuterOrderBy() {
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id FROM Account WHERE Id = \'001\' ORDER BY Name'
@@ -158,7 +158,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void userModeGoesOutsideChildSubqueryOrderBy() {
     // the inner ORDER BY must NOT be the injection point.
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
@@ -175,7 +175,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void literalClauseKeywordNotMistakenForClause() {
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id FROM Account WHERE Name = \'Order by 5\''
@@ -187,7 +187,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     System.assert(out.endsWith('WITH USER_MODE'), out);
   }
 
-  @isTest
+  @IsTest
   static void existingUserModeIsNoOp() {
     String soql = 'SELECT Id FROM Account WHERE Id = \'001\' WITH USER_MODE';
     System.assertEquals(
@@ -198,7 +198,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   // ─── validateNoDisallowedKeywords ──────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void dmlKeywordRejected() {
     try {
       RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
@@ -210,7 +210,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void keywordInsideLiteralIsAllowed() {
     // "update" inside a string literal must not be rejected.
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
@@ -218,7 +218,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void remainingBlankEscapeOffsetAndSelectBranchesAreCovered() {
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(null);
     System.assertEquals(
@@ -245,7 +245,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void forUpdatePhraseRejected() {
     try {
       RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
@@ -257,7 +257,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeRejectedByKeywordValidation() {
     // WITH SYSTEM_MODE bypasses sharing/FLS and must be rejected.
     try {
@@ -270,7 +270,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeRejectedByPrepareForExecution() {
     // the rejection also fires on the shared execution chokepoint, so
     // the compare-queries and applicability paths (which skip validateNoDisallowedKeywords)
@@ -286,7 +286,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeInSubqueryRejected() {
     // WITH SYSTEM_MODE nested in a subquery must be rejected too.
     String nested =
@@ -306,7 +306,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeInsideLiteralIsAllowed() {
     // The keyword inside a string value is not an access level — must not trip.
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
@@ -316,7 +316,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   // ─── prepareForExecution (integration) ─────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void prepareForExecutionHandlesChildSubqueryWithInnerOrderBy() {
     String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id, (SELECT Id FROM Contacts ORDER BY LastName) FROM Account WHERE Id = \'001\'',
@@ -336,7 +336,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     System.assert(out.toUpperCase().contains('LIMIT 2000'), out);
   }
 
-  @isTest
+  @IsTest
   static void prepareForExecutionRejectsBlank() {
     try {
       RecordHealthCheckSoqlTemplate.prepareForExecution('   ', 2000);
@@ -346,7 +346,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void prepareForExecutionDefaultsCapWhenInvalid() {
     String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id FROM Account',
@@ -359,7 +359,7 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void isAggregateQueryDetectsDepthZeroOnly() {
     System.assertEquals(
       true,

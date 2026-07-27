@@ -149,16 +149,18 @@ public with sharing class RecordHealthCheck {
     List<Id> recordIds
   ) {
     validateRecordCount(recordIds);
-    if (recordIds.isEmpty())
+    if (recordIds.isEmpty()) {
       return new List<RecordHealthCheckSetResult>();
+    }
     RecordHealthCheckDefinitionResponse definitions = new RecordHealthCheckConfigService()
       .getDefinitionResponse(checkSetDeveloperName, recordIds[0]);
     validateEvaluationCount(recordIds.size() * definitions.checks.size());
     List<RecordHealthCheckSetResult> responses = new List<RecordHealthCheckSetResult>();
     publicationDeferralDepth++;
     try {
-      for (Id recordId : recordIds)
+      for (Id recordId : recordIds) {
         responses.add(runSet(checkSetDeveloperName, recordId));
+      }
     } finally {
       publicationDeferralDepth--;
       RecordHealthCheckLogger.flush();

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 public class RecordHealthCheckTestDataFactory {
   public static final String HEALTHY_ACCOUNT_NAME_PREFIX = 'Record Health Test Account';
 
