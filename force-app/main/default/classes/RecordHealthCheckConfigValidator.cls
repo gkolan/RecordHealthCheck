@@ -9,8 +9,9 @@ public with sharing class RecordHealthCheckConfigValidator {
   public static RecordHealthCheckTokenIssue firstTemplateIssue(
     Record_Health_Check_Rule__mdt rule
   ) {
-    if (rule == null)
+    if (rule == null) {
       return null;
+    }
     List<List<Object>> templates = new List<List<Object>>{
       new List<Object>{
         rule.FailureMessage__c,
@@ -62,8 +63,9 @@ public with sharing class RecordHealthCheckConfigValidator {
         (String) entry[0],
         (String) entry[1]
       );
-      if (!issues.isEmpty())
+      if (!issues.isEmpty()) {
         return issues[0];
+      }
     }
     return null;
   }
@@ -74,15 +76,18 @@ public with sharing class RecordHealthCheckConfigValidator {
   }
 
   public static Boolean isValidApexPlugin(String className) {
-    if (String.isBlank(className))
+    if (String.isBlank(className)) {
       return false;
+    }
     try {
       Type pluginType = Type.forName(className);
-      if (pluginType == null)
+      if (pluginType == null) {
         return false;
+      }
       Object instance = pluginType.newInstance();
-      if (!(instance instanceof RecordHealthCheckRule))
+      if (!(instance instanceof RecordHealthCheckRule)) {
         return false;
+      }
       validatedPluginInstances.put(className, (RecordHealthCheckRule) instance);
       return true;
     } catch (Exception ex) {
@@ -97,8 +102,9 @@ public with sharing class RecordHealthCheckConfigValidator {
   }
 
   public static Boolean isJsonObject(String jsonText) {
-    if (String.isBlank(jsonText))
+    if (String.isBlank(jsonText)) {
       return true;
+    }
     try {
       Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(
         jsonText

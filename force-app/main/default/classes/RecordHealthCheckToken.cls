@@ -8,7 +8,9 @@ public class RecordHealthCheckToken {
   public String expression;
   public String namespaceName;
   public String propertyPath;
+  public String formatName;
   public String fallbackValue;
+  public String attributeError;
   public Integer startIndex;
   public Integer endIndex;
 

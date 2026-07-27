@@ -42,8 +42,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void facadeCoversEmptyNullAndLookupBranches() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     System.assertEquals(
       'Account_Data_Quality',
@@ -101,8 +102,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void coversSmallValidatorAndControllerBranches() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     RecordHealthCheckConfigService configService = new RecordHealthCheckConfigService();
     RecordHealthCheckSetAvailability blankAvailability = configService.getCheckSetAvailabilityForObject(
       ' '
@@ -144,8 +146,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void engineMapsDeletedRecordsToNotAccessible() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account deletedAccount = RecordHealthCheckTestDataFactory.createDeletedAccount(
       'Delete me'
     );
@@ -174,8 +177,14 @@ private class RecordHealthCheckCoverageThresholdTest {
       'INVALID_SOQL_TEMPLATE',
       engine.checkSoqlApplicability(rule, new Account(Name = 'Test')).reasonCode
     );
+    // An org with more than one currency also loads CurrencyIsoCode, so a
+    // Currency value can be shown in the currency its own record uses.
+    Set<String> expectedRecordFields = new Set<String>{ 'Id' };
+    if (UserInfo.isMultiCurrencyOrganization()) {
+      expectedRecordFields.add('CurrencyIsoCode');
+    }
     System.assertEquals(
-      new Set<String>{ 'Id' },
+      expectedRecordFields,
       engine.collectRecordFields(
         new Record_Health_Check_Rule__mdt(EvaluationType__c = 'FORMULA'),
         Account.SObjectType
@@ -334,8 +343,9 @@ private class RecordHealthCheckCoverageThresholdTest {
 
   @IsTest
   static void setFlowActionCoversNullSuccessAndRecordLimit() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     System.assertEquals(
       0,
       RecordHealthCheckRunSetFlowAction.runSet(null).size()

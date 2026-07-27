@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckSecurityAndOpsTest {
-  @isTest
+  @IsTest
   static void debugDetailRequiresViewDetailsPermission() {
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.detailMessage = 'sensitive query detail';
@@ -33,7 +33,7 @@ private class RecordHealthCheckSecurityAndOpsTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void restrictedReasonIsNeutralOutsideAuthorizedDiagnostics() {
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
     RecordHealthCheckResult result = new RecordHealthCheckResult();
@@ -77,7 +77,7 @@ private class RecordHealthCheckSecurityAndOpsTest {
     RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
   }
 
-  @isTest
+  @IsTest
   static void passesWhenLineRequiresViewDetailsPermission() {
     RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
@@ -120,7 +120,7 @@ private class RecordHealthCheckSecurityAndOpsTest {
     return result;
   }
 
-  @isTest
+  @IsTest
   static void provenanceDetailRequiresViewDetailsPermission() {
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.actualValueSource = new RecordHealthCheckValueSource.Detail(
@@ -161,7 +161,7 @@ private class RecordHealthCheckSecurityAndOpsTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void structuredLogValuesCannotForgeNewLines() {
     System.assertEquals(
       'ticket forged value',
@@ -173,7 +173,7 @@ private class RecordHealthCheckSecurityAndOpsTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void fieldPlanningIgnoresLiteralsAndInvalidMessageTokens() {
     Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
       EvaluationType__c = 'FORMULA',
@@ -190,10 +190,11 @@ private class RecordHealthCheckSecurityAndOpsTest {
     System.assert(!fields.contains('Parent.Missing__c'));
   }
 
-  @isTest
+  @IsTest
   static void sharedValidatorCoversObjectsPluginsAndJson() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     System.assert(
       RecordHealthCheckConfigValidator.isValidObjectApiName('Account')
     );

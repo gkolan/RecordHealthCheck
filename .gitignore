@@ -7,9 +7,11 @@
 .sfdx/
 .localdevserver/
 deploy-options.json
-/config/
+/config/*
+# Scratch-org definitions the published setup scripts depend on.
+!/config/project-scratch-def.json
+!/config/display-formats-scratch-def.json
 .claude/
-/CLAUDE.md
 .playwright-mcp/
 
 # LWC VSCode autocomplete
@@ -59,7 +61,6 @@ $RECYCLE.BIN/
 # Internal / local-only files — kept on your machine, never published.
 # Remove an entry below if you decide you DO want it in the public repo.
 /docs/development/*
-!/docs/development/documentation-standard.md
 /spec/
 /specs/
 /releases/
@@ -98,6 +99,7 @@ docs/reference/code-quality-and-hardening-guide.md
 
 # CI / IDE artifacts
 code-analyzer.html
+code-analyzer-results-*
 .cursor/
 .vscode/
 *.tgz
@@ -117,6 +119,8 @@ scripts/*
 !scripts/release/**
 # Reproducible demo scratch-org provisioning (see docs/installation/05-*).
 !scripts/setup-demo.sh
+# Display: Value Format coverage org (see docs/reference/reference-display-value-format.md).
+!scripts/setup-display-formats.sh
 # Exception: the metadata validator is a release-gate dependency referenced by
 # .github/workflows/salesforce-validate.yml and the V2 upgrade docs, so it must
 # be tracked. Everything else under scripts/ stays local.
@@ -127,8 +131,12 @@ scripts/apex/*
 !scripts/apex/setupDemoUser.apex
 !scripts/apex/deactivateDemoUser.apex
 !scripts/apex/verifyDemo.apex
+!scripts/apex/setupDisplayFormatData.apex
+!scripts/apex/verifyDisplayFormats.apex
 !scripts/demo/
 !scripts/demo/**
+!scripts/display-formats/
+!scripts/display-formats/**
 
 # Point-in-time maintainer audit / review write-ups at repo root (keep under tasks/).
 /*-AUDIT-*.md

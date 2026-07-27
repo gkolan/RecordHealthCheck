@@ -49,8 +49,9 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
     category='Record Health Check'
   )
   public static List<Response> runSet(List<Request> requests) {
-    if (requests == null)
+    if (requests == null) {
       return new List<Response>();
+    }
     if (requests.size() > RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL) {
       throw new RecordHealthCheck.RecordHealthCheckRequestException(
         'A request can include at most ' +

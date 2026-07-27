@@ -869,18 +869,24 @@ public with sharing class RecordHealthCheckEngine {
     Integer count,
     Integer threshold
   ) {
-    if (operator == 'EQUALS')
+    if (operator == 'EQUALS') {
       return count == threshold;
-    if (operator == 'NOT_EQUALS')
+    }
+    if (operator == 'NOT_EQUALS') {
       return count != threshold;
-    if (operator == 'GREATER_THAN')
+    }
+    if (operator == 'GREATER_THAN') {
       return count > threshold;
-    if (operator == 'GREATER_THAN_OR_EQUAL')
+    }
+    if (operator == 'GREATER_THAN_OR_EQUAL') {
       return count >= threshold;
-    if (operator == 'LESS_THAN')
+    }
+    if (operator == 'LESS_THAN') {
       return count < threshold;
-    if (operator == 'LESS_THAN_OR_EQUAL')
+    }
+    if (operator == 'LESS_THAN_OR_EQUAL') {
       return count <= threshold;
+    }
     return null;
   }
 
@@ -927,6 +933,11 @@ public with sharing class RecordHealthCheckEngine {
     addMergeFields(fields, objectType, rule.SourceQuery__c);
     addMergeFields(fields, objectType, rule.ComparisonQuery__c);
     addMergeFields(fields, objectType, rule.ApplicabilityCountQuery__c);
+    // Author wording for the Found / Expected values may reference record fields
+    // alongside the computed count and value tokens. Every Evaluation Type whose
+    // Found / Expected values the Framework writes can carry it.
+    addMergeFields(fields, objectType, rule.DisplayFoundText__c);
+    addMergeFields(fields, objectType, rule.DisplayExpectedText__c);
 
     if (rule.EvaluationType__c == 'FORMULA') {
       addFormulaFields(fields, objectType, rule.PassConditionFormula__c);
@@ -940,14 +951,23 @@ public with sharing class RecordHealthCheckEngine {
       // List checks read the single-value from FindInListFormula__c; RecordFormula compares to ExpectedRecordFormula__c.
       addFormulaFields(fields, objectType, rule.FindInListFormula__c);
       addFormulaFields(fields, objectType, rule.ExpectedRecordFormula__c);
-      // Multi-row summary overrides may reference record fields alongside the
-      // computed {!rhcResult.failedRecordCount}/{!rhcResult.totalRecordCount} count tokens.
-      addMergeFields(fields, objectType, rule.DisplayFoundText__c);
-      addMergeFields(fields, objectType, rule.DisplayExpectedText__c);
     }
     // CompareTwoQueries: both sides are SOQL — merge tokens already handled above
     if (rule.ApplicabilityMode__c == 'WHEN_FORMULA_TRUE') {
       addFormulaFields(fields, objectType, rule.ApplicabilityFormula__c);
+    }
+
+    // In an org with more than one currency, an amount is shown in the record's
+    // own currency, so the record has to carry it. Asked for whatever the Rule's
+    // Display: Value Format says, because Auto may still resolve to Currency
+    // from the field's own definition. One standard field on a query that
+    // already selects the Rule's fields.
+    if (
+      UserInfo.isMultiCurrencyOrganization() &&
+      RecordHealthCheckDescribeCache.fieldMap(objectType)
+        .containsKey('currencyisocode')
+    ) {
+      fields.add('CurrencyIsoCode');
     }
 
     return fields;
@@ -1218,10 +1238,12 @@ public with sharing class RecordHealthCheckEngine {
       Map<String, Schema.SObjectField> fields = RecordHealthCheckDescribeCache.fieldMap(
         candidate
       );
-      if (fields.get(nextPathPart) != null)
+      if (fields.get(nextPathPart) != null) {
         return candidate;
-      if (findRelationshipField(fields, nextPathPart) != null)
+      }
+      if (findRelationshipField(fields, nextPathPart) != null) {
         return candidate;
+      }
     }
     return candidates[0];
   }

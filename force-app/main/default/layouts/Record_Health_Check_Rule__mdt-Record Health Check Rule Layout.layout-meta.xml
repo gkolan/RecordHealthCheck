@@ -90,14 +90,19 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>3. Evaluation Type</label>
+        <label>3. Evaluation Type &amp; Value Display</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
                 <field>EvaluationType__c</field>
             </layoutItems>
         </layoutColumns>
-        <layoutColumns />
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>DisplayValueFormat__c</field>
+            </layoutItems>
+        </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>
     <layoutSections>

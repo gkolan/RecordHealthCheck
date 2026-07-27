@@ -2,6 +2,10 @@
 <!-- Record Health Check — core plus the clearly prefixed example Check Set, Rules, Apex evaluator, and test. -->
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
+        <members>*</members>
+        <name>CustomLabel</name>
+    </types>
+    <types>
         <members>Record_Health_Check_Rule__mdt</members>
         <members>Record_Health_Check_Set__mdt</members>
         <members>Record_Health_Check_Log__e</members>
@@ -92,6 +96,7 @@
     >Record_Health_Check_Rule__mdt.DisplayExpectedFormula__c</members>
         <members>Record_Health_Check_Rule__mdt.FormulaResultType__c</members>
         <members>Record_Health_Check_Rule__mdt.DisplayFoundText__c</members>
+        <members>Record_Health_Check_Rule__mdt.DisplayValueFormat__c</members>
         <members>Record_Health_Check_Rule__mdt.DisplayExpectedText__c</members>
         <members>Record_Health_Check_Log__e.CheckSetDeveloperName__c</members>
         <members>Record_Health_Check_Log__e.Code__c</members>
@@ -158,6 +163,8 @@
         <members>RecordHealthCheckDefinition</members>
         <members>RecordHealthCheckDefinitionResponse</members>
         <members>RecordHealthCheckDescribeCache</members>
+        <members>RecordHealthCheckDisplayFormat</members>
+        <members>RecordHealthCheckDisplayFormatTest</members>
         <members>RecordHealthCheckCompareQueriesEvaluator</members>
         <members>RecordHealthCheckEngine</members>
         <members>RecordHealthCheckEvaluatorException</members>
@@ -166,6 +173,7 @@
         <members>RecordHealthCheckLogger</members>
         <members>RecordHealthCheckMergeContext</members>
         <members>RecordHealthCheckMetadataValidator</members>
+        <members>RecordHealthCheckQueryEvaluatorSupport</members>
         <members>RecordHealthCheckValueSource</members>
         <members>RecordHealthCheckResult</members>
         <members>RecordHealthCheckReasonCodes</members>

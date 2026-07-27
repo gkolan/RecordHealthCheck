@@ -17,7 +17,7 @@ does not create a second configuration model.
 | Show health to a user on a record page | [Lightning component](lightning-component.md) | Automatic versus explicit runs, visible rows, and optional user-initiated events |
 | Make an immediate decision in code | [Apex API](../reference/reference-apex-api.md) | Run a Check Set or Rule and branch on a typed response |
 | Branch in automation without custom Apex | [Flow actions](flow-actions.md) | Configure an Action and Decision element with explicit status paths |
-| Notify independent automation after commit | [Lifecycle events](lifecycle-events.md) | Opt in, subscribe, and handle replay or duplicate delivery |
+| Notify independent automation after commit | [Lifecycle events](lifecycle-events.md) | Enable publication, subscribe, and handle replay or duplicate delivery |
 | Implement a decision the other Evaluation Types cannot express | [Recent Account activity](../examples/apex/01-recent-activity.md) | Write the class used by a Verify with Apex Rule |
 
 ## What Record Health Check is
@@ -124,7 +124,7 @@ For every input and output, use the [Flow actions reference](flow-actions.md).
 
 | Output | Timing | Use |
 | --- | --- | --- |
-| Apex/Flow/LWC result | During the invocation | Make the current decision or render the card |
+| Apex/Flow/LWC result | During the call | Make the current decision or render the card |
 | Lifecycle event | After commit | Notify subscribers, persist history, export, or trigger independent automation |
 
 Enabling events does not change the synchronous result. A successful synchronous run does not prove
@@ -140,8 +140,8 @@ Publication is off by default:
 
 | Limit | Value |
 | --- | --- |
-| Records in one public Apex or Flow invocation | 200 |
-| Planned Rule evaluations in one invocation | 15 |
+| Records in one public Apex or Flow call | 200 |
+| Planned Rule evaluations in one call | 15 |
 | Concurrent Lightning Rule evaluations | 5 |
 | Platform-event publish chunk | 100 |
 

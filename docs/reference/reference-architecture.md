@@ -102,7 +102,7 @@ evaluation logic. Result and definition classes depend on nothing else in the Fr
 ```text
 L5  Entry points
     RecordHealthCheck (Apex API) | Flow actions | RecordHealthCheckController (LWC)
-    Owns: request caps, run ids, source values, platform event publication
+    Owns: request limits, run ids, source values, platform event publication
 
 L4  Engine
     RecordHealthCheckEngine
@@ -114,8 +114,8 @@ L3  Evaluators
     Plus RecordHealthCheckQueryEvaluatorSupport for shared query execution
 
 L2  Shared services
-    Config, SOQL template safety, comparison, value handling, merge tokens,
-    describe cache, logger, access, constants, validators
+    Config, SOQL template safety, comparison, display formatting, value handling,
+    merge tokens, describe cache, logger, access, constants, validators
 
 L1  Results and definitions
     Result, SetResult, Definition, Context, Rule interface, AdminDetail
@@ -152,13 +152,16 @@ limit exceptions remain uncatchable, as they do for any Apex API.
    does not apply is `SKIPPED` with the administrator's configured message.
 8. **Route to the evaluator.** Formula, SOQL, Compare two queries, or Apex produces Found, Expected,
    and a status.
-9. **Resolve merge tokens in the messages.** A bad token changes how the message is handled, never
+9. **Format Found and Expected.** The selected display format is applied without changing the raw
+   values used for the comparison. Each side and each list row keeps its own currency where one is
+   available.
+10. **Resolve merge tokens in the messages.** A bad token changes how the message is handled, never
    the status.
-10. **Attach the fix link on failure only.** The action URL is token-resolved against the record, then
+11. **Attach the fix link on failure only.** The action URL is token-resolved against the record, then
     cleaned up before it can become a link.
-11. **Log the outcome.** `PASS` and `SKIPPED` log at debug level, `FAIL` at info, and anything else at
+12. **Log the outcome.** `PASS` and `SKIPPED` log at debug level, `FAIL` at info, and anything else at
     warn, all through the shared logger.
-12. **Apply Check Set flags.** Diagnostics detail is attached only when the Check Set enables it and
+13. **Apply Check Set flags.** Diagnostics detail is attached only when the Check Set enables it and
     the running user holds the diagnostics permission.
 
 Two caches keep a single transaction efficient without leaking between runs. Describe results are
@@ -170,7 +173,7 @@ result.
 
 | Entry point | Used by | What it adds around the engine |
 | --- | --- | --- |
-| `RecordHealthCheck.runRule` and `runSet` | Apex, batch, scheduled jobs, tests | Run ids, request caps, event publication, log flush |
+| `RecordHealthCheck.runRule` and `runSet` | Apex, batch, scheduled jobs, tests | Run ids, request limits, event publication, log flush |
 | `RecordHealthCheckRunRuleFlowAction` | Flow Builder | Invocable inputs and a versioned response, including result JSON |
 | `RecordHealthCheckRunSetFlowAction` | Flow Builder | The same for a whole Check Set |
 | `RecordHealthCheckController` | The Lightning card | Availability, definitions, one evaluate call per Rule, and `completeRun` |
@@ -308,6 +311,22 @@ Operational consequences:
   alongside the classes they configure.
 - Developer Names are contract identifiers. `PrerequisiteRule__c`, the Apex API, the Flow actions,
   and the event bodies all reference them, so renaming one is a breaking change.
+- `npm run check:manifest` compares every packageable source member with `manifest/package.xml`.
+  `npm run check:permission-sets` checks permission-set component references and keeps descriptions
+  within a 200-character project budget, below Salesforce's 255-character limit. CI runs both
+  checks before creating the scratch org.
+
+### Multi-currency boundary
+
+Multi-currency support applies wherever the Framework renders money. Formula, Query, Compare two
+queries, and typed Apex plugin results can carry a currency for each side; list entries can carry a
+currency per row. Aggregate amounts use the corporate currency Salesforce uses for the aggregate.
+Single-currency orgs show a symbol, while orgs with multiple currencies lead with the ISO code.
+
+The Framework does not convert currencies or normalize cross-currency comparisons. Comparisons use
+the typed values Salesforce returns. Currency conversion, dated exchange rates, and business rules
+for comparing unlike currencies remain the responsibility of the Rule query, formula, or Apex
+plugin. See [Display value format](reference-display-value-format.md#currency).
 
 ## 15. Design decisions
 
@@ -318,7 +337,7 @@ Operational consequences:
 | Automatic card loads cannot publish events | Page views would otherwise generate unbounded event volume from no deliberate action |
 | The engine never throws | Every surface consumes one result shape instead of implementing its own exception handling |
 | Allowed values in one constants class | Runtime and deploy-time validation previously duplicated them and could diverge silently |
-| Administrator SOQL is templated, not executed as authored | `WITH USER_MODE` injection, DML rejection, and the row cap must happen before execution |
+| Administrator SOQL is templated, not executed as authored | `WITH USER_MODE` injection, DML rejection, and the row limit must happen before execution |
 | Rule results cached only inside one top-level run | Prerequisite chains avoid re-evaluation without leaking stale results into a later run in the same transaction |
 
 ## 16. Out of scope
@@ -341,7 +360,7 @@ For longer per-class descriptions, see [Reference: Apex classes](reference-apex-
 
 | Class | Responsibility |
 | --- | --- |
-| `RecordHealthCheck` | Public Apex `runRule` and `runSet`, request caps, lifecycle publication |
+| `RecordHealthCheck` | Public Apex `runRule` and `runSet`, request limits, lifecycle publication |
 | `RecordHealthCheckRunRuleFlowAction` and `RecordHealthCheckRunSetFlowAction` | Packaged Flow actions |
 | `RecordHealthCheckController` | Lightning card: availability, definitions, `evaluateCheck`, `completeRun` |
 | `RecordHealthCheckEngine` | The one-Rule evaluation path |
@@ -368,8 +387,9 @@ For longer per-class descriptions, see [Reference: Apex classes](reference-apex-
 | `RecordHealthCheckCompareQueriesEvaluator` | Two-query checks |
 | `RecordHealthCheckQueryEvaluatorSupport` | Shared query execution and empty-result handling |
 | `RecordHealthCheckApexEvaluator` | Custom Apex evaluator dispatch |
-| `RecordHealthCheckComparisonEngine` | Operators and Found or Expected formatting |
-| `RecordHealthCheckSoqlTemplate` | SOQL safety checks, row cap, and `WITH USER_MODE` injection |
+| `RecordHealthCheckComparisonEngine` | Operators, equality, expected-value wording, and list previews |
+| `RecordHealthCheckDisplayFormat` | Typed display values, picklist labels, locale formatting, and per-side or per-row currency |
+| `RecordHealthCheckSoqlTemplate` | SOQL safety checks, row limit, and `WITH USER_MODE` injection |
 | `RecordHealthCheckValueResolver` | Convert and compare values safely |
 | `RecordHealthCheckDescribeCache` | Describe results reused within one transaction |
 | `AccountHasRecentActivityCheck` | The shipped example Apex evaluator |

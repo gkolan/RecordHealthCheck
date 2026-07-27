@@ -9,7 +9,7 @@ one Rule or a complete Check Set, then use a Decision element to respond to the 
 Start with the Check Set action unless your Flow intentionally needs only one specific Rule.
 
 Salesforce can bulk an invocable action into one transaction. Each packaged action accepts at most
-200 request records per invocation (`RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL`); the Framework's
+200 request records per call (`RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL`); the Framework's
 15 planned-evaluation cap still applies to the health-check work inside each request.
 
 ## Choose the right Flow action
@@ -27,6 +27,27 @@ Salesforce can bulk an invocable action into one transaction. Each packaged acti
 
 This pattern runs a Check Set for one record and sends healthy and unhealthy results down different
 Flow paths.
+
+### Runnable demo fixture
+
+For a demonstration scratch org, deploy `force-app` followed by `integration-tests`, then run:
+
+```bash
+sf apex run \
+  --file integration-tests/scripts/demo_apex_api.apex \
+  --target-org my-scratch-org
+sf apex run \
+  --file integration-tests/scripts/demo_flow_actions.apex \
+  --target-org my-scratch-org
+```
+
+The first script creates a reusable **Record Health Check API Demo** Account. The second invokes the
+same two invocable methods Flow Builder calls and prints their Status, counts, Reason Code, and
+contract version. To demonstrate visually in Flow Builder, create an autolaunched Flow with an
+Account record-ID input, add **Run Record Health Check Set**, use
+`Account_Data_Quality` as **Check Set API Name**, and branch on the returned Status. Add a second
+Action using **Run Record Health Check Rule** and `Account_DQ_BillingCity` to show a predictable
+`PASS` result.
 
 ### Before you begin
 
@@ -173,7 +194,7 @@ record. Always test in the Flow's actual run context.
 ## Limits and bulk use
 
 Flow sends a collection of requests to the packaged action. The public limits apply to each
-invocation.
+call.
 
 | Limit | Maximum | What to do when you exceed it |
 | --- | ---: | --- |

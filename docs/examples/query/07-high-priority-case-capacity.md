@@ -1,7 +1,7 @@
 # 07 · High-priority Case Backlog Is Within Review Capacity
 
 > [!NOTE]
-> On this page, enforce a maximum high-priority Case backlog with an aggregate Query Rule and opt in to lifecycle events only when an approved subscriber needs completion facts.
+> On this page, enforce a maximum high-priority Case backlog with an aggregate Query Rule and enable lifecycle events only when an approved subscriber needs completion facts.
 >
 > **Setup reference**
 >
@@ -70,7 +70,7 @@ Confirm the `High` Priority API value and replace `3` with the limit approved by
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Warning |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name\|this record}` has more open high-priority Cases than the service team can review through its normal process. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name fallback="this record"}` has more open high-priority Cases than the service team can review through its normal process. |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Compares the visible open high-priority Case count with the approved review limit. |
 | **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Readiness |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to count high-priority Cases. Confirm access to Case, AccountId, IsClosed, and Priority. |

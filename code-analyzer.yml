@@ -1,0 +1,44 @@
+ignores:
+  files:
+    - "code-analyzer-results-*"
+
+engines:
+  eslint:
+    eslint_config_file: eslint.config.js
+    disable_javascript_base_config: true
+    disable_lwc_base_config: true
+    disable_slds_base_config: true
+
+rules:
+  pmd:
+    ApexDoc:
+      disabled: true
+    ApexUnitTestClassShouldHaveRunAs:
+      disabled: true
+    ApexUnitTestClassShouldHaveAsserts:
+      disabled: true
+    AvoidDebugStatements:
+      disabled: true
+    ExcessiveParameterList:
+      disabled: true
+    CyclomaticComplexity:
+      disabled: true
+    CognitiveComplexity:
+      disabled: true
+    NcssCount:
+      disabled: true
+    PropertyNamingConventions:
+      disabled: true
+    AvoidDeeplyNestedIfStmts:
+      disabled: true
+    ExcessivePublicCount:
+      disabled: true
+    AvoidBooleanMethodParameters:
+      disabled: true
+    TooManyFields:
+      disabled: true
+  cpd:
+    DetectCopyPasteForJavascript:
+      disabled: true
+    DetectCopyPasteForApex:
+      disabled: true

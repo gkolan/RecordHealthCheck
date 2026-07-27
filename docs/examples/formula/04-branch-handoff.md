@@ -77,7 +77,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 Copy this value into **Action URL**:
 
 ```text
-/lightning/r/Account/{!record.ParentId|001000000000000AAA}/edit
+/lightning/r/Account/{!record.ParentId fallback="001000000000000AAA"}/edit
 ```
 
 The applicability formula prevents the action link from rendering on a top-level Account with no

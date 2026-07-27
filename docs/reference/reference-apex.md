@@ -149,7 +149,7 @@ if (parent != null) {
 }
 ```
 
-This only works when the engine **pre-loaded** `Parent.BillingCity` on `context.record` (uncommon for Apex Rules unless `{!record.Parent.BillingCity|the account city}` appears in a message token).
+This only works when the engine **pre-loaded** `Parent.BillingCity` on `context.record` (uncommon for Apex Rules unless `{!record.Parent.BillingCity fallback="the account city"}` appears in a message token).
 
 ### Custom lookup to another record
 
@@ -336,11 +336,17 @@ return result;
 On **`FAIL`**, the evaluator sets:
 
 - **`severity`** from Rule `FailureSeverity__c` (not set by the plugin)
-- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field}` merge tokens (optional `|Fallback value`) resolved
+- **`message`** from `result.message` when non-blank; otherwise **Message When Failed** with `{!record.Field}` merge tokens (optional quoted `fallback` attribute) resolved
 
 ### Found / Expected (required for PASS / FAIL)
 
 Apex checks must set both comparison chips for every determinate result (`PASS` or `FAIL`). If either `actualValue` or `expectedValue` is blank, the evaluator rejects the result with `ERROR` / `APEX_EVALUATOR_ERROR`. Failed checks show comparison values inline; passing-check visibility follows the Check Set **Found/Expected Display** setting.
+
+A plugin may return typed values instead of preformatted strings. Set `actualDisplayValue` and/or
+`expectedDisplayValue`, with an optional official uppercase API name in `actualDisplayFormat` or
+`expectedDisplayFormat` and an optional currency ISO code for each side. The Framework then uses its shared locale,
+currency, ratio, Boolean, and date formatter. An explicit `actualValue` or `expectedValue` always
+wins on that side, so existing plugins and deliberately authored wording do not change.
 
 ```apex
 result.status = 'FAIL';
@@ -425,7 +431,7 @@ class in one place prevents the short contract and detailed reference from getti
 
 - [ ] Class implements `RecordHealthCheckRule` and is **`public`** (so `Type.newInstance()` works).
 - [ ] All SOQL uses **`WITH USER_MODE`** and binds **`:context.recordId`** (or fields from a plugin query).
-- [ ] JSON keys documented in the class header comment; defaults apply when JSON is blank or omits a key. Invalid JSON prevents plugin invocation.
+- [ ] JSON keys documented in the class header comment; defaults apply when JSON is blank or omits a key. Invalid JSON prevents the plugin call.
 - [ ] Returns only valid `status` values; normal checks use `PASS` / `FAIL` only.
 - [ ] Sets both `result.actualValue` and `result.expectedValue` for every `PASS` / `FAIL`.
 - [ ] Apex test class covers `evaluate` with at least pass and fail paths.

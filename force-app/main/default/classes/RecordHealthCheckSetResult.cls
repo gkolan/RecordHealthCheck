@@ -30,28 +30,30 @@ public class RecordHealthCheckSetResult {
 
   public void add(RecordHealthCheckResult result) {
     results.add(result);
-    if (result.status == 'PASS')
+    if (result.status == 'PASS') {
       passedCount++;
-    else if (result.status == 'FAIL')
+    } else if (result.status == 'FAIL') {
       failedCount++;
-    else if (result.status == 'SKIPPED')
+    } else if (result.status == 'SKIPPED') {
       skippedCount++;
-    else if (result.status == 'ERROR')
+    } else if (result.status == 'ERROR') {
       systemErrorCount++;
-    else
+    } else {
       unableCount++;
+    }
   }
 
   public void finish() {
-    if (systemErrorCount > 0)
+    if (systemErrorCount > 0) {
       status = 'ERROR';
-    else if (unableCount > 0)
+    } else if (unableCount > 0) {
       status = 'UNABLE_TO_EVALUATE';
-    else if (failedCount > 0)
+    } else if (failedCount > 0) {
       status = 'FAIL';
-    else if (passedCount > 0)
+    } else if (passedCount > 0) {
       status = 'PASS';
-    else
+    } else {
       status = 'SKIPPED';
+    }
   }
 }

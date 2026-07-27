@@ -7,6 +7,7 @@
 trigger RecordHealthCheckRuleResultExport on Record_Health_Check_Rule_Result__e(
   after insert
 ) {
+  // code-analyzer-suppress-next-line AvoidLogicInTrigger: This scratch-org-only fixture is already a single-purpose, bulkified event-to-export adapter; a handler would add indirection without reusable behavior.
   List<RHC_Event_Export__c> exports = new List<RHC_Event_Export__c>();
   for (Record_Health_Check_Rule_Result__e eventRecord : Trigger.New) {
     Map<String, Object> payload = new Map<String, Object>{
@@ -26,5 +27,5 @@ trigger RecordHealthCheckRuleResultExport on Record_Health_Check_Rule_Result__e(
       )
     );
   }
-  insert exports;
+  Database.insert(exports, AccessLevel.USER_MODE);
 }

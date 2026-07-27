@@ -9,11 +9,11 @@
  * (never converted to midnight DateTime) and relationship-path extraction with
  * missing-field classification.
  */
-@isTest
+@IsTest
 private class RecordHealthCheckValueResolverTest {
   // ─── Extraction ────────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void singleValueFromRowReadsSimpleField() {
     Account a = new Account(Name = 'Acme');
     System.assertEquals(
@@ -22,7 +22,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void singleValueFromRowReadsAliasedAndUnaliasedAggregates() {
     AggregateResult aliased = [SELECT COUNT(Id) total FROM Account];
     AggregateResult unaliased = [SELECT COUNT(Id) FROM Account];
@@ -40,7 +40,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void singleValueFromRowTraversesRelationshipPath() {
     // Build a nested SObject in memory via JSON so getSObject('Parent') resolves.
     Account a = (Account) JSON.deserialize(
@@ -53,7 +53,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void singleValueFromRowNullRelationshipYieldsNull() {
     Account a = new Account(Name = 'Child');
     System.assertEquals(
@@ -62,7 +62,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void singleValueFromRowMissingFieldThrowsInvalidTemplate() {
     Account a = new Account(Name = 'Acme');
     try {
@@ -75,7 +75,7 @@ private class RecordHealthCheckValueResolverTest {
 
   // ─── Equality ──────────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void valuesEqualNumericAcrossTypes() {
     System.assertEquals(
       true,
@@ -87,7 +87,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualNullSafe() {
     System.assertEquals(
       true,
@@ -99,7 +99,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualDates() {
     System.assertEquals(
       true,
@@ -110,7 +110,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualDateStringsAndInvalidIds() {
     System.assertEquals(
       true,
@@ -122,7 +122,9 @@ private class RecordHealthCheckValueResolverTest {
     );
     assertIncompatibleEquality(Date.newInstance(2026, 1, 1), 'not-a-date');
 
-    Id accountId = '001000000000001AAA';
+    Id accountId =
+      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+        .getKeyPrefix() + '000000000000';
     System.assertEquals(
       false,
       RecordHealthCheckValueResolver.valuesEqual(accountId, 'not-an-id'),
@@ -132,7 +134,7 @@ private class RecordHealthCheckValueResolverTest {
 
   // ─── Ordered comparison ────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void orderedNumeric() {
     System.assertEquals(
       true,
@@ -144,7 +146,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void orderedNativeDateUsesDateLadderNotMidnightDateTime() {
     // L6: two native Dates must compare as Dates.
     Date earlier = Date.newInstance(2026, 1, 1);
@@ -163,7 +165,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void orderedDateTime() {
     Datetime earlier = Datetime.newInstance(2026, 1, 1, 0, 0, 0);
     Datetime later = Datetime.newInstanceGmt(2026, 1, 1, 10, 0, 0);
@@ -173,7 +175,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void orderedIncompatibleTypesThrows() {
     try {
       RecordHealthCheckValueResolver.applyOrdered(
@@ -189,7 +191,7 @@ private class RecordHealthCheckValueResolverTest {
 
   // ─── Misc ──────────────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void isNumericObjectClassifies() {
     System.assertEquals(
       true,
@@ -205,7 +207,7 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void classifyQueryExceptionDistinguishesAccess() {
     System.assertEquals(
       'INVALID_SOQL_TEMPLATE',
@@ -221,13 +223,12 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void remainingTypedBranchesAreCovered() {
     Datetime earlier = Datetime.newInstance(2026, 1, 1, 0, 0, 0);
     Datetime earlierGmt = Datetime.newInstanceGmt(2026, 1, 1, 0, 0, 0);
     Datetime later = earlier.addHours(1);
     Date earlierDate = Date.newInstance(2026, 1, 1);
-    Date laterDate = earlierDate.addDays(1);
 
     System.assert(
       RecordHealthCheckValueResolver.valuesEqual(earlier, '2026-01-01 00:00:00')

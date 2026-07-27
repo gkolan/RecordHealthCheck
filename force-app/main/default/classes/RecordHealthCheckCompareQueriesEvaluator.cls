@@ -11,7 +11,7 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   // collide with field data, and toStringList appends the side + a per-null index
   // so every missing value is distinct — a null then matches nothing, not even
   // another null. See toStringList.
-  private static final String MISSING_NO_MATCH_SENTINEL = ' __rhc_missing__:';
+  private static final String MISSING_NO_MATCH_PLACEHOLDER = ' __rhc_missing__:';
 
   // Delegate token binding and query execution to the existing SOQL evaluator
   private RecordHealthCheckSoqlEvaluator soqlEvaluator = new RecordHealthCheckSoqlEvaluator();
@@ -131,7 +131,14 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
 
     // Capture actual vs expected from the rows already fetched (no extra query)
     // so the UI can show the comparison on a non-passing row.
-    setComparisonValues(rule, result, primaryRows, comparisonRows, mode);
+    setComparisonValues(
+      rule,
+      record,
+      result,
+      primaryRows,
+      comparisonRows,
+      mode
+    );
 
     if (passed) {
       result.status = 'PASS';
@@ -157,11 +164,38 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
   @TestVisible
   private void setComparisonValues(
     Record_Health_Check_Rule__mdt rule,
+    SObject record,
     RecordHealthCheckResult result,
     List<SObject> primaryRows,
     List<SObject> comparisonRows,
     String mode
   ) {
+    // The primary row decides the format when the author left Display: Value
+    // Format on Auto, and names the currency its amounts are in. Both sides use
+    // that one choice so the two chips read in the same units.
+    SObject primaryRow = primaryRows.isEmpty() ? null : primaryRows[0];
+    String displayFormat = RecordHealthCheckDisplayFormat.formatForRow(
+      rule.DisplayValueFormat__c,
+      primaryRow,
+      rule.SourceQueryField__c
+    );
+    // When the primary query read the record the card is on, that record's
+    // currency is this amount's currency.
+    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFor(
+      primaryRow,
+      record
+    );
+
+    // The two sides are separate queries and can hold separate currencies — a
+    // pipeline total converted to the corporate currency against a record's own
+    // amount, for instance. They share one format, but each keeps its own
+    // currency so neither number is labelled with the other's.
+    SObject comparisonRow = comparisonRows.isEmpty() ? null : comparisonRows[0];
+    String comparisonIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFor(
+      comparisonRow,
+      record
+    );
+
     if (mode == 'ONE_RESULT') {
       Object primaryValue = resolveSingleValue(
         primaryRows,
@@ -173,12 +207,28 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         rule.ComparisonQueryField__c,
         'comparison'
       );
+      Object displayPrimaryValue = RecordHealthCheckDisplayFormat.valueForDisplay(
+        primaryValue,
+        rule.DisplayValueFormat__c,
+        primaryRow,
+        rule.SourceQueryField__c
+      );
+      Object displayComparisonValue = RecordHealthCheckDisplayFormat.valueForDisplay(
+        comparisonValue,
+        rule.DisplayValueFormat__c,
+        comparisonRow,
+        rule.ComparisonQueryField__c
+      );
       result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
-        primaryValue
+        displayPrimaryValue,
+        displayFormat,
+        displayIsoCode
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpected(
         rule.ComparisonOperator__c,
-        comparisonValue
+        displayComparisonValue,
+        displayFormat,
+        comparisonIsoCode
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
@@ -200,12 +250,34 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         comparisonRows,
         rule.ComparisonQueryField__c
       );
+      List<Object> displayPrimaryList = RecordHealthCheckDisplayFormat.valuesForDisplay(
+        primaryList,
+        rule.DisplayValueFormat__c,
+        primaryRows,
+        rule.SourceQueryField__c
+      );
+      List<Object> displayComparisonList = RecordHealthCheckDisplayFormat.valuesForDisplay(
+        comparisonList,
+        rule.DisplayValueFormat__c,
+        comparisonRows,
+        rule.ComparisonQueryField__c
+      );
+      // Each entry is labelled with the currency of the row it came from, so a
+      // list mixing currencies does not read as if it were all in the first
+      // row's.
       result.actualValue = RecordHealthCheckComparisonEngine.formatList(
-        primaryList
+        displayPrimaryList,
+        displayFormat,
+        RecordHealthCheckDisplayFormat.currencyIsoCodesFor(primaryRows, record)
       );
       result.expectedValue = RecordHealthCheckComparisonEngine.describeExpectedList(
         rule.ComparisonOperator__c,
-        comparisonList
+        displayComparisonList,
+        displayFormat,
+        RecordHealthCheckDisplayFormat.currencyIsoCodesFor(
+          comparisonRows,
+          record
+        )
       );
       result.actualValueSource = new RecordHealthCheckValueSource.Detail(
         provenanceSource(rule.SourceQueryField__c, 'Primary query'),
@@ -218,6 +290,14 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
         null
       );
     }
+
+    // Author wording replaces what the Framework wrote on either side. The value
+    // source details above keep the raw values for a diagnostics viewer.
+    RecordHealthCheckTemplateService.applyFoundExpectedText(
+      rule,
+      record,
+      result
+    );
   }
 
   // Prefers the field name (what the viewer recognizes) as the value source
@@ -248,8 +328,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
 
     if (primaryValue == null || comparisonValue == null) {
       String nb = rule.EmptyValueHandling__c;
-      if (nb == 'SKIP_RECORD')
+      if (nb == 'SKIP_RECORD') {
         return null;
+      }
       if (nb == 'AS_BLANK') {
         primaryValue = primaryValue != null ? primaryValue : '';
         comparisonValue = comparisonValue != null ? comparisonValue : '';
@@ -354,8 +435,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     if (operator == 'LISTS_OVERLAP') {
       // At least one value appears in both lists.
       for (String val : primarySet) {
-        if (comparisonSet.contains(val))
+        if (comparisonSet.contains(val)) {
           return true;
+        }
       }
       return false;
     }
@@ -363,8 +445,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     if (operator == 'LISTS_CONTAIN_ALL') {
       // Every primary value appears in the comparison list.
       for (String val : primarySet) {
-        if (!comparisonSet.contains(val))
+        if (!comparisonSet.contains(val)) {
           return false;
+        }
       }
       return true;
     }
@@ -416,7 +499,9 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
           // Converting to '' (the old behavior) let two null fields "match" as
           // blanks and wrongly satisfy ListsOverlap / ExactListMatch. Write a
           // unique, non-data placeholder instead so each null stays distinct.
-          values.add(MISSING_NO_MATCH_SENTINEL + side + ':' + missingIndex++);
+          values.add(
+            MISSING_NO_MATCH_PLACEHOLDER + side + ':' + missingIndex++
+          );
           continue;
         }
         // TreatMissingAsBlank and the CMT blank default treat a missing value as
@@ -450,11 +535,13 @@ public with sharing class RecordHealthCheckCompareQueriesEvaluator {
     Map<String, Integer> left,
     Map<String, Integer> right
   ) {
-    if (left.size() != right.size())
+    if (left.size() != right.size()) {
       return false;
+    }
     for (String key : left.keySet()) {
-      if (!right.containsKey(key) || right.get(key) != left.get(key))
+      if (!right.containsKey(key) || right.get(key) != left.get(key)) {
         return false;
+      }
     }
     return true;
   }

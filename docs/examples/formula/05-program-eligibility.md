@@ -83,11 +83,13 @@ Keep the display formulas consistent with the Pass Condition. The engine does no
 Copy this value into **Message When Failed**:
 
 ```text
-{!record.Name|this record} is below the staffing minimum. Compare Found and Expected, then update Employees.
+{!record.Name fallback="this record"} is below the staffing minimum. Compare Found and Expected, then update Employees.
 ```
 
-Query and Apex fields do not apply. Leave **Display: Found Text** / **Display: Expected Text** blank
-for Formula Rules; use the Found/Expected formulas instead.
+Query and Apex fields do not apply. This Rule leaves **Display: Found Text** / **Display: Expected
+Text** blank and gets its readable values from the Found/Expected formulas. Set them when the
+wording around a value matters more than the value alone - they replace what the Framework wrote on
+a Formula Rule too.
 
 ## Check Set configuration
 

@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckDescribeCacheTest {
-  @isTest
+  @IsTest
   static void cachesObjectAndFieldDescribeAcrossRepeatedCalls() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -53,7 +53,7 @@ private class RecordHealthCheckDescribeCacheTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void nullAndUnknownInputsAreSafe() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -83,7 +83,7 @@ private class RecordHealthCheckDescribeCacheTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void objectApiNameFromRecordIdUsesCachedDescribe() {
     RecordHealthCheckDescribeCache.clearForTest();
     Account accountRecord = RecordHealthCheckTestDataFactory.createAccount(
@@ -96,7 +96,7 @@ private class RecordHealthCheckDescribeCacheTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void resolveSObjectTypeReturnsTokenForKnownObject() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -117,7 +117,7 @@ private class RecordHealthCheckDescribeCacheTest {
    * type, and isAccessible()). Keying on the Schema.SObjectField token must keep
    * those describes distinct across the whole transaction.
    */
-  @isTest
+  @IsTest
   static void sameNamedFieldsOnDifferentObjectsDoNotCollide() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -165,7 +165,7 @@ private class RecordHealthCheckDescribeCacheTest {
    * stays tied to its own field token (do not assume OwnerId's first reference
    * target is identical across objects: Case.OwnerId can include Group/queues).
    */
-  @isTest
+  @IsTest
   static void sameNamedLookupsKeepDistinctReferenceTargets() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -231,7 +231,7 @@ private class RecordHealthCheckDescribeCacheTest {
    * not collide with each other across objects, and must agree with compile-time
    * tokens for the same field so the cache is shared rather than duplicated.
    */
-  @isTest
+  @IsTest
   static void fieldMapTokensDoNotCollideAcrossObjects() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -278,7 +278,7 @@ private class RecordHealthCheckDescribeCacheTest {
    * Stress the cache the way field planning does: many same-named fields across
    * several objects in one transaction, interleaved, then re-check each one.
    */
-  @isTest
+  @IsTest
   static void interleavedCrossObjectRoundTripKeepsDistinctDescribes() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -363,7 +363,7 @@ private class RecordHealthCheckDescribeCacheTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void clearForTestDropsFieldCacheSoNextDescribeIsFresh() {
     RecordHealthCheckDescribeCache.clearForTest();
     Schema.DescribeFieldResult beforeClear = RecordHealthCheckDescribeCache.describeField(

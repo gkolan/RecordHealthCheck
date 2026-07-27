@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckValueSourceTest {
-  @isTest
+  @IsTest
   static void rendersSourceRawAndCoercion() {
     RecordHealthCheckValueSource.Detail d = new RecordHealthCheckValueSource.Detail(
       'NumberOfEmployees',
@@ -18,7 +18,7 @@ private class RecordHealthCheckValueSourceTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void rendersSourceAndRawWithoutCoercion() {
     RecordHealthCheckValueSource.Detail d = new RecordHealthCheckValueSource.Detail(
       'Contacts',
@@ -31,7 +31,7 @@ private class RecordHealthCheckValueSourceTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void rendersSourceOnly() {
     RecordHealthCheckValueSource.Detail d = new RecordHealthCheckValueSource.Detail(
       'Pass/Fail condition',
@@ -44,7 +44,7 @@ private class RecordHealthCheckValueSourceTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void rendersRawOnlyWhenSourceBlank() {
     RecordHealthCheckValueSource.Detail d = new RecordHealthCheckValueSource.Detail(
       '  ',
@@ -54,7 +54,7 @@ private class RecordHealthCheckValueSourceTest {
     System.assertEquals('42', RecordHealthCheckValueSource.render(d));
   }
 
-  @isTest
+  @IsTest
   static void rendersCoercionOnlyWithoutNullPointer() {
     RecordHealthCheckValueSource.Detail d = new RecordHealthCheckValueSource.Detail(
       null,
@@ -67,12 +67,12 @@ private class RecordHealthCheckValueSourceTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void returnsNullForNullDetail() {
     System.assertEquals(null, RecordHealthCheckValueSource.render(null));
   }
 
-  @isTest
+  @IsTest
   static void returnsNullWhenEveryPartBlank() {
     RecordHealthCheckValueSource.Detail d = new RecordHealthCheckValueSource.Detail(
       '',
@@ -86,7 +86,7 @@ private class RecordHealthCheckValueSourceTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void rowCountPluralizesCorrectly() {
     System.assertEquals('0 rows', RecordHealthCheckValueSource.rowCount(0));
     System.assertEquals(

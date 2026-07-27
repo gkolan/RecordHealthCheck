@@ -15,7 +15,9 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
       SELECT DeveloperName
       FROM Record_Health_Check_Set__mdt
       ORDER BY DeveloperName
+      LIMIT 50000
     ]) {
+      // code-analyzer-suppress-next-line OperationWithLimitsInLoop: Queueable Apex exposes only a single-job enqueue API; this scratch-org harness is bounded by the platform's 50-job transaction limit.
       jobs.add(
         System.enqueueJob(
           new RecordHealthCheckExhaustiveSmoke(
@@ -38,6 +40,7 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
       LIMIT 50
       OFFSET :batchOffset
     ]) {
+      // code-analyzer-suppress-next-line OperationWithLimitsInLoop: Queueable Apex exposes only a single-job enqueue API; this query caps the scratch-org harness at 50 jobs.
       jobs.add(
         System.enqueueJob(
           new RecordHealthCheckExhaustiveSmoke(
@@ -62,6 +65,7 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
   }
 
   public void execute(QueueableContext context) {
+    // code-analyzer-suppress-next-line QueueableWithoutFinalizer: This one-shot scratch-org harness persists its outcome itself; no recovery or chained cleanup is required.
     Map<String, Object> outcome = new Map<String, Object>{
       'mode' => mode,
       'name' => itemName

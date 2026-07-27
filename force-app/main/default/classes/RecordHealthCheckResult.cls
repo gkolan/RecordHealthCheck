@@ -33,6 +33,16 @@ public class RecordHealthCheckResult {
   public String actualValue; // what the record/query produced — set on a determinate PASS/FAIL
   @AuraEnabled
   public String expectedValue; // the operator + comparison operand the value was tested against
+  // Optional server-side typed display contract for Apex plugins. Existing
+  // actualValue / expectedValue strings remain authoritative when populated.
+  // Set a typed value to have the framework render it consistently; named
+  // formats must use their canonical, uppercase API name.
+  public Object actualDisplayValue;
+  public Object expectedDisplayValue;
+  public String actualDisplayFormat;
+  public String expectedDisplayFormat;
+  public String actualCurrencyIsoCode;
+  public String expectedCurrencyIsoCode;
   @AuraEnabled
   public String expectedValueLabel; // overrides the UI's default "Expected" key when set — e.g. "Passes when" for a Formula check echoing its pass/fail condition rather than a comparison value
   @AuraEnabled

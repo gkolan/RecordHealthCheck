@@ -30,14 +30,18 @@ public with sharing class RecordHealthCheckComparisonEngine {
     String pStr = String.valueOf(primary);
     String cStr = String.valueOf(comparison);
 
-    if (operator == 'EQUALS')
+    if (operator == 'EQUALS') {
       return valuesEqual(primary, comparison);
-    if (operator == 'NOT_EQUALS')
+    }
+    if (operator == 'NOT_EQUALS') {
       return !valuesEqual(primary, comparison);
-    if (operator == 'CONTAINS')
+    }
+    if (operator == 'CONTAINS') {
       return pStr.contains(cStr);
-    if (operator == 'DOES_NOT_CONTAIN')
+    }
+    if (operator == 'DOES_NOT_CONTAIN') {
       return !pStr.contains(cStr);
+    }
 
     if (
       operator != 'GREATER_THAN' &&
@@ -81,14 +85,18 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * Null signals the caller to use EmptyResultBehavior to set the final status.
    */
   public static Boolean resolveEmptyBehavior(String behavior) {
-    if (behavior == 'PASS')
+    if (behavior == 'PASS') {
       return true;
-    if (behavior == 'FAIL')
+    }
+    if (behavior == 'FAIL') {
       return false;
-    if (behavior == 'SKIP')
+    }
+    if (behavior == 'SKIP') {
       return null;
-    if (behavior == 'UNABLE_TO_EVALUATE')
+    }
+    if (behavior == 'UNABLE_TO_EVALUATE') {
       return null;
+    }
     // No explicit config — treat as indeterminate (Skip is the CMT default)
     return null;
   }
@@ -97,10 +105,12 @@ public with sharing class RecordHealthCheckComparisonEngine {
 
   public static Boolean applyUnaryComparison(String operator, Object value) {
     Boolean isBlank = (value == null || String.valueOf(value).trim() == '');
-    if (operator == 'IS_BLANK')
+    if (operator == 'IS_BLANK') {
       return isBlank;
-    if (operator == 'IS_NOT_BLANK')
+    }
+    if (operator == 'IS_NOT_BLANK') {
       return !isBlank;
+    }
     // An unrecognized unary operator is a configuration error, not an
     // indeterminate value. Fail loudly so it surfaces as UNABLE rather than
     // being misrouted into the empty/zero-rows behavior.
@@ -146,14 +156,17 @@ public with sharing class RecordHealthCheckComparisonEngine {
       Boolean sawEvaluableRecord = false;
       for (Object val : primaryList) {
         Boolean match = applyRecordComparison(rule, val, comparisonValue);
-        if (match == null)
+        if (match == null) {
           continue;
+        }
         sawEvaluableRecord = true;
-        if (match == true)
+        if (match == true) {
           return true;
+        }
       }
-      if (!sawEvaluableRecord)
+      if (!sawEvaluableRecord) {
         return null;
+      }
       return false;
     }
 
@@ -161,14 +174,17 @@ public with sharing class RecordHealthCheckComparisonEngine {
       Boolean sawEvaluableRecord = false;
       for (Object val : primaryList) {
         Boolean match = applyRecordComparison(rule, val, comparisonValue);
-        if (match == null)
+        if (match == null) {
           continue;
+        }
         sawEvaluableRecord = true;
-        if (match != true)
+        if (match != true) {
           return false;
+        }
       }
-      if (!sawEvaluableRecord)
+      if (!sawEvaluableRecord) {
         return null;
+      }
       return true;
     }
 
@@ -239,12 +255,15 @@ public with sharing class RecordHealthCheckComparisonEngine {
   ) {
     if (primary == null) {
       String nb = rule.EmptyValueHandling__c;
-      if (nb == 'SKIP_RECORD')
+      if (nb == 'SKIP_RECORD') {
         return null;
-      if (nb == 'AS_NO_MATCH')
+      }
+      if (nb == 'AS_NO_MATCH') {
         return false;
-      if (nb == 'AS_BLANK')
+      }
+      if (nb == 'AS_BLANK') {
         primary = '';
+      }
     }
     return applySingleComparison(operator, primary, comparison, rule);
   }
@@ -274,8 +293,9 @@ public with sharing class RecordHealthCheckComparisonEngine {
       // case-insensitive comparison
       String pLower = pStr.toLowerCase();
       for (Object item : comparisonList) {
-        if (item != null && String.valueOf(item).toLowerCase() == pLower)
+        if (item != null && String.valueOf(item).toLowerCase() == pLower) {
           return true;
+        }
       }
       return false;
     }
@@ -284,8 +304,9 @@ public with sharing class RecordHealthCheckComparisonEngine {
       // case-insensitive comparison
       String pLower = pStr.toLowerCase();
       for (Object item : comparisonList) {
-        if (item != null && String.valueOf(item).toLowerCase() == pLower)
+        if (item != null && String.valueOf(item).toLowerCase() == pLower) {
           return false;
+        }
       }
       return true;
     }
@@ -301,8 +322,6 @@ public with sharing class RecordHealthCheckComparisonEngine {
   // non-passing result so the user sees what the record produced versus what
   // the rule required, without an admin hand-authoring it into FailureMessage__c.
 
-  private static final Integer LIST_PREVIEW_CAP = 10;
-
   /**
    * Maps a operator API name to a sentence-friendly verb phrase. The phrases
    * are designed to read naturally after the word "expected" when the LWC wraps
@@ -310,36 +329,51 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * "expected to equal …", "expected at least 2", "expected to be one of […]".
    */
   public static String operatorLabel(String operator) {
-    if (operator == 'EQUALS')
-      return 'to equal';
-    if (operator == 'NOT_EQUALS')
-      return 'to not equal';
-    if (operator == 'CONTAINS')
-      return 'to contain';
-    if (operator == 'DOES_NOT_CONTAIN')
-      return 'to not contain';
-    if (operator == 'GREATER_THAN')
-      return 'more than';
-    if (operator == 'GREATER_THAN_OR_EQUAL')
-      return 'at least';
-    if (operator == 'LESS_THAN')
-      return 'less than';
-    if (operator == 'LESS_THAN_OR_EQUAL')
-      return 'at most';
-    if (operator == 'IS_BLANK')
-      return 'to be blank';
-    if (operator == 'IS_NOT_BLANK')
-      return 'to not be blank';
-    if (operator == 'LIST_CONTAINS_ANY')
-      return 'to be one of';
-    if (operator == 'LIST_CONTAINS_NONE')
-      return 'to be none of';
-    if (operator == 'LISTS_OVERLAP')
-      return 'to overlap with';
-    if (operator == 'LISTS_CONTAIN_ALL')
-      return 'to contain all of';
-    if (operator == 'LISTS_MATCH_EXACTLY')
-      return 'to exactly match';
+    if (operator == 'EQUALS') {
+      return System.Label.RHC_Operator_Equals;
+    }
+    if (operator == 'NOT_EQUALS') {
+      return System.Label.RHC_Operator_NotEquals;
+    }
+    if (operator == 'CONTAINS') {
+      return System.Label.RHC_Operator_Contains;
+    }
+    if (operator == 'DOES_NOT_CONTAIN') {
+      return System.Label.RHC_Operator_DoesNotContain;
+    }
+    if (operator == 'GREATER_THAN') {
+      return System.Label.RHC_Operator_GreaterThan;
+    }
+    if (operator == 'GREATER_THAN_OR_EQUAL') {
+      return System.Label.RHC_Operator_GreaterThanOrEqual;
+    }
+    if (operator == 'LESS_THAN') {
+      return System.Label.RHC_Operator_LessThan;
+    }
+    if (operator == 'LESS_THAN_OR_EQUAL') {
+      return System.Label.RHC_Operator_LessThanOrEqual;
+    }
+    if (operator == 'IS_BLANK') {
+      return System.Label.RHC_Operator_IsBlank;
+    }
+    if (operator == 'IS_NOT_BLANK') {
+      return System.Label.RHC_Operator_IsNotBlank;
+    }
+    if (operator == 'LIST_CONTAINS_ANY') {
+      return System.Label.RHC_Operator_ListContainsAny;
+    }
+    if (operator == 'LIST_CONTAINS_NONE') {
+      return System.Label.RHC_Operator_ListContainsNone;
+    }
+    if (operator == 'LISTS_OVERLAP') {
+      return System.Label.RHC_Operator_ListsOverlap;
+    }
+    if (operator == 'LISTS_CONTAIN_ALL') {
+      return System.Label.RHC_Operator_ListsContainAll;
+    }
+    if (operator == 'LISTS_MATCH_EXACTLY') {
+      return System.Label.RHC_Operator_ListsMatchExactly;
+    }
     // an unknown operator falls back to its
     // raw API name. Config validation blocks unknown operators upstream, so this
     // is purely defensive; surfacing the literal name keeps a misconfiguration
@@ -352,194 +386,105 @@ public with sharing class RecordHealthCheckComparisonEngine {
    * values are returned without decorative quotes because the comparison chip's
    * background and horizontal padding already distinguish values from prose.
    *
-   * Values are humanized for readability: typed numbers gain thousands
-   * separators, Booleans read Yes/No, and dates/datetimes render in the running
-   * user's locale and time zone. Typed values (a checkbox or datetime field, a
-   * single-value formula) are converted directly. Boolean and temporal metadata
-   * strings are recognized textually; numeric metadata strings require actual-value
-   * type context through describeExpectedForActual so identifiers stay unchanged.
+   * This overload renders with Display: Value Format on "Auto". Callers that
+   * have the Rule pass its DisplayValueFormat__c to the overload below.
    */
   public static String formatValue(Object value) {
-    if (value == null)
-      return '(blank)';
-
-    // Typed values carry their Apex type here, so humanize them before
-    // String.valueOf flattens them into a raw, unformatted string.
-    if (value instanceof Boolean) {
-      return ((Boolean) value) ? 'Yes' : 'No';
-    }
-    if (value instanceof Date) {
-      return ((Date) value).format();
-    }
-    if (value instanceof Datetime) {
-      // .format() honors the user's locale and time zone; String.valueOf would
-      // return a raw GMT "2026-07-04 17:30:00".
-      return ((Datetime) value).format();
-    }
-
-    // Only values that retain a numeric Apex type are safe to group. A digit-only
-    // String may instead be a postal code, year, or identifier whose spelling is
-    // significant (including leading zeroes).
-    if (
-      value instanceof Integer ||
-      value instanceof Long ||
-      value instanceof Decimal ||
-      value instanceof Double
-    ) {
-      return humanizeNumber(String.valueOf(value));
-    }
-
-    String s = String.valueOf(value);
-    if (s == null || s.trim() == '')
-      return '(blank)';
-    String humanized = humanizeString(s);
-    if (humanized != null)
-      s = humanized;
-    return s;
+    return formatValue(value, null);
   }
 
   /**
-   * Humanizes a raw display string that arrived without its Apex type (a metadata
-   * operand, or a value already flattened by String.valueOf). Tries each shape in
-   * order and returns the first match, or null when the text should stand as-is.
-   * Number is tried first (its pattern excludes the others); Boolean before date;
-   * multi-select last since only it keys off a delimiter that plain text may hold.
+   * Renders a single value using the Rule's Display: Value Format.
+   *
+   * On "Auto" the value is humanized from its Apex type: numbers gain the
+   * running user's grouping separators, Booleans read Yes/No, and dates and
+   * date/times render in the user's locale and time zone. A named format
+   * (Currency, Percent, Raw, …) overrides that and is applied instead. The
+   * rendering rules live in RecordHealthCheckDisplayFormat.
    */
-  private static String humanizeString(String s) {
-    String asBoolean = humanizeBooleanText(s);
-    if (asBoolean != null)
-      return asBoolean;
-    String asDate = humanizeDateText(s);
-    if (asDate != null)
-      return asDate;
-    return humanizeMultiSelect(s);
-  }
-
-  // Matches a plain integer or decimal (optionally signed) when an actual numeric
-  // value provides type context. Anything else stays untouched so IDs, codes, and
-  // pre-formatted text keep their exact spelling.
-  private static final Pattern NUMERIC_PATTERN = Pattern.compile(
-    '^-?\\d+(\\.\\d+)?$'
-  );
-
-  // ISO date (YYYY-MM-DD) and datetime (date + space/T + HH:MM:SS) — the shapes a
-  // date/datetime operand or a String.valueOf'd temporal value takes. Trailing
-  // fractional seconds / zone offsets are tolerated but ignored; groups feed
-  // Date/Datetime.newInstance so parsing is deterministic and never locale-bound.
-  private static final Pattern DATE_PATTERN = Pattern.compile(
-    '^(\\d{4})-(\\d{2})-(\\d{2})$'
-  );
-  private static final Pattern DATETIME_PATTERN = Pattern.compile(
-    '^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2}):(\\d{2}).*$'
-  );
-
-  /** Boolean operand text → Yes/No; null when the string is not a boolean. */
-  private static String humanizeBooleanText(String raw) {
-    String s = raw.trim();
-    if (s.equalsIgnoreCase('true'))
-      return 'Yes';
-    if (s.equalsIgnoreCase('false'))
-      return 'No';
-    return null;
+  public static String formatValue(Object value, String displayFormat) {
+    return formatValue(value, displayFormat, null);
   }
 
   /**
-   * ISO date/datetime text → the running user's locale/time-zone format (e.g.
-   * "7/4/2026" or "7/4/2026, 5:30 PM"). Returns null when the string is not an
-   * ISO temporal value so ordinary text is left alone.
+   * Renders a single value using the Rule's Display: Value Format, showing a
+   * Currency value in the currency named by `isoCode`. Leave `isoCode` blank to
+   * use the running user's currency.
    */
-  private static String humanizeDateText(String raw) {
-    String s = raw.trim();
-    Matcher dt = DATETIME_PATTERN.matcher(s);
-    if (dt.matches()) {
-      return Datetime.newInstance(
-          Integer.valueOf(dt.group(1)),
-          Integer.valueOf(dt.group(2)),
-          Integer.valueOf(dt.group(3)),
-          Integer.valueOf(dt.group(4)),
-          Integer.valueOf(dt.group(5)),
-          Integer.valueOf(dt.group(6))
-        )
-        .format();
-    }
-    Matcher d = DATE_PATTERN.matcher(s);
-    if (d.matches()) {
-      return Date.newInstance(
-          Integer.valueOf(d.group(1)),
-          Integer.valueOf(d.group(2)),
-          Integer.valueOf(d.group(3))
-        )
-        .format();
-    }
-    return null;
-  }
-
-  /**
-   * Semicolon-delimited multi-select picklist text → a comma-separated list
-   * ("Hot;Warm;Cold" → "Hot, Warm, Cold"). Returns null when there is no
-   * delimiter so single values fall through unchanged.
-   */
-  private static String humanizeMultiSelect(String raw) {
-    if (!raw.contains(';'))
-      return null;
-    List<String> cleaned = new List<String>();
-    for (String part : raw.split(';')) {
-      String trimmed = part.trim();
-      if (trimmed != '')
-        cleaned.add(trimmed);
-    }
-    return cleaned.isEmpty() ? null : String.join(cleaned, ', ');
-  }
-
-  /**
-   * Renders a bare number for humans: groups the integer part with thousands
-   * separators and drops a fractional part that is all zeros, so a Decimal
-   * "70000.0" reads "70,000" and a metadata operand string "500000" reads
-   * "500,000". A genuine fraction like "70000.5" keeps its digits ("70,000.5").
-   * Returns null when the input is not a plain number, signalling the caller to
-   * leave the original string alone.
-   */
-  private static String humanizeNumber(String raw) {
-    if (raw == null)
-      return null;
-    String s = raw.trim();
-    if (!NUMERIC_PATTERN.matcher(s).matches())
-      return null;
-
-    Boolean negative = s.startsWith('-');
-    if (negative)
-      s = s.substring(1);
-
-    String intPart = s;
-    String fracPart = '';
-    Integer dot = s.indexOf('.');
-    if (dot >= 0) {
-      intPart = s.substring(0, dot);
-      // Trim trailing zeros so a scale-1 Decimal's ".0" disappears while real
-      // fractional digits survive.
-      fracPart = s.substring(dot + 1).replaceFirst('0+$', '');
-    }
-
-    // Insert a comma before every group of three digits that is followed only by
-    // complete groups of three — standard right-to-left thousands grouping.
-    String grouped = intPart.replaceAll('(\\d)(?=(\\d{3})+$)', '$1,');
-
-    String out = (negative ? '-' : '') + grouped;
-    if (fracPart != '')
-      out += '.' + fracPart;
-    return out;
+  public static String formatValue(
+    Object value,
+    String displayFormat,
+    String isoCode
+  ) {
+    return RecordHealthCheckDisplayFormat.render(value, displayFormat, isoCode);
   }
 
   /** Renders a list for display, capped so a large query result stays readable. */
   public static String formatList(List<Object> values) {
-    if (values == null || values.isEmpty())
+    return formatList(values, null);
+  }
+
+  public static String formatList(List<Object> values, String displayFormat) {
+    return formatList(values, displayFormat, (String) null);
+  }
+
+  /**
+   * Renders a list using the Rule's Display: Value Format, capped so a large
+   * query result stays readable. Every entry uses the same format, so a list of
+   * amounts reads consistently.
+   */
+  public static String formatList(
+    List<Object> values,
+    String displayFormat,
+    String isoCode
+  ) {
+    return formatList(values, displayFormat, isoCode, null);
+  }
+
+  /**
+   * Renders a list where each entry has its own currency, taken from the row it
+   * came from — a list of amounts in euros and dollars is labelled entry by
+   * entry rather than all in the first row's currency. `isoCodes` runs parallel
+   * to `values`; an entry with no currency of its own falls back to `isoCode`.
+   */
+  public static String formatList(
+    List<Object> values,
+    String displayFormat,
+    List<String> isoCodes
+  ) {
+    return formatList(values, displayFormat, null, isoCodes);
+  }
+
+  private static String formatList(
+    List<Object> values,
+    String displayFormat,
+    String isoCode,
+    List<String> isoCodes
+  ) {
+    if (values == null || values.isEmpty()) {
       return '(none)';
+    }
     List<String> parts = new List<String>();
-    for (Integer i = 0; i < values.size() && i < LIST_PREVIEW_CAP; i++) {
-      parts.add(formatValue(values[i]));
+    for (
+      Integer i = 0;
+      i < values.size() &&
+      i < RecordHealthCheckConstants.DISPLAY_LIST_PREVIEW_CAP;
+      i++
+    ) {
+      String entryIsoCode = isoCodes != null &&
+        i < isoCodes.size()
+        ? isoCodes[i]
+        : null;
+      parts.add(
+        formatValue(
+          values[i],
+          displayFormat,
+          String.isBlank(entryIsoCode) ? isoCode : entryIsoCode
+        )
+      );
     }
     String joined = '[' + String.join(parts, ', ');
-    if (values.size() > LIST_PREVIEW_CAP) {
+    if (values.size() > RecordHealthCheckConstants.DISPLAY_LIST_PREVIEW_CAP) {
       // Ellipsis sits inside the bracket without an extra comma gap.
       joined += ' … (' + values.size() + ' total)';
     }
@@ -548,40 +493,81 @@ public with sharing class RecordHealthCheckComparisonEngine {
 
   /** Expected-value description: operator phrase plus the comparison operand. */
   public static String describeExpected(String operator, Object comparison) {
+    return describeExpected(operator, comparison, null);
+  }
+
+  public static String describeExpected(
+    String operator,
+    Object comparison,
+    String displayFormat
+  ) {
+    return describeExpected(operator, comparison, displayFormat, null);
+  }
+
+  /** Expected-value description using the Rule's Display: Value Format. */
+  public static String describeExpected(
+    String operator,
+    Object comparison,
+    String displayFormat,
+    String isoCode
+  ) {
     if (operator == 'IS_BLANK' || operator == 'IS_NOT_BLANK') {
       return operatorLabel(operator);
     }
-    return operatorLabel(operator) + ' ' + formatValue(comparison);
+    return operatorLabel(operator) +
+      ' ' +
+      formatValue(comparison, displayFormat, isoCode);
   }
 
-  /**
-   * Describes an expected operand using the actual value's retained Apex type.
-   * Fixed Custom Metadata operands arrive as strings; when the actual value is
-   * numeric, parsing an otherwise numeric operand restores symmetric grouping.
-   * String actual values remain untouched so postal codes and identifiers keep
-   * their exact spelling and leading zeroes.
-   */
   public static String describeExpectedForActual(
     String operator,
     Object comparison,
     Object actual
   ) {
-    Object displayComparison = comparison;
-    if (
-      isNumericValue(actual) &&
-      comparison instanceof String &&
-      NUMERIC_PATTERN.matcher(String.valueOf(comparison).trim()).matches()
-    ) {
-      displayComparison = Decimal.valueOf(String.valueOf(comparison).trim());
-    }
-    return describeExpected(operator, displayComparison);
+    return describeExpectedForActual(operator, comparison, actual, null);
   }
 
-  private static Boolean isNumericValue(Object value) {
-    return value instanceof Integer ||
-      value instanceof Long ||
-      value instanceof Decimal ||
-      value instanceof Double;
+  /**
+   * Describes an expected operand so it reads in the same units as the Found
+   * value. Fixed Custom Metadata operands arrive as strings; on "Auto", an
+   * otherwise numeric operand is parsed back to a number when the actual value is
+   * numeric, so Expected "100000" groups like Found "100,000". String actual
+   * values are left untouched, keeping postal codes and identifiers exact. A
+   * named format already renders both sides the same way and needs no alignment.
+   */
+  public static String describeExpectedForActual(
+    String operator,
+    Object comparison,
+    Object actual,
+    String displayFormat
+  ) {
+    return describeExpectedForActual(
+      operator,
+      comparison,
+      actual,
+      displayFormat,
+      null
+    );
+  }
+
+  public static String describeExpectedForActual(
+    String operator,
+    Object comparison,
+    Object actual,
+    String displayFormat,
+    String isoCode
+  ) {
+    Object displayComparison = RecordHealthCheckDisplayFormat.alignExpectedToFound(
+      comparison,
+      actual,
+      displayFormat
+    );
+    return describeExpected(
+      operator,
+      displayComparison,
+      displayFormat,
+      isoCode
+    );
   }
 
   /** Expected-value description for list operators (operand is a list). */
@@ -589,14 +575,56 @@ public with sharing class RecordHealthCheckComparisonEngine {
     String operator,
     List<Object> comparison
   ) {
-    return operatorLabel(operator) + ' ' + formatList(comparison);
+    return describeExpectedList(operator, comparison, null);
+  }
+
+  public static String describeExpectedList(
+    String operator,
+    List<Object> comparison,
+    String displayFormat
+  ) {
+    return describeExpectedList(
+      operator,
+      comparison,
+      displayFormat,
+      (String) null
+    );
+  }
+
+  /** Expected-value list description using the Rule's Display: Value Format. */
+  public static String describeExpectedList(
+    String operator,
+    List<Object> comparison,
+    String displayFormat,
+    String isoCode
+  ) {
+    return operatorLabel(operator) +
+      ' ' +
+      formatList(comparison, displayFormat, isoCode);
+  }
+
+  /**
+   * Expected-value list description where each entry carries the currency of
+   * the row it came from.
+   */
+  public static String describeExpectedList(
+    String operator,
+    List<Object> comparison,
+    String displayFormat,
+    List<String> isoCodes
+  ) {
+    return operatorLabel(operator) +
+      ' ' +
+      formatList(comparison, displayFormat, isoCodes);
   }
 
   public static Boolean applyEmptyValueHandling(String nullBehavior) {
-    if (nullBehavior == 'AS_NO_MATCH')
+    if (nullBehavior == 'AS_NO_MATCH') {
       return false;
-    if (nullBehavior == 'SKIP_RECORD')
+    }
+    if (nullBehavior == 'SKIP_RECORD') {
       return null;
+    }
     // blank EmptyValueHandling__c aligns with CMT field default (SkipRecordsWithMissingValue → Skip)
     return null;
   }

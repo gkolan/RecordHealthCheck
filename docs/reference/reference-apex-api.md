@@ -41,7 +41,7 @@ Start with `runSet`: a Check Set is the parent configuration and contains the or
 - It does not update the evaluated record or block DML.
 - It does not guarantee lifecycle-event delivery or subscriber completion.
 - It does not bypass the running user's Salesforce access.
-- It is not an unlimited bulk-processing API; request caps apply.
+- It is not an unlimited bulk-processing API; request limits apply.
 
 New to the model? Read [Integrate Record Health Check](../integration/README.md) first.
 
@@ -58,6 +58,10 @@ New to the model? Read [Integrate Record Health Check](../integration/README.md)
   Reason Code fields.
 
 ## Quick examples
+
+For a runnable scratch-org demonstration using the integration fixtures, run
+`integration-tests/scripts/demo_apex_api.apex`. It exercises both public entry points, validates the
+typed responses, and prints one compact JSON summary suitable for a live demo.
 
 Run a complete Check Set:
 
@@ -150,7 +154,7 @@ RecordHealthCheckSetResult result = RecordHealthCheck.runSet(
 );
 ```
 
-| Apex invocation | Event `Source__c` |
+| Apex call | Event `Source__c` |
 | --- | --- |
 | Ordinary public API call | `APEX_API` |
 | Source-aware scheduled caller | `SCHEDULED` |
@@ -192,7 +196,7 @@ delivery even if `EventBus.publish` was already called.
 Returned statuses and thrown exceptions are different contracts. `FAIL`, `SKIPPED`,
 `UNABLE_TO_EVALUATE`, and `ERROR` are valid response statuses; inspect `reasonCode` and the
 [reason-code reference](reference-reason-codes.md) before retrying. A thrown exception means no
-usable response was returned for that invocation.
+usable response was returned for that call.
 
 | Symptom | Likely cause | What to investigate |
 | --- | --- | --- |

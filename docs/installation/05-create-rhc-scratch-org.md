@@ -89,6 +89,13 @@ The verification also checks all eight Rule outcomes individually:
 | `Example_No_High_Priority_Issues` | `FAIL` |
 | `Example_Channel_Partner_Governance` | `SKIPPED` |
 
+`Example_Pipeline_Protects_Revenue` is also the packaged display-format example. It formats both
+the aggregate Found value and record-formula Expected value as currency, applies administrator
+captions, and resolves the strict token
+`{!record.AnnualRevenue format="CURRENCY" fallback="Not available"}` in its failure message. The
+verification script asserts the formatted `$70,000` Found value, `$375,000` Expected value, and
+that no unresolved token remains.
+
 ## Step 2: Open and test the experience
 
 Open the prepared Account list:
@@ -125,3 +132,19 @@ run prints `RHC_DEMO_VERIFIED pass=3 fail=4 skip=1`.
 - Replace one example Rule with a small Rule of your own.
 - Rerun the verification after changing demo metadata or data.
 - Turn on Show Diagnostics when an observed result differs from the expected table above.
+
+## Optional integration-demo org
+
+The normal demo above installs only the product source and shipped examples. To demonstrate the
+public Apex API and the Flow invocable actions with the larger non-product fixture library, create a
+separate disposable org:
+
+```bash
+DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-integration-demo.sh rhc-integration-demo 7
+```
+
+That script deploys `force-app` first and `integration-tests` second, assigns the administrator
+permission set, creates the reusable API demo Account, and runs both demonstration scripts. The
+fixture directory is intentionally not part of a normal product deployment. See the
+[integration-test README](../../integration-tests/README.md) for the equivalent individual
+commands and safe deployment boundaries.

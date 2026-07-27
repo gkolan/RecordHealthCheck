@@ -42,8 +42,9 @@ public with sharing class RecordHealthCheckRunRuleFlowAction {
   )
   public static List<Response> runRule(List<Request> requests) {
     try {
-      if (requests == null)
+      if (requests == null) {
         return new List<Response>();
+      }
       validateRequestCount(requests.size());
       List<Response> responses = new List<Response>();
       for (Request request : requests) {

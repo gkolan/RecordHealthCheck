@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckLifecyclePublisherTest {
   private static RecordHealthCheckResult result(String name, String status) {
     RecordHealthCheckResult response = new RecordHealthCheckResult();
@@ -22,7 +22,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
     return response;
   }
 
-  @isTest
+  @IsTest
   static void onLoadPublishesNeitherStreamEvenWhenSwitchesAreOn() {
     RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
     RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>{
@@ -48,7 +48,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void facadePublishesBothEnabledStreamsWithoutChangingResult() {
     RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
     RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>{
@@ -80,7 +80,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
     Test.stopTest();
   }
 
-  @isTest
+  @IsTest
   static void defaultOffAndSubscriberGuardPublishNothing() {
     RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = false;
     RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>();
@@ -104,7 +104,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
     System.assertEquals(beforeDml, Limits.getDmlStatements());
   }
 
-  @isTest
+  @IsTest
   static void unknownAndNullSourcesFailClosed() {
     RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
     Integer beforeDml = Limits.getDmlStatements();
@@ -125,7 +125,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void ruleEventsPublishInBoundedChunks() {
     List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>();
     for (
@@ -159,7 +159,7 @@ private class RecordHealthCheckLifecyclePublisherTest {
     Test.stopTest();
   }
 
-  @isTest
+  @IsTest
   static void partialPublishFailureIsInspectedWithoutThrowing() {
     List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>{
       new Record_Health_Check_Rule_Result__e(

@@ -15,6 +15,7 @@ guided configuration path, begin with the [documentation home](../README.md) or
 | What does each Apex class do? | [Reference: Apex classes](reference-apex-classes.md) | Class-by-class guide: purpose, key members, and layer ownership |
 | Why was a value rejected or completed text returned `UNABLE_TO_EVALUATE`? | [Reference: Field limits](reference-fields-limits.md) | Salesforce storage limits, Framework resolved limits, and remedies |
 | Which merge-token namespaces, surfaces, and limits apply? | [Reference: Merge tokens](reference-merge-tokens.md) | Strict syntax, availability, fallback behavior, and limits |
+| How are Found and Expected values formatted on the card? | [Reference: Display value format](reference-display-value-format.md) | Display: Value Format choices, plus blank, number, currency, Boolean, date, multi-select, and list preview formatting |
 | What does this stable result code mean? | [Reference: Reason Codes](reference-reason-codes.md) | Status meanings and the first useful investigation for each code |
 
 ## Choose an Evaluation Type reference

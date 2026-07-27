@@ -102,7 +102,7 @@ Values are illustrative. Subscribers must tolerate additive fields within contra
 | Retries | Treat delivery as at least once and make processing safe to repeat. |
 | Retention | Persist the event when history beyond Platform Event retention is required. |
 | Business data | Join under the subscriber's own sharing and field-access model. |
-| Missing Record ID | Allow `RecordId__c` to be blank for future invocation shapes. |
+| Missing Record ID | Allow `RecordId__c` to be blank for future call patterns. |
 | Rule-level causes | Subscribe to Rule Result when you need Rule-level causes; Set Run counts summarize outcomes only. |
 
 ## Limits and security

@@ -118,6 +118,25 @@ for (RecordHealthCheckDefinition definition : definitions.checks) {
     result.status,
     'Unexpected status for ' + definition.developerName + ': ' + result.message
   );
+  if (definition.developerName == 'Example_Pipeline_Protects_Revenue') {
+    System.assert(
+      result.actualValue.contains('70,000') &&
+      result.actualValue.contains('qualified open pipeline'),
+      'The shipped currency example must format and caption the aggregate Found value: ' +
+      result.actualValue
+    );
+    System.assert(
+      result.expectedValue.contains('375,000') &&
+      result.expectedValue.contains('75% revenue target'),
+      'The shipped currency example must format and caption the formula Expected value: ' +
+      result.expectedValue
+    );
+    System.assertEquals(
+      false,
+      result.message.contains('{!'),
+      'The strict record-token attributes must resolve in the shipped example message.'
+    );
+  }
   if (result.status == 'PASS')
     passed++;
   if (result.status == 'FAIL')

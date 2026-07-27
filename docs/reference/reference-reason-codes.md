@@ -89,7 +89,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `MULTIPLE_ROWS_RETURNED` | `UNABLE_TO_EVALUATE` | `ONE_RESULT` expected one row/aggregate but got more. |
 | `NO_ROWS_RETURNED` | `UNABLE_TO_EVALUATE` | Empty result handled as unable (`NoRowsResult__c = UNABLE_TO_EVALUATE`). |
 | `MISSING_BIND_VALUE` | `UNABLE_TO_EVALUATE` | Merge token required for SOQL bind could not be resolved. |
-| `GOVERNOR_LIMIT_RISK` | `UNABLE_TO_EVALUATE` | The Framework stopped before the query could consume an unsafe share of the transaction's remaining Salesforce limits. Reduce the Rule's row cap or narrow its SOQL. |
+| `GOVERNOR_LIMIT_RISK` | `UNABLE_TO_EVALUATE` | The Framework stopped before the query could consume an unsafe share of the transaction's remaining Salesforce limits. Reduce the Rule's row limit or narrow its SOQL. |
 
 ---
 
@@ -129,10 +129,10 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 `LEGACY_FLAT_TOKEN` covers the retired flat form, which names a field with no namespace in front of it: <!-- legacy-token-ok -->
 
 ```text
-{!Id|not available}
+{!Id fallback="not available"}
 ```
 
-Rewrite it with the namespace, as `{!record.Id}`. Append a fallback only when a blank value needs a substitute, such as `{!record.Name|this record}`.
+Rewrite it with the namespace, as `{!record.Id}`. Append a fallback only when a blank value needs a substitute, such as `{!record.Name fallback="this record"}`.
 
 ---
 

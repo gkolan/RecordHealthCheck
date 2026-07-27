@@ -33,10 +33,12 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
     RecordHealthCheckSetResult response,
     String source
   ) {
-    if (!canPublish(source) || response == null)
+    if (!canPublish(source) || response == null) {
       return;
-    if (!isRunPublicationEnabled(response.checkSetDeveloperName))
+    }
+    if (!isRunPublicationEnabled(response.checkSetDeveloperName)) {
       return;
+    }
 
     Record_Health_Check_Set_Run__e eventRecord = new Record_Health_Check_Set_Run__e(
       ContractVersion__c = CONTRACT_VERSION,
@@ -62,8 +64,9 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
   }
 
   public static Boolean isRunPublicationEnabled(String checkSetDeveloperName) {
-    if (publishRunSettingOverride != null)
+    if (publishRunSettingOverride != null) {
       return publishRunSettingOverride;
+    }
     // code-analyzer-suppress-next-line ApexCRUDViolation: This reads the core-owned Custom Metadata publication switch; no business record data is queried.
     List<Record_Health_Check_Set__mdt> settings = [
       SELECT PublishRunEvent__c
@@ -80,8 +83,9 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
     List<RecordHealthCheckResult> results,
     String source
   ) {
-    if (!canPublish(source) || results == null || results.isEmpty())
+    if (!canPublish(source) || results == null || results.isEmpty()) {
       return;
+    }
     Set<String> names = new Set<String>();
     for (RecordHealthCheckResult result : results) {
       names.add(result.ruleDeveloperName);
@@ -96,8 +100,9 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
       Set<String> unresolved = names.clone();
       unresolved.removeAll(cached.keySet());
       for (String name : cached.keySet()) {
-        if (cached.get(name) == true)
+        if (cached.get(name) == true) {
           enabled.add(name);
+        }
       }
       if (!unresolved.isEmpty()) {
         // code-analyzer-suppress-next-line ApexCRUDViolation: This reads core-owned Custom Metadata publication switches; no business record data is queried.
@@ -116,8 +121,9 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
 
     List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>();
     for (RecordHealthCheckResult result : results) {
-      if (!enabled.contains(result.ruleDeveloperName))
+      if (!enabled.contains(result.ruleDeveloperName)) {
         continue;
+      }
       events.add(
         new Record_Health_Check_Rule_Result__e(
           ContractVersion__c = CONTRACT_VERSION,
@@ -195,8 +201,9 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
     String logCode
   ) {
     for (Database.SaveResult saveResult : saveResults) {
-      if (saveResult.isSuccess())
+      if (saveResult.isSuccess()) {
         continue;
+      }
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.WARN,
         null,

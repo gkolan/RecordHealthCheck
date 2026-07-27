@@ -5,13 +5,6 @@
 
 public with sharing class RecordHealthCheckFormulaEvaluator {
   private RecordHealthCheckRunContext runContext;
-
-  public RecordHealthCheckFormulaEvaluator withRunContext(
-    RecordHealthCheckRunContext value
-  ) {
-    runContext = value;
-    return this;
-  }
   // Track FormulaEval calls for the whole Apex transaction to avoid hitting
   // Salesforce's 100-call platform limit, which is itself transaction-wide
   // and uncatchable. This static accumulates for the life of the transaction and
@@ -37,6 +30,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   // records resolve in a single call. Transaction-scoped, like formulaEvalCallCount.
   @TestVisible
   private static Map<String, formulaeval.FormulaReturnType> resolvedReturnTypeByFormula = new Map<String, formulaeval.FormulaReturnType>();
+
+  public RecordHealthCheckFormulaEvaluator withRunContext(
+    RecordHealthCheckRunContext value
+  ) {
+    runContext = value;
+    return this;
+  }
 
   /**
    * Evaluates a Formula check (EvaluationType__c = Formula).
@@ -159,6 +159,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     SObject record,
     RecordHealthCheckResult result
   ) {
+    // A bare field path can contribute its Setup definition to Auto (including
+    // a picklist label). A calculated expression has no one field definition.
+    // The record still names the currency for a Currency Rule.
+    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
+      record
+    );
+
     if (String.isNotBlank(rule.DisplayFoundFormula__c)) {
       Object found = resolveSingleValueForDisplay(
         rule.DisplayFoundFormula__c,
@@ -166,8 +173,16 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         rule.FormulaResultType__c
       );
       if (found != ABSENT) {
+        Object displayFound = RecordHealthCheckDisplayFormat.valueForDisplay(
+          found,
+          rule.DisplayValueFormat__c,
+          record,
+          rule.DisplayFoundFormula__c
+        );
         result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
-          found
+          displayFound,
+          rule.DisplayValueFormat__c,
+          displayIsoCode
         );
         result.actualValueSource = new RecordHealthCheckValueSource.Detail(
           'Found formula',
@@ -184,15 +199,22 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         rule.FormulaResultType__c
       );
       if (expected != ABSENT) {
+        Object displayExpected = RecordHealthCheckDisplayFormat.valueForDisplay(
+          expected,
+          rule.DisplayValueFormat__c,
+          record,
+          rule.DisplayExpectedFormula__c
+        );
         result.expectedValue = RecordHealthCheckComparisonEngine.formatValue(
-          expected
+          displayExpected,
+          rule.DisplayValueFormat__c,
+          displayIsoCode
         );
         result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
           'Expected formula',
           expected == null ? 'null' : String.valueOf(expected),
           null
         );
-        return;
       }
     }
 
@@ -210,6 +232,14 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         null
       );
     }
+
+    // Author wording replaces what the Framework wrote on either side, the same
+    // way it does on a Query check.
+    RecordHealthCheckTemplateService.applyFoundExpectedText(
+      rule,
+      record,
+      result
+    );
   }
 
   /**

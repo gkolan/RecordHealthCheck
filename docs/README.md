@@ -97,12 +97,6 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 - Core ships the Framework plus a clearly prefixed `Example_` Check Set and Rules. Use the
  [examples library](examples/README.md) for additional Formula, Query, Compare two queries, and Apex patterns.
 
-## For documentation authors and AI assistants
-
-- [Documentation standard](development/documentation-standard.md) - page structure, terminology, and
- [plain technical language](development/documentation-standard.md#prefer-plain-technical-language-avoid-cs-jargon)
- (CS jargon to avoid in explanations, and what to write instead)
-
 ## Related
 
 - [Examples library](examples/README.md)

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels><fullName>RHC_Yes</fullName><language>en_US</language><protected
+    >false</protected><shortDescription
+    >Record Health Check: Yes</shortDescription><value>Yes</value></labels>
+    <labels><fullName>RHC_No</fullName><language>en_US</language><protected
+    >false</protected><shortDescription
+    >Record Health Check: No</shortDescription><value>No</value></labels>
+    <labels><fullName>RHC_Operator_Equals</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: equals</shortDescription><value>to equal</value></labels>
+    <labels><fullName>RHC_Operator_NotEquals</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: not equals</shortDescription><value>to not equal</value></labels>
+    <labels><fullName>RHC_Operator_Contains</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: contains</shortDescription><value>to contain</value></labels>
+    <labels><fullName>RHC_Operator_DoesNotContain</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: does not contain</shortDescription><value
+    >to not contain</value></labels>
+    <labels><fullName>RHC_Operator_GreaterThan</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: greater than</shortDescription><value>more than</value></labels>
+    <labels><fullName>RHC_Operator_GreaterThanOrEqual</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: greater than or equal</shortDescription><value
+    >at least</value></labels>
+    <labels><fullName>RHC_Operator_LessThan</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: less than</shortDescription><value>less than</value></labels>
+    <labels><fullName>RHC_Operator_LessThanOrEqual</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: less than or equal</shortDescription><value
+    >at most</value></labels>
+    <labels><fullName>RHC_Operator_IsBlank</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: is blank</shortDescription><value>to be blank</value></labels>
+    <labels><fullName>RHC_Operator_IsNotBlank</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: is not blank</shortDescription><value
+    >to not be blank</value></labels>
+    <labels><fullName>RHC_Operator_ListContainsAny</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: list contains any</shortDescription><value
+    >to be one of</value></labels>
+    <labels><fullName>RHC_Operator_ListContainsNone</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: list contains none</shortDescription><value
+    >to be none of</value></labels>
+    <labels><fullName>RHC_Operator_ListsOverlap</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: lists overlap</shortDescription><value
+    >to overlap with</value></labels>
+    <labels><fullName>RHC_Operator_ListsContainAll</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: lists contain all</shortDescription><value
+    >to contain all of</value></labels>
+    <labels><fullName>RHC_Operator_ListsMatchExactly</fullName><language
+    >en_US</language><protected>false</protected><shortDescription
+    >Operator: lists match exactly</shortDescription><value
+    >to exactly match</value></labels>
+</CustomLabels>

@@ -97,6 +97,7 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L2 | [`RecordHealthCheckReasonCodes`](#recordhealthcheckreasoncodes) | Selected stable reason-code helpers |
 | L2 | [`RecordHealthCheckSetAvailability`](#recordhealthchecksetavailability) | Whether an object has active/inactive Check Sets |
 | L2 | [`RecordHealthCheckComparisonEngine`](#recordhealthcheckcomparisonengine) | Operators, equality, empty/null behavior |
+| L2 | [`RecordHealthCheckDisplayFormat`](#recordhealthcheckdisplayformat) | Renders Found and Expected values for the card chips |
 | L2 | [`RecordHealthCheckSoqlTemplate`](#recordhealthchecksoqltemplate) | Safe SOQL preparation (`WITH USER_MODE`, row limit, keyword rejection) |
 | L2 | [`RecordHealthCheckValueResolver`](#recordhealthcheckvalueresolver) | Extract, convert, and compare query values |
 | L2 | [`RecordHealthCheckDescribeCache`](#recordhealthcheckdescribecache) | Schema describe cache for the current transaction |
@@ -375,7 +376,7 @@ operators according to Rule configuration.
  handled the same way: a genuine zero-row query is governed by `NoRowsResult__c`, while a present
  row whose field value is null is governed by `EmptyValueHandling__c` and resolves to `SKIPPED` - 
  collapsing the two would let "null value + no rows" wrongly resolve to `FAIL`. `bindTokens` also
-  resolves each `{!record.FieldApiName}` token (with optional `|Fallback value`) in both a quoted and unquoted form, since a multi-select
+  resolves each `{!record.FieldApiName}` token (with an optional quoted `fallback` attribute) in both a quoted and unquoted form, since a multi-select
  picklist token expands differently depending on whether it appears inside quotes (raw `'A;B;C'`
  value) or unquoted (an `INCLUDES (...)` list).
 
@@ -636,14 +637,68 @@ and `EmptyValueHandling__c` / `NoRowsResult__c` resolution. Throws
 | `valuesEqual(...)` | Typed equality |
 | `resolveEmptyBehavior(...)` | `EmptyValueHandling__c` / `NoRowsResult__c` resolution |
 | `formatValue(...)` / `formatList(...)` | Human-readable display formatting |
+| `valueForDisplay(...)` / `valuesForDisplay(...)` | Resolve display-only picklist labels from a queried field while leaving comparison values untouched |
+| `describeExpected(...)` / `describeExpectedForActual(...)` | Operator phrase plus the formatted operand |
 
 **Notable behavior:**
-- **Example:** `formatValue` humanizes typed values for display - a `Boolean` renders as `Yes`/`No`,
- a numeric type gains thousands separators (dropping an all-zero fractional part, so Decimal
- `70000.0` reads `70,000`), and a semicolon-delimited multi-select picklist string
- (`"Hot;Warm;Cold"`) becomes `"Hot, Warm, Cold"`. `formatList` limits the rendered preview to
- `LIST_PREVIEW_CAP` (`10`) entries and appends `… (N total)` beyond that, so a large query result
- stays readable in the UI.
+- Each display method has an overload that takes the Rule's `DisplayValueFormat__c`. The no-format
+ overloads render on `Auto`. The rendering itself lives in
+ [`RecordHealthCheckDisplayFormat`](#recordhealthcheckdisplayformat); this class owns the operator
+ phrasing and the list preview cap.
+- **Example:** `formatList` limits the rendered preview to `LIST_PREVIEW_CAP` (`10`) entries and
+ appends `… (N total)` beyond that, so a large query result stays readable in the UI. Full
+ contract: [Reference: Display value format](reference-display-value-format.md).
+
+### `RecordHealthCheckDisplayFormat`
+
+**Role:** Renders Found and Expected values as the text shown on the card chips.
+**Type:** Shared service · `public with sharing`
+
+Applies the Rule's **Display: Value Format** (`DisplayValueFormat__c`). On `Auto` a value is
+humanized from its Apex type; a named format such as `Currency` or `Raw` overrides that. Formatting
+is display only - `RecordHealthCheckComparisonEngine` decides pass and fail from the raw typed
+values, so no format can move a check between pass and fail.
+
+**Key members:**
+
+| Member | Purpose |
+| --- | --- |
+| `render(value, format, isoCode)` | One value rendered for the chosen format and currency |
+| `isFormatApiName(format)` | Whether a name is one of the ten official, uppercase format API values |
+| `isDisplayedNumberOne(value)` | Whether locale-formatted display text represents exactly one, used when a rendered count needs singular or plural wording |
+| `formatForField(...)` / `formatForRow(...)` | The format a field's Setup definition suggests, used when the Rule is on Auto |
+| `valueForDisplay(...)` / `valuesForDisplay(...)` | Picklist labels or raw typed values prepared for one value or a list |
+| `currencyIsoCodeFrom(row)` | The currency a row's amounts belong to, in an org with more than one |
+| `currencyIsoCodeFor(row, record, fieldPath)` | The same, walking a relationship path when needed and falling back to the card record when the query read that record without selecting `CurrencyIsoCode` |
+| `currencyIsoCodesFor(rows, record, fieldPath)` | One currency per row, including related rows, so a list preview labels each entry with its own |
+| `alignExpectedToFound(...)` | Keeps a fixed text operand in the same units as a numeric Found value |
+| `FORMAT_*` constants | The `DisplayValueFormat__c` API values |
+
+**Notable behavior:**
+- Numbers are grouped for the running user's locale: `70000.0` reads `70,000` for an English (US)
+ user and `70.000` for a German (Germany) one. The digits are laid out by the class rather than by
+ `Decimal.format()`, which keeps only three decimal places; a chip shows up to six, rounded for
+ display only.
+- An aggregate row such as `SUM(Amount)` is labelled with the org's corporate currency, which is
+ what Salesforce converts an aggregate into.
+- Each side of a comparison keeps its own currency: a Compare two queries Rule, and a Query Rule
+ whose Expected value comes from a comparison query, read a currency per side rather than sharing
+ the Found side's.
+- ISO date text that names an impossible date, such as `2026-02-30`, keeps its original spelling.
+ `Date.newInstance` rolls out-of-range parts over instead of rejecting them, so the parts are
+ checked by round-tripping before the value is treated as a date.
+- Aligning an Expected operand to a numeric Found value keeps the leading-zero guard, so `00100`
+ stays `00100`.
+- A `Time` reads on a 24-hour clock (`17:30`), because Apex can format a time of day only as part of
+ a date.
+- A named format that cannot apply to a value returns the value with its original spelling rather
+ than raising an error - `Currency` on a Salesforce Id stays the Id.
+- A `Date` is tested before a `Datetime` everywhere, because Apex reports a `Date` as an instance of
+ `Datetime`; checking the other way round would shift a date by the user's time-zone offset.
+- An org with more than one currency renders ISO-first (`USD 70,000.00`); a single-currency org uses
+ the symbol. `RecordHealthCheckEngine` loads `CurrencyIsoCode` on the record in a multi-currency org
+ so an amount can be shown in the currency its own record uses.
+- Full contract: [Reference: Display value format](reference-display-value-format.md).
 
 ### `RecordHealthCheckSoqlTemplate`
 
@@ -801,8 +856,9 @@ subscriber-context guarded). Entry points call `flush()` so ERROR platform event
 **Role:** Parse, validate, and resolve merge tokens.
 **Type:** Shared service · `public` (no sharing keyword)
 
-Handles namespaced tokens such as `{!record.Name}`, with optional fallback text such as
-`{!record.Name|Fallback}`, for display messages, URLs, and SOQL text.
+Handles namespaced tokens such as `{!record.Name}`, with optional quoted attributes such as
+`{!record.Amount format="CURRENCY" fallback="Not available"}`, for display messages, URLs, and SOQL
+text.
 Enforces max 100 tokens and 20,000 characters of resolved text. Unknown namespaces, unknown
 properties, legacy flat tokens, and stray braces become structured `RecordHealthCheckTokenIssue`s.
 
@@ -812,12 +868,13 @@ properties, legacy flat tokens, and stray braces become structured `RecordHealth
 | --- | --- |
 | `SURFACE_DISPLAY`, `SURFACE_URL`, `SURFACE_SOQL` | The three contexts tokens can resolve for |
 | `resolveFieldPath(...)` | Resolve a dotted `record.*` token to a field value |
+| `applyFoundExpectedText(...)` | Apply administrator Found and Expected wording after evaluator values are formatted |
 
 **Notable behavior:**
 - **Gotcha:** `resolveFieldPath` rejects a dotted record token whose relationship depth exceeds 5
  hops (`parts.size() > 6`) with `TOKEN_NOT_AVAILABLE_IN_PHASE`, so a runaway relationship chain in an
  admin-authored template fails immediately rather than describing arbitrarily deep schema. On
- `SURFACE_URL`, a token that resolves blank and has no `|Fallback` throws `MISSING_TOKEN_VALUE`
+ `SURFACE_URL`, a token that resolves blank and has no `fallback` attribute throws `MISSING_TOKEN_VALUE`
  instead of silently substituting an empty string - a blank display value is harmless, but a blank
  URL segment could produce a broken or unintended link. `rhcResult` tokens can only be resolved once
  `context.resultFinalized` is true, since a result's Found/Expected values are not meaningful until
@@ -858,7 +915,9 @@ Name, status, run id, and so on).
 | `expression` | The full raw token text |
 | `namespaceName` | The token's namespace (e.g. `record`, `rhcRule`) |
 | `propertyPath` | The property or field path within that namespace |
-| `fallbackValue` | Optional fallback text written after the pipe character; `null` when omitted |
+| `formatName` | Optional official uppercase Display: Value Format API name |
+| `fallbackValue` | Optional text from the quoted `fallback` attribute; `null` when omitted |
+| `attributeError` | Parser error for unknown, duplicate, unquoted, or otherwise invalid attributes |
 | `startIndex` / `endIndex` | Start and end position of the token within the template string |
 
 **Notable behavior:**
@@ -901,6 +960,9 @@ failed/total record counts for plural-aware result tokens.
  silently leave `rhcSet.*` tokens unresolved. `resultFinalized` defaults to `false` and is only
  ever set `true` through `withResult(value, finalized)`, which controls when `rhcResult.*` tokens
  become available.
+- **Attributes:** raw `record.*` tokens may carry `format="API_NAME"` and `fallback="text"` in
+ either order. Values must be double-quoted. Unknown, duplicate, or unquoted attributes produce a
+ token issue; result tokens cannot be formatted again because they already contain display text.
 
 ---
 
@@ -922,12 +984,17 @@ when authorized.
 | Member | Purpose |
 | --- | --- |
 | `PASSES_WHEN_LABEL` (`"Passes when"`) | Override for `expectedValueLabel` on Formula Rules |
+| `actualDisplayValue` / `expectedDisplayValue` | Optional server-side typed values an Apex plugin asks the Framework to render |
+| `actualDisplayFormat` / `expectedDisplayFormat` | Optional official uppercase format API name for each typed plugin value |
+| `actualCurrencyIsoCode` / `expectedCurrencyIsoCode` | Optional per-side currency ISO code used when a typed plugin value is formatted as Currency |
 
 **Notable behavior:**
 - **Gotcha:** `expectedValueLabel` exists purely to override the UI's default "Expected" caption - it
  is set to the class constant `PASSES_WHEN_LABEL` only for the Formula-evaluator case where
  `expectedValue` echoes the raw pass/fail condition rather than a real comparison operand, so the
  row reads "Passes when …" instead of the misleading "Expected …".
+- **Gotcha:** explicit `actualValue` / `expectedValue` strings always win over typed display values.
+ Invalid named formats are rejected only when the corresponding typed value needs rendering.
 
 **See also:** [Apex API - Rule response](reference-apex-api.md#rule-response)
 

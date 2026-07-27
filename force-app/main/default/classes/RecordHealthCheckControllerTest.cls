@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckControllerTest {
-  @testSetup
+  @TestSetup
   static void setup() {
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 
-  @isTest
+  @IsTest
   static void getCheckDefinitionsReturnsDefinitionResponse() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
     Test.startTest();
@@ -31,7 +32,7 @@ private class RecordHealthCheckControllerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void getCheckDefinitionsWrapsConfigErrorsForAura() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -50,7 +51,7 @@ private class RecordHealthCheckControllerTest {
     }
   }
 
-  @isTest
+  @IsTest
   static void evaluateCheckDoesNotThrowForMissingRule() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
@@ -66,7 +67,7 @@ private class RecordHealthCheckControllerTest {
     System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
   }
 
-  @isTest
+  @IsTest
   static void lwcPublicationRequiresUserInitiationAndMetadataOptIn() {
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>{
@@ -100,6 +101,11 @@ private class RecordHealthCheckControllerTest {
       Limits.getDmlStatements(),
       'An opted-in user-initiated Rule must publish once.'
     );
+    System.assertNotEquals(
+      null,
+      result,
+      'The user-initiated evaluation still returns its check result.'
+    );
 
     RecordHealthCheckController.completeRun(
       'Example_Account_Relationship_Risk',
@@ -114,10 +120,11 @@ private class RecordHealthCheckControllerTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void getCheckSetAvailabilityForRecordReflectsObjectScopedMetadata() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
 
     Test.startTest();

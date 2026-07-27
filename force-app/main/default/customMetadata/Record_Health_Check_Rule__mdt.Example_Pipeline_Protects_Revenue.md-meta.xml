@@ -51,10 +51,14 @@
         <value xsi:type="xsd:string">NUMBER</value>
     </values>
     <values>
+        <field>DisplayValueFormat__c</field>
+        <value xsi:type="xsd:string">CURRENCY</value>
+    </values>
+    <values>
         <field>DisplayFoundText__c</field>
         <value
       xsi:type="xsd:string"
-    >${!rhcResult.foundValue} in qualified open pipeline</value>
+    >{!rhcResult.foundValue} in qualified open pipeline</value>
     </values>
     <values>
         <field>DisplayExpectedText__c</field>
@@ -96,7 +100,7 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Open pipeline is below 75% of annual revenue.</value>
+    >Open pipeline is below 75% of annual revenue ({!record.AnnualRevenue format="CURRENCY" fallback="Not available"}).</value>
     </values>
     <values>
         <field>FixMessage__c</field>

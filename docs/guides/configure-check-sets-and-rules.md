@@ -315,9 +315,9 @@ active Rules, but the same blank behavior matters for optional record fields and
 Append `|fallback text` when a blank value should produce clear wording instead:
 
 ```text
-{!record.Parent.Name|Independent account}
-{!record.Owner.Manager.Name|No manager assigned}
-{!rhcResult.foundValue|Not measured}
+{!record.Parent.Name fallback="Independent account"}
+{!record.Owner.Manager.Name fallback="No manager assigned"}
+{!rhcResult.foundValue fallback="Not measured"}
 ```
 
 The fallback is literal text; it is not parsed as another merge token. Without an explicit fallback, display text
@@ -333,7 +333,7 @@ Use any readable field API name from the current record. Relationship paths may 
   <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
   <tbody>
     <tr><td><code>{!record.Name}</code></td><td>The current record's Name.</td><td><code>Review {!record.Name} before approval.</code></td></tr>
-    <tr><td><code>{!record.FieldApiName}</code></td><td>Any readable field on the current record. Replace <code>FieldApiName</code> with the Salesforce API name. Append <code>|Fallback value</code> when a blank value needs a substitute.</td><td><code>{!record.Customer_Tier__c|Standard} customers require an annual review.</code></td></tr>
+    <tr><td><code>{!record.FieldApiName}</code></td><td>Any readable field on the current record. Replace <code>FieldApiName</code> with the Salesforce API name. Add a quoted <code>fallback</code> attribute when a blank value needs a substitute.</td><td><code>{!record.Customer_Tier__c fallback="Standard"} customers require an annual review.</code></td></tr>
     <tr><td><code>{!record.Owner.Name}</code></td><td>A field from a related record.</td><td><code>Ask {!record.Owner.Name} to confirm the account details.</code></td></tr>
     <tr><td><code>{!record.Parent.Parent.Name}</code></td><td>A field reached through multiple lookup relationships.</td><td><code>Escalate the review to {!record.Parent.Parent.Name}.</code></td></tr>
   </tbody>
@@ -377,7 +377,7 @@ These values are available after the Rule has been evaluated.
   <tbody>
     <tr><td><code>{!rhcResult.status}</code></td><td>The final status, such as Pass, Fail, Skipped, or Unable to Evaluate.</td><td><code>The review returned {!rhcResult.status}.</code></td></tr>
     <tr><td><code>{!rhcResult.foundValue}</code></td><td>The value the Rule found.</td><td><code>Found {!rhcResult.foundValue} open cases.</code></td></tr>
-    <tr><td><code>{!rhcResult.foundValuePluralSuffix}</code></td><td>An empty value for one item or <code>s</code> for multiple items.</td><td><code>Found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix|s}.</code></td></tr>
+    <tr><td><code>{!rhcResult.foundValuePluralSuffix}</code></td><td>An empty value for one item or <code>s</code> for multiple items.</td><td><code>Found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix fallback="s"}.</code></td></tr>
     <tr><td><code>{!rhcResult.expectedValue}</code></td><td>The value the Rule expected.</td><td><code>Expected {!rhcResult.expectedValue}.</code></td></tr>
     <tr><td><code>{!rhcResult.failedRecordCount}</code></td><td>The number of returned records that failed.</td><td><code>{!rhcResult.failedRecordCount} contacts are missing email.</code></td></tr>
     <tr><td><code>{!rhcResult.totalRecordCount}</code></td><td>The total number of returned records evaluated.</td><td><code>Reviewed {!rhcResult.totalRecordCount} related contacts.</code></td></tr>
@@ -413,7 +413,7 @@ The field determines which contexts are valid:
 - A blank value resolves to blank text. A null relationship makes its record token blank.
 - The explicit fallback applies to null, empty, and whitespace-only values. It does not replace `0`, `false`, or a
   populated value.
-- Fallback text may contain spaces and additional `|` characters; everything after the first `|` is the fallback.
+- Fallback text may contain spaces and pipe characters inside its quoted value.
 - Fallback text is inserted once and never recursively expanded.
 - Curly braces are reserved for complete merge tokens. Extra, nested, or unmatched braces are rejected as
   `MALFORMED_TOKEN` instead of being rendered as text.
@@ -436,7 +436,7 @@ SOQL examples live in the local [Query](../examples/README.md#query-examples) an
 ```text
 {!record.Name} is out of balance.
 
-Debit total: {!record.Debit_Total__c|0}
+Debit total: {!record.Debit_Total__c fallback="0"}
 Expected credit net: {!record.Credit_Net__c}
 
 Contact Finance to reconcile.
@@ -570,7 +570,7 @@ The quoted form is substituted only when that exact quoted token text appears in
 this filter:
 
 ```sql
-Name LIKE '{!record.Name|this record}%'
+Name LIKE '{!record.Name fallback="this record"}%'
 ```
 
 ## Related
