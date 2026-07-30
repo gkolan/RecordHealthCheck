@@ -62,10 +62,6 @@ data that existed before the Rules were created, without writing to the record.
 
 ## What you get
 
-Record Health Check is a metadata-driven Framework you deploy as source. Administrators define the
-questions; users get advisory answers on the record page without blocked saves or silent field
-writes.
-
 ### On the record page
 
 | What users see                                        | Why it helps                                                                                |
@@ -87,7 +83,7 @@ writes.
 
 ### Also in the package
 
-- Shipped `Example_` Account Check Set, Rules, and Apex evaluator so a sandbox install is immediately demonstrable
+- Four shipped `Example_` Check Sets for Account, Contact, and Opportunity, with 20 active Rules, one intentionally inactive Rule, a custom Apex evaluator, and reproducible demo data
 - `Record_Health_Check_User` and `Record_Health_Check_Admin` permission sets (runner vs configure/troubleshoot)
 - Opt-in platform events for Set runs and Rule results, plus Apex and Flow entry points for automation
 - Diagnostics gated by permission so troubleshooting detail stays off everyday cards

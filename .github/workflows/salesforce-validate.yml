@@ -41,6 +41,8 @@ jobs:
       # Run static analysis last. The checked-in profile explains the few generic
       # heuristics that do not fit this package; every enabled finding fails CI.
       - name: Run final Salesforce Code Analyzer gate
-        run: sf code-analyzer run --workspace force-app --workspace integration-tests --rule-selector Recommended --output-file code-analyzer.html --severity-threshold 5
+        run: |
+          mkdir -p code-analyzer/logs
+          sf code-analyzer run --workspace force-app --workspace integration-tests --rule-selector Recommended --output-file code-analyzer/report.html --severity-threshold 5
       - if: always()
         run: sf org delete scratch --target-org rhc-ci --no-prompt

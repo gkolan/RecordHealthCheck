@@ -1,6 +1,8 @@
+log_folder: code-analyzer/logs
+
 ignores:
   files:
-    - "code-analyzer-results-*"
+    - "code-analyzer/**"
 
 engines:
   eslint:

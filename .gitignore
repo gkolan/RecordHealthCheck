@@ -98,8 +98,7 @@ docs/reference/record-health-check-ui-changes-2026-06.md
 docs/reference/code-quality-and-hardening-guide.md
 
 # CI / IDE artifacts
-code-analyzer.html
-code-analyzer-results-*
+/code-analyzer/
 .cursor/
 .vscode/
 *.tgz
