@@ -1,10 +1,6 @@
 # Record Health Check
 
-[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE)
-[![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
-[![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
-[![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
-[![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
+<p><a href="LICENSE"><img src="assets/img/badge-license.svg" alt="License: Apache 2.0" /></a> <a href="https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml"><img src="https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="sfdx-project.json"><img src="assets/img/badge-salesforce-api.svg" alt="Salesforce API" /></a> <a href="https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck"><img src="assets/img/badge-deploy.svg" alt="Deploy to Salesforce" /></a> <a href="https://recordhealthcheck.com/slack-invite"><img src="https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&amp;logoColor=white" alt="Feedback: RHC Slack" /></a></p>
 
 > **Make informed decisions before taking action on Salesforce data.**
 >
