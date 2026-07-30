@@ -1,6 +1,9 @@
 # Record Health Check
 
-<p><a href="LICENSE"><img src="assets/img/badge-license.svg" alt="License: Apache 2.0" /></a> <a href="https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml"><img src="https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="sfdx-project.json"><img src="assets/img/badge-salesforce-api.svg" alt="Salesforce API" /></a> <a href="https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck"><img src="assets/img/badge-deploy.svg" alt="Deploy to Salesforce" /></a> <a href="https://recordhealthcheck.com/slack-invite"><img src="https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&amp;logoColor=white" alt="Feedback: RHC Slack" /></a></p>
+[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE)
+[![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
+[![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
+[![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
 > **Make informed decisions before taking action on Salesforce data.**
 >
@@ -24,7 +27,8 @@ data that existed before the Rules were created, without writing to the record.
 [How it works](docs/installation/01-how-it-works.md) ·
 [Install](docs/installation/02-install-and-verify.md) ·
 [Examples](docs/examples/README.md) ·
-[Try the demo](docs/installation/05-create-rhc-scratch-org.md)
+[Try the demo](docs/installation/05-create-rhc-scratch-org.md) ·
+[Feedback](https://recordhealthcheck.com/slack-invite)
 
 ## Demo
 
