@@ -1,9 +1,6 @@
 # Record Health Check
 
-[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE)
-[![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
-[![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
-[![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
+[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE) [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Apex coverage: 97.03%](https://img.shields.io/badge/Apex%20coverage-97.03%25-brightgreen)](docs/development/code-coverage-statistics.md) [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json) [![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck) [![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
 
 > **Make informed decisions before taking action on Salesforce data.**
 >
@@ -27,8 +24,7 @@ data that existed before the Rules were created, without writing to the record.
 [How it works](docs/installation/01-how-it-works.md) ·
 [Install](docs/installation/02-install-and-verify.md) ·
 [Examples](docs/examples/README.md) ·
-[Try the demo](docs/installation/05-create-rhc-scratch-org.md) ·
-[Feedback](https://recordhealthcheck.com/slack-invite)
+[Try the demo](docs/installation/05-create-rhc-scratch-org.md)
 
 ## Demo
 
