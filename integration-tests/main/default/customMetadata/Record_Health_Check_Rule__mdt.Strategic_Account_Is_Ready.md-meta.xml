@@ -52,6 +52,6 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >This strategic account is not ready — readiness score is below the required minimum.</value>
+    >This strategic account is not ready: readiness score is below the required minimum.</value>
     </values>
 </CustomMetadata>

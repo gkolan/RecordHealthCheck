@@ -60,6 +60,6 @@
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Could not check approvers — confirm Advanced Approvals is installed and the object and field API names in Apex Settings are correct for this org.</value>
+    >Could not check approvers: confirm Advanced Approvals is installed and the object and field API names in Apex Settings are correct for this org.</value>
     </values>
 </CustomMetadata>

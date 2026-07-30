@@ -249,6 +249,10 @@ Flow-published events use `Source__c = FLOW`. Publication is off by default, bes
 not change the synchronous result. A successful Flow action does not prove that an asynchronous
 subscriber completed.
 
+Framework `ERROR` diagnostics are separate from these lifecycle events. The Check Set's
+default-on `PublishErrorLogEvent__c` controls `Record_Health_Check_Log__e`; uncheck it to opt out
+without disabling Salesforce debug logs.
+
 Subscribers must tolerate duplicate or replayed delivery. For the complete event bodies and subscriber
 guidance, see [Lifecycle events](lifecycle-events.md).
 

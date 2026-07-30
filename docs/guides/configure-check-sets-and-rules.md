@@ -476,6 +476,7 @@ Contact Finance to reconcile.
 | Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Keep Apex calls within `MAX_EVALUATIONS_PER_CALL` (15); Flow invocations also accept at most `MAX_FLOW_RECORDS_PER_CALL` (200) requests. Prefer `runSet` with a focused Check Set; see [Apex API](../reference/reference-apex-api.md) or [Flow actions](../integration/flow-actions.md). |
 | Check passes in UI but fails from custom automation | Different running user (FLS) | Automation runs as the integration or invoking user: verify field access. |
 | Expected a lifecycle event but none arrived | Publishing is off, the run was automatic page load, or the transaction rolled back | Enable **Publish Run Event** or **Publish Result Event**; use explicit Run/Rerun, Apex, or Flow; confirm the transaction committed; see [Platform events](../integration/lifecycle-events.md). |
+| Expected an Error Log event but none arrived | The Check Set opted out, subscriber context suppressed a feedback loop, or publication failed | Check **Publish Error Log Event**, subscriber logs, and platform-event allocations; Salesforce debug logging remains independent. |
 
 For Reason Codes, see [Reason Codes](../reference/reference-reason-codes.md).
 
@@ -505,7 +506,7 @@ Before activating a Check Set:
 - [ ] Apex Rules reference deployed `RecordHealthCheckRule` implementations.
 - [ ] Dependencies reference active Rules with lower Evaluation Order in the same Check Set.
 - [ ] **Show Diagnostics** is off for production unless actively troubleshooting (requires `Record_Health_Check_View_Diagnostics` via `Record_Health_Check_Admin`: see [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md)).
-- [ ] Lifecycle publication switches stay off until subscribers and allocations are reviewed ([Lifecycle events](../integration/lifecycle-events.md)).
+- [ ] Lifecycle publication switches stay off until subscribers and allocations are reviewed; explicitly review the default-on **Publish Error Log Event** setting ([Lifecycle events](../integration/lifecycle-events.md)).
 - [ ] Tested on records that pass, fail, skip, and unable-to-evaluate.
 
 ## 15. Runtime and integration
@@ -527,7 +528,7 @@ Automation uses the public `RecordHealthCheck` Apex class or the separate Rule a
 1. Caller invokes `RecordHealthCheck.runRule`, `runSet`, Flow **Run Record Health Check Rule**, or Flow **Run Record Health Check Set**.
 2. The public Apex class enforces call limits and returns `RecordHealthCheckResult` or
    `RecordHealthCheckSetResult` (`contractVersion` `1.0`).
-3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` publishes Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
+3. When lifecycle publication switches are on, `RecordHealthCheckLifecyclePublisher` publishes Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). Independently, `RecordHealthCheckLogger` publishes ERROR events immediately when the default-on `PublishErrorLogEvent__c` setting permits it. See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
 
 **Boundaries:**
 

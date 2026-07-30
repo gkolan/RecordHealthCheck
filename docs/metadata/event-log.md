@@ -1,8 +1,8 @@
 # Log Platform Event (`Record_Health_Check_Log__e`)
 
 `Record_Health_Check_Log__e` carries structured Framework `ERROR` information. Unlike the two
-lifecycle events, it uses **Publish Immediately**, contains restricted diagnostic detail, and is not
-controlled by Check Set or Rule publication fields.
+lifecycle events, it uses **Publish Immediately**, contains restricted diagnostic detail, and is
+enabled by default through the Check Set's **Publish Error Log Event** setting.
 
 Use this event for restricted technical operations and support, not readiness workflows.
 
@@ -29,15 +29,19 @@ clears held entries for the transaction.
 | --- | --- |
 | Event type | High Volume |
 | Publish behavior | Publish Immediately |
-| Default | Error-event publication enabled in Framework code |
+| Default | Enabled (`PublishErrorLogEvent__c = true`) |
 | Published levels | `ERROR` only |
-| Optional Custom Metadata field | None |
+| Check Set Custom Metadata field | `PublishErrorLogEvent__c`; uncheck to opt out for that Check Set |
 | Contract version | `1.0` |
 | Failure behavior | Best effort; publishing failure is logged and does not change the health-check result |
 
 `Publish Immediately` allows an accepted event to survive a later transaction rollback. However, an
 uncatchable governor-limit abort can prevent `flush()` from running, so this event is not a complete
 replacement for Salesforce debug logs and platform exception monitoring.
+
+When the Framework cannot resolve a Check Set, publication remains enabled. This preserves error
+visibility for missing or invalid configuration. Unchecking the field affects only Log platform
+events; Salesforce debug-log output is unchanged.
 
 ## Fields
 

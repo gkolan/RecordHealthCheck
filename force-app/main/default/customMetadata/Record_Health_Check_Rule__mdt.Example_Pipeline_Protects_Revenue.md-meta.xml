@@ -106,14 +106,23 @@
         <field>FixMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Add or advance qualified opportunities to close the coverage gap.</value>
+    >Add or advance qualified opportunities for {!record.Name fallback="this account"} to close the coverage gap.</value>
     </values>
+    <values><field>ActionLabel__c</field><value
+      xsi:type="xsd:string"
+    >Close {!record.Name fallback="account"}'s pipeline gap</value></values>
+    <values><field>ActionUrl__c</field><value
+      xsi:type="xsd:string"
+    >/lightning/r/Account/{!record.Id}/related/Opportunities/view</value></values>
     <values>
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Revenue coverage could not be calculated. Confirm access to Opportunity Amount and Account Annual Revenue, then retry.</value>
+    >{!rhcRule.checkTitle} could not be calculated for {!record.Name fallback="this account"}. Confirm access to Opportunity Amount and Account Annual Revenue, then retry.</value>
     </values>
+    <values><field>ApplicabilityNotMetMessage__c</field><value
+      xsi:type="xsd:string"
+    >{!record.Name fallback="This account"} has no open opportunities with an amount, so pipeline coverage is not applicable.</value></values>
     <values>
         <field>EvaluationOrder__c</field>
         <value xsi:type="xsd:double">50</value>

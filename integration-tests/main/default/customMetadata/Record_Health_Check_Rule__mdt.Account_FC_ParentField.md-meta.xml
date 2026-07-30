@@ -18,7 +18,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Parent field traversal using dot notation: Parent.BillingCity. Formula applicability gate ensures the check only runs when a parent account is set — avoiding errors on top-level accounts. Demonstrates two-level dot path in both formula and applicability.</value>
+    >Parent field traversal using dot notation: Parent.BillingCity. Formula applicability gate ensures the check only runs when a parent account is set: avoiding errors on top-level accounts. Demonstrates two-level dot path in both formula and applicability.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

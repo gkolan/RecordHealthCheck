@@ -18,7 +18,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Two fields OR: at least one must be populated. Demonstrates OR() — either field satisfies the rule; the check fails only when both are missing. This example uses Phone and Fax, but the same pattern applies to any pair (e.g. OR(NOT(ISBLANK(Phone)),</value>
+    >Two fields OR: at least one must be populated. Demonstrates OR(): either field satisfies the rule; the check fails only when both are missing. This example uses Phone and Fax, but the same pattern applies to any pair (e.g. OR(NOT(ISBLANK(Phone)),</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

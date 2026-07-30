@@ -2,7 +2,6 @@
 <ListView xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Examples</fullName>
     <columns>MasterLabel</columns>
-    <columns>DeveloperName</columns>
     <columns>ObjectApiName__c</columns>
     <columns>CardTitle__c</columns>
     <columns>IsActive__c</columns>

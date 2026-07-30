@@ -14,7 +14,7 @@ private class RecordHealthCheckLoggerTest {
   static void instanceLevelsAllExecuteWithoutError() {
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-123',
-      'Account_Data_Quality',
+      'Example_Account_Relationship_Risk',
       UserInfo.getUserId()
     );
 
@@ -47,7 +47,7 @@ private class RecordHealthCheckLoggerTest {
     RecordHealthCheckLogger.log(
       RecordHealthCheckLogger.Level.ERROR,
       'run-456',
-      'Account_Data_Quality',
+      'Example_Account_Relationship_Risk',
       UserInfo.getUserId(),
       null,
       'CONFIG_UNEXPECTED',
@@ -85,7 +85,7 @@ private class RecordHealthCheckLoggerTest {
     Id recordId = UserInfo.getUserId();
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-err-1',
-      'Account_Compliance_Audit',
+      'Example_Account_Relationship_Risk',
       recordId
     );
 
@@ -107,7 +107,7 @@ private class RecordHealthCheckLoggerTest {
       'RecordId identifies where the error happened.'
     );
     System.assertEquals(
-      'Account_Compliance_Audit',
+      'Example_Account_Relationship_Risk',
       evt.CheckSetDeveloperName__c,
       'Check Set context is the canonical contract name.'
     );
@@ -169,7 +169,7 @@ private class RecordHealthCheckLoggerTest {
     RecordHealthCheckLogger.log(
       RecordHealthCheckLogger.Level.ERROR,
       'run-nofields',
-      'Account_Compliance_Audit',
+      'Example_Account_Relationship_Risk',
       UserInfo.getUserId(),
       'Owner_Is_Active',
       'RULE_ERROR',
@@ -191,11 +191,11 @@ private class RecordHealthCheckLoggerTest {
   }
 
   @IsTest
-  static void featureOffSuppressesBuffering() {
-    RecordHealthCheckLogger.publishErrorEvents = false;
+  static void checkSetOptOutSuppressesBuffering() {
+    RecordHealthCheckLogger.publishErrorEventSettingOverride = false;
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-off',
-      'Account_Compliance_Audit',
+      'Example_Account_Relationship_Risk',
       UserInfo.getUserId()
     );
 
@@ -209,7 +209,51 @@ private class RecordHealthCheckLoggerTest {
     System.assertEquals(
       0,
       RecordHealthCheckLogger.pendingEventCount(),
-      'Kill switch suppresses the durable event (System.debug still fires).'
+      'The Check Set opt-out suppresses the durable event (System.debug still fires).'
+    );
+  }
+
+  @IsTest
+  static void missingCheckSetDefaultsToPublishing() {
+    RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
+      'run-missing-config',
+      'Check_Set_That_Does_Not_Exist',
+      UserInfo.getUserId()
+    );
+
+    logger.error(
+      null,
+      'CONFIG_NOT_FOUND',
+      null,
+      new System.NullPointerException()
+    );
+
+    Assert.areEqual(
+      1,
+      RecordHealthCheckLogger.pendingEventCount(),
+      'A missing Check Set must preserve default-on error publication.'
+    );
+  }
+
+  @IsTest
+  static void configuredCheckSetPublishesWhenDefaultOn() {
+    RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
+      'run-configured',
+      'Example_Account_Relationship_Risk',
+      UserInfo.getUserId()
+    );
+
+    logger.error(
+      null,
+      'CONFIGURED_SET_ERROR',
+      null,
+      new System.NullPointerException()
+    );
+
+    Assert.areEqual(
+      1,
+      RecordHealthCheckLogger.pendingEventCount(),
+      'A configured Check Set with the default-on field must publish.'
     );
   }
 
@@ -218,7 +262,7 @@ private class RecordHealthCheckLoggerTest {
     RecordHealthCheckLogger.enterSubscriberContext();
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-sub',
-      'Account_Compliance_Audit',
+      'Example_Account_Relationship_Risk',
       UserInfo.getUserId()
     );
 
@@ -254,12 +298,15 @@ private class RecordHealthCheckLoggerTest {
     RecordHealthCheckLogger.debugEnabled = true;
     new RecordHealthCheckLogger('run-debug', 'Set', null)
       .debug('Rule', 'DEBUG_BRANCH', null);
-    RecordHealthCheckLogger.publishErrorEvents = false;
+    RecordHealthCheckLogger.publishErrorEventSettingOverride = false;
     RecordHealthCheckLogger.enterSubscriberContext();
 
     RecordHealthCheckLogger.resetLogSinkForTest();
 
-    System.assertEquals(true, RecordHealthCheckLogger.publishErrorEvents);
+    System.assertEquals(
+      null,
+      RecordHealthCheckLogger.publishErrorEventSettingOverride
+    );
     System.assertEquals(false, RecordHealthCheckLogger.inSubscriberContext);
     System.assertEquals(0, RecordHealthCheckLogger.pendingEventCount());
     RecordHealthCheckLogger.debugEnabled = false;

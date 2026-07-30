@@ -49,7 +49,7 @@ a Validation Rule or trigger would block saves org-wide.
 
 | Surface | Role |
 | --- | --- |
-| `Record_Health_Check_Set__mdt` and `Record_Health_Check_Rule__mdt` | Rule definitions, display settings, and per-Rule publication switches |
+| `Record_Health_Check_Set__mdt` and `Record_Health_Check_Rule__mdt` | Rule definitions, display settings, optional lifecycle publication, and default-on error publication |
 | Apex engine and four evaluators | Formula, Query, Compare two queries, and Apex evaluation |
 | Lightning Web Component | Record-page card, one Apex call per Rule, progressive reveal |
 | Public Apex API and two invocable Flow actions | The same engine for automation and integrations |
@@ -71,6 +71,7 @@ Record_Health_Check_Set__mdt          one card on one object
   IsActive__c, CardRunMode__c         whether it runs, and on load or on request
   ShowDiagnostics__c                  whether troubleshooting detail may be shown
   PublishRunEvent__c                  whether a completed run publishes an event
+  PublishErrorLogEvent__c             whether ERROR logs publish events (default on)
       |
       | one Check Set has many Rules (metadata relationship)
       v

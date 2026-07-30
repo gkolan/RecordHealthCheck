@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >An example of Comparison Operator = ListDoesNotContainAny, set to Info severity because it is not a real data-quality bar. The account's Industry must not appear in the list of other accounts' industries. It fails often in a populated org — treat it as a</value>
+    >An example of Comparison Operator = ListDoesNotContainAny, set to Info severity because it is not a real data-quality bar. The account's Industry must not appear in the list of other accounts' industries. It fails often in a populated org: treat it as a</value>
     </values>
     <values>
         <field>EvaluationType__c</field>
@@ -60,7 +60,7 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >{!record.Name} shares its industry with at least one other account. This sample rule is illustrative — in most orgs many accounts share an industry. Copy the ListDoesNotContainAny pattern, not this threshold.</value>
+    >{!record.Name} shares its industry with at least one other account. This sample rule is illustrative: in most orgs many accounts share an industry. Copy the ListDoesNotContainAny pattern, not this threshold.</value>
     </values>
     <values>
         <field>UnableToEvaluateMessage__c</field>

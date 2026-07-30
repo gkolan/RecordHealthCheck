@@ -44,7 +44,7 @@
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Could not evaluate KYC status — confirm KYC_Status__c exists. Contact your administrator.</value>
+    >Could not evaluate KYC status: confirm KYC_Status__c exists. Contact your administrator.</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

@@ -64,12 +64,17 @@ diagnostic values additionally require **Show Diagnostics** and the
 | User clicks Run | `USER_INITIATED` | Enabled Check Set | Enabled Rules |
 | User clicks Rerun | `USER_INITIATED` | Enabled Check Set | Enabled Rules |
 
-Custom Metadata switches remain off by default:
+Lifecycle Custom Metadata switches remain off by default:
 
 - `PublishRunEvent__c` enables one Set Run completion event for the Check Set.
 - `PublishResultEvent__c` enables a Rule Result event for that Rule.
 
-An automatic run never publishes even when both switches are enabled.
+Error Log events use a separate default-on Check Set setting. `PublishErrorLogEvent__c` publishes
+Framework `ERROR` diagnostics from automatic and deliberate runs; uncheck it to opt that Check Set
+out. This does not disable Salesforce debug-log output.
+
+An automatic run never publishes lifecycle events even when both lifecycle switches are enabled.
+It can still publish an Error Log event when the default-on error setting permits it.
 
 The block is intentional. Opening or refreshing a record page is passive navigation, not a request
 to notify downstream systems. If automatic runs published, ordinary browsing could consume Platform

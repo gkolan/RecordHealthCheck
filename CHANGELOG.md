@@ -148,8 +148,9 @@ This project follows [Semantic Versioning](https://semver.org/). Notable changes
 - Added `Record_Health_Check_Log__e`, a versioned (`1.0`), restricted diagnostics platform event
   for framework errors. The logger now buffers every `ERROR` line and publishes it once per
   transaction via `RecordHealthCheckLogger.flush()`, so a check that fails to run leaves a durable,
-  `RunId`-correlated trace instead of only an ephemeral `System.debug` line. Default on (opt-out
-  via `publishErrorEvents`); `PublishImmediately` so it survives the rollback a failing check
+  `RunId`-correlated trace instead of only an ephemeral `System.debug` line. Default on and
+  configurable per Check Set through `PublishErrorLogEvent__c`; uncheck the field to opt out.
+  `PublishImmediately` ensures the event survives the rollback a failing check
   triggers. Core only emits the event: persistence, retention, and reporting are owned by the
   Record Health Check extension package. Subscribers must call
   `RecordHealthCheckLogger.enterSubscriberContext()` to avoid feedback loops.

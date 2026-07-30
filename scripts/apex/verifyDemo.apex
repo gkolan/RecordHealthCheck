@@ -86,7 +86,7 @@ System.assertEquals(
 Map<String, String> expectedStatuses = new Map<String, String>{
   'Example_Executive_Sponsorship' => 'PASS',
   'Example_Account_Owner_Active' => 'FAIL',
-  'Example_Industry_Aligns_With_Parent' => 'PASS',
+  'Example_Open_Deals_Have_Contacts' => 'PASS',
   'Example_Contacts_Have_Email' => 'FAIL',
   'Example_Customer_Engagement_Current' => 'PASS',
   'Example_Pipeline_Protects_Revenue' => 'FAIL',

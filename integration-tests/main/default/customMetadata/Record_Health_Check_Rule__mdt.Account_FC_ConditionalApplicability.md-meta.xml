@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Formula check with ISPICKVAL applicability gate — the rule only runs for Customer accounts. Non-Customer accounts receive SKIPPED. Demonstrates the pattern where applicability and the check itself use different field combinations: applicability targets</value>
+    >Formula check with ISPICKVAL applicability gate: the rule only runs for Customer accounts. Non-Customer accounts receive SKIPPED. Demonstrates the pattern where applicability and the check itself use different field combinations: applicability targets</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

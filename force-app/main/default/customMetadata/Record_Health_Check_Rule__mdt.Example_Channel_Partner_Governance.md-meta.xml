@@ -54,7 +54,7 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >This channel account is not connected to an approved partner hierarchy.</value>
+    >{!record.Name fallback="This channel account"} is not connected to an approved partner hierarchy.</value>
     </values>
     <values>
         <field>FixMessage__c</field>
@@ -62,6 +62,15 @@
       xsi:type="xsd:string"
     >Associate the account with the responsible channel partner before approving the opportunity strategy.</value>
     </values>
+    <values><field>ActionLabel__c</field><value
+      xsi:type="xsd:string"
+    >Connect {!record.Name fallback="partner account"} to its hierarchy</value></values>
+    <values><field>ActionUrl__c</field><value
+      xsi:type="xsd:string"
+    >/lightning/r/Account/{!record.Id}/edit</value></values>
+    <values><field>UnableToEvaluateMessage__c</field><value
+      xsi:type="xsd:string"
+    >{!rhcRule.checkTitle} could not evaluate {!record.Name fallback="this partner account"}. Verify access to Account Type and Parent Account, then retry.</value></values>
     <values>
         <field>ApplicabilityMode__c</field>
         <value xsi:type="xsd:string">WHEN_FORMULA_TRUE</value>

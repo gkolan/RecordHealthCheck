@@ -18,7 +18,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Confirms that every account contact has a usable email address for customer communications.</value>
+    >Confirms that every account contact has a recorded email address for customer communications.</value>
     </values>
     <values>
         <field>Category__c</field>
@@ -33,6 +33,10 @@
         <value
       xsi:type="xsd:string"
     >SELECT Email FROM Contact WHERE AccountId = {!record.Id}</value>
+    </values>
+    <values>
+        <field>ComparisonQuery__c</field>
+        <value xsi:nil="true" />
     </values>
     <values>
         <field>SourceQueryField__c</field>
@@ -62,29 +66,31 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Contact coverage is incomplete because one or more contacts are missing an email address.</value>
+    >Some contacts at {!record.Name fallback="this account"} have no recorded email, leaving stakeholder coverage incomplete.</value>
     </values>
     <values>
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >This check couldn't run. Ask your admin to take a look.</value>
+    >{!rhcRule.checkTitle} could not run for {!record.Name fallback="this account"}. Verify Contact access and retry.</value>
     </values>
     <values>
         <field>DisplayFoundText__c</field>
         <value
       xsi:type="xsd:string"
-    >{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount} contacts missing email</value>
+    >{!rhcResult.failedRecordCount} contacts are missing an email address</value>
     </values>
     <values>
         <field>DisplayExpectedText__c</field>
         <value
       xsi:type="xsd:string"
-    >{!rhcResult.totalRecordCount} of {!rhcResult.totalRecordCount} contacts have an email address</value>
+    >All {!rhcResult.totalRecordCount} contacts need an email address</value>
     </values>
     <values>
         <field>ActionLabel__c</field>
-        <value xsi:type="xsd:string">View contacts</value>
+        <value
+      xsi:type="xsd:string"
+    >Complete {!record.Name fallback="account"} contact emails</value>
     </values>
     <values>
         <field>ActionUrl__c</field>
@@ -96,7 +102,7 @@
         <field>FixMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Complete the missing email addresses so account communications reach every stakeholder.</value>
+    >Add an email address to each incomplete contact so communications for {!record.Name fallback="this account"} reach every stakeholder.</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

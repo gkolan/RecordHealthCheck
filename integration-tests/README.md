@@ -74,14 +74,16 @@ sf apex run --file integration-tests/scripts/demo_apex_api.apex --target-org my-
 sf apex run --file integration-tests/scripts/demo_flow_actions.apex --target-org my-scratch-org
 ```
 
-For a disposable demo org, the setup script performs the entire sequence:
-
-```bash
-DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-integration-demo.sh rhc-integration-demo 7
-```
-
 `integration-tests` intentionally remains outside `sfdx-project.json`. A normal product install
 deploys only `force-app`; deploying demo fixtures always requires the explicit second command.
 
 Product examples that ship to users live under `force-app` and are listed in
 `manifest/package.xml`.
+
+## Shipped example data
+
+Realistic data for the four shipped `Example_` Check Sets is product-demo data, not an integration
+fixture. The single supported scratch-org command is `./scripts/setup-demo.sh`; its seed and verifier
+live under `scripts/apex`. See the
+[scratch-org setup guide](../docs/installation/05-create-rhc-scratch-org.md) for the complete,
+deterministic scenario.

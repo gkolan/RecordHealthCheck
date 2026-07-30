@@ -81,7 +81,7 @@ assign administrative access to users who only need to run checks.
 
 ## 3. Add a Check Set
 
-You can use the shipped `Example_Account_Relationship_Risk` Check Set, or create your own under
+You can use one of the four shipped examples: `Example_Account_Relationship_Risk` for a richer cross-object scenario, `Example_Account_Profile_Readiness` for a basic formula-only configuration, `Example_Contact_Relationship_Readiness`, or `Example_Opportunity_Deal_Readiness`. Alternatively, create your own under
 **Setup → Custom Metadata Types** by following [Create your first Rule](03-create-your-first-rule.md).
 
 ## 4. Add the card to a record page
@@ -111,7 +111,7 @@ administrator who deployed Core.
 | Symptom | What to check |
 | --- | --- |
 | The deployment reports an Apex or metadata permission error | Confirm that the authenticated user can deploy Apex and Custom Metadata. |
-| The card has no Check Set to select | Create or activate a Check Set whose Object matches the Lightning record page object, or select `Example_Account_Relationship_Risk` on an Account page. |
+| The card has no Check Set to select | Create or activate a Check Set whose Object matches the Lightning record page object, or select `Example_Account_Relationship_Risk` or `Example_Account_Profile_Readiness` on an Account page. |
 | A user cannot see or run the card | Assign `Record_Health_Check_User`, then review record, object, and field access. |
 | A Rule shows Unable to Check | Review its Reason Code, Rule configuration, and the running user's Salesforce access. |
 

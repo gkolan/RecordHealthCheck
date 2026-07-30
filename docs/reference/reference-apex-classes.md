@@ -825,8 +825,9 @@ only answers *who* may see them.
 
 Every Framework log line goes through this class as structured `[RHC]` output with run id and
 running user. Levels: `ERROR`, `WARN`, `INFO`, `DEBUG`. ERROR lines are also held as
-`Record_Health_Check_Log__e` and published by `flush()` at the transaction boundary (default on;
-subscriber-context guarded). Entry points call `flush()` so ERROR platform events are not lost when
+`Record_Health_Check_Log__e` and published by `flush()` at the transaction boundary (default on,
+opt-out per Check Set through `PublishErrorLogEvent__c`, and subscriber-context guarded). Entry
+points call `flush()` so ERROR platform events are not lost when
 `System.debug` is off.
 
 **Key members:**

@@ -76,19 +76,25 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >No reachable Executive Sponsor is connected to this account's opportunities.</value>
+    >No reachable Executive Sponsor is connected to {!record.Name fallback="this account"}'s opportunities.</value>
     </values>
     <values>
         <field>FixMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Identify a senior customer sponsor and add them to the opportunity as Executive Sponsor.</value>
+    >Identify a senior customer sponsor for {!record.Name fallback="this account"} and add them to the relevant opportunity as Executive Sponsor.</value>
     </values>
+    <values><field>ActionLabel__c</field><value
+      xsi:type="xsd:string"
+    >Identify {!record.Name fallback="account"}'s executive sponsor</value></values>
+    <values><field>ActionUrl__c</field><value
+      xsi:type="xsd:string"
+    >/lightning/r/Account/{!record.Id}/related/Opportunities/view</value></values>
     <values>
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Executive sponsorship could not be evaluated. Confirm access to opportunity contact roles and retry.</value>
+    >{!rhcRule.checkTitle} could not be evaluated for {!record.Name fallback="this account"}. Confirm access to opportunity contact roles and retry.</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

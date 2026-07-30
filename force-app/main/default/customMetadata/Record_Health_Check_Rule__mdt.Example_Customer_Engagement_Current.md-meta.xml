@@ -44,14 +44,29 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Nothing has been logged here in the last 90 days. Log recent work or schedule a follow-up.</value>
+    >No meaningful activity has been logged for {!record.Name fallback="this account"} in the last 90 days.</value>
     </values>
     <values>
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >This check couldn't run. Ask your admin to take a look.</value>
+    >{!rhcRule.checkTitle} could not run for {!record.Name fallback="this account"}. Verify activity access and retry.</value>
     </values>
+    <values><field>DisplayFoundText__c</field><value
+      xsi:type="xsd:string"
+    >{!rhcResult.foundValue} in the last 90 days</value></values>
+    <values><field>DisplayExpectedText__c</field><value
+      xsi:type="xsd:string"
+    >{!rhcResult.expectedValue} in the last 90 days</value></values>
+    <values><field>FixMessage__c</field><value
+      xsi:type="xsd:string"
+    >Log the latest customer interaction or schedule a concrete follow-up for {!record.Name fallback="this account"}.</value></values>
+    <values><field>ActionLabel__c</field><value
+      xsi:type="xsd:string"
+    >Log activity for {!record.Name fallback="account"}</value></values>
+    <values><field>ActionUrl__c</field><value
+      xsi:type="xsd:string"
+    >/lightning/r/Task/new?defaultFieldValues=WhatId={!record.Id}</value></values>
     <values>
         <field>ApplicabilityMode__c</field>
         <value xsi:type="xsd:string">ALL_RECORDS</value>

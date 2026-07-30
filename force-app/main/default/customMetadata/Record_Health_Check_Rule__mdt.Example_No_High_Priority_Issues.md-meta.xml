@@ -58,7 +58,9 @@
     </values>
     <values>
         <field>DisplayExpectedText__c</field>
-        <value xsi:type="xsd:string">no open high-priority cases</value>
+        <value
+      xsi:type="xsd:string"
+    >No open high-priority cases for {!record.Name fallback="this account"}</value>
     </values>
     <values>
         <field>FailureSeverity__c</field>
@@ -68,17 +70,19 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >One or more high-priority customer issues require immediate attention.</value>
+    >{!record.Name fallback="This account"} has {!rhcResult.foundValue} open high-priority case record(s) requiring immediate attention.</value>
     </values>
     <values>
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >This check couldn't run. Ask your admin to take a look.</value>
+    >{!rhcRule.checkTitle} could not run for {!record.Name fallback="this account"}. Verify Case access and retry.</value>
     </values>
     <values>
         <field>ActionLabel__c</field>
-        <value xsi:type="xsd:string">Review priority cases</value>
+        <value
+      xsi:type="xsd:string"
+    >Coordinate {!record.Name fallback="account"} case recovery</value>
     </values>
     <values>
         <field>ActionUrl__c</field>
@@ -90,7 +94,7 @@
         <field>FixMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Confirm ownership, document the recovery plan, and resolve or appropriately reprioritize each issue.</value>
+    >Confirm ownership, document a recovery plan, and resolve or appropriately reprioritize each issue for {!record.Name fallback="this account"}.</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

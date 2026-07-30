@@ -47,9 +47,11 @@ public with sharing class RecordHealthCheckLogger {
   private static final Integer MESSAGE_MAX = 4000;
   private static final Integer STACK_MAX = 32000;
 
-  // Default ON: platform-event error capture must not require optional enablement (opt-out only).
+  // Production behavior comes from the Check Set's default-on
+  // PublishErrorLogEvent__c field. Tests can override that setting without
+  // creating Custom Metadata records dynamically.
   @TestVisible
-  private static Boolean publishErrorEvents = true;
+  private static Boolean publishErrorEventSettingOverride;
   // Loop guard: a subscriber processing a log event sets this so its own ERROR
   // logging cannot republish onto the same bus.
   @TestVisible
@@ -171,7 +173,11 @@ public with sharing class RecordHealthCheckLogger {
     Map<String, Object> fields,
     Exception ex
   ) {
-    if (lvl != Level.ERROR || !publishErrorEvents || inSubscriberContext) {
+    if (
+      lvl != Level.ERROR ||
+      !isErrorEventPublicationEnabled() ||
+      inSubscriberContext
+    ) {
       return;
     }
     PENDING_EVENTS.add(
@@ -194,6 +200,24 @@ public with sharing class RecordHealthCheckLogger {
         UserId__c = UserInfo.getUserId()
       )
     );
+  }
+
+  /**
+   * Returns whether the current Check Set permits ERROR log-event publication.
+   * Missing or unresolved Check Set configuration remains enabled so failures
+   * that occur before valid configuration is available are still observable.
+   */
+  private Boolean isErrorEventPublicationEnabled() {
+    if (Test.isRunningTest() && publishErrorEventSettingOverride != null) {
+      return publishErrorEventSettingOverride;
+    }
+    if (String.isBlank(checkSetDeveloperName)) {
+      return true;
+    }
+    Record_Health_Check_Set__mdt checkSet = Record_Health_Check_Set__mdt.getInstance(
+      checkSetDeveloperName
+    );
+    return checkSet == null || checkSet.PublishErrorLogEvent__c != false;
   }
 
   /** Prefers the exception message; otherwise a compact, sorted field summary. */
@@ -297,7 +321,7 @@ public with sharing class RecordHealthCheckLogger {
   @TestVisible
   private static void resetLogSinkForTest() {
     PENDING_EVENTS.clear();
-    publishErrorEvents = true;
+    publishErrorEventSettingOverride = null;
     inSubscriberContext = false;
   }
 

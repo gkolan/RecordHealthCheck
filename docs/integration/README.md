@@ -130,10 +130,12 @@ For every input and output, use the [Flow actions reference](flow-actions.md).
 Enabling events does not change the synchronous result. A successful synchronous run does not prove
 that an event subscriber completed.
 
-Publication is off by default:
+Lifecycle publication is off by default; error-log publication is on by default:
 
 - Check Set **Publish Run Event** enables one completed Set event.
 - Rule **Publish Result Event** enables one event for that server-finalized Rule.
+- Check Set **Publish Error Log Event** publishes Framework `ERROR` diagnostics; uncheck it to opt
+  that Check Set out without changing Salesforce debug logs.
 - Automatic Lightning page-load runs never publish.
 
 ## Limits

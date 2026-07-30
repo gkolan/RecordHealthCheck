@@ -16,7 +16,7 @@ Result** events only when the subscriber needs per-Rule status, reason, and seve
 | --- | --- | --- |
 | One summary for a completed Check Set | [`Record_Health_Check_Set_Run__e`](../metadata/event-set-run.md) | Check Set **Publish Run Event** |
 | One result for each selected Rule | [`Record_Health_Check_Rule_Result__e`](../metadata/event-rule-result.md) | Rule **Publish Result Event** |
-| Restricted Framework error diagnostics | [`Record_Health_Check_Log__e`](../metadata/event-log.md) | Framework `ERROR` logging; not a lifecycle-result publication switch |
+| Restricted Framework error diagnostics | [`Record_Health_Check_Log__e`](../metadata/event-log.md) | Check Set **Publish Error Log Event** (default on; uncheck to opt out) |
 | The immediate decision in the current transaction | Neither lifecycle event | Use the Lightning, Apex, or Flow response instead |
 
 The Set Run and Rule Result events are **high-volume Platform Events** configured as **Publish
@@ -86,18 +86,22 @@ Publish failures are logged and **do not** change Rule or Check Set results.
 
 Events are chunked in batches of **100** (`PUBLISH_CHUNK_SIZE`).
 
-## Publication switches (default off)
+## Publication settings
 
-Publication starts off because events consume the org's Platform Event allocation and may trigger
-subscriber automation, storage, notifications, or external processing. An administrator should
-enable only the summary or per-Rule detail that a reviewed subscriber actually uses.
+Lifecycle publication starts off because events consume the org's Platform Event allocation and
+may trigger subscriber automation, storage, notifications, or external processing. Error-log
+publication starts on so framework failures are observable unless an administrator opts a Check
+Set out.
 
-| Metadata | Field | What it enables |
-| --- | --- | --- |
-| Check Set | **Publish Run Event** (`PublishRunEvent__c`) | One `Record_Health_Check_Set_Run__e` after a completed deliberate LWC, Apex, or Flow run |
-| Rule | **Publish Result Event** (`PublishResultEvent__c`) | One `Record_Health_Check_Rule_Result__e` per server-finalized Rule result in a deliberate LWC, Apex, or Flow run |
+| Metadata | Field | Default | What it controls |
+| --- | --- | --- | --- |
+| Check Set | **Publish Run Event** (`PublishRunEvent__c`) | Off | One `Record_Health_Check_Set_Run__e` after a completed deliberate LWC, Apex, or Flow run |
+| Rule | **Publish Result Event** (`PublishResultEvent__c`) | Off | One `Record_Health_Check_Rule_Result__e` per server-finalized Rule result in a deliberate LWC, Apex, or Flow run |
+| Check Set | **Publish Error Log Event** (`PublishErrorLogEvent__c`) | On | A `Record_Health_Check_Log__e` for each Framework `ERROR` associated with the Check Set |
 
-Page-load card evaluations never publish even if these checkboxes are on.
+Page-load card evaluations never publish lifecycle events even if their checkboxes are on. Error
+Log events are independent of deliberate-run source restrictions and publish immediately when an
+`ERROR` is captured. If the Framework cannot resolve a Check Set, Log publication remains enabled.
 
 For a user-initiated Lightning run with **Publish Run Event** enabled, the completion call
 re-evaluates the Check Set server-side before publishing trusted aggregate counts; it does not
@@ -172,22 +176,23 @@ carries restricted Framework `ERROR` diagnostics and uses **Publish Immediately*
 | Property | Lifecycle events (Set / Rule) | Diagnostics event (Log) |
 | --- | --- | --- |
 | Purpose | Completion facts | Errors that need reproducing |
-| Default | Optional per Set/Rule (off) | **On by default** (can be turned off) |
+| Default | Optional per Set/Rule (off) | **On by default**; opt out per Check Set with `PublishErrorLogEvent__c` |
 | Publish behavior | Publish After Commit | **Publish Immediately**: survives the rollback a failing check triggers |
 | Carries error detail | No: record ID + counts/status only | Yes: record ID plus message, exception type, stack trace |
 | Level | All completed runs | `ERROR` only |
 | Access | Standard subscriber | **Restricted**: only grant access to the subscriber when appropriate |
 
-The Log event is not controlled by **Publish Run Event** or **Publish Result Event**. Its complete
-event body, security requirements, subscriber loop guard, possibilities, and known limitations are in
-the [Log Platform Event reference](../metadata/event-log.md).
+The Log event is independent of **Publish Run Event** and **Publish Result Event**. It is controlled
+by the Check Set's default-on **Publish Error Log Event** field. Its complete event body, security
+requirements, subscriber loop guard, possibilities, and known limitations are in the [Log Platform
+Event reference](../metadata/event-log.md).
 
 ## Related
 
 - [Apex API](../reference/reference-apex-api.md)
 - [Flow actions](flow-actions.md)
 - [Lightning component](lightning-component.md)
-- [Check Set fields](../metadata/fields-check-set.md): Publish Run Event
+- [Check Set fields](../metadata/fields-check-set.md): Publish Run Event and Publish Error Log Event
 - [Rule fields](../metadata/fields-check-rule.md): Publish Result Event
 - [Check Set Run Platform Event](../metadata/event-set-run.md)
 - [Rule Result Platform Event](../metadata/event-rule-result.md)

@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >AML periodic review: high-risk accounts need Last_Compliance_Review_Date__c within 365 days. Custom fields — replace with your org's risk model.</value>
+    >AML periodic review: high-risk accounts need Last_Compliance_Review_Date__c within 365 days. Custom fields: replace with your org's risk model.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>
@@ -46,7 +46,7 @@
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Could not evaluate compliance review date — confirm custom risk fields exist. Contact your administrator.</value>
+    >Could not evaluate compliance review date: confirm custom risk fields exist. Contact your administrator.</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

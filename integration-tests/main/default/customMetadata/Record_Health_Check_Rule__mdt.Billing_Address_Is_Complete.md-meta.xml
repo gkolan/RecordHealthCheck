@@ -44,6 +44,6 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Billing address is incomplete — City, State, and Country are all required.</value>
+    >Billing address is incomplete: City, State, and Country are all required.</value>
     </values>
 </CustomMetadata>

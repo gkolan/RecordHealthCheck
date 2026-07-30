@@ -319,6 +319,11 @@ problem.
 - The Apex transaction must commit.
 - `SUBSCRIBER`, `RUN_ON_LOAD`, blank, and unknown sources cannot publish.
 
+Error Log publication follows a separate rule: `PublishErrorLogEvent__c` defaults to `true` on the
+Check Set and applies to Framework `ERROR` logs from any run source. Uncheck it to opt out. Missing
+or unresolved Check Set configuration defaults to publication so configuration failures remain
+observable.
+
 ## Event outputs
 
 The API can produce these asynchronous outputs in addition to its synchronous return value.

@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >If Query Finds No Records = Fail: no matching records means the check fails. Use it when an empty result is itself the problem — here, no Closed Won opportunities means the account has never converted. How To Interpret Query Results = AnyRowPasses passes</value>
+    >If Query Finds No Records = Fail: no matching records means the check fails. Use it when an empty result is itself the problem: here, no Closed Won opportunities means the account has never converted. How To Interpret Query Results = AnyRowPasses passes</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

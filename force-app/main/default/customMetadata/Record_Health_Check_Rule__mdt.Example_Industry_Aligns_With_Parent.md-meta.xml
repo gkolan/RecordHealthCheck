@@ -34,6 +34,12 @@
       xsi:type="xsd:string"
     >TEXT(Industry) = TEXT(Parent.Industry)</value>
     </values>
+    <values><field>DisplayFoundFormula__c</field><value
+      xsi:type="xsd:string"
+    >IF(ISBLANK(TEXT(Industry)), "Not classified", TEXT(Industry))</value></values>
+    <values><field>DisplayExpectedFormula__c</field><value
+      xsi:type="xsd:string"
+    >IF(ISBLANK(TEXT(Parent.Industry)), "Parent not classified", TEXT(Parent.Industry))</value></values>
     <values>
         <field>FailureSeverity__c</field>
         <value xsi:type="xsd:string">INFO</value>
@@ -42,8 +48,23 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >This account's industry differs from its parent account.</value>
+    >{!record.Name fallback="This account"}'s industry differs from its parent account.</value>
     </values>
+    <values><field>FixMessage__c</field><value
+      xsi:type="xsd:string"
+    >Confirm the correct classification, then align {!record.Name fallback="the account"} with its parent or document the exception.</value></values>
+    <values><field>ActionLabel__c</field><value
+      xsi:type="xsd:string"
+    >Align {!record.Name fallback="account"} with its parent</value></values>
+    <values><field>ActionUrl__c</field><value
+      xsi:type="xsd:string"
+    >/lightning/r/Account/{!record.Id}/edit</value></values>
+    <values><field>UnableToEvaluateMessage__c</field><value
+      xsi:type="xsd:string"
+    >{!rhcRule.checkTitle} could not compare {!record.Name fallback="this account"} with its parent. Verify access to both Industry fields and retry.</value></values>
+    <values><field>ApplicabilityNotMetMessage__c</field><value
+      xsi:type="xsd:string"
+    >{!record.Name fallback="This account"} has no parent account, so hierarchy alignment does not apply.</value></values>
     <values>
         <field>ApplicabilityMode__c</field>
         <value xsi:type="xsd:string">WHEN_FORMULA_TRUE</value>
@@ -58,6 +79,6 @@
     </values>
     <values>
         <field>IsActive__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

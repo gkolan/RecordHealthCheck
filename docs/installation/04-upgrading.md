@@ -37,7 +37,7 @@ sandbox or scratch org made from a current production backup before changing pro
 4. Assign `Record_Health_Check_User` to viewers and `Record_Health_Check_Admin` only to administrators. Assign the diagnostics-detail Custom Permission only where justified.
 5. Open each Lightning record page containing Record Health Check. Re-select the intended Check Set if the old component placement used removed properties, then save and activate the page.
 6. Verify `Example_Account_Relationship_Risk` on an Account for authorized, unauthorized, diagnostics-enabled, and diagnostics-disabled paths.
-7. Enable `PublishRunEvent__c` or `PublishResultEvent__c` only after reviewing event allocations and installed subscribers. Both remain false by default, and page-load evaluations never publish.
+7. Enable `PublishRunEvent__c` or `PublishResultEvent__c` only after reviewing event allocations and installed subscribers. Both remain false by default, and page-load evaluations never publish. `PublishErrorLogEvent__c` defaults to true; uncheck it on a Check Set only when its automatic ERROR log events are not wanted.
 
 ## Field migration reference
 
@@ -123,6 +123,7 @@ For current descriptions, allowed values, defaults, and dependencies, use the
 | `SkippedChecksDisplay__c` | Skipped Checks | `SkippedChecksDisplay__c` | Skipped Checks | Picklist (2) |
 | `DebugMode__c` | Show Troubleshooting Details | `ShowDiagnostics__c` | Show Diagnostics | Checkbox |
 | Not applicable | Added in the current release | `PublishRunEvent__c` | Publish Run Event | Checkbox |
+| Not applicable | Added in the current release | `PublishErrorLogEvent__c` | Publish Error Log Event | Checkbox |
 
 ### Migration decisions that require review
 
@@ -133,6 +134,8 @@ For current descriptions, allowed values, defaults, and dependencies, use the
   and `EvaluationOrder__c = 100` instead of assuming the previous behavior.
 - **Lifecycle events:** both publication fields default to unchecked. Enable them only after the
   subscriber, Platform Event allocation, replay, duplicate handling, and data access have been reviewed.
+- **Error events:** `PublishErrorLogEvent__c` defaults to checked. Uncheck it to opt an individual
+  Check Set out without changing Salesforce debug-log output.
 - **Validation:** run `scripts/apex/validateMetadata.apex` after conversion and resolve every finding
   before destructive changes or production deployment.
 

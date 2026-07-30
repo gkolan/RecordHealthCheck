@@ -3,9 +3,11 @@
 set -euo pipefail
 
 TARGET_ALIAS="${1:-rhc-demo}"
+DURATION_DAYS="${2:-30}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 export SF_DISABLE_LOG_FILE=true
+export SFDX_DISABLE_DNS_CHECK=true
 
 if [[ -z "${DEV_HUB_ALIAS:-}" ]]; then
   echo "Set DEV_HUB_ALIAS to your Dev Hub org alias, then re-run." >&2
@@ -20,12 +22,12 @@ fi
 
 cd "$PROJECT_ROOT"
 
-echo "Creating 30-day scratch org '$TARGET_ALIAS' with Salesforce sample data..."
+echo "Creating ${DURATION_DAYS}-day scratch org '$TARGET_ALIAS' with Salesforce sample data..."
 sf org create scratch \
-  --definition-file config/project-scratch-def.json \
+  --definition-file config/display-formats-scratch-def.json \
   --alias "$TARGET_ALIAS" \
   --target-dev-hub "$DEV_HUB_ALIAS" \
-  --duration-days 30 \
+  --duration-days "$DURATION_DAYS" \
   --wait 30
 
 echo "Deploying Record Health Check core, examples, layouts, and list views..."
@@ -33,6 +35,11 @@ sf project deploy start \
   --source-dir force-app \
   --target-org "$TARGET_ALIAS" \
   --wait 30
+
+echo "Configuring the demo administrator as Gautam Kolan..."
+sf apex run \
+  --target-org "$TARGET_ALIAS" \
+  --file scripts/apex/configureDemoAdmin.apex
 
 echo "Installing the demo Account record page..."
 sf project deploy start \
@@ -55,6 +62,16 @@ sf apex run \
   --target-org "$TARGET_ALIAS" \
   --file scripts/apex/setupDemoData.apex
 
+echo "Creating the realistic Account, Contact, and Opportunity example portfolio..."
+sf data create record \
+  --target-org "$TARGET_ALIAS" \
+  --sobject CurrencyType \
+  --values "IsoCode=EUR ConversionRate=1.15 DecimalPlaces=2 IsActive=true" \
+  --json
+sf apex run \
+  --target-org "$TARGET_ALIAS" \
+  --file scripts/apex/setupExampleData.apex
+
 echo "Deactivating Jordan Blake after Account ownership is assigned..."
 sf apex run \
   --target-org "$TARGET_ALIAS" \
@@ -73,7 +90,12 @@ sf apex run \
   --target-org "$TARGET_ALIAS" \
   --file scripts/apex/verifyDemo.apex
 
+echo "Verifying the realistic example portfolio and object-specific outcomes..."
+sf apex run \
+  --target-org "$TARGET_ALIAS" \
+  --file scripts/apex/verifyExampleData.apex
+
 echo
-echo "Account relationship and risk demo org is ready."
+echo "Record Health Check demo org is ready."
 echo "Alias: $TARGET_ALIAS"
 echo "Open Accounts: sf org open --target-org $TARGET_ALIAS --path 'lightning/o/Account/list?filterName=AllAccounts'"

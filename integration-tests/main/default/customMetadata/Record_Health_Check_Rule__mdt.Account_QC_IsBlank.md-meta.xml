@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Comparison Operator = IsBlank passes when the field is empty. Useful when a field must stay empty — for example one maintained by an automated process that people should not edit. Like IsNotBlank, it needs no expected value.</value>
+    >Comparison Operator = IsBlank passes when the field is empty. Useful when a field must stay empty: for example one maintained by an automated process that people should not edit. Like IsNotBlank, it needs no expected value.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

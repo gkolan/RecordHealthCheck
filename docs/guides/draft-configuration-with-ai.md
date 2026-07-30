@@ -150,6 +150,7 @@ Minimum fields when creating a new Check Set:
 | `IsActive__c` | Active | No | `true` |
 | `ShowDiagnostics__c` | Show Diagnostics | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Diagnostics` (from `Record_Health_Check_Admin`). See [Show Diagnostics guide](troubleshoot-with-show-diagnostics.md). |
 | `PublishRunEvent__c` | Publish Run Event | No | `false` by default; page-load runs never publish |
+| `PublishErrorLogEvent__c` | Publish Error Log Event | No | `true` by default; set `false` to opt this Check Set out of ERROR log events |
 
 **Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `checkSetDeveloperName`.
 

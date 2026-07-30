@@ -7,6 +7,10 @@
     <label>Account Display Formats</label>
     <protected>false</protected>
     <values>
+        <field>PublishErrorLogEvent__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
         <field>ObjectApiName__c</field>
         <value xsi:type="xsd:string">Account</value>
     </values>
