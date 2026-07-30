@@ -13,6 +13,8 @@ deploy-options.json
 !/config/display-formats-scratch-def.json
 .claude/
 .playwright-mcp/
+/AGENTS.md
+/CLAUDE.md
 
 # LWC VSCode autocomplete
 **/lwc/jsconfig.json
