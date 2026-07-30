@@ -3,18 +3,12 @@
 [![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE) [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Apex coverage: 97.03%](https://img.shields.io/badge/Apex%20coverage-97.03%25-brightgreen)](docs/development/code-coverage-statistics.md) [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json) [![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck) [![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
 
 > **Make informed decisions before taking action on Salesforce data.**
->
-> Record Health Check evaluates Salesforce records directly on the record page, surfacing what
-> needs attention, why it matters, and how to resolve it without modifying the record or blocking
-> users.
 
-Every Rule returns **Pass**, **Fail**, **Skipped**, or **Unable to Check**. When a record needs
-attention, the card can show its **Critical**, **Warning**, or **Info** severity; explain what was
-**Found** and **Expected**; and provide fix instructions with an optional read-only **Fix it** link.
+Record Health Check is a metadata-driven framework that evaluates a Salesforce record directly on its record page. It provides read-only guidance about what needs attention, why it matters, and how to resolve it, without modifying the record or blocking users.
 
-Administrators define **Check Sets** and **Rules** in Custom Metadata. The Framework evaluates them
-at read time, so one card can review the current record, related records, aggregate results, and
-data that existed before the Rules were created, without writing to the record.
+Every Rule returns **Pass**, **Fail**, **Skipped**, or **Unable to Check**. When a record needs attention, the card can show its **Critical**, **Warning**, or **Info** severity, explain what was **Found** and **Expected**, and provide fix instructions with an optional read-only **Fix it** link.
+
+Administrators define **Check Sets** and **Rules** in Custom Metadata. The framework evaluates them at read time, so one card can review the current record, related records, aggregate results, and data that existed before the Rules were created, all without writing to the record.
 
 > [!NOTE]
 > Record Health Check provides advisory guidance; it never blocks a save. When Salesforce must
