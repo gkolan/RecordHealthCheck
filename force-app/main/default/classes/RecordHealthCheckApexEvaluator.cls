@@ -144,19 +144,23 @@ public with sharing class RecordHealthCheckApexEvaluator {
       return result;
     }
 
-    // 3. Build context and invoke
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = recordId;
-    context.objectApiName = RecordHealthCheckDescribeCache.objectApiName(
-      recordId
+    // 3. Build a scope and invoke.
+    // The record page evaluates one record, but it does so through the same
+    // bulk contract a two-hundred-record scan uses. Interactive evaluation is a
+    // bulk evaluation whose scope happens to contain one record, not a
+    // different API, path, or standard.
+    RecordHealthCheckScope scope = new RecordHealthCheckScope(
+      RecordHealthCheckDescribeCache.objectApiName(recordId),
+      new List<Id>{ recordId },
+      parameters,
+      rule.DeveloperName,
+      null,
+      null
     );
-    context.record = record;
-    context.parameters = parameters;
-    context.ruleDeveloperName = rule.DeveloperName;
 
     return invokeAndFinalize(
       (RecordHealthCheckRule) instance,
-      context,
+      scope,
       rule,
       record,
       result
@@ -166,36 +170,85 @@ public with sharing class RecordHealthCheckApexEvaluator {
   @TestVisible
   private RecordHealthCheckResult invokeAndFinalize(
     RecordHealthCheckRule evaluator,
-    RecordHealthCheckContext context,
+    RecordHealthCheckScope scope,
     Record_Health_Check_Rule__mdt rule,
     SObject record,
     RecordHealthCheckResult fallbackResult
   ) {
-    RecordHealthCheckResult apexResult;
+    Id recordId = scope.recordIds[0];
+    Map<Id, RecordHealthCheckOutcome> outcomes;
     try {
-      apexResult = evaluator.evaluate(context);
-    } catch (Exception ex) {
-      // Pluggable Apex must catch its own exceptions, but if it doesn't
-      // we catch here and return ERROR with a safe message.
-      fallbackResult.status = 'ERROR';
-      fallbackResult.reasonCode = 'APEX_EVALUATOR_ERROR';
+      outcomes = RecordHealthCheckPluginDispatch.run(evaluator, scope);
+    } catch (RecordHealthCheckPluginDispatch.ContractException ex) {
+      // The check broke its contract but changed nothing, so the failure is
+      // attributable to the rule and can safely become a result.
+      fallbackResult.status = RecordHealthCheckStatus.ERROR;
+      fallbackResult.reasonCode = ex.reasonCode;
       fallbackResult.message = safeCannotEvaluateMessage(rule);
       fallbackResult.detailMessage = ex.getMessage();
       return fallbackResult;
     }
+    // RecordHealthCheckPluginDispatch.SideEffectException is deliberately NOT
+    // caught. A check that changed something must fail the transaction so the
+    // change rolls back; converting it into a result here would let the
+    // mutation commit alongside the row reporting it.
 
-    if (apexResult == null) {
-      fallbackResult.status = 'ERROR';
-      fallbackResult.reasonCode = 'APEX_EVALUATOR_ERROR';
+    RecordHealthCheckOutcome outcome = outcomes.get(recordId);
+    if (
+      outcome != null &&
+      RecordHealthCheckStatus.ERROR.equals(outcome.status) &&
+      RecordHealthCheckReasonCodes.PLUGIN_RESULT_MISSING.equals(
+        outcome.reasonCode
+      )
+    ) {
+      fallbackResult.status = RecordHealthCheckStatus.ERROR;
+      fallbackResult.reasonCode = outcome.reasonCode;
       fallbackResult.message = safeCannotEvaluateMessage(rule);
       fallbackResult.detailMessage =
         '"' +
         rule.ApexClass__c +
-        '" returned a null result.';
+        '" returned no result for this record.';
       return fallbackResult;
     }
 
-    return finalizeApexResult(rule, record, fallbackResult, apexResult);
+    return finalizeApexResult(
+      rule,
+      record,
+      fallbackResult,
+      toLegacyResult(outcome, fallbackResult)
+    );
+  }
+
+  /**
+   * Bridges an Outcome onto the 1.x result shape the rest of the engine still
+   * speaks. The engine owns identity and severity, so only the verdict and its
+   * values cross over; everything a plugin is not allowed to set stays unset.
+   */
+  private RecordHealthCheckResult toLegacyResult(
+    RecordHealthCheckOutcome outcome,
+    RecordHealthCheckResult template
+  ) {
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.ruleDeveloperName = template.ruleDeveloperName;
+    result.label = template.label;
+    result.priority = template.priority;
+    result.evaluatorType = template.evaluatorType;
+    result.status = outcome.status;
+    result.reasonCode = outcome.reasonCode;
+    result.actualValue = renderValue(outcome.found);
+    result.expectedValue = renderValue(outcome.expected);
+    return result;
+  }
+
+  private String renderValue(RecordHealthCheckValue value) {
+    if (value == null) {
+      return null;
+    }
+    if (value.isList()) {
+      List<String> members = value.storedValues;
+      return members == null ? null : String.join(members, ', ');
+    }
+    return value.storedValue;
   }
 
   // ─── Helper ───────────────────────────────────────────────────────────────

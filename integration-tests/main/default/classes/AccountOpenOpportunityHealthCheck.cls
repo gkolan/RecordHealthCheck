@@ -8,50 +8,68 @@
  * stale, missing Next Step, and not closing this quarter. Tunable via
  * {"staleDays": 30}
  */
-public with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
+global with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_STALE_DAYS = 30;
   private static final Integer MIN_STALE_DAYS = 1;
   private static final Integer MAX_STALE_DAYS = 3650;
 
-  public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-    Integer staleDays = resolveStaleDays(context.parameters);
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    Integer staleDays = resolveStaleDays(scope.parameters);
     Date staleCutoff = Date.today().addDays(-staleDays);
     Date quarterStart = getQuarterStart(Date.today());
     Date quarterEnd = quarterStart.addMonths(3).addDays(-1);
+    List<Id> recordIds = scope.recordIds;
 
-    List<Opportunity> openOpps = [
-      SELECT LastActivityDate, NextStep, CloseDate
+    // Seed every Account first. An Account with no open Opportunities returns
+    // no rows at all, and "nothing unhealthy" is a real pass rather than a
+    // record the check forgot to answer for.
+    Map<Id, Integer> unhealthyByAccount = new Map<Id, Integer>();
+    Map<Id, Integer> scannedByAccount = new Map<Id, Integer>();
+    for (Id recordId : recordIds) {
+      unhealthyByAccount.put(recordId, 0);
+      scannedByAccount.put(recordId, 0);
+    }
+
+    // One query for the whole scope. AccountId is selected so each row can be
+    // attributed back to the record it belongs to.
+    for (Opportunity opp : [
+      SELECT AccountId, LastActivityDate, NextStep, CloseDate
       FROM Opportunity
-      WHERE AccountId = :context.recordId AND IsClosed = FALSE
+      WHERE AccountId IN :recordIds AND IsClosed = FALSE
       WITH USER_MODE
-    ];
-
-    Integer unhealthyCount = 0;
-    for (Opportunity opp : openOpps) {
+    ]) {
+      if (!scannedByAccount.containsKey(opp.AccountId)) {
+        continue;
+      }
+      scannedByAccount.put(
+        opp.AccountId,
+        scannedByAccount.get(opp.AccountId) + 1
+      );
       if (isUnhealthy(opp, staleCutoff, quarterStart, quarterEnd)) {
-        unhealthyCount++;
+        unhealthyByAccount.put(
+          opp.AccountId,
+          unhealthyByAccount.get(opp.AccountId) + 1
+        );
       }
     }
 
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.status = unhealthyCount == 0 ? 'PASS' : 'FAIL';
-    // Set on pass and fail so an entitled viewer can audit a green row too.
-    result.actualValue = unhealthyCount + ' unhealthy';
-    result.expectedValue = '0 unhealthy';
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'Unhealthy open opportunities',
-      String.valueOf(unhealthyCount),
-      openOpps.size() +
-        ' open opportunit' +
-        (openOpps.size() == 1 ? 'y' : 'ies') +
-        ' scanned'
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Allowed unhealthy count',
-      '0',
-      null
-    );
-    return result;
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(0);
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
+    for (Id recordId : recordIds) {
+      Integer unhealthyCount = unhealthyByAccount.get(recordId);
+      RecordHealthCheckOutcome outcome = unhealthyCount == 0
+        ? RecordHealthCheckOutcome.pass('APEX_PASS')
+        : RecordHealthCheckOutcome.fail('APEX_FAIL');
+      results.put(
+        recordId,
+        outcome
+          .withFound(RecordHealthCheckValue.ofCount(unhealthyCount))
+          .withComparison('EQUALS', expected)
+      );
+    }
+    return results;
   }
 
   @TestVisible

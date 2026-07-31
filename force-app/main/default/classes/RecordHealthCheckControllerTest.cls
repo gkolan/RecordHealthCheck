@@ -96,6 +96,10 @@ private class RecordHealthCheckControllerTest {
       'user-run',
       RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
     );
+    // This counts DML statements as a proxy for published events. It stays at
+    // one because RecordHealthCheckPluginDispatch takes its side-effect
+    // savepoint once per transaction and only when a custom Apex Rule actually
+    // runs, which no Rule in this test does.
     System.assertEquals(
       beforeDml + 1,
       Limits.getDmlStatements(),
@@ -113,8 +117,14 @@ private class RecordHealthCheckControllerTest {
       RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED,
       accountRecord.Id
     );
+    // Three DML statements, not two: the Rule event, the Set completion event,
+    // and the single side-effect savepoint RecordHealthCheckPluginDispatch
+    // takes the first time a custom Apex Rule runs in the transaction. Running
+    // the whole Set reaches the Apex Rule, which the single-Rule case above
+    // does not. That savepoint is what makes the no-side-effect guarantee real
+    // rather than dependent on nobody up the stack catching the violation.
     System.assertEquals(
-      beforeDml + 2,
+      beforeDml + 3,
       Limits.getDmlStatements(),
       'An opted-in user-initiated Set must publish once at completion.'
     );

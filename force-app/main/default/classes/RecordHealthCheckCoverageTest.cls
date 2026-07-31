@@ -6,13 +6,17 @@
 @IsTest
 private class RecordHealthCheckCoverageTest {
   private class ThrowingRule implements RecordHealthCheckRule {
-    public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
+    public Map<Id, RecordHealthCheckOutcome> evaluate(
+      RecordHealthCheckScope scope
+    ) {
       throw new IllegalArgumentException('Test plugin failure.');
     }
   }
 
   private class NullRule implements RecordHealthCheckRule {
-    public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
+    public Map<Id, RecordHealthCheckOutcome> evaluate(
+      RecordHealthCheckScope scope
+    ) {
       return null;
     }
   }
@@ -46,12 +50,14 @@ private class RecordHealthCheckCoverageTest {
     response.showDiagnostics = true;
     response.checks = new List<RecordHealthCheckDefinition>{ definition };
 
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = accountRecord.Id;
-    context.objectApiName = 'Account';
-    context.record = accountRecord;
-    context.parameters = new Map<String, Object>{ 'mode' => 'PASS' };
-    context.ruleDeveloperName = 'Definition_Key';
+    RecordHealthCheckScope scope = new RecordHealthCheckScope(
+      'Account',
+      new List<Id>{ accountRecord.Id },
+      new Map<String, Object>{ 'mode' => 'PASS' },
+      'Definition_Key',
+      'Definition_Set',
+      'run-1'
+    );
 
     RecordHealthCheckResult result = new RecordHealthCheckResult();
     result.ruleDeveloperName = definition.developerName;
@@ -67,7 +73,16 @@ private class RecordHealthCheckCoverageTest {
     result.evaluatorType = 'Test';
 
     System.assertEquals('Definition_Key', response.checks[0].developerName);
-    System.assertEquals(accountRecord.Id, context.recordId);
+    System.assertEquals(accountRecord.Id, scope.recordIds[0]);
+    System.assertEquals('Account', scope.objectApiName);
+    System.assertEquals('PASS', scope.parameters.get('mode'));
+    System.assertEquals('Definition_Key', scope.ruleDeveloperName);
+    System.assertEquals('Definition_Set', scope.checkSetDeveloperName);
+    System.assertEquals('run-1', scope.runId);
+    // The scope hands back copies, so a plugin holding a reference cannot reach
+    // engine state through the list or the parameter map it was given.
+    scope.recordIds.clear();
+    System.assertEquals(1, scope.recordIds.size());
     System.assertEquals('PASS', result.status);
   }
 
@@ -2915,28 +2930,35 @@ private class RecordHealthCheckCoverageTest {
       'TestOnlyRule',
       null
     );
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = accountRecord.Id;
-    context.record = accountRecord;
+    RecordHealthCheckScope scope = new RecordHealthCheckScope(
+      'Account',
+      new List<Id>{ accountRecord.Id },
+      null,
+      'Isolated_Apex',
+      null,
+      null
+    );
+    // Both now carry a reason code naming what the check actually did wrong,
+    // rather than one generic code covering every way it could fail.
     assertReason(
       evaluator.invokeAndFinalize(
         new ThrowingRule(),
-        context,
+        scope,
         apex,
         accountRecord,
         new RecordHealthCheckResult()
       ),
-      'APEX_EVALUATOR_ERROR'
+      RecordHealthCheckReasonCodes.PLUGIN_THREW
     );
     assertReason(
       evaluator.invokeAndFinalize(
         new NullRule(),
-        context,
+        scope,
         apex,
         accountRecord,
         new RecordHealthCheckResult()
       ),
-      'APEX_EVALUATOR_ERROR'
+      RecordHealthCheckReasonCodes.PLUGIN_RESULT_MISSING
     );
     RecordHealthCheckResult blankFailure = new RecordHealthCheckResult();
     blankFailure.status = 'FAIL';

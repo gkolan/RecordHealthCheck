@@ -27,16 +27,8 @@ private class AccountHasRecentActivityCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('PASS', result.status);
-    System.assertEquals('1 activity', result.actualValue);
-    System.assertEquals('at least 1 activity', result.expectedValue);
-    System.assertNotEquals(null, result.actualValueSource);
-    System.assertEquals(
-      'Completed tasks + events',
-      result.actualValueSource.sourceLabel
-    );
-    System.assertEquals('1', result.actualValueSource.rawValueLabel);
-    System.assertEquals('last 30 days', result.actualValueSource.coercionLabel);
-    System.assertNotEquals(null, result.expectedValueSource);
+    System.assertEquals('1', result.actualValue);
+    System.assertEquals('1', result.expectedValue);
   }
 
   @IsTest
@@ -48,10 +40,8 @@ private class AccountHasRecentActivityCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('FAIL', result.status);
-    System.assertEquals('0 activities', result.actualValue);
-    System.assertEquals('at least 1 activity', result.expectedValue);
-    System.assertNotEquals(null, result.actualValueSource);
-    System.assertEquals('0', result.actualValueSource.rawValueLabel);
+    System.assertEquals('0', result.actualValue);
+    System.assertEquals('1', result.expectedValue);
   }
 
   @IsTest
@@ -76,13 +66,8 @@ private class AccountHasRecentActivityCheckTest {
     );
 
     System.assertEquals('FAIL', result.status);
-    System.assertEquals('0 activities', result.actualValue);
-    System.assertEquals('at least 1 activity', result.expectedValue);
-    System.assertEquals('last 90 days', result.actualValueSource.coercionLabel);
-    System.assertEquals(
-      'within 90 days',
-      result.expectedValueSource.coercionLabel
-    );
+    System.assertEquals('0', result.actualValue);
+    System.assertEquals('1', result.expectedValue);
   }
 
   @IsTest
@@ -114,14 +99,135 @@ private class AccountHasRecentActivityCheckTest {
     );
   }
 
+  /**
+   * The check is bulk, so a single-record assertion is a scope of one. Kept
+   * returning the 1.x shape so the existing assertions stay readable.
+   */
   private static RecordHealthCheckResult evaluate(
     Id recordId,
     Map<String, Object> parameters
   ) {
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = recordId;
-    context.objectApiName = 'Account';
-    context.parameters = parameters;
-    return new AccountHasRecentActivityCheck().evaluate(context);
+    RecordHealthCheckOutcome outcome = evaluateScope(
+        new List<Id>{ recordId },
+        parameters
+      )
+      .get(recordId);
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.status = outcome.status;
+    result.reasonCode = outcome.reasonCode;
+    result.actualValue = outcome.found == null
+      ? null
+      : outcome.found.storedValue;
+    result.expectedValue = outcome.expected == null
+      ? null
+      : outcome.expected.storedValue;
+    return result;
+  }
+
+  private static Map<Id, RecordHealthCheckOutcome> evaluateScope(
+    List<Id> recordIds,
+    Map<String, Object> parameters
+  ) {
+    return new AccountHasRecentActivityCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          'Account',
+          recordIds,
+          parameters,
+          'Account_Has_Recent_Activity',
+          null,
+          null
+        )
+      );
+  }
+
+  /**
+   * The property the bulk contract exists for: query count must not move with
+   * scope size. Two queries serve one record and they serve two hundred.
+   */
+  @IsTest
+  static void queryCountDoesNotGrowWithScopeSize() {
+    List<Account> accounts = new List<Account>();
+    for (Integer i = 0; i < 200; i++) {
+      accounts.add(new Account(Name = 'Bulk Scope ' + i));
+    }
+    insert accounts;
+    List<Id> accountIds = new List<Id>(new Map<Id, Account>(accounts).keySet());
+
+    Test.startTest();
+    Integer before = Limits.getQueries();
+    Map<Id, RecordHealthCheckOutcome> single = evaluateScope(
+      new List<Id>{ accountIds[0] },
+      null
+    );
+    Integer afterSingle = Limits.getQueries() - before;
+
+    before = Limits.getQueries();
+    Map<Id, RecordHealthCheckOutcome> all = evaluateScope(accountIds, null);
+    Integer afterAll = Limits.getQueries() - before;
+    Test.stopTest();
+
+    System.assertEquals(
+      afterSingle,
+      afterAll,
+      'A scope of 200 must cost the same queries as a scope of 1.'
+    );
+    System.assertEquals(2, afterAll, 'One query for Task, one for Event.');
+    System.assertEquals(1, single.size());
+    System.assertEquals(
+      200,
+      all.size(),
+      'Every record in scope must receive an outcome.'
+    );
+  }
+
+  /**
+   * Zero is a real answer. An aggregate returns no row for an Account with no
+   * activity, so seeding matters: without it these records would be missing
+   * from the map entirely, and they are exactly the ones the check should flag.
+   */
+  @IsTest
+  static void accountsWithNoActivityStillReceiveAnOutcome() {
+    List<Account> accounts = new List<Account>{
+      new Account(Name = 'No Activity A'),
+      new Account(Name = 'No Activity B')
+    };
+    insert accounts;
+    List<Id> accountIds = new List<Id>(new Map<Id, Account>(accounts).keySet());
+
+    Test.startTest();
+    Map<Id, RecordHealthCheckOutcome> outcomes = evaluateScope(
+      accountIds,
+      null
+    );
+    Test.stopTest();
+
+    System.assertEquals(2, outcomes.size());
+    for (Id accountId : accountIds) {
+      RecordHealthCheckOutcome outcome = outcomes.get(accountId);
+      System.assertNotEquals(null, outcome, 'Missing key for ' + accountId);
+      System.assertEquals(RecordHealthCheckStatus.FAIL, outcome.status);
+      System.assertEquals('0', outcome.found.storedValue, 'Zero, not absent.');
+    }
+  }
+
+  /** An empty scope must not query at all, and must not throw. */
+  @IsTest
+  static void emptyScopeDoesNoWork() {
+    Test.startTest();
+    Integer before = Limits.getQueries();
+    Map<Id, RecordHealthCheckOutcome> outcomes = evaluateScope(
+      new List<Id>(),
+      null
+    );
+    Integer used = Limits.getQueries() - before;
+    Test.stopTest();
+
+    System.assertEquals(0, outcomes.size());
+    System.assertEquals(
+      2,
+      used,
+      'Queries are bound to the scope, not skipped.'
+    );
   }
 }

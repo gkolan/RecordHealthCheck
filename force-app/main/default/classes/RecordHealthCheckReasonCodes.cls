@@ -12,6 +12,30 @@ public class RecordHealthCheckReasonCodes {
   public static final String NOT_APPLICABLE_BY_COUNT = 'NOT_APPLICABLE_BY_COUNT';
   public static final String PREREQUISITE_NOT_MET = 'PREREQUISITE_NOT_MET';
 
+  // ─── Extension contract ────────────────────────────────────────────────────
+  // Engine-generated outcomes for a custom Apex Rule that broke its contract.
+  // A consumer must never have to read a message to understand an outcome, so
+  // every one of these is stable and additive: renaming one is a breaking change.
+
+  /** The Rule returned no entry for a record it was asked about. */
+  public static final String PLUGIN_RESULT_MISSING = 'PLUGIN_RESULT_MISSING';
+
+  /** The Rule returned an entry for a record it was not asked about. Fails the whole scope. */
+  public static final String PLUGIN_RESULT_UNKNOWN_KEY = 'PLUGIN_RESULT_UNKNOWN_KEY';
+
+  /** The Rule threw and did not handle it. The engine cannot attribute it to one record. */
+  public static final String PLUGIN_THREW = 'PLUGIN_THREW';
+
+  /**
+   * The Rule changed something. Outranks every other outcome, including an
+   * exception, and is never converted into results: the only way to undo the
+   * change is to let the transaction fail.
+   */
+  public static final String PLUGIN_SIDE_EFFECT_DETECTED = 'PLUGIN_SIDE_EFFECT_DETECTED';
+
+  /** The record was deleted between applicability and execution. */
+  public static final String RECORD_NO_LONGER_AVAILABLE = 'RECORD_NO_LONGER_AVAILABLE';
+
   public static final Set<String> DIAGNOSTICS_ONLY = new Set<String>{
     FIELD_NOT_ACCESSIBLE,
     RECORD_NOT_ACCESSIBLE
