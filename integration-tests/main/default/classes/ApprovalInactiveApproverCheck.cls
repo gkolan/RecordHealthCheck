@@ -18,7 +18,7 @@
  * can list the inactive approver names. The evaluator preserves a non-blank
  * plugin message; severity and label still come from the metadata record.
  */
-public with sharing class ApprovalInactiveApproverCheck implements RecordHealthCheckRule {
+global with sharing class ApprovalInactiveApproverCheck implements RecordHealthCheckRule {
   @TestVisible
   private static final String DEFAULT_APPROVAL_OBJECT = 'sbaa__Approval__c';
   @TestVisible
@@ -34,54 +34,86 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
   private static final Integer MIN_MAX_NAMES = 1;
   private static final Integer MAX_MAX_NAMES = 25;
 
-  public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-    Settings settings = resolveSettings(context.parameters);
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    List<Id> recordIds = scope.recordIds;
+    Settings settings = resolveSettings(scope.parameters);
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
 
     // Graceful degradation: the approval object is absent (Advanced Approvals
-    // not installed, or a custom object name was mistyped).
+    // not installed, or a custom object name was mistyped). Every record in the
+    // scope gets the same honest answer rather than a false PASS.
     if (
       !RecordHealthCheckDescribeCache.containsObject(settings.approvalObject)
     ) {
-      result.status = 'UNABLE_TO_EVALUATE';
-      result.reasonCode = 'OBJECT_NOT_FOUND';
-      result.detailMessage =
-        'Object ' +
-        settings.approvalObject +
-        ' is not present in this org.';
-      return result;
+      for (Id recordId : recordIds) {
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate('OBJECT_NOT_FOUND')
+        );
+      }
+      return results;
     }
 
-    Set<Id> assignedUserIds;
+    Map<Id, Set<Id>> assignedByRecord;
     try {
-      assignedUserIds = fetchAssignedUserIds(context.recordId, settings);
+      assignedByRecord = fetchAssignedUserIds(recordIds, settings);
     } catch (Exception ex) {
-      // A bad field name or malformed dynamic query surfaces as can't-run, never
-      // as a false PASS.
-      result.status = 'UNABLE_TO_EVALUATE';
-      result.reasonCode = 'INVALID_SOQL_TEMPLATE';
-      result.detailMessage = ex.getMessage();
-      return result;
+      // A bad field name or malformed dynamic query surfaces as can't-run,
+      // never as a false PASS.
+      for (Id recordId : recordIds) {
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate('INVALID_SOQL_TEMPLATE')
+        );
+      }
+      return results;
     }
 
-    return buildResult(assignedUserIds, result, settings);
+    // One User query for every approver across the whole scope.
+    Set<Id> allAssignees = new Set<Id>();
+    for (Set<Id> perRecord : assignedByRecord.values()) {
+      allAssignees.addAll(perRecord);
+    }
+    Map<Id, String> inactiveNames = loadInactiveNames(allAssignees);
+
+    for (Id recordId : recordIds) {
+      results.put(
+        recordId,
+        buildOutcome(assignedByRecord.get(recordId), inactiveNames, settings)
+      );
+    }
+    return results;
   }
 
   /**
    * The only managed-package-dependent step: a dynamic query over the approval
    * object. Isolated so the rest of the logic stays unit-testable without the
    * package, and so a configuration error is caught and reported cleanly.
+   *
+   * The target field is selected as well as filtered on, because that is what
+   * attributes each returned row back to the record it belongs to.
    */
-  private Set<Id> fetchAssignedUserIds(Id recordId, Settings settings) {
-    Set<Id> userIds = new Set<Id>();
+  private Map<Id, Set<Id>> fetchAssignedUserIds(
+    List<Id> recordIds,
+    Settings settings
+  ) {
+    Map<Id, Set<Id>> byRecord = new Map<Id, Set<Id>>();
+    for (Id recordId : recordIds) {
+      byRecord.put(recordId, new Set<Id>()); // no pending approvals is a real answer
+    }
+
     String soql =
       'SELECT ' +
+      settings.targetField +
+      ', ' +
       settings.userField +
       ' FROM ' +
       settings.approvalObject +
       ' WHERE ' +
       settings.targetField +
-      ' = :recordId' +
+      ' IN :recordIds' +
       ' AND ' +
       settings.statusField +
       ' IN :pendingStatuses' +
@@ -89,93 +121,80 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       settings.userField +
       ' != null';
     Map<String, Object> binds = new Map<String, Object>{
-      'recordId' => recordId,
+      'recordIds' => recordIds,
       'pendingStatuses' => settings.pendingStatuses
     };
     for (
       SObject row : Database.queryWithBinds(soql, binds, AccessLevel.USER_MODE)
     ) {
-      Object raw = row.get(settings.userField);
-      if (raw != null) {
-        userIds.add((Id) raw);
+      Object target = row.get(settings.targetField);
+      Object assignee = row.get(settings.userField);
+      if (target == null || assignee == null) {
+        continue;
+      }
+      Set<Id> bucket = byRecord.get((Id) target);
+      if (bucket != null) {
+        bucket.add((Id) assignee);
       }
     }
-    return userIds;
+    return byRecord;
   }
 
-  /**
-   * Standard-object logic — fully unit-testable without the managed package.
-   * Resolves which of the assigned users are inactive and shapes the result.
-   */
-  @TestVisible
-  private RecordHealthCheckResult buildResult(
-    Set<Id> assignedUserIds,
-    RecordHealthCheckResult result,
-    Settings settings
-  ) {
+  private static Map<Id, String> loadInactiveNames(Set<Id> assignedUserIds) {
+    Map<Id, String> names = new Map<Id, String>();
     if (assignedUserIds == null || assignedUserIds.isEmpty()) {
-      populateComparison(result, 0);
-      result.status = 'PASS';
-      return result;
+      return names;
     }
-
-    List<String> inactiveNames = new List<String>();
     for (User assignee : [
-      SELECT Name
+      SELECT Id, Name
       FROM User
       WHERE Id IN :assignedUserIds AND IsActive = FALSE
       WITH USER_MODE
       ORDER BY Name
     ]) {
-      inactiveNames.add(assignee.Name);
+      names.put(assignee.Id, assignee.Name);
     }
-
-    // Set on pass and fail so an entitled viewer can audit a green row too.
-    populateComparison(result, inactiveNames.size());
-
-    if (inactiveNames.isEmpty()) {
-      result.status = 'PASS';
-      return result;
-    }
-
-    result.status = 'FAIL';
-    result.message = buildMessage(inactiveNames, settings.maxNames);
-    return result;
+    return names;
   }
 
-  private static void populateComparison(
-    RecordHealthCheckResult result,
-    Integer inactiveCount
-  ) {
-    result.actualValue = inactiveCount + ' inactive';
-    result.expectedValue = '0 inactive';
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'Inactive approvers on pending requests',
-      String.valueOf(inactiveCount),
-      null
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Allowed inactive approvers',
-      '0',
-      null
-    );
-  }
-
+  /**
+   * Standard-object logic — fully unit-testable without the managed package.
+   * Takes the scope-wide inactive-user lookup and resolves one record's verdict
+   * from it, so no query happens per record.
+   */
   @TestVisible
-  private static String buildMessage(List<String> names, Integer maxNames) {
-    Integer shown = Math.min(names.size(), maxNames);
-    List<String> head = new List<String>();
-    for (Integer i = 0; i < shown; i++) {
-      head.add(names[i]);
+  private RecordHealthCheckOutcome buildOutcome(
+    Set<Id> assignedUserIds,
+    Map<Id, String> inactiveNames,
+    Settings settings
+  ) {
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofList(
+      new List<String>()
+    );
+    if (assignedUserIds == null || assignedUserIds.isEmpty()) {
+      return RecordHealthCheckOutcome.pass('APEX_PASS')
+        .withFound(RecordHealthCheckValue.ofList(new List<String>()))
+        .withComparison('EQUALS', expected);
     }
-    String joined = String.join(head, ', ');
-    Integer remaining = names.size() - shown;
-    if (remaining > 0) {
-      joined += ' (+' + remaining + ' more)';
+
+    List<String> inactive = new List<String>();
+    for (Id assignee : assignedUserIds) {
+      String name = inactiveNames.get(assignee);
+      if (name != null) {
+        inactive.add(name);
+      }
     }
-    return 'Approval chain blocked by inactive approver(s): ' +
-      joined +
-      '. Reassign the approver(s) before submitting for approval.';
+    inactive.sort();
+
+    // The names ARE the finding, carried as a typed list so the engine can
+    // render them. The check does not write the sentence itself: prose, and how
+    // many names to show before truncating, are display decisions the core owns.
+    RecordHealthCheckOutcome outcome = inactive.isEmpty()
+      ? RecordHealthCheckOutcome.pass('APEX_PASS')
+      : RecordHealthCheckOutcome.fail('APEX_FAIL');
+    return outcome
+      .withFound(RecordHealthCheckValue.ofList(inactive))
+      .withComparison('EQUALS', expected);
   }
 
   @TestVisible
@@ -185,6 +204,9 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
     public String userField = DEFAULT_USER_FIELD;
     public String statusField = DEFAULT_STATUS_FIELD;
     public List<String> pendingStatuses = DEFAULT_PENDING_STATUSES.clone();
+    // Retained as a parsed setting, but the check no longer renders names into
+    // a sentence: how many to show before truncating is a display decision the
+    // core owns through DISPLAY_LIST_PREVIEW_CAP.
     public Integer maxNames = DEFAULT_MAX_NAMES;
   }
 

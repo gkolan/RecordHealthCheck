@@ -18,9 +18,8 @@ private class AccountOpenOpportunityHealthCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('PASS', result.status);
-    System.assertEquals('0 unhealthy', result.actualValue);
-    System.assertEquals('0 unhealthy', result.expectedValue);
-    System.assertNotEquals(null, result.actualValueSource);
+    System.assertEquals('0', result.actualValue);
+    System.assertEquals('0', result.expectedValue);
   }
 
   @IsTest
@@ -46,8 +45,8 @@ private class AccountOpenOpportunityHealthCheckTest {
       result.status,
       'A deal with a Next Step closing this quarter is healthy.'
     );
-    System.assertEquals('0 unhealthy', result.actualValue);
-    System.assertEquals('0 unhealthy', result.expectedValue);
+    System.assertEquals('0', result.actualValue);
+    System.assertEquals('0', result.expectedValue);
   }
 
   @IsTest
@@ -67,8 +66,8 @@ private class AccountOpenOpportunityHealthCheckTest {
     RecordHealthCheckResult result = evaluate(account.Id, null);
 
     System.assertEquals('FAIL', result.status);
-    System.assertEquals('1 unhealthy', result.actualValue);
-    System.assertEquals('0 unhealthy', result.expectedValue);
+    System.assertEquals('1', result.actualValue);
+    System.assertEquals('0', result.expectedValue);
   }
 
   @IsTest
@@ -170,14 +169,35 @@ private class AccountOpenOpportunityHealthCheckTest {
     );
   }
 
+  /**
+   * The check is bulk, so a single-record assertion is a scope of one. Mapped
+   * back onto the 1.x shape so the existing assertions stay readable.
+   */
   private static RecordHealthCheckResult evaluate(
     Id recordId,
     Map<String, Object> parameters
   ) {
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = recordId;
-    context.objectApiName = 'Account';
-    context.parameters = parameters;
-    return new AccountOpenOpportunityHealthCheck().evaluate(context);
+    RecordHealthCheckOutcome outcome = new AccountOpenOpportunityHealthCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          'Account',
+          new List<Id>{ recordId },
+          parameters,
+          'Open_Opportunities_Are_Healthy',
+          null,
+          null
+        )
+      )
+      .get(recordId);
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.status = outcome.status;
+    result.reasonCode = outcome.reasonCode;
+    result.actualValue = outcome.found == null
+      ? null
+      : outcome.found.storedValue;
+    result.expectedValue = outcome.expected == null
+      ? null
+      : outcome.expected.storedValue;
+    return result;
   }
 }

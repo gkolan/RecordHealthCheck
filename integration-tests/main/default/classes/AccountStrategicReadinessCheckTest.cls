@@ -19,16 +19,7 @@ private class AccountStrategicReadinessCheckTest {
 
     System.assertEquals('FAIL', result.status);
     System.assertEquals('0', result.actualValue);
-    System.assertEquals('80+', result.expectedValue);
-    // the Apex check captures structured value source for both sides so an
-    // entitled viewer can audit where the score came from.
-    System.assertNotEquals(null, result.actualValueSource);
-    System.assertEquals(
-      'Strategic readiness score',
-      result.actualValueSource.sourceLabel
-    );
-    System.assertEquals('0', result.actualValueSource.rawValueLabel);
-    System.assertNotEquals(null, result.expectedValueSource);
+    System.assertEquals('80', result.expectedValue);
   }
 
   @IsTest
@@ -47,8 +38,6 @@ private class AccountStrategicReadinessCheckTest {
     // Values and value source are set on a PASS too so a
     // green row stays auditable through the disclosure.
     System.assertEquals('25', result.actualValue);
-    System.assertNotEquals(null, result.actualValueSource);
-    System.assertEquals('25', result.actualValueSource.rawValueLabel);
   }
 
   @IsTest
@@ -81,8 +70,7 @@ private class AccountStrategicReadinessCheckTest {
 
     System.assertEquals('PASS', result.status);
     System.assertEquals('100', result.actualValue);
-    System.assertEquals('80+', result.expectedValue);
-    System.assertNotEquals(null, result.actualValueSource);
+    System.assertEquals('80', result.expectedValue);
   }
 
   @IsTest
@@ -106,14 +94,35 @@ private class AccountStrategicReadinessCheckTest {
     );
   }
 
+  /**
+   * The check is bulk, so a single-record assertion is a scope of one. Mapped
+   * back onto the 1.x shape so the existing assertions stay readable.
+   */
   private static RecordHealthCheckResult evaluate(
     Id recordId,
     Map<String, Object> parameters
   ) {
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = recordId;
-    context.objectApiName = 'Account';
-    context.parameters = parameters;
-    return new AccountStrategicReadinessCheck().evaluate(context);
+    RecordHealthCheckOutcome outcome = new AccountStrategicReadinessCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          'Account',
+          new List<Id>{ recordId },
+          parameters,
+          'Strategic_Account_Is_Ready',
+          null,
+          null
+        )
+      )
+      .get(recordId);
+    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    result.status = outcome.status;
+    result.reasonCode = outcome.reasonCode;
+    result.actualValue = outcome.found == null
+      ? null
+      : outcome.found.storedValue;
+    result.expectedValue = outcome.expected == null
+      ? null
+      : outcome.expected.storedValue;
+    return result;
   }
 }

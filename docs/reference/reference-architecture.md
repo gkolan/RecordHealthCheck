@@ -412,6 +412,14 @@ For longer per-class descriptions, see [Reference: Apex classes](reference-apex-
 | `RecordHealthCheckValueSource` | Comparison diagnostic detail |
 | `RecordHealthCheckSetPicklist` | Check Set picker in Lightning App Builder |
 | `RecordHealthCheckResult` and `RecordHealthCheckSetResult` | Apex and Flow responses at contract `1.0` |
+| `RecordHealthCheckScope` | The records a custom Rule is asked about, plus its parameters. Read-only |
+| `RecordHealthCheckOutcome` | What a custom Rule returns for one record: a verdict and its values |
+| `RecordHealthCheckValue` | A typed Found or Expected value with one stored format per data type |
+| `RecordHealthCheckStatus` | The status vocabulary: PASS, FAIL, SKIPPED, UNABLE_TO_EVALUATE, ERROR |
+| `RecordHealthCheckResultMode` | Selects how much data a result carries |
+| `RecordHealthCheckEventPublication` | Whether a programmatic run publishes lifecycle Platform Events |
+| `RecordHealthCheckPluginDispatch` | Runs a custom Rule and holds it to its contract, including the side-effect fence |
+| `RecordHealthCheckContractDemo` | Runnable tour of the extension contract for a scratch org |
 | `RecordHealthCheckDefinition` and `RecordHealthCheckDefinitionResponse` | Definition response for the Lightning card |
 | `RecordHealthCheckAdminDetail` | Structured diagnostics detail |
 | `RecordHealthCheckContext` and `RecordHealthCheckRule` | Custom Apex evaluator input and interface |

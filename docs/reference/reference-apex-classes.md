@@ -115,6 +115,14 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | Level | Class | One-line purpose |
 | --- | --- | --- |
 | L1 | [`RecordHealthCheckResult`](#recordhealthcheckresult) | One Rule response (contract `1.0`) |
+| L1 | `RecordHealthCheckScope` | The records a custom Rule is asked about, plus its parameters. Read-only |
+| L1 | `RecordHealthCheckOutcome` | What a custom Rule returns for one record: a verdict and its values |
+| L1 | `RecordHealthCheckValue` | A typed Found or Expected value with one stored format per data type |
+| L1 | `RecordHealthCheckStatus` | The status vocabulary: PASS, FAIL, SKIPPED, UNABLE_TO_EVALUATE, ERROR |
+| L1 | `RecordHealthCheckResultMode` | Selects how much data a result carries |
+| L1 | `RecordHealthCheckEventPublication` | Whether a programmatic run publishes lifecycle Platform Events |
+| L1 | `RecordHealthCheckPluginDispatch` | Runs a custom Rule and holds it to its contract, including the side-effect fence |
+| L1 | `RecordHealthCheckContractDemo` | Runnable tour of the extension contract for a scratch org |
 | L1 | [`RecordHealthCheckSetResult`](#recordhealthchecksetresult) | One Check Set aggregate response (contract `1.0`) |
 | L1 | [`RecordHealthCheckDefinition`](#recordhealthcheckdefinition--recordhealthcheckdefinitionresponse) | One Rule row in the Lightning definition response |
 | L1 | [`RecordHealthCheckDefinitionResponse`](#recordhealthcheckdefinition--recordhealthcheckdefinitionresponse) | Check Set display settings + ordered Rule definitions |

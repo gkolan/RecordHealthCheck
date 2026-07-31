@@ -14,17 +14,20 @@
 private class ApprovalInactiveApproverCheckTest {
   @IsTest
   static void missingApprovalObjectReturnsUnableToEvaluate() {
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = UserInfo.getUserId();
-    context.parameters = new Map<String, Object>{
-      'approvalObject' => 'sbaa__Definitely_Not_Installed__c'
-    };
+    Id recordId = UserInfo.getUserId();
+    RecordHealthCheckOutcome outcome = evaluateOne(
+      recordId,
+      'User',
+      new Map<String, Object>{
+        'approvalObject' => 'sbaa__Definitely_Not_Installed__c'
+      }
+    );
 
-    RecordHealthCheckResult result = new ApprovalInactiveApproverCheck()
-      .evaluate(context);
-
-    System.assertEquals('UNABLE_TO_EVALUATE', result.status);
-    System.assertEquals('OBJECT_NOT_FOUND', result.reasonCode);
+    System.assertEquals(
+      RecordHealthCheckStatus.UNABLE_TO_EVALUATE,
+      outcome.status
+    );
+    System.assertEquals('OBJECT_NOT_FOUND', outcome.reasonCode);
   }
 
   @IsTest
@@ -32,21 +35,23 @@ private class ApprovalInactiveApproverCheckTest {
     Account account = new Account(Name = 'RHC Approval Bad Field');
     insert account;
 
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = account.Id;
-    context.parameters = new Map<String, Object>{
-      'approvalObject' => 'Account',
-      'targetField' => 'Id',
-      'userField' => 'Not_A_Real_Field__c',
-      'statusField' => 'Name',
-      'pendingStatuses' => new List<Object>{ account.Name }
-    };
+    RecordHealthCheckOutcome outcome = evaluateOne(
+      account.Id,
+      'Account',
+      new Map<String, Object>{
+        'approvalObject' => 'Account',
+        'targetField' => 'Id',
+        'userField' => 'Not_A_Real_Field__c',
+        'statusField' => 'Name',
+        'pendingStatuses' => new List<Object>{ account.Name }
+      }
+    );
 
-    RecordHealthCheckResult result = new ApprovalInactiveApproverCheck()
-      .evaluate(context);
-
-    System.assertEquals('UNABLE_TO_EVALUATE', result.status);
-    System.assertEquals('INVALID_SOQL_TEMPLATE', result.reasonCode);
+    System.assertEquals(
+      RecordHealthCheckStatus.UNABLE_TO_EVALUATE,
+      outcome.status
+    );
+    System.assertEquals('INVALID_SOQL_TEMPLATE', outcome.reasonCode);
   }
 
   @IsTest
@@ -57,27 +62,48 @@ private class ApprovalInactiveApproverCheckTest {
     Account account = new Account(Name = 'RHC Approval Active Owner');
     insert account;
 
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = account.Id;
-    context.parameters = new Map<String, Object>{
-      'approvalObject' => 'Account',
-      'targetField' => 'Id',
-      'userField' => 'OwnerId',
-      'statusField' => 'Name',
-      'pendingStatuses' => new List<Object>{ account.Name }
-    };
-
-    RecordHealthCheckResult result = new ApprovalInactiveApproverCheck()
-      .evaluate(context);
+    RecordHealthCheckOutcome outcome = evaluateOne(
+      account.Id,
+      'Account',
+      new Map<String, Object>{
+        'approvalObject' => 'Account',
+        'targetField' => 'Id',
+        'userField' => 'OwnerId',
+        'statusField' => 'Name',
+        'pendingStatuses' => new List<Object>{ account.Name }
+      }
+    );
 
     System.assertEquals(
-      'PASS',
-      result.status,
+      RecordHealthCheckStatus.PASS,
+      outcome.status,
       'An active assigned user should pass.'
     );
-    System.assertEquals('0 inactive', result.actualValue);
-    System.assertEquals('0 inactive', result.expectedValue);
-    System.assertNotEquals(null, result.actualValueSource);
+    System.assertEquals(
+      0,
+      outcome.found.storedValues.size(),
+      'No inactive approvers were found.'
+    );
+  }
+
+  /** The check is bulk, so a single-record assertion is a scope of one. */
+  private static RecordHealthCheckOutcome evaluateOne(
+    Id recordId,
+    String objectApiName,
+    Map<String, Object> parameters
+  ) {
+    return new ApprovalInactiveApproverCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          objectApiName,
+          new List<Id>{ recordId },
+          parameters,
+          'Approval_Has_No_Inactive_Approver',
+          null,
+          null
+        )
+      )
+      .get(recordId);
   }
 
   @IsTest
@@ -86,24 +112,23 @@ private class ApprovalInactiveApproverCheckTest {
     ApprovalInactiveApproverCheck.Settings settings = check.resolveSettings(
       null
     );
+    Map<Id, String> noneInactive = new Map<Id, String>();
 
-    RecordHealthCheckResult passNull = check.buildResult(
+    RecordHealthCheckOutcome passNull = check.buildOutcome(
       null,
-      new RecordHealthCheckResult(),
+      noneInactive,
       settings
     );
-    System.assertEquals('PASS', passNull.status);
-    System.assertEquals('0 inactive', passNull.actualValue);
-    System.assertEquals('0 inactive', passNull.expectedValue);
+    System.assertEquals(RecordHealthCheckStatus.PASS, passNull.status);
+    System.assertEquals(0, passNull.found.storedValues.size());
 
-    RecordHealthCheckResult passEmpty = check.buildResult(
+    RecordHealthCheckOutcome passEmpty = check.buildOutcome(
       new Set<Id>(),
-      new RecordHealthCheckResult(),
+      noneInactive,
       settings
     );
-    System.assertEquals('PASS', passEmpty.status);
-    System.assertEquals('0 inactive', passEmpty.actualValue);
-    System.assertEquals('0 inactive', passEmpty.expectedValue);
+    System.assertEquals(RecordHealthCheckStatus.PASS, passEmpty.status);
+    System.assertEquals(0, passEmpty.found.storedValues.size());
   }
 
   @IsTest
@@ -113,26 +138,26 @@ private class ApprovalInactiveApproverCheckTest {
       null
     );
 
-    RecordHealthCheckResult result = check.buildResult(
+    // The running user is active, so they are absent from the inactive lookup.
+    RecordHealthCheckOutcome outcome = check.buildOutcome(
       new Set<Id>{ UserInfo.getUserId() },
-      new RecordHealthCheckResult(),
+      new Map<Id, String>(),
       settings
     );
 
     System.assertEquals(
-      'PASS',
-      result.status,
+      RecordHealthCheckStatus.PASS,
+      outcome.status,
       'The running user is active, so there are no inactive approvers.'
     );
-    System.assertEquals('0 inactive', result.actualValue);
-    System.assertEquals('0 inactive', result.expectedValue);
+    System.assertEquals(0, outcome.found.storedValues.size());
   }
 
   @IsTest
   static void inactiveAssignedUserFailsAndNamesTheUser() {
     User inactive = createInactiveUser();
     // Name is a derived field, set on the persisted record (FirstName +
-    // LastName), so read it back to compare against the message.
+    // LastName), so read it back to compare against the reported value.
     String inactiveName = [SELECT Name FROM User WHERE Id = :inactive.Id].Name;
 
     ApprovalInactiveApproverCheck check = new ApprovalInactiveApproverCheck();
@@ -140,19 +165,18 @@ private class ApprovalInactiveApproverCheckTest {
       null
     );
 
-    RecordHealthCheckResult result = check.buildResult(
+    RecordHealthCheckOutcome outcome = check.buildOutcome(
       new Set<Id>{ inactive.Id, UserInfo.getUserId() },
-      new RecordHealthCheckResult(),
+      new Map<Id, String>{ inactive.Id => inactiveName },
       settings
     );
 
-    System.assertEquals('FAIL', result.status);
-    System.assertEquals('1 inactive', result.actualValue);
-    System.assertEquals('0 inactive', result.expectedValue);
-    System.assert(
-      result.message.contains(inactiveName),
-      'Message should name the inactive approver: ' + result.message
-    );
+    System.assertEquals(RecordHealthCheckStatus.FAIL, outcome.status);
+    // The names are the finding, carried as typed data rather than a sentence
+    // the check wrote. The engine turns them into prose.
+    System.assertEquals(1, outcome.found.storedValues.size());
+    System.assertEquals(inactiveName, outcome.found.storedValues[0]);
+    System.assertEquals(0, outcome.expected.storedValues.size());
   }
 
   @IsTest
@@ -204,32 +228,6 @@ private class ApprovalInactiveApproverCheckTest {
       new Map<String, Object>{ 'maxNames' => '999' }
     );
     System.assertEquals(5, outOfRange.maxNames);
-  }
-
-  @IsTest
-  static void buildMessageTruncatesLongLists() {
-    List<String> two = new List<String>{ 'Ann Aaron', 'Ben Boyd' };
-    String shortMessage = ApprovalInactiveApproverCheck.buildMessage(two, 5);
-    System.assert(shortMessage.contains('Ann Aaron'));
-    System.assert(shortMessage.contains('Ben Boyd'));
-    System.assert(
-      !shortMessage.contains('more'),
-      'No overflow indicator when every name fits.'
-    );
-
-    List<String> many = new List<String>{
-      'Ann Aaron',
-      'Ben Boyd',
-      'Cy Cole',
-      'Di Dale'
-    };
-    String longMessage = ApprovalInactiveApproverCheck.buildMessage(many, 2);
-    System.assert(longMessage.contains('Ann Aaron'));
-    System.assert(longMessage.contains('Ben Boyd'));
-    System.assert(
-      longMessage.contains('(+2 more)'),
-      'Overflow indicator should report the hidden count: ' + longMessage
-    );
   }
 
   private static User createInactiveUser() {
