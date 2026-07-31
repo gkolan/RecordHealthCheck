@@ -42,21 +42,6 @@ public with sharing class RecordHealthCheckPluginDispatch {
     public String reasonCode;
   }
 
-  private static Savepoint transactionSavepointHolder;
-
-  /**
-   * Created on the first plugin dispatch of the transaction and reused after
-   * that, so the DML statement it costs is paid once no matter how many custom
-   * Rules run.
-   */
-  @TestVisible
-  private static Savepoint transactionSavepoint() {
-    if (transactionSavepointHolder == null) {
-      transactionSavepointHolder = Database.setSavepoint();
-    }
-    return transactionSavepointHolder;
-  }
-
   /**
    * Runs one plugin against one scope and returns an outcome per record Id.
    *
@@ -77,12 +62,17 @@ public with sharing class RecordHealthCheckPluginDispatch {
     // while the run reported a tidy failure. The savepoint makes the rollback
     // ours to perform rather than something we hope the stack allows.
     //
-    // One per transaction, not one per Rule. A savepoint costs a DML statement,
-    // and a 25-Rule Check Set would otherwise spend a sixth of the DML limit on
-    // insurance for code that is not supposed to use DML at all. Rolling back to
-    // the first savepoint of the transaction undoes strictly more than rolling
-    // back to a later one, so the guarantee is not weakened by sharing it.
-    Savepoint before = transactionSavepoint();
+    // Deliberately one per invocation rather than one shared across the
+    // transaction, even though a savepoint costs a DML statement and a 25-Rule
+    // Check Set therefore spends 25 of them on insurance against code that must
+    // not use DML at all.
+    //
+    // A shared savepoint was tried and is wrong: rolling back to the first
+    // savepoint of the transaction undoes everything since, not just the
+    // offending check. A scan would lose the records it had already written,
+    // and the framework would cause more damage cleaning up than the check did.
+    // Rollback has to reach exactly as far as this one call and no further.
+    Savepoint before = Database.setSavepoint();
 
     Integer dmlBefore = Limits.getDmlStatements();
     Integer dmlRowsBefore = Limits.getDmlRows();

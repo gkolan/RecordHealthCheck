@@ -98,8 +98,8 @@ private class RecordHealthCheckControllerTest {
     );
     // This counts DML statements as a proxy for published events. It stays at
     // one because RecordHealthCheckPluginDispatch takes its side-effect
-    // savepoint once per transaction and only when a custom Apex Rule actually
-    // runs, which no Rule in this test does.
+    // savepoint only when a custom Apex Rule actually runs, and this single
+    // Rule is not one.
     System.assertEquals(
       beforeDml + 1,
       Limits.getDmlStatements(),
@@ -124,7 +124,8 @@ private class RecordHealthCheckControllerTest {
     // does not. That savepoint is what makes the no-side-effect guarantee real
     // rather than dependent on nobody up the stack catching the violation.
     System.assertEquals(
-      beforeDml + 3,
+      beforeDml +
+      3, // Rule event, Set event, and one savepoint for the Apex Rule
       Limits.getDmlStatements(),
       'An opted-in user-initiated Set must publish once at completion.'
     );
