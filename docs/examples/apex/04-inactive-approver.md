@@ -35,7 +35,7 @@ A Salesforce administrator opens a record whose approval has stopped moving.
 | --- | --- | --- | --- |
 | **Status** | `PASS` | `FAIL` | `UNABLE_TO_EVALUATE` |
 | **Found / Expected** | `0 inactive` / `0 inactive` | `<N> inactive` / `0 inactive` | Not applicable |
-| **Message** | None | Names up to `maxNames` users | Configured unable-to-evaluate message |
+| **Message** | None | Configured failure guidance; Found lists the inactive users | Configured unable-to-evaluate message |
 
 ## Why use Verify with Apex
 
@@ -49,21 +49,21 @@ A Salesforce administrator opens a record whose approval has stopped moving.
 
 | Input in Apex | Where it comes from |
 | --- | --- |
-| `context.recordId` | The record being evaluated at run time |
-| `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
+| `scope.recordIds` | The records being evaluated in this run |
+| `scope.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
 Record Health Check supplies the evaluated record ID automatically; leave it out of the parameter
 JSON:
 
-- On a Lightning record page, `context.recordId` is the ID of the open record.
-- From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
-- From Flow, it is the value supplied to the action's **Record ID** input.
+- On a Lightning record page, the scope normally contains the open record.
+- Bulk Apex requests can place as many as 200 record IDs in one scope.
+- Flow supplies its **Record ID** input to the scope-building pipeline.
 
 This example uses dynamic SOQL because the Advanced Approvals package is optional. It still binds
 the supplied record ID instead of joining it into the query text:
 
 ```apex
-Id targetRecordId = context.recordId;
+List<Id> targetRecordIds = scope.recordIds;
 ```
 
 ## Step 1: Understand the parameters
@@ -76,8 +76,7 @@ This Rule uses one JSON object with the package-specific object and field names:
   "targetField": "sbaa__TargetRecordId__c",
   "userField": "sbaa__User__c",
   "statusField": "sbaa__Status__c",
-  "pendingStatuses": ["Requested"],
-  "maxNames": 5
+  "pendingStatuses": ["Requested"]
 }
 ```
 
@@ -88,10 +87,9 @@ After deploying the class:
 3. Create or edit the Rule record.
 4. Paste the corrected object into **Apex Parameters (JSON)** (`ApexParametersJson__c`) on `Record_Health_Check_Rule__mdt`.
 
-Record Health Check parses the JSON and supplies the named settings as `context.parameters`.
-Blank settings use the class defaults, an empty status list uses `Requested`, and `maxNames` accepts
-`1`–`25` with a default of 5. See
-[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
+Record Health Check parses the JSON and supplies the named settings as `scope.parameters`.
+Blank settings use the class defaults, and an empty status list uses `Requested`. See
+[Parameter parsing patterns](../../reference/reference-apex.md#scope)
 for validation and type-conversion guidance.
 
 ## Implementation summary
@@ -99,11 +97,11 @@ for validation and type-conversion guidance.
 The class verifies that the object exists, executes bind-based dynamic SOQL in user mode, then
 queries assigned Users for `IsActive = FALSE` with `WITH USER_MODE`.
 
-No assigned users or only active users passes. Inactive users fail with comparison values and a
-class-generated message; excess names become `(+N more)`. A missing object returns
+No assigned users or only active users passes. Inactive users fail with a typed Found list; the
+framework renders that list and applies its standard preview limit. A missing object returns
 `OBJECT_NOT_FOUND`; invalid fields or SOQL return `INVALID_SOQL_TEMPLATE`. Both are unable to
-evaluate, never a false pass. Blank settings retain defaults, an empty status list retains
-`Requested`, and invalid `maxNames` retains 5.
+evaluate, never a false pass. Blank settings retain defaults, and an empty status list retains
+`Requested`.
 
 ## Step 2: Create the Apex class
 
@@ -118,21 +116,18 @@ This is the complete class deployed by the pack. Comments explain the Record Hea
  */
 
 /**
- * Example RecordHealthCheckRule: flags pending approval steps whose assigned
+ * Example RecordHealthCheckRule that flags pending approval steps whose assigned
  * user is inactive, and names the offending user(s) in the failure message.
  * Built for Salesforce Advanced Approvals (managed package "sbaa"), but every
  * object and field API name is read dynamically and may be overridden through
  * ApexParametersJson__c. Because nothing references the managed package at compile
  * time, this class compiles and deploys in orgs that do NOT have Advanced
- * Approvals installed: it simply returns UNABLE_TO_EVALUATE there.
+ * Approvals installed. It returns UNABLE_TO_EVALUATE when that object is unavailable.
  * {"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c"
- * "userField":"sbaa__User__c","statusField":"sbaa__Status__c"
- * "pendingStatuses":["Requested"],"maxNames":5}
- * Unlike the other Apex examples, this class sets its own failure message so it
- * can list the inactive approver names. The evaluator preserves a non-blank
- * plugin message; severity and label still come from the metadata record.
+ * "userField":"sbaa__User__c","statusField":"sbaa__Status__c",
+ * "pendingStatuses":["Requested"]}
  */
-public with sharing class ApprovalInactiveApproverCheck implements RecordHealthCheckRule {
+global with sharing class ApprovalInactiveApproverCheck implements RecordHealthCheckRule {
   @TestVisible
   private static final String DEFAULT_APPROVAL_OBJECT = 'sbaa__Approval__c';
   @TestVisible
@@ -144,58 +139,87 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
   private static final List<String> DEFAULT_PENDING_STATUSES = new List<String>{
     'Requested'
   };
-  private static final Integer DEFAULT_MAX_NAMES = 5;
-  private static final Integer MIN_MAX_NAMES = 1;
-  private static final Integer MAX_MAX_NAMES = 25;
 
-  public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-    Settings settings = resolveSettings(context.parameters);
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    List<Id> recordIds = scope.recordIds;
+    Settings settings = resolveSettings(scope.parameters);
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
 
     // Graceful degradation: the approval object is absent (Advanced Approvals
-    // not installed, or a custom object name was mistyped).
+    // not installed, or a custom object name was mistyped). Every record in the
+    // scope gets the same honest answer rather than a false PASS.
     if (
       !RecordHealthCheckDescribeCache.containsObject(settings.approvalObject)
     ) {
-      result.status = 'UNABLE_TO_EVALUATE';
-      result.reasonCode = 'OBJECT_NOT_FOUND';
-      result.detailMessage =
-        'Object ' +
-        settings.approvalObject +
-        ' is not present in this org.';
-      return result;
+      for (Id recordId : recordIds) {
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate('OBJECT_NOT_FOUND')
+        );
+      }
+      return results;
     }
 
-    Set<Id> assignedUserIds;
+    Map<Id, Set<Id>> assignedByRecord;
     try {
-      assignedUserIds = fetchAssignedUserIds(context.recordId, settings);
+      assignedByRecord = fetchAssignedUserIds(recordIds, settings);
     } catch (Exception ex) {
-      // A bad field name or malformed dynamic query surfaces as can't-run, never
-      // as a false PASS.
-      result.status = 'UNABLE_TO_EVALUATE';
-      result.reasonCode = 'INVALID_SOQL_TEMPLATE';
-      result.detailMessage = ex.getMessage();
-      return result;
+      // A bad field name or malformed dynamic query surfaces as can't-run,
+      // never as a false PASS.
+      for (Id recordId : recordIds) {
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate('INVALID_SOQL_TEMPLATE')
+        );
+      }
+      return results;
     }
 
-    return buildResult(assignedUserIds, result, settings);
+    // One User query for every approver across the whole scope.
+    Set<Id> allAssignees = new Set<Id>();
+    for (Set<Id> perRecord : assignedByRecord.values()) {
+      allAssignees.addAll(perRecord);
+    }
+    Map<Id, String> inactiveNames = loadInactiveNames(allAssignees);
+
+    for (Id recordId : recordIds) {
+      results.put(
+        recordId,
+        buildOutcome(assignedByRecord.get(recordId), inactiveNames, settings)
+      );
+    }
+    return results;
   }
 
   /**
    * The only managed-package-dependent step: a dynamic query over the approval
    * object. Isolated so the rest of the logic stays unit-testable without the
    * package, and so a configuration error is caught and reported cleanly.
+   *
+   * The target field is selected as well as filtered on, because that is what
+   * attributes each returned row back to the record it belongs to.
    */
-  private Set<Id> fetchAssignedUserIds(Id recordId, Settings settings) {
-    Set<Id> userIds = new Set<Id>();
+  private Map<Id, Set<Id>> fetchAssignedUserIds(
+    List<Id> recordIds,
+    Settings settings
+  ) {
+    Map<Id, Set<Id>> byRecord = new Map<Id, Set<Id>>();
+    for (Id recordId : recordIds) {
+      byRecord.put(recordId, new Set<Id>()); // no pending approvals is a real answer
+    }
+
     String soql =
       'SELECT ' +
+      settings.targetField +
+      ', ' +
       settings.userField +
       ' FROM ' +
       settings.approvalObject +
       ' WHERE ' +
       settings.targetField +
-      ' = :recordId' +
+      ' IN :recordIds' +
       ' AND ' +
       settings.statusField +
       ' IN :pendingStatuses' +
@@ -203,93 +227,81 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       settings.userField +
       ' != null';
     Map<String, Object> binds = new Map<String, Object>{
-      'recordId' => recordId,
+      'recordIds' => recordIds,
       'pendingStatuses' => settings.pendingStatuses
     };
     for (
       SObject row : Database.queryWithBinds(soql, binds, AccessLevel.USER_MODE)
     ) {
-      Object raw = row.get(settings.userField);
-      if (raw != null) {
-        userIds.add((Id) raw);
+      Object target = row.get(settings.targetField);
+      Object assignee = row.get(settings.userField);
+      if (target == null || assignee == null) {
+        continue;
+      }
+      Set<Id> bucket = byRecord.get((Id) target);
+      if (bucket != null) {
+        bucket.add((Id) assignee);
       }
     }
-    return userIds;
+    return byRecord;
   }
 
-  /**
-   * Standard-object logic: fully unit-testable without the managed package.
-   * Resolves which of the assigned users are inactive and shapes the result.
-   */
   @TestVisible
-  private RecordHealthCheckResult buildResult(
-    Set<Id> assignedUserIds,
-    RecordHealthCheckResult result,
-    Settings settings
-  ) {
+  private static Map<Id, String> loadInactiveNames(Set<Id> assignedUserIds) {
+    Map<Id, String> names = new Map<Id, String>();
     if (assignedUserIds == null || assignedUserIds.isEmpty()) {
-      populateComparison(result, 0);
-      result.status = 'PASS';
-      return result;
+      return names;
     }
-
-    List<String> inactiveNames = new List<String>();
     for (User assignee : [
-      SELECT Name
+      SELECT Id, Name
       FROM User
       WHERE Id IN :assignedUserIds AND IsActive = FALSE
       WITH USER_MODE
       ORDER BY Name
     ]) {
-      inactiveNames.add(assignee.Name);
+      names.put(assignee.Id, assignee.Name);
     }
-
-    // Set Found/Expected on pass and fail so an entitled viewer can audit a green row too.
-    populateComparison(result, inactiveNames.size());
-
-    if (inactiveNames.isEmpty()) {
-      result.status = 'PASS';
-      return result;
-    }
-
-    result.status = 'FAIL';
-    result.message = buildMessage(inactiveNames, settings.maxNames);
-    return result;
+    return names;
   }
 
-  private static void populateComparison(
-    RecordHealthCheckResult result,
-    Integer inactiveCount
-  ) {
-    result.actualValue = inactiveCount + ' inactive';
-    result.expectedValue = '0 inactive';
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'Inactive approvers on pending requests',
-      String.valueOf(inactiveCount),
-      null
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Allowed inactive approvers',
-      '0',
-      null
-    );
-  }
-
+  /**
+   * Standard-object logic that is fully unit-testable without the managed package.
+   * Takes the scope-wide inactive-user lookup and resolves one record's verdict
+   * from it, so no query happens per record.
+   */
   @TestVisible
-  private static String buildMessage(List<String> names, Integer maxNames) {
-    Integer shown = Math.min(names.size(), maxNames);
-    List<String> head = new List<String>();
-    for (Integer i = 0; i < shown; i++) {
-      head.add(names[i]);
+  private RecordHealthCheckOutcome buildOutcome(
+    Set<Id> assignedUserIds,
+    Map<Id, String> inactiveNames,
+    Settings settings
+  ) {
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofList(
+      new List<String>()
+    );
+    if (assignedUserIds == null || assignedUserIds.isEmpty()) {
+      return RecordHealthCheckOutcome.pass('APEX_PASS')
+        .withFound(RecordHealthCheckValue.ofList(new List<String>()))
+        .withComparison('EQUALS', expected);
     }
-    String joined = String.join(head, ', ');
-    Integer remaining = names.size() - shown;
-    if (remaining > 0) {
-      joined += ' (+' + remaining + ' more)';
+
+    List<String> inactive = new List<String>();
+    for (Id assignee : assignedUserIds) {
+      String name = inactiveNames.get(assignee);
+      if (name != null) {
+        inactive.add(name);
+      }
     }
-    return 'Approval chain blocked by inactive approver(s): ' +
-      joined +
-      '. Reassign the approver(s) before submitting for approval.';
+    inactive.sort();
+
+    // The names ARE the finding, carried as a typed list so the engine can
+    // render them. The check does not write the sentence itself: prose, and how
+    // many names to show before truncating, are display decisions the core owns.
+    RecordHealthCheckOutcome outcome = inactive.isEmpty()
+      ? RecordHealthCheckOutcome.pass('APEX_PASS')
+      : RecordHealthCheckOutcome.fail('APEX_FAIL');
+    return outcome
+      .withFound(RecordHealthCheckValue.ofList(inactive))
+      .withComparison('EQUALS', expected);
   }
 
   @TestVisible
@@ -299,7 +311,6 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
     public String userField = DEFAULT_USER_FIELD;
     public String statusField = DEFAULT_STATUS_FIELD;
     public List<String> pendingStatuses = DEFAULT_PENDING_STATUSES.clone();
-    public Integer maxNames = DEFAULT_MAX_NAMES;
   }
 
   @TestVisible
@@ -338,18 +349,6 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       }
     }
 
-    Object maxRaw = parameters.get('maxNames');
-    if (maxRaw != null) {
-      try {
-        Integer parsed = Integer.valueOf(String.valueOf(maxRaw));
-        if (parsed >= MIN_MAX_NAMES && parsed <= MAX_MAX_NAMES) {
-          settings.maxNames = parsed;
-        }
-      } catch (Exception ex) {
-        // Invalid JSON settings are non-fatal; keep the default maxNames value.
-        settings.maxNames = settings.maxNames;
-      }
-    }
     return settings;
   }
 
@@ -366,37 +365,39 @@ public with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
 
 ## Context and result contract
 
-Record Health Check calls:
+Record Health Check calls the plugin once for a scope:
 
 ```apex
-RecordHealthCheckResult evaluate(RecordHealthCheckContext context)
+Map<Id, RecordHealthCheckOutcome> evaluate(RecordHealthCheckScope scope)
 ```
 
 The context contains:
 
-| Context field | Type | What it contains |
+| Scope field | Type | What it contains |
 | --- | --- | --- |
-| `recordId` | `Id` | Record being evaluated; use this value in SOQL |
-| `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; only requested fields are loaded |
+| `recordIds` | `List<Id>` | Detached, deduplicated IDs to evaluate; use the collection in bulk SOQL |
+| `objectApiName` | `String` | API name shared by every ID in the scope |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
+| `checkSetDeveloperName` | `String` | Developer Name of the Check Set that supplied the Rule |
+| `runId` | `String` | Correlation identifier for the evaluation run |
 
-For a completed check, the class must return all three required values:
+The returned map must contain exactly one entry for every requested ID. Build each outcome with a
+status factory and typed values:
 
-| Result field | What the class must return |
+| Outcome field | What the class must return |
 | --- | --- |
-| `status` | `PASS` or `FAIL` |
-| `actualValue` | Nonblank **Found** value describing what the class observed |
-| `expectedValue` | Nonblank **Expected** value describing the passing requirement |
-| `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
-| `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
+| `status` | An outcome created by `pass`, `fail`, `unableToEvaluate`, or `skipped` |
+| `reasonCode` | A stable, nonblank code that explains the programmatic reason |
+| `found` | A typed `RecordHealthCheckValue` describing what the class observed |
+| `comparisonOperator` | The operator behind the decision, such as `EQUALS` |
+| `expected` | A typed `RecordHealthCheckValue` describing the passing requirement |
 
 For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
-runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
-duration, and other card details. An invalid status, blank Found value, blank Expected value, or
+runs. The framework supplies identity, label, severity, messages, display values, and diagnostics.
+Missing or extra map keys, a null outcome, an invalid status, forbidden side effects, or an
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
+[Returning an outcome](../../reference/reference-apex.md#outcome).
 
 
 ## Step 3: Configure the Rule
@@ -411,7 +412,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Check Title** | [`CheckTitle__c`](../../metadata/fields-check-rule.md#check-title-checktitle__c) | No Inactive Approvers In Chain |
 | **Evaluation Type** | [`EvaluationType__c`](../../metadata/fields-check-rule.md#evaluation-type-evaluationtype__c) | Verify with Apex |
 | **Apex Class** | [`ApexClass__c`](../../metadata/fields-check-rule.md#apex-class-apexclass__c) | `ApprovalInactiveApproverCheck` |
-| **Apex Parameters (JSON)** | [`ApexParametersJson__c`](../../metadata/fields-check-rule.md#apex-parameters-json-apexparametersjson__c) | `{"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c","userField":"sbaa__User__c","statusField":"sbaa__Status__c","pendingStatuses":["Requested"],"maxNames":5}` (**Confirm in your org**) |
+| **Apex Parameters (JSON)** | [`ApexParametersJson__c`](../../metadata/fields-check-rule.md#apex-parameters-json-apexparametersjson__c) | `{"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c","userField":"sbaa__User__c","statusField":"sbaa__Status__c","pendingStatuses":["Requested"]}` (**Confirm in your org**) |
 
 ## Optional configuration
 
@@ -428,7 +429,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | Leave blank; managed-package pages and URLs can vary by installed version. |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `40` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Unchecked: activate only after confirming product API names and tests. |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 > [!IMPORTANT]
 > Leave the Rule **inactive** while you configure and test this example. Before activation, verify
@@ -456,7 +457,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Checked; later Rules do not run after this Rule returns `ERROR` |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 The Check Set can remain active while you build this example, but leave this Rule inactive until
@@ -506,11 +507,13 @@ record supported by the confirmed Advanced Approvals target-field configuration:
 
 ```apex
 Id targetRecordId = '006XXXXXXXXXXXXXXX';
-RecordHealthCheckResult result = RecordHealthCheck.runRule(
-  'Approval_No_Inactive_Approvers',
-  targetRecordId
+RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forRule(
+    'Approval_No_Inactive_Approvers',
+    targetRecordId
+  ).withResultMode(RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY)
 );
-System.debug(LoggingLevel.INFO, JSON.serializePretty(result));
+System.debug(LoggingLevel.INFO, JSON.serializePretty(response));
 ```
 
 The `006` prefix is only an Opportunity illustration. Use the object configured for this Rule.
@@ -530,7 +533,7 @@ Confirm `status`, Found, Expected, message, and any Reason Code.
 | `OBJECT_NOT_FOUND` | Install the product or correct `approvalObject`; keep the Rule inactive. |
 | `INVALID_SOQL_TEMPLATE` | Correct field names, field types, and pending statuses in Object Manager. |
 | Too few inactive users | Check approval-row sharing, User visibility, and the status list. |
-| Truncated names | Increase `maxNames` only after reviewing readability and privacy. |
+| The Found list is truncated | The framework limits list previews for readability. Use authorized diagnostics or the approval records to review the complete assignment set. |
 
 You can adapt the class to another approval product when its rows provide a target record ID,
 assigned User ID, and status. Verify those types and repeat pass, fail, unable, and access tests

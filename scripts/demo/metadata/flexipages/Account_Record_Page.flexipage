@@ -209,11 +209,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>checkSetName</name>
-                    <value>Example_Account_Relationship_Risk</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>designSystem</name>
-                    <value>SLDS 1</value>
+                    <value>rhc__Example_Account_Relationship_Risk</value>
                 </componentInstanceProperties>
                 <componentName>recordHealthCheck</componentName>
                 <identifier>c_recordHealthCheck</identifier>

@@ -11,6 +11,7 @@ public class RecordHealthCheckReasonCodes {
   public static final String NOT_APPLICABLE_BY_FORMULA = 'NOT_APPLICABLE_BY_FORMULA';
   public static final String NOT_APPLICABLE_BY_COUNT = 'NOT_APPLICABLE_BY_COUNT';
   public static final String PREREQUISITE_NOT_MET = 'PREREQUISITE_NOT_MET';
+  public static final String DEPENDENCY_NOT_IN_RUN = 'DEPENDENCY_NOT_IN_RUN';
 
   // ─── Extension contract ────────────────────────────────────────────────────
   // Engine-generated outcomes for a custom Apex Rule that broke its contract.

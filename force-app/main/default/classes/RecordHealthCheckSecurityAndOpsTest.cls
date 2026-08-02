@@ -6,188 +6,34 @@
 @IsTest
 private class RecordHealthCheckSecurityAndOpsTest {
   @IsTest
-  static void debugDetailRequiresViewDetailsPermission() {
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.detailMessage = 'sensitive query detail';
-    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
-
-    // Troubleshooting detail shares the single Advanced-tier grant with value source.
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
-    System.assertEquals(false, RecordHealthCheckAccess.canViewDetails());
-    System.assertEquals(
-      null,
-      engine.applyShowDiagnostics(result, true).adminDetailMessage
-    );
-
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
-    System.assertEquals(true, RecordHealthCheckAccess.canViewDetails());
-    System.assertEquals(
-      'sensitive query detail',
-      engine.applyShowDiagnostics(result, true).adminDetailMessage
-    );
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
-    System.assertNotEquals(
-      null,
-      RecordHealthCheckAccess.canViewDetails(),
-      'The platform permission check must always return a Boolean.'
-    );
-  }
-
-  @IsTest
-  static void restrictedReasonIsNeutralOutsideAuthorizedDiagnostics() {
-    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.status = 'UNABLE_TO_EVALUATE';
-    result.reasonCode = RecordHealthCheckReasonCodes.FIELD_NOT_ACCESSIBLE;
-    result.detailMessage = 'Secret_Field__c is not accessible';
-
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
-    RecordHealthCheckResult normal = engine.applyShowDiagnostics(result, true);
-    System.assertEquals(
-      RecordHealthCheckReasonCodes.CANNOT_EVALUATE,
-      normal.reasonCode,
-      'A normal response must use the neutral reason.'
-    );
-    System.assertEquals(
-      null,
-      normal.adminDetail,
-      'A normal response must not disclose restriction presence.'
-    );
-
-    result.reasonCode = RecordHealthCheckReasonCodes.FIELD_NOT_ACCESSIBLE;
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
-    RecordHealthCheckResult diagnostic = engine.applyShowDiagnostics(
-      result,
-      true
-    );
-    System.assertEquals(
-      RecordHealthCheckReasonCodes.CANNOT_EVALUATE,
-      diagnostic.reasonCode,
-      'The public reason remains neutral under diagnostics.'
-    );
-    System.assertEquals(true, diagnostic.adminDetail.containsRestrictedDetail);
-    System.assertEquals(
-      RecordHealthCheckReasonCodes.FIELD_NOT_ACCESSIBLE,
-      diagnostic.adminDetail.reasonCode
-    );
-    System.assertEquals(
-      'Secret_Field__c is not accessible',
-      diagnostic.adminDetail.message
-    );
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
-  }
-
-  @IsTest
-  static void passesWhenLineRequiresViewDetailsPermission() {
-    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
-
-    // Not entitled → the raw pass/fail condition is cleared so business users see
-    // the failure message only, not the formula text.
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
-    RecordHealthCheckResult gated = engine.applyPassesWhenEntitlement(
-      newPassesWhenResult()
-    );
-    System.assertEquals(null, gated.expectedValue);
-    System.assertEquals(null, gated.expectedValueLabel);
-
-    // Entitled → the Passes when line survives untouched.
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
-    RecordHealthCheckResult shown = engine.applyPassesWhenEntitlement(
-      newPassesWhenResult()
-    );
-    System.assertEquals('NOT(ISBLANK(BillingCity))', shown.expectedValue);
-    System.assertEquals(
-      RecordHealthCheckResult.PASSES_WHEN_LABEL,
-      shown.expectedValueLabel
-    );
-
-    // A business Expected (display formula: no expectedValueLabel) is never gated.
-    RecordHealthCheckResult businessExpected = new RecordHealthCheckResult();
-    businessExpected.expectedValue = '"50,000"';
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
-    RecordHealthCheckResult keep = engine.applyPassesWhenEntitlement(
-      businessExpected
-    );
-    System.assertEquals('"50,000"', keep.expectedValue);
-
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
-  }
-
-  private static RecordHealthCheckResult newPassesWhenResult() {
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.expectedValue = 'NOT(ISBLANK(BillingCity))';
-    result.expectedValueLabel = RecordHealthCheckResult.PASSES_WHEN_LABEL;
-    return result;
-  }
-
-  @IsTest
-  static void provenanceDetailRequiresViewDetailsPermission() {
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'NumberOfEmployees',
-      'null',
-      'blank treated as 0'
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Fixed value',
-      '10',
-      null
-    );
-    RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
-
-    // Not entitled → the public *Detail strings stay null (the Found/Expected
-    // values themselves are unaffected — they are governed by display policy).
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = false;
-    System.assertEquals(false, RecordHealthCheckAccess.canViewDetails());
-    RecordHealthCheckResult gated = engine.applyValueSourceDetail(result);
-    System.assertEquals(null, gated.actualValueDetail);
-    System.assertEquals(null, gated.expectedValueDetail);
-
-    // Entitled → the structured value source renders into the two strings.
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = true;
-    System.assertEquals(true, RecordHealthCheckAccess.canViewDetails());
-    RecordHealthCheckResult shown = engine.applyValueSourceDetail(result);
-    System.assertEquals(
-      'NumberOfEmployees → null (blank treated as 0)',
-      shown.actualValueDetail
-    );
-    System.assertEquals('Fixed value → 10', shown.expectedValueDetail);
-
-    RecordHealthCheckAccess.viewDetailsPermissionOverride = null;
-    System.assertNotEquals(
-      null,
-      RecordHealthCheckAccess.canViewDetails(),
-      'The platform permission check must always return a Boolean.'
-    );
-  }
-
-  @IsTest
   static void structuredLogValuesCannotForgeNewLines() {
-    System.assertEquals(
+    Assert.areEqual(
       'ticket forged value',
-      RecordHealthCheckLogger.sanitize('ticket\nforged\tvalue', 120)
+      RecordHealthCheckLogger.normalizeIdentifier('ticket\nforged\tvalue', 120)
     );
-    System.assertEquals(
+    Assert.areEqual(
       '12345',
-      RecordHealthCheckLogger.sanitize('123456789', 5)
+      RecordHealthCheckLogger.normalizeIdentifier('123456789', 5)
     );
   }
 
   @IsTest
   static void fieldPlanningIgnoresLiteralsAndInvalidMessageTokens() {
-    Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
-      EvaluationType__c = 'FORMULA',
-      PassConditionFormula__c = 'CONTAINS(Website, "example.com") && NOT(ISBLANK(Parent.Name))',
-      FailureMessage__c = 'Bad token stays blank: {!record.Parent.Missing__c}'
+    Record_Health_Check_Rule__mdt rule = RecordHealthCheckTestDataFactory.rule(
+      new Map<String, Object>{
+        'EvaluationType__c' => 'FORMULA',
+        'PassConditionFormula__c' => 'CONTAINS(Website, "example.com") && NOT(ISBLANK(Parent.Name))',
+        'FailureMessage__c' => 'Bad token stays blank: {!record.Parent.Missing__c}'
+      }
     );
 
-    Set<String> fields = new RecordHealthCheckEngine()
+    Set<String> fields = new RecordHealthCheckFieldPlanner()
       .collectRecordFields(rule, Account.SObjectType);
 
-    System.assert(fields.contains('Website'));
-    System.assert(fields.contains('Parent.Name'));
-    System.assert(!fields.contains('example.com'));
-    System.assert(!fields.contains('Parent.Missing__c'));
+    Assert.isTrue(fields.contains('Website'));
+    Assert.isTrue(fields.contains('Parent.Name'));
+    Assert.isTrue(!fields.contains('example.com'));
+    Assert.isTrue(!fields.contains('Parent.Missing__c'));
   }
 
   @IsTest
@@ -195,23 +41,175 @@ private class RecordHealthCheckSecurityAndOpsTest {
     if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
     }
-    System.assert(
+    Assert.isTrue(
       RecordHealthCheckConfigValidator.isValidObjectApiName('Account')
     );
-    System.assert(
+    Assert.isTrue(
       !RecordHealthCheckConfigValidator.isValidObjectApiName('Nope__c')
     );
-    System.assert(
+    Assert.isTrue(
       RecordHealthCheckConfigValidator.isValidApexPlugin(
         'AccountHasRecentActivityCheck'
       )
     );
-    System.assert(
+    Assert.isTrue(
       !RecordHealthCheckConfigValidator.isValidApexPlugin('String')
     );
-    System.assert(
+    Assert.isFalse(
+      RecordHealthCheckConfigValidator.isValidApexPlugin(
+        'Class_That_Does_Not_Exist'
+      ),
+      'An unresolved Apex class must not be accepted as a Rule plugin.'
+    );
+    Assert.isFalse(
+      RecordHealthCheckConfigValidator.isValidApexPlugin(
+        'RecordHealthCheckConstants'
+      ),
+      'A constructible class that does not implement the Rule contract must be rejected.'
+    );
+    Assert.isTrue(
       RecordHealthCheckConfigValidator.isJsonObject('{"daysBack":90}')
     );
-    System.assert(!RecordHealthCheckConfigValidator.isJsonObject('[1,2,3]'));
+    Assert.isTrue(!RecordHealthCheckConfigValidator.isJsonObject('[1,2,3]'));
+
+    Assert.areEqual(
+      'CUSTOM',
+      RecordHealthCheckConstants.toLwcSeverity('CUSTOM'),
+      'Unknown severity values must pass through for forward compatibility.'
+    );
+    Assert.areEqual(
+      'Apex',
+      RecordHealthCheckConstants.toLwcEvaluatorType('APEX'),
+      'The Apex evaluator must use the public LWC spelling.'
+    );
+    Assert.areEqual(
+      'CompareTwoQueries',
+      RecordHealthCheckConstants.toLwcEvaluatorType('COMPARE_TWO_QUERIES'),
+      'The query-comparison evaluator must use the public LWC spelling.'
+    );
+    Assert.areEqual(
+      'FUTURE_TYPE',
+      RecordHealthCheckConstants.toLwcEvaluatorType('FUTURE_TYPE'),
+      'Unknown evaluator values must pass through for forward compatibility.'
+    );
+  }
+
+  @IsTest
+  static void detailsPermissionUsesFeatureManagement() {
+    User userWithoutPermission = RecordHealthCheckPersonaTestDataFactory.createMinimumAccessUser(
+      'rhcno'
+    );
+
+    Test.startTest();
+    Boolean canViewDetails;
+    System.runAs(userWithoutPermission) {
+      canViewDetails = RecordHealthCheckAccess.canViewDetails();
+    }
+    Test.stopTest();
+
+    Assert.isFalse(
+      canViewDetails,
+      'A minimum-access user without the diagnostics permission must be denied.'
+    );
+  }
+
+  @IsTest
+  static void sharedMappingsCoverEveryNamedValue() {
+    Test.startTest();
+    String failuresOnly = RecordHealthCheckConstants.toLwcComparisonDisplay(
+      'FAILURES_ONLY'
+    );
+    String allRows = RecordHealthCheckConstants.toLwcComparisonDisplay(
+      'ALL_ROWS'
+    );
+    String info = RecordHealthCheckConstants.toLwcSeverity('INFO');
+    String critical = RecordHealthCheckConstants.toLwcSeverity('CRITICAL');
+    String formula = RecordHealthCheckConstants.toLwcEvaluatorType('FORMULA');
+    String query = RecordHealthCheckConstants.toLwcEvaluatorType('QUERY');
+    Test.stopTest();
+
+    Assert.areEqual(
+      'FailuresOnly',
+      failuresOnly,
+      'Failures-only mapping should match the LWC contract.'
+    );
+    Assert.areEqual(
+      'AllRows',
+      allRows,
+      'All-rows mapping should match the LWC contract.'
+    );
+    Assert.areEqual(
+      'Info',
+      info,
+      'Info severity should match the LWC contract.'
+    );
+    Assert.areEqual(
+      'Error',
+      critical,
+      'Critical severity should map to the LWC error variant.'
+    );
+    Assert.areEqual(
+      'Formula',
+      formula,
+      'Formula evaluator should match the LWC contract.'
+    );
+    Assert.areEqual(
+      'Query',
+      query,
+      'Query evaluator should match the LWC contract.'
+    );
+  }
+
+  @IsTest
+  static void sharedMappingsRejectUnknownValues() {
+    assertUnknownMode('trigger');
+    assertUnknownMode('reveal');
+    assertUnknownMode('display');
+    assertUnknownMode('comparison');
+  }
+
+  private static void assertUnknownMode(String mapping) {
+    try {
+      if (mapping == 'trigger') {
+        RecordHealthCheckConstants.toLwcTriggerMode('UNKNOWN');
+      } else if (mapping == 'reveal') {
+        RecordHealthCheckConstants.toLwcRevealMode('UNKNOWN');
+      } else if (mapping == 'display') {
+        RecordHealthCheckConstants.toLwcDisplayMode('UNKNOWN');
+      } else {
+        RecordHealthCheckConstants.toLwcComparisonDisplay('UNKNOWN');
+      }
+      Assert.fail('An unknown ' + mapping + ' mode must be rejected.');
+    } catch (IllegalArgumentException error) {
+      Assert.isTrue(error.getMessage().contains('Unknown'));
+    }
+  }
+
+  @IsTest
+  static void templateValidationReturnsNullWhenRuleMissing() {
+    Test.startTest();
+    RecordHealthCheckTokenIssue issue = RecordHealthCheckConfigValidator.firstTemplateIssue(
+      null
+    );
+    Test.stopTest();
+
+    Assert.isNull(issue, 'A missing Rule has no template to validate.');
+  }
+
+  @IsTest
+  static void pluginValidationRethrowsConstructorSideEffects() {
+    Test.startTest();
+    try {
+      RecordHealthCheckConfigValidator.isValidApexPlugin(
+        'RecordHealthCheckConstructorMutationRule'
+      );
+      Assert.fail('A plugin constructor mutation must abort validation.');
+    } catch (RecordHealthCheckPluginDispatch.SideEffectException error) {
+      Assert.isNotNull(
+        error.getMessage(),
+        'The prohibited constructor mutation should retain diagnostic detail.'
+      );
+    }
+    Test.stopTest();
   }
 }

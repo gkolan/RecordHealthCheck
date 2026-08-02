@@ -71,9 +71,11 @@ How it appears to users:
 - **Unable to evaluate:** access, setup, or available data prevented a conclusion.
 - **System error:** an unexpected evaluator or platform problem occurred; review troubleshooting details.
 
-Core includes no example Custom Metadata or Apex implementations. The local
-[examples library](../examples/README.md) documents Formula, Query, Compare two queries, and Apex
-patterns that you can adapt.
+Record Health Check installs without business-policy Check Sets or Rules. This keeps a production
+installation neutral: administrators deliberately create or install the configuration their org
+will enforce. The [examples library](../examples/README.md) teaches reusable patterns, while the
+optional [core examples](https://github.com/gkolan/RecordHealthCheck-Examples/tree/main/core-examples)
+provide sandbox-ready metadata in a separate repository.
 
 ## First troubleshooting checks
 

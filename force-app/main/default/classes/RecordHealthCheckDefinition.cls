@@ -5,6 +5,8 @@
 
 public class RecordHealthCheckDefinition {
   @AuraEnabled
+  public String qualifiedApiName;
+  @AuraEnabled
   public String developerName;
   @AuraEnabled
   public String label;

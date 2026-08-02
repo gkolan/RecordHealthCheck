@@ -6,8 +6,6 @@
 public with sharing class RecordHealthCheckController {
   @TestVisible
   private static RecordHealthCheckConfigService configService = new RecordHealthCheckConfigService();
-  @TestVisible
-  private static RecordHealthCheckEngine engine = new RecordHealthCheckEngine();
 
   /**
    * Reports whether the record's object has active and/or inactive Check Sets.
@@ -16,6 +14,10 @@ public with sharing class RecordHealthCheckController {
    * Not cacheable: after an admin activates or creates a Check Set, the next
    * component load must see the fresh availability without waiting on the
    * Lightning Data Service cache.
+   *
+   * @param recordId Record whose object determines Check Set availability.
+   * @return Active and inactive Check Set availability for the record's object.
+   * @throws AuraHandledException if availability cannot be loaded safely.
    */
   @AuraEnabled
   public static RecordHealthCheckSetAvailability getCheckSetAvailabilityForRecord(
@@ -27,6 +29,21 @@ public with sharing class RecordHealthCheckController {
     try {
       return configService.getCheckSetAvailabilityForObject(
         RecordHealthCheckDescribeCache.objectApiName(recordId)
+      );
+    } catch (Exception ex) {
+      RecordHealthCheckLogger.log(
+        RecordHealthCheckLogger.Level.ERROR,
+        null,
+        null,
+        recordId,
+        null,
+        'AVAILABILITY_LOOKUP_FAILED',
+        null,
+        ex
+      );
+      throw buildAuraException(
+        'LOAD_FAILED',
+        'An unexpected error occurred loading health check availability.'
       );
     } finally {
       RecordHealthCheckLogger.flush();
@@ -41,20 +58,26 @@ public with sharing class RecordHealthCheckController {
    * CONFIG_NOT_FOUND, CONFIG_INACTIVE, OBJECT_MISMATCH,
    * NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS, and LOAD_FAILED for any
    * unexpected (non-ConfigException) error.
+   *
+   * @param checkSetQualifiedApiName Exact QualifiedApiName of the Check Set.
+   * @param recordId Record for which definitions will be evaluated.
+   * @param runId Optional client correlation identifier.
+   * @return Display settings and ordered Rule definitions.
+   * @throws AuraHandledException for configuration or unexpected load failures.
    */
   @AuraEnabled
   public static RecordHealthCheckDefinitionResponse getCheckDefinitions(
-    String checkSetDeveloperName,
+    String checkSetQualifiedApiName,
     Id recordId,
     String runId
   ) {
     // Normalize at the controller boundary (the engine also normalizes in evaluate).
-    checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
-      checkSetDeveloperName,
+    checkSetQualifiedApiName = RecordHealthCheckLogger.normalizeIdentifier(
+      checkSetQualifiedApiName,
       80
     );
     runId = RecordHealthCheckLogger.normalizeIdentifier(runId, 120);
-    if (String.isBlank(checkSetDeveloperName)) {
+    if (String.isBlank(checkSetQualifiedApiName)) {
       throw buildAuraException(
         'CONFIG_NOT_FOUND',
         'No Check Set is selected for this Record Health Check component.'
@@ -62,7 +85,7 @@ public with sharing class RecordHealthCheckController {
     }
     try {
       return configService.getDefinitionResponse(
-        checkSetDeveloperName,
+        checkSetQualifiedApiName,
         recordId
       );
     } catch (RecordHealthCheckConfigService.ConfigException ex) {
@@ -70,7 +93,7 @@ public with sharing class RecordHealthCheckController {
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.DEBUG,
         runId,
-        checkSetDeveloperName,
+        checkSetQualifiedApiName,
         recordId,
         null,
         'CONFIG_EXCEPTION',
@@ -82,7 +105,7 @@ public with sharing class RecordHealthCheckController {
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.ERROR,
         runId,
-        checkSetDeveloperName,
+        checkSetQualifiedApiName,
         recordId,
         null,
         'CONFIG_UNEXPECTED',
@@ -107,92 +130,107 @@ public with sharing class RecordHealthCheckController {
   }
 
   /**
-   * Evaluates a single check and returns exactly one RecordHealthCheckResult.
-   * Catchable failures are normalized by RecordHealthCheckEngine
-   * and surfaced as status = ERROR with a safe message.
-   * checkSetDeveloperName is validated server-side to confirm the rule belongs to the
+   * Evaluates a single check and returns one split evaluation/display item.
+   * checkSetQualifiedApiName is validated server-side to confirm the Rule belongs to the
    * named Check Set, preventing direct invocation of arbitrary rules.
+   *
+   * @param checkSetQualifiedApiName Exact QualifiedApiName of the parent Check Set.
+   * @param ruleQualifiedApiName Exact QualifiedApiName of the Rule.
+   * @param recordId Record to evaluate.
+   * @param runId Optional client correlation identifier.
+   * @param source Exact browser execution source.
+   * @return One contained evaluation and display result.
    */
   @AuraEnabled
-  public static RecordHealthCheckResult evaluateCheck(
-    String checkSetDeveloperName,
-    String ruleDeveloperName,
+  public static RecordHealthCheckResultItem evaluateCheck(
+    String checkSetQualifiedApiName,
+    String ruleQualifiedApiName,
     Id recordId,
     String runId,
     String source
   ) {
-    checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
-      checkSetDeveloperName,
+    checkSetQualifiedApiName = RecordHealthCheckLogger.normalizeIdentifier(
+      checkSetQualifiedApiName,
       80
     );
-    ruleDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
-      ruleDeveloperName,
+    ruleQualifiedApiName = RecordHealthCheckLogger.normalizeIdentifier(
+      ruleQualifiedApiName,
       80
     );
     runId = RecordHealthCheckLogger.normalizeIdentifier(runId, 120);
-    String effectiveSource = normalizeLwcSource(source);
     try {
-      RecordHealthCheckResult result = engine.evaluate(
-        checkSetDeveloperName,
-        ruleDeveloperName,
-        recordId,
-        runId,
-        effectiveSource
-      );
-      result.runId = runId;
-      result.recordId = recordId;
-      RecordHealthCheckLifecyclePublisher.publishRuleResults(
-        checkSetDeveloperName,
-        runId,
-        new List<RecordHealthCheckResult>{ result },
-        effectiveSource
-      );
-      return result;
+      String effectiveSource = normalizeLwcSource(source);
+      validateRuleMembership(checkSetQualifiedApiName, ruleQualifiedApiName);
+      RecordHealthCheckRequest request = RecordHealthCheckRequest.forRule(
+          ruleQualifiedApiName,
+          recordId
+        )
+        .withResultMode(RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY)
+        .withExecutionOrigin(
+          effectiveSource ==
+            RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
+            ? RecordHealthCheckExecutionOrigin.USER_INITIATED
+            : RecordHealthCheckExecutionOrigin.RUN_ON_LOAD
+        )
+        .withRunId(runId);
+      RecordHealthCheckResponse response = RecordHealthCheck.evaluate(request);
+      return response.results[0];
     } catch (Exception ex) {
       // Engine promises never to throw, but guard the boundary regardless
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.ERROR,
         runId,
-        checkSetDeveloperName,
+        checkSetQualifiedApiName,
         recordId,
-        ruleDeveloperName,
+        ruleQualifiedApiName,
         'CONTROLLER_BOUNDARY_ERROR',
         null,
         ex
       );
-      RecordHealthCheckResult errorResult = new RecordHealthCheckResult();
-      errorResult.ruleDeveloperName = ruleDeveloperName;
-      errorResult.recordId = recordId;
-      errorResult.status = 'ERROR';
-      errorResult.reasonCode = 'APEX_EVALUATOR_ERROR';
-      errorResult.message = 'An unexpected error occurred. Contact your administrator.';
-      return errorResult;
+      RecordHealthCheckEvaluationResult evaluation = new RecordHealthCheckEvaluationResult();
+      evaluation.ruleQualifiedApiName = ruleQualifiedApiName;
+      evaluation.recordId = recordId;
+      evaluation.status = RecordHealthCheckStatus.ERROR;
+      evaluation.reasonCode = 'APEX_EVALUATOR_ERROR';
+      RecordHealthCheckResultDisplay display = new RecordHealthCheckResultDisplay();
+      display.renderedMessage = 'An unexpected error occurred. Contact your administrator.';
+      RecordHealthCheckResultItem item = new RecordHealthCheckResultItem();
+      item.evaluation = evaluation;
+      item.display = display;
+      return item;
     } finally {
       RecordHealthCheckLogger.flush();
     }
   }
 
-  /** Publishes the one aggregate event after a user-initiated client run finishes. */
+  /**
+   * Publishes advisory lifecycle events after a user-initiated client run finishes.
+   *
+   * @param checkSetQualifiedApiName Exact QualifiedApiName of the completed Check Set.
+   * @param runId Client correlation identifier for the completed run.
+   * @param source Exact browser execution source.
+   * @param recordId Record evaluated by the completed run.
+   * @param resultsJson Client-returned result items, filtered to the record and resolved Rules.
+   * @throws AuraHandledException if completion cannot be performed safely.
+   */
   @AuraEnabled
   public static void completeRun(
-    String checkSetDeveloperName,
+    String checkSetQualifiedApiName,
     String runId,
     String source,
-    Id recordId
+    Id recordId,
+    String resultsJson
   ) {
     try {
       String effectiveSource = normalizeLwcSource(source);
       String effectiveCheckSetName = RecordHealthCheckLogger.normalizeIdentifier(
-        checkSetDeveloperName,
+        checkSetQualifiedApiName,
         80
       );
       if (
         effectiveSource !=
         RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED ||
-        recordId == null ||
-        !RecordHealthCheckLifecyclePublisher.isRunPublicationEnabled(
-          effectiveCheckSetName
-        )
+        recordId == null
       ) {
         return;
       }
@@ -200,42 +238,103 @@ public with sharing class RecordHealthCheckController {
         runId,
         120
       );
+      if (String.isBlank(resultsJson) || resultsJson.length() > 1000000) {
+        throw new RecordHealthCheckControllerException(
+          'Completed results are required and must be at most 1 MB.'
+        );
+      }
       RecordHealthCheckDefinitionResponse definitions = configService.getDefinitionResponse(
         effectiveCheckSetName,
         recordId
       );
-      RecordHealthCheckSetResult response = new RecordHealthCheckSetResult();
-      response.checkSetDeveloperName = effectiveCheckSetName;
-      response.recordId = recordId;
-      response.runId = effectiveRunId;
-      // Never trust browser-supplied result objects for a lifecycle event.
-      // Server-side counts come only from server-owned metadata and results.
+      Set<String> allowedRuleNames = new Set<String>();
       for (RecordHealthCheckDefinition definition : definitions.checks) {
-        response.add(
-          engine.evaluate(
-            effectiveCheckSetName,
-            definition.developerName,
-            recordId,
-            effectiveRunId,
-            effectiveSource
-          )
-        );
+        allowedRuleNames.add(definition.qualifiedApiName);
       }
-      response.finish();
-      RecordHealthCheckLifecyclePublisher.publishCompletedSet(
+      List<RecordHealthCheckResultItem> completedItems = (List<RecordHealthCheckResultItem>) JSON.deserialize(
+        resultsJson,
+        List<RecordHealthCheckResultItem>.class
+      );
+      RecordHealthCheckResponse response = new RecordHealthCheckResponse();
+      response.runId = effectiveRunId;
+      response.recordIds.add(recordId);
+      Set<String> ruleNames = new Set<String>();
+      for (RecordHealthCheckResultItem item : completedItems) {
+        if (
+          item == null ||
+          item.evaluation == null ||
+          item.evaluation.recordId != recordId ||
+          String.isBlank(item.evaluation.ruleQualifiedApiName) ||
+          !allowedRuleNames.contains(item.evaluation.ruleQualifiedApiName)
+        ) {
+          continue;
+        }
+        response.results.add(item);
+        response.summary.add(item.evaluation.status);
+        ruleNames.add(item.evaluation.ruleQualifiedApiName);
+      }
+      response.ruleQualifiedApiNames.addAll(ruleNames);
+      RecordHealthCheckLifecyclePublisher.publishInteractiveResponse(
         response,
+        effectiveCheckSetName,
         effectiveSource
+      );
+    } catch (Exception ex) {
+      RecordHealthCheckLogger.log(
+        RecordHealthCheckLogger.Level.ERROR,
+        runId,
+        checkSetQualifiedApiName,
+        recordId,
+        null,
+        'RUN_COMPLETION_FAILED',
+        null,
+        ex
+      );
+      throw buildAuraException(
+        'RUN_COMPLETION_FAILED',
+        'An unexpected error occurred completing the health check run.'
       );
     } finally {
       RecordHealthCheckLogger.flush();
     }
   }
 
-  /** The browser may request only the two LWC modes; unknown values fall back to the safer default. */
+  /** Validates the browser execution source without silently changing its meaning. */
   private static String normalizeLwcSource(String source) {
-    return source == RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
-      ? RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
-      : RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD;
+    if (
+      source == RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED ||
+      source == RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
+    ) {
+      return source;
+    }
+    throw new RecordHealthCheckControllerException(
+      'The execution source is not recognized.'
+    );
+  }
+
+  private static void validateRuleMembership(
+    String checkSetQualifiedApiName,
+    String ruleQualifiedApiName
+  ) {
+    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced before the component is exposed.
+    List<Record_Health_Check_Rule__mdt> rules = [
+      SELECT Record_Health_Check_Set__r.QualifiedApiName
+      FROM Record_Health_Check_Rule__mdt
+      WHERE QualifiedApiName = :ruleQualifiedApiName
+      LIMIT 1
+    ];
+    if (
+      rules.isEmpty() ||
+      rules[0].Record_Health_Check_Set__r.QualifiedApiName !=
+      checkSetQualifiedApiName
+    ) {
+      throw new RecordHealthCheckControllerException(
+        'The selected Rule does not belong to the selected Check Set.'
+      );
+    }
+  }
+
+  private class RecordHealthCheckControllerException extends Exception {
   }
 
   // ─── Helper ───────────────────────────────────────────────────────────────

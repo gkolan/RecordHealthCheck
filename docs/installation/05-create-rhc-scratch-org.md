@@ -34,11 +34,11 @@ only when you no longer need that org, or choose another alias.
 Setup performs the following operations in order:
 
 1. Creates a 30-day scratch org from the checked-in definition.
-2. Deploys `force-app`, including Core and all four clearly prefixed `Example_` Check Sets and their Rules.
-3. Deploys the demo Account record page, layouts, and list views.
+2. Deploys the Framework-only `force-app` package.
+3. Deploys the optional Check Sets and Rules from the integration-fixture copy, then deploys the demo Account record page.
 4. Assigns `Record_Health_Check_Admin` to the scratch-org user.
 5. Creates the deterministic Acme data set and its inactive owner scenario.
-6. Creates the realistic Account, Contact, and Opportunity portfolio for all four shipped Check Sets.
+6. Creates the realistic Account, Contact, and Opportunity portfolio for all four optional Check Sets.
 7. Generates a password, validates all RHC metadata, and verifies both demo scenarios.
 
 The command exits unsuccessfully if any step fails or if the final engine result is not exactly **3 passed, 4
@@ -106,7 +106,7 @@ The verification also checks all eight Rule outcomes individually:
 | `Example_No_High_Priority_Issues` | `FAIL` |
 | `Example_Channel_Partner_Governance` | `SKIPPED` |
 
-`Example_Pipeline_Protects_Revenue` is also the packaged display-format example. It formats both
+`Example_Pipeline_Protects_Revenue` is also an optional display-format example. It formats both
 the aggregate Found value and record-formula Expected value as currency, applies administrator
 captions, and resolves the strict token
 `{!record.AnnualRevenue format="CURRENCY" fallback="Not available"}` in its failure message. The

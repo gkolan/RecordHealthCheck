@@ -4,8 +4,9 @@
 > On this page, choose a practical Apex Rule for readiness logic that requires several Salesforce objects, configurable calculations, or defensive runtime behavior.
 
 Use **Verify with Apex** when Formula, Query, and Compare two queries cannot express the business
-decision clearly. An Apex plugin receives Framework context and administrator-controlled JSON
-parameters, reads Salesforce data in the intended security mode, and returns one explicit result.
+decision clearly. An Apex plugin receives a bulk scope and administrator-controlled JSON
+parameters, reads Salesforce data in the intended security mode, and returns one explicit outcome
+for every requested record ID.
 
 ## Choose an Apex example
 
@@ -30,5 +31,5 @@ use [Reference: Apex](../../reference/reference-apex.md).
 
 - [All practical examples](../README.md)
 - [Reference: Apex](../../reference/reference-apex.md)
-- [Apex API](../../reference/reference-apex-api.md)
+- [Apex API](../../api/apex-api.md)
 - [Rule fields](../../metadata/fields-check-rule.md)

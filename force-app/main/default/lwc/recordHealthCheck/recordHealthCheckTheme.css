@@ -1,0 +1,39 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Adaptive theme: Salesforce supplies the active design-system values through
+ * semantic global hooks; established Lightning values remain the fallbacks.
+ */
+.rhc-theme {
+  --rhc-theme-card-background: var(
+    --slds-g-color-surface-container-1,
+    var(--slds-g-color-neutral-base-100, #ffffff)
+  );
+  --rhc-theme-card-border: var(
+    --slds-g-color-border-1,
+    var(--slds-g-color-border-base-1, #c9c7c5)
+  );
+  --rhc-theme-card-radius: var(--slds-g-radius-border-4, 0.25rem);
+  --rhc-theme-card-shadow: var(
+    --slds-g-shadow-2,
+    0 2px 6px 0 rgba(0, 0, 0, 0.16)
+  );
+  --rhc-theme-header-background: var(
+    --slds-g-color-surface-container-2,
+    var(--slds-g-color-neutral-base-95, #fafafa)
+  );
+  --rhc-theme-row-hover: var(
+    --slds-g-color-surface-container-2,
+    var(--slds-g-color-neutral-base-95, #f5f5f5)
+  );
+  --rhc-theme-text: var(
+    --slds-g-color-on-surface-1,
+    var(--slds-g-color-neutral-base-10, #181818)
+  );
+  --rhc-theme-text-weak: var(
+    --slds-g-color-on-surface-2,
+    var(--slds-g-color-neutral-base-40, #706e6b)
+  );
+  font-family: var(--slds-g-font-family, "Salesforce Sans", Arial, sans-serif);
+}

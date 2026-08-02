@@ -84,12 +84,16 @@ public with sharing class RecordHealthCheckConfigValidator {
       if (pluginType == null) {
         return false;
       }
-      Object instance = pluginType.newInstance();
-      if (!(instance instanceof RecordHealthCheckRule)) {
+      RecordHealthCheckRule instance = RecordHealthCheckPluginDispatch.instantiate(
+        pluginType
+      );
+      if (instance == null) {
         return false;
       }
-      validatedPluginInstances.put(className, (RecordHealthCheckRule) instance);
+      validatedPluginInstances.put(className, instance);
       return true;
+    } catch (RecordHealthCheckPluginDispatch.SideEffectException ex) {
+      throw ex;
     } catch (Exception ex) {
       return false;
     }
@@ -99,6 +103,21 @@ public with sharing class RecordHealthCheckConfigValidator {
     RecordHealthCheckRule instance = validatedPluginInstances.get(className);
     validatedPluginInstances.remove(className);
     return instance;
+  }
+
+  /** Releases a validated plugin instance when later validation rejects its Rule. */
+  public static void discardValidatedPlugin(String className) {
+    if (String.isNotBlank(className)) {
+      validatedPluginInstances.remove(className);
+    }
+  }
+
+  @TestVisible
+  private static void cachePluginForTest(
+    String className,
+    RecordHealthCheckRule instance
+  ) {
+    validatedPluginInstances.put(className, instance);
   }
 
   public static Boolean isJsonObject(String jsonText) {

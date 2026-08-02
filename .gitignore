@@ -25,6 +25,7 @@ coverage/
 # Logs
 logs
 *.log
+code-analyzer-results-*.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -118,6 +119,9 @@ scripts/*
 # Release-gate scripts used by package.json and CI are public and tracked.
 !scripts/release/
 !scripts/release/**
+# Public Apex plugin scaffolding shipped as the 2.0 migration path.
+!scripts/templates/
+!scripts/templates/**
 # Reproducible demo scratch-org provisioning (see docs/installation/05-*).
 !scripts/setup-demo.sh
 # Reproducible multi-currency integration-demo provisioning.
@@ -125,7 +129,7 @@ scripts/*
 # Display: Value Format coverage org (see docs/reference/reference-display-value-format.md).
 !scripts/setup-display-formats.sh
 # Exception: the metadata validator is a release-gate dependency referenced by
-# .github/workflows/salesforce-validate.yml and the V2 upgrade docs, so it must
+# .github/workflows/salesforce-validate.yml and the upgrade guide, so it must
 # be tracked. Everything else under scripts/ stays local.
 !scripts/apex/
 scripts/apex/*

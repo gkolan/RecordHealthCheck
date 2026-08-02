@@ -45,7 +45,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `UNKNOWN_RESULT_STATUS` | `ERROR` | Apex returned an unsupported result status. |
 | `MISSING_TOKEN_VALUE` | `UNABLE_TO_EVALUATE` | A required merge-token value was unavailable. |
 | `CIRCULAR_DEPENDENCY` | `UNABLE_TO_EVALUATE` | Prerequisite cycle detected (LWC may pre-seed without calling Apex). |
-| `DEPENDENCY_NOT_IN_RUN` | `SKIPPED` | LWC-only: prerequisite was omitted by the configured Framework run cap. |
+| `DEPENDENCY_NOT_IN_RUN` | `SKIPPED` | The Prerequisite Rule was not included in the Framework run because it was inactive, missing, ordered after the Rule that requires it, or outside the first 25 active Rules. Apex and the Lightning component enforce the same behavior. |
 | `APPLICABILITY_NOT_MET` | `SKIPPED` | Query empty-result path chose skip via `NoRowsResult__c = SKIP` (distinct from applicability checks above). |
 | `VALUE_IS_EMPTY` | `SKIPPED` | Row comparison skipped because a compared field value was empty under `EmptyValueHandling__c = SKIP_RECORD`. |
 
@@ -117,7 +117,7 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 
 | Code | Typical status | Meaning |
 | --- | --- | --- |
-| `LEGACY_FLAT_TOKEN` | `UNABLE_TO_EVALUATE` | Legacy token written without a namespace, rejected under strict namespaced syntax. See the example below the table. |
+| `TOKEN_NAMESPACE_REQUIRED` | `UNABLE_TO_EVALUATE` | Token omits the required namespace. See the example below the table. |
 | `UNSUPPORTED_TOKEN_NAMESPACE` | `UNABLE_TO_EVALUATE` | Token namespace is not on the allowed list. |
 | `UNKNOWN_TOKEN_PROPERTY` | `UNABLE_TO_EVALUATE` | Token property path is not recognized. |
 | `TOKEN_NOT_ALLOWED_ON_SURFACE` | `UNABLE_TO_EVALUATE` | Token used on a message/query surface that forbids it. |
@@ -126,7 +126,8 @@ Registry helpers for the remapped pair live in `RecordHealthCheckReasonCodes`. O
 | `TOKEN_LIMIT_EXCEEDED` | `UNABLE_TO_EVALUATE` | One template contains more than 100 merge tokens. Split or simplify it so one message cannot create disproportionate field discovery and resolution work. |
 | `RESOLVED_TEMPLATE_TOO_LONG` | `UNABLE_TO_EVALUATE` | Completed text exceeded 20,000 characters. Shorten the template or inserted Salesforce values; the Framework does not return truncated guidance. |
 
-`LEGACY_FLAT_TOKEN` covers the retired flat form, which names a field with no namespace in front of it: <!-- legacy-token-ok -->
+`TOKEN_NAMESPACE_REQUIRED` identifies a token that names a field without one of the documented
+namespaces:
 
 ```text
 {!Id fallback="not available"}
@@ -159,7 +160,7 @@ These often appear on the card chrome rather than a single Rule row:
 
 ## Related
 
-- [Apex API](../reference/reference-apex-api.md)
+- [Apex API](../api/apex-api.md)
 - [Flow actions](../integration/flow-actions.md)
 - [Lifecycle events](../integration/lifecycle-events.md)
 - [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md)

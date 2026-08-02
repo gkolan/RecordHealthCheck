@@ -13,6 +13,18 @@ engines:
 
 rules:
   pmd:
+    # Subscriber-facing Apex in a managed package must be global. Public would
+    # make these contracts inaccessible outside the package namespace.
+    AvoidGlobalModifier:
+      disabled: true
+    # This name-only heuristic mistakes health-check fields beginning with
+    # "Pass" (formulas, display settings, and benchmark counts) for passwords.
+    # None of these fields stores authentication or secret material.
+    ProtectSensitiveData:
+      disabled: true
+    # The neutral audit remains visible in the release evidence. PMD cannot
+    # distinguish subscriber-facing contracts from internal/test helpers, so
+    # requiring this rule would encourage hundreds of low-value comments.
     ApexDoc:
       disabled: true
     ApexUnitTestClassShouldHaveRunAs:
@@ -28,8 +40,6 @@ rules:
     CognitiveComplexity:
       disabled: true
     NcssCount:
-      disabled: true
-    PropertyNamingConventions:
       disabled: true
     AvoidDeeplyNestedIfStmts:
       disabled: true

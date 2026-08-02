@@ -162,6 +162,7 @@ global with sharing class AccountStrategicReadinessCheck implements RecordHealth
       String.isNotBlank(acct.BillingCountry);
   }
 
+  @TestVisible
   private static Integer resolveInt(
     Map<String, Object> parameters,
     String key,

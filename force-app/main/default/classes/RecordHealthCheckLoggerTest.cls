@@ -5,13 +5,38 @@
 
 @IsTest
 private class RecordHealthCheckLoggerTest {
+  private class FixedSettingsProvider extends RecordHealthCheckSettingsProvider {
+    private Boolean enabled;
+    FixedSettingsProvider(Boolean enabled) {
+      this.enabled = enabled;
+    }
+    public override Boolean isErrorEventPublicationEnabled(
+      String checkSetDeveloperName
+    ) {
+      return enabled;
+    }
+  }
+
+  private class PublishedRuleSettingsProvider extends RecordHealthCheckSettingsProvider {
+    protected override List<Record_Health_Check_Rule__mdt> queryPublishedRules(
+      String checkSetQualifiedApiName
+    ) {
+      return new List<Record_Health_Check_Rule__mdt>{
+        RecordHealthCheckTestDataFactory.rule(
+          new Map<String, Object>{ 'QualifiedApiName' => 'Published_Rule' }
+        )
+      };
+    }
+  }
+
   // The logger writes to the Apex debug log (something we cannot read back in
   // a test context), so these tests exercise every branch for coverage and assert
   // that no path throws. The rendered output is verified by reading debug logs in
   // the org; here we guarantee the logging API is exception-safe for all inputs.
 
   @IsTest
-  static void instanceLevelsAllExecuteWithoutError() {
+  static void instanceLevelsBufferOnlyError() {
+    RecordHealthCheckLogger.settingsProvider = new FixedSettingsProvider(true);
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-123',
       'Example_Account_Relationship_Risk',
@@ -38,11 +63,16 @@ private class RecordHealthCheckLoggerTest {
     );
     Test.stopTest();
 
-    System.assert(true, 'All instance log levels executed without throwing.');
+    Assert.areEqual(
+      1,
+      RecordHealthCheckLogger.pendingEventCount(),
+      'Only the ERROR call must produce a durable log event.'
+    );
   }
 
   @IsTest
-  static void staticEntryPointExecutesWithoutError() {
+  static void staticErrorBuffersOneEvent() {
+    RecordHealthCheckLogger.settingsProvider = new FixedSettingsProvider(true);
     Test.startTest();
     RecordHealthCheckLogger.log(
       RecordHealthCheckLogger.Level.ERROR,
@@ -56,11 +86,15 @@ private class RecordHealthCheckLoggerTest {
     );
     Test.stopTest();
 
-    System.assert(true, 'Static log entry point executed without throwing.');
+    Assert.areEqual(
+      1,
+      RecordHealthCheckLogger.pendingEventCount(),
+      'The static ERROR entry point must buffer one durable event.'
+    );
   }
 
   @IsTest
-  static void blankRunIdAndNullRecordAreHandled() {
+  static void blankContextInfoDoesNotBuffer() {
     // Defensive paths: missing correlation id and no record context must not throw.
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       null,
@@ -72,9 +106,10 @@ private class RecordHealthCheckLoggerTest {
     logger.info(null, 'NO_CONTEXT', new Map<String, Object>());
     Test.stopTest();
 
-    System.assert(
-      true,
-      'Logger tolerated blank runId, null config, and null record.'
+    Assert.areEqual(
+      0,
+      RecordHealthCheckLogger.pendingEventCount(),
+      'An INFO entry with blank context must not create a durable error event.'
     );
   }
 
@@ -97,38 +132,34 @@ private class RecordHealthCheckLoggerTest {
     );
 
     List<Record_Health_Check_Log__e> pending = RecordHealthCheckLogger.pendingEventsForTest();
-    System.assertEquals(1, pending.size(), 'One ERROR event should buffer.');
+    Assert.areEqual(1, pending.size(), 'One ERROR event should buffer.');
     Record_Health_Check_Log__e evt = pending[0];
-    System.assertEquals('ERROR', evt.Level__c, 'Level is ERROR.');
-    System.assertEquals('run-err-1', evt.RunId__c, 'RunId correlates the run.');
-    System.assertEquals(
+    Assert.areEqual('ERROR', evt.Level__c, 'Level is ERROR.');
+    Assert.areEqual('run-err-1', evt.RunId__c, 'RunId correlates the run.');
+    Assert.areEqual(
       String.valueOf(recordId),
       evt.RecordId__c,
       'RecordId identifies where the error happened.'
     );
-    System.assertEquals(
+    Assert.areEqual(
       'Example_Account_Relationship_Risk',
       evt.CheckSetDeveloperName__c,
       'Check Set context is the canonical contract name.'
     );
-    System.assertEquals(
+    Assert.areEqual(
       'Owner_Is_Active',
       evt.RuleDeveloperName__c,
       'Rule context is the canonical contract name.'
     );
-    System.assertEquals(
-      'UNHANDLED_EXCEPTION',
-      evt.Code__c,
-      'Code is the event.'
-    );
-    System.assert(
+    Assert.areEqual('UNHANDLED_EXCEPTION', evt.Code__c, 'Code is the event.');
+    Assert.isTrue(
       evt.ExceptionType__c.contains('NullPointer'),
       'Exception type is captured for reproduction.'
     );
-    System.assertNotEquals(null, evt.StackTrace__c, 'Stack trace is captured.');
-    System.assertEquals('1.0', evt.ContractVersion__c, 'Versioned contract.');
-    System.assertNotEquals(null, evt.EventId__c, 'Event has a dedupe id.');
-    System.assertEquals(
+    Assert.areNotEqual(null, evt.StackTrace__c, 'Stack trace is captured.');
+    Assert.areEqual('1.0', evt.ContractVersion__c, 'Versioned contract.');
+    Assert.areNotEqual(null, evt.EventId__c, 'Event has a dedupe id.');
+    Assert.areEqual(
       UserInfo.getUserId(),
       evt.UserId__c,
       'Running user is attributed authoritatively.'
@@ -138,7 +169,7 @@ private class RecordHealthCheckLoggerTest {
     RecordHealthCheckLogger.flush();
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       0,
       RecordHealthCheckLogger.pendingEventCount(),
       'flush() clears the buffer.'
@@ -157,7 +188,7 @@ private class RecordHealthCheckLoggerTest {
     logger.info('C', 'RESULT', new Map<String, Object>{ 'status' => 'FAIL' });
     logger.warn('C', 'METADATA_INVALID', null);
 
-    System.assertEquals(
+    Assert.areEqual(
       0,
       RecordHealthCheckLogger.pendingEventCount(),
       'Only ERROR buffers a durable event; WARN/INFO/DEBUG do not.'
@@ -178,13 +209,13 @@ private class RecordHealthCheckLoggerTest {
     );
 
     List<Record_Health_Check_Log__e> pending = RecordHealthCheckLogger.pendingEventsForTest();
-    System.assertEquals(1, pending.size(), 'Static ERROR path buffers.');
-    System.assertEquals(
+    Assert.areEqual(1, pending.size(), 'Static ERROR path buffers.');
+    Assert.areEqual(
       null,
       pending[0].ExceptionType__c,
       'No exception type when ex is null.'
     );
-    System.assert(
+    Assert.isTrue(
       pending[0].Message__c.contains('reasonCode=APEX_EVALUATOR_ERROR'),
       'Message falls back to a compact field summary.'
     );
@@ -192,7 +223,7 @@ private class RecordHealthCheckLoggerTest {
 
   @IsTest
   static void checkSetOptOutSuppressesBuffering() {
-    RecordHealthCheckLogger.publishErrorEventSettingOverride = false;
+    RecordHealthCheckLogger.settingsProvider = new FixedSettingsProvider(false);
     RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
       'run-off',
       'Example_Account_Relationship_Risk',
@@ -206,7 +237,7 @@ private class RecordHealthCheckLoggerTest {
       new System.NullPointerException()
     );
 
-    System.assertEquals(
+    Assert.areEqual(
       0,
       RecordHealthCheckLogger.pendingEventCount(),
       'The Check Set opt-out suppresses the durable event (System.debug still fires).'
@@ -273,7 +304,7 @@ private class RecordHealthCheckLoggerTest {
       new System.NullPointerException()
     );
 
-    System.assertEquals(
+    Assert.areEqual(
       0,
       RecordHealthCheckLogger.pendingEventCount(),
       'A subscriber logging an error must not republish onto the same bus.'
@@ -286,7 +317,7 @@ private class RecordHealthCheckLoggerTest {
     RecordHealthCheckLogger.flush();
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       0,
       RecordHealthCheckLogger.pendingEventCount(),
       'flush() on an empty buffer is a no-op and does not throw.'
@@ -294,21 +325,54 @@ private class RecordHealthCheckLoggerTest {
   }
 
   @IsTest
-  static void debugAndResetHooksRestoreLoggerState() {
-    RecordHealthCheckLogger.debugEnabled = true;
-    new RecordHealthCheckLogger('run-debug', 'Set', null)
-      .debug('Rule', 'DEBUG_BRANCH', null);
-    RecordHealthCheckLogger.publishErrorEventSettingOverride = false;
-    RecordHealthCheckLogger.enterSubscriberContext();
-
-    RecordHealthCheckLogger.resetLogSinkForTest();
-
-    System.assertEquals(
-      null,
-      RecordHealthCheckLogger.publishErrorEventSettingOverride
+  static void blankCheckSetAndEmptyFieldsUseSafeErrorDefaults() {
+    RecordHealthCheckLogger logger = new RecordHealthCheckLogger(
+      'run-defaults',
+      ' ',
+      UserInfo.getUserId()
     );
-    System.assertEquals(false, RecordHealthCheckLogger.inSubscriberContext);
-    System.assertEquals(0, RecordHealthCheckLogger.pendingEventCount());
-    RecordHealthCheckLogger.debugEnabled = false;
+
+    Test.startTest();
+    logger.error('Rule_A', 'EMPTY_CONTEXT', new Map<String, Object>(), null);
+    Test.stopTest();
+
+    List<Record_Health_Check_Log__e> pending = RecordHealthCheckLogger.pendingEventsForTest();
+    Assert.areEqual(
+      1,
+      pending.size(),
+      'A missing Check Set must retain default-on ERROR publication.'
+    );
+    Assert.isNull(
+      pending[0].Message__c,
+      'Empty fields without an exception must not invent a message.'
+    );
+  }
+
+  @IsTest
+  static void settingsProviderReturnsConfiguredPublicationRules() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    String checkSetName = RecordHealthCheckTestDataFactory.qualifiedCheckSetName(
+      'Account_Display_Formats'
+    );
+
+    Test.startTest();
+    RecordHealthCheckLogger.pendingEventsForTest();
+    Set<String> published = new PublishedRuleSettingsProvider()
+      .publishedRuleNames(checkSetName);
+    RecordHealthCheckLogger.log(
+      RecordHealthCheckLogger.Level.DEBUG,
+      'debug-run',
+      checkSetName,
+      UserInfo.getUserId(),
+      null,
+      'DEBUG_BRANCH',
+      null,
+      null
+    );
+    Test.stopTest();
+
+    Assert.areEqual(new Set<String>{ 'Published_Rule' }, published);
   }
 }

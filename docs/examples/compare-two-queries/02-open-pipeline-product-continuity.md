@@ -83,7 +83,7 @@ These values improve presentation. Change them for your process, or leave an opt
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Opportunities/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `10` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked only after confirming this example matches your business process |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 The applicability count keeps the Rule focused on Accounts with purchased-product history. **If
 Query Finds No Records** then skips an Account whose open Opportunities have no Opportunity
@@ -106,7 +106,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees

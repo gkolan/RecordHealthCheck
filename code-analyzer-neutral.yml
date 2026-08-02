@@ -1,0 +1,15 @@
+log_folder: code-analyzer/logs
+
+ignores:
+  files:
+    - "code-analyzer/**"
+
+suppressions:
+  disable_suppressions: true
+
+engines:
+  eslint:
+    eslint_config_file: eslint.config.js
+    disable_javascript_base_config: true
+    disable_lwc_base_config: true
+    disable_slds_base_config: true

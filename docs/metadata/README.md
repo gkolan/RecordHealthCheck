@@ -36,8 +36,8 @@ publication contract and security profile.
 | [Check Set Run Platform Event](event-set-run.md) | Every field, summary-event possibilities, examples, limits, and subscriber design |
 | [Rule Result Platform Event](event-rule-result.md) | Every field, status interpretation, routing possibilities, limits, and subscriber design |
 | [Log Platform Event](event-log.md) | Every diagnostic field, security requirements, loop protection, and limitations |
-| [Apex API](../reference/reference-apex-api.md) | Public `runRule` / `runSet` methods |
-| [Flow actions](../integration/flow-actions.md) | Packaged Rule and Set Flow actions |
+| [API examples](../api/README.md) | Public `evaluate(request)` API, Flow actions, and asynchronous Apex patterns |
+| [Platform Event subscriptions](../platform-events/README.md) | Flow and Apex subscriber patterns for all three events |
 | [Lightning component](../integration/lightning-component.md) | Automatic versus explicit publication behavior |
 | [Field limits](../reference/reference-fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
 | [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md) | Mental model, walkthroughs, troubleshooting, go-live checklist |
@@ -47,5 +47,5 @@ For merge tokens, applicability, and evaluator behavior, see the [Configure Chec
 ## Related
 
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): mental model and walkthroughs
-- [Upgrading Record Health Check](../installation/04-upgrading.md): breaking-change and rollback guide
+- [Revalidate an installation](../installation/04-upgrading.md): deployment verification and rollback guide
 - [Examples library](../examples/README.md): practical Rule patterns by Evaluation Type

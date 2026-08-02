@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+  <fullName>Tags__c</fullName>
+  <label>Tags</label>
+  <type>MultiselectPicklist</type>
+  <valueSet>
+    <valueSetDefinition>
+      <sorted>false</sorted>
+      <value>
+        <fullName>A</fullName>
+        <default>false</default>
+        <label>Alpha</label>
+      </value>
+      <value>
+        <fullName>B</fullName>
+        <default>false</default>
+        <label>Beta</label>
+      </value>
+    </valueSetDefinition>
+  </valueSet>
+  <visibleLines>4</visibleLines>
+</CustomField>

@@ -12,7 +12,7 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
   public static List<Id> startSets(Id recordId) {
     List<Id> jobs = new List<Id>();
     for (Record_Health_Check_Set__mdt item : [
-      SELECT DeveloperName
+      SELECT QualifiedApiName
       FROM Record_Health_Check_Set__mdt
       ORDER BY DeveloperName
       LIMIT 50000
@@ -22,7 +22,7 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
         System.enqueueJob(
           new RecordHealthCheckExhaustiveSmoke(
             recordId,
-            item.DeveloperName,
+            item.QualifiedApiName,
             'SET'
           )
         )
@@ -34,7 +34,7 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
   public static List<Id> startRules(Id recordId, Integer batchOffset) {
     List<Id> jobs = new List<Id>();
     for (Record_Health_Check_Rule__mdt item : [
-      SELECT DeveloperName
+      SELECT QualifiedApiName
       FROM Record_Health_Check_Rule__mdt
       ORDER BY DeveloperName
       LIMIT 50
@@ -45,7 +45,7 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
         System.enqueueJob(
           new RecordHealthCheckExhaustiveSmoke(
             recordId,
-            item.DeveloperName,
+            item.QualifiedApiName,
             'RULE'
           )
         )
@@ -54,6 +54,7 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
     return jobs;
   }
 
+  @TestVisible
   private RecordHealthCheckExhaustiveSmoke(
     Id recordId,
     String itemName,
@@ -72,25 +73,29 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
     };
     try {
       if (mode == 'SET') {
-        RecordHealthCheckSetResult result = RecordHealthCheck.runSet(
-          itemName,
-          recordId
+        RecordHealthCheckResponse result = RecordHealthCheck.evaluate(
+          RecordHealthCheckRequest.forCheckSet(itemName, recordId)
+            .withResultMode(RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY)
         );
-        outcome.put('status', result.status);
-        outcome.put('passed', result.passedCount);
-        outcome.put('failed', result.failedCount);
-        outcome.put('skipped', result.skippedCount);
-        outcome.put('unable', result.unableCount);
-        outcome.put('systemErrors', result.systemErrorCount);
+        outcome.put('status', overallStatus(result.summary));
+        outcome.put('passed', result.summary.passed);
+        outcome.put('failed', result.summary.failed);
+        outcome.put('skipped', result.summary.skipped);
+        outcome.put('unable', result.summary.unable);
+        outcome.put('systemErrors', result.summary.systemError);
         outcome.put('results', summarize(result.results));
       } else {
-        RecordHealthCheckResult result = RecordHealthCheck.runRule(
-          itemName,
-          recordId
+        RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+          RecordHealthCheckRequest.forRule(itemName, recordId)
+            .withResultMode(RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY)
         );
-        outcome.put('status', result.status);
-        outcome.put('reasonCode', result.reasonCode);
-        outcome.put('message', result.message);
+        RecordHealthCheckResultItem result = response.results[0];
+        outcome.put('status', result.evaluation.status);
+        outcome.put('reasonCode', result.evaluation.reasonCode);
+        outcome.put(
+          'message',
+          result.display == null ? null : result.display.renderedMessage
+        );
       }
     } catch (Exception ex) {
       outcome.put('threw', true);
@@ -100,24 +105,51 @@ public class RecordHealthCheckExhaustiveSmoke implements Queueable {
     }
     upsert new RHC_Event_Export__c(
       EventId__c = mode + ':' + itemName,
+      RuleName__c = itemName,
+      Status__c = (String) outcome.get('status'),
+      ReasonCode__c = (String) outcome.get('reasonCode'),
+      Threw__c = outcome.get('threw') == true,
+      ExceptionType__c = (String) outcome.get('exceptionType'),
       Payload__c = JSON.serialize(outcome)
     )
       RHC_Event_Export__c.EventId__c;
   }
 
-  private static List<Object> summarize(List<RecordHealthCheckResult> results) {
+  @TestVisible
+  private static List<Object> summarize(
+    List<RecordHealthCheckResultItem> results
+  ) {
     List<Object> summary = new List<Object>();
-    for (RecordHealthCheckResult result : results) {
+    for (RecordHealthCheckResultItem result : results) {
       summary.add(
         new Map<String, Object>{
-          'name' => result.ruleDeveloperName,
-          'status' => result.status,
-          'reasonCode' => result.reasonCode,
-          'message' => result.message
+          'name' => result.evaluation.ruleQualifiedApiName,
+          'status' => result.evaluation.status,
+          'reasonCode' => result.evaluation.reasonCode,
+          'message' => result.display == null
+            ? null
+            : result.display.renderedMessage
         }
       );
     }
     return summary;
+  }
+
+  @TestVisible
+  private static String overallStatus(RecordHealthCheckRunSummary summary) {
+    if (summary.systemError > 0) {
+      return 'ERROR';
+    }
+    if (summary.unable > 0) {
+      return 'UNABLE_TO_EVALUATE';
+    }
+    if (summary.failed > 0) {
+      return 'FAIL';
+    }
+    if (summary.passed > 0) {
+      return 'PASS';
+    }
+    return 'SKIPPED';
   }
 
   public static void report() {

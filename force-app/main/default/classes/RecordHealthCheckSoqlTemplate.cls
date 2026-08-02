@@ -9,10 +9,7 @@
  * query that is safe to execute: it masks string literals, recognizes clauses
  * ONLY at the outermost (depth-0) level, validates a single outer SELECT, injects
  * WITH USER_MODE in the correct place, and enforces an effective outer row cap.
- * Previously this logic was duplicated (and subtly different) across
- * RecordHealthCheckSoqlEvaluator, RecordHealthCheckCompareQueriesEvaluator, and the
- * engine's applicability path, using substring/regex scans that ignored
- * parentheses. That allowed several real defects this class fixes:
+ * Depth-aware parsing prevents:
  * - an ORDER BY / GROUP BY / LIMIT inside a child subquery becoming the
  * insertion point for the outer WITH USER_MODE (invalid SOQL);
  * - a subquery/literal containing LIMIT making the outer query look capped;
@@ -51,7 +48,13 @@ public with sharing class RecordHealthCheckSoqlTemplate {
     '(?i)\\bOFFSET\\b'
   );
   private static final Pattern PATTERN_WITH = Pattern.compile(
-    '(?i)\\bWITH\\s+(USER_MODE|SECURITY_ENFORCED)\\b'
+    '(?i)\\bWITH\\s+USER_MODE\\b'
+  );
+  private static final Pattern PATTERN_SECURITY_ENFORCED = Pattern.compile(
+    '(?i)\\bWITH\\s+SECURITY_ENFORCED\\b'
+  );
+  private static final Pattern PATTERN_DATA_CATEGORY = Pattern.compile(
+    '(?i)\\bWITH\\s+DATA\\s+CATEGORY\\b'
   );
   // WITH SYSTEM_MODE runs the query without the sharing rules and FLS
   // that WITH USER_MODE enforces. An admin-authored Check Set template must never
@@ -94,8 +97,11 @@ public with sharing class RecordHealthCheckSoqlTemplate {
       ? RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS
       : maxRows;
 
+    validateNoDisallowedKeywords(soql);
     assertSingleOuterSelect(soql);
     rejectSystemMode(soql);
+    rejectUnsupportedWithClauses(soql);
+    rejectNonNumericOuterLimit(soql);
     String prepared = rewriteBareCount(soql);
     prepared = enforceRowCap(prepared, cap);
     prepared = injectUserMode(prepared);
@@ -138,9 +144,6 @@ public with sharing class RecordHealthCheckSoqlTemplate {
    * The literal mask keeps the keyword inside a string value from being a false positive.
    */
   private static void rejectSystemMode(String soql) {
-    if (String.isBlank(soql)) {
-      return;
-    }
     String masked = maskStringLiterals(soql);
     if (PATTERN_SYSTEM_MODE.matcher(masked).find()) {
       throw new TemplateException(
@@ -179,6 +182,63 @@ public with sharing class RecordHealthCheckSoqlTemplate {
     return String.isBlank(tail)
       ? beforeTail + ' WITH USER_MODE'
       : beforeTail + ' WITH USER_MODE ' + tail;
+  }
+
+  public static String removeOuterUserMode(String soql) {
+    if (String.isBlank(soql)) {
+      return soql;
+    }
+    String masked = maskStringLiterals(soql);
+    Integer startIndex = firstDepth0Match(masked, PATTERN_WITH);
+    if (startIndex < 0) {
+      return soql;
+    }
+    Matcher matcher = PATTERN_WITH.matcher(masked);
+    matcher.region(startIndex, masked.length());
+    matcher.lookingAt();
+    Integer removeStart = startIndex;
+    while (
+      removeStart > 0 &&
+      soql.substring(removeStart - 1, removeStart).trim().length() == 0
+    ) {
+      removeStart--;
+    }
+    return soql.substring(0, removeStart) + soql.substring(matcher.end());
+  }
+
+  private static void rejectUnsupportedWithClauses(String soql) {
+    String masked = maskStringLiterals(soql);
+    if (firstDepth0Match(masked, PATTERN_SECURITY_ENFORCED) >= 0) {
+      throw new TemplateException(
+        'INVALID_SOQL_TEMPLATE',
+        'WITH SECURITY_ENFORCED is not supported; use the framework-managed USER_MODE access level.'
+      );
+    }
+    if (firstDepth0Match(masked, PATTERN_DATA_CATEGORY) >= 0) {
+      throw new TemplateException(
+        'UNSUPPORTED_BULK_QUERY_SHAPE',
+        'WITH DATA CATEGORY cannot be combined safely with the framework-managed USER_MODE clause.'
+      );
+    }
+  }
+
+  private static void rejectNonNumericOuterLimit(String soql) {
+    String masked = maskStringLiterals(soql);
+    Pattern anyLimit = Pattern.compile('(?i)\\bLIMIT\\b');
+    Matcher matcher = anyLimit.matcher(masked);
+    while (matcher.find()) {
+      if (depthAt(masked, matcher.start()) != 0) {
+        continue;
+      }
+      Matcher numeric = PATTERN_LIMIT.matcher(masked);
+      numeric.region(matcher.start(), masked.length());
+      if (!numeric.lookingAt()) {
+        throw new TemplateException(
+          'INVALID_SOQL_TEMPLATE',
+          'The outer LIMIT must be a numeric literal.'
+        );
+      }
+    }
   }
 
   /**
@@ -242,7 +302,6 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   // ─── Internal building blocks ───────────────────────────────────────────────
 
   /** Exactly one SELECT must appear at depth 0 (subquery SELECTs live at depth > 0). */
-  @TestVisible
   private static void assertSingleOuterSelect(String soql) {
     String masked = maskStringLiterals(soql);
     Integer count = 0;
@@ -267,7 +326,6 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   }
 
   /** Rewrites a depth-0 bare SELECT COUNT() to SELECT COUNT(Id) so Database.query returns an AggregateResult. */
-  @TestVisible
   private static String rewriteBareCount(String soql) {
     String masked = maskStringLiterals(soql);
     Matcher m = PATTERN_COUNT_EMPTY.matcher(masked);
@@ -289,7 +347,6 @@ public with sharing class RecordHealthCheckSoqlTemplate {
    * otherwise a LIMIT of cap is added (before a depth-0 OFFSET if present).
    * Callers still try with cap+1 by passing maxRows+1 — see the evaluators.
    */
-  @TestVisible
   private static String enforceRowCap(String soql, Integer cap) {
     String masked = maskStringLiterals(soql);
 
@@ -328,7 +385,6 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   }
 
   /** Index of the first match of `pattern` that sits at parenthesis depth 0, or -1. */
-  @TestVisible
   private static Integer firstDepth0Match(String masked, Pattern pattern) {
     Matcher m = pattern.matcher(masked);
     while (m.find()) {
@@ -340,7 +396,6 @@ public with sharing class RecordHealthCheckSoqlTemplate {
   }
 
   /** Parenthesis nesting depth at `index` in the (literal-masked) string. */
-  @TestVisible
   private static Integer depthAt(String masked, Integer index) {
     Integer depth = 0;
     for (Integer i = 0; i < index && i < masked.length(); i++) {

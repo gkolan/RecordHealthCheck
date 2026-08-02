@@ -36,7 +36,9 @@ operators, outcomes, limits, security behavior, or failure paths.
 | --- | --- |
 | Check Set and Rule Custom Metadata fields | [Metadata field references](../metadata/README.md) |
 | Platform Event fields and subscriber possibilities | [Platform Event references](../metadata/README.md#choose-a-platform-event-reference) |
-| Public Apex methods and response classes | [Reference: Apex API](../reference/reference-apex-api.md) |
+| Public Apex methods and response classes | [Apex API](../api/apex-api.md) |
+| Flow and asynchronous Apex examples | [API examples](../api/README.md) |
+| Flow and Apex Platform Event subscribers | [Platform Event subscriptions](../platform-events/README.md) |
 | Every production Apex class and its responsibility | [Reference: Apex classes](reference-apex-classes.md) |
 
 ## Related

@@ -125,7 +125,12 @@ function classifyOutcome(status, severity) {
 
 const COMPARISON_MODES = new Set(["OnDemand", "FailuresOnly", "AllRows"]);
 function normalizeComparisonMode(mode) {
-  return COMPARISON_MODES.has(mode) ? mode : "OnDemand";
+  if (!COMPARISON_MODES.has(mode)) {
+    const error = new Error(`Unsupported comparison display mode: ${mode}.`);
+    error.reasonCode = "INVALID_CONFIG";
+    throw error;
+  }
+  return mode;
 }
 
 /** Add template-ready display flags for one check row. */

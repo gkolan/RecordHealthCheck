@@ -5,12 +5,8 @@
 
 /**
  * Single source of truth for the framework's valid-value sets and numeric caps.
- * These were previously duplicated, exactly, in both RecordHealthCheckConfigService
- * (runtime validation) and RecordHealthCheckMetadataValidator (deploy-time audit).
- * Duplication meant adding a new operator, behavior, or mode required editing
- * several files together — and missing one let the two validators silently
- * disagree. Keeping them in one place removes that risk of getting out of sync and
- * makes the framework easier to extend: add a value once and every validator sees it.
+ * Runtime validation and the deploy-time audit read these same values, preventing
+ * the two paths from disagreeing. Add a value once and every validator sees it.
  * Public Set properties return defensive copies. Callers may safely change the
  * returned Set without changing the framework's official values for the
  * transaction.
@@ -24,6 +20,9 @@ public with sharing class RecordHealthCheckConstants {
   /** Maximum active checks the LWC will run for one Check Set. */
   public static final Integer FRAMEWORK_MAX_CHECKS = 25;
 
+  /** Hard request-input cap. Formula planning and measured resource budgets may require a smaller scope. */
+  public static final Integer MAX_RECORDS_PER_SCOPE = 200;
+
   /** Maximum rows any single check query may return before it is rejected. */
   public static final Integer FRAMEWORK_MAX_ROWS = 2000;
 
@@ -36,7 +35,7 @@ public with sharing class RecordHealthCheckConstants {
     'SHOW_EACH_CHECK',
     'SHOW_COUNT_ONLY'
   };
-  public static Set<String> VALID_DISPLAY_MODES {
+  public static Set<String> validDisplayModes {
     get {
       return new Set<String>(VALID_DISPLAY_MODES_INTERNAL);
     }
@@ -45,7 +44,7 @@ public with sharing class RecordHealthCheckConstants {
     'RUN_ON_LOAD',
     'RUN_ON_REQUEST'
   };
-  public static Set<String> VALID_TRIGGER_MODES {
+  public static Set<String> validTriggerModes {
     get {
       return new Set<String>(VALID_TRIGGER_MODES_INTERNAL);
     }
@@ -54,7 +53,7 @@ public with sharing class RecordHealthCheckConstants {
     'ALL_AT_ONCE',
     'ONE_BY_ONE'
   };
-  public static Set<String> VALID_REVEAL_MODES {
+  public static Set<String> validRevealModes {
     get {
       return new Set<String>(VALID_REVEAL_MODES_INTERNAL);
     }
@@ -64,7 +63,7 @@ public with sharing class RecordHealthCheckConstants {
     'FAILURES_ONLY',
     'ALL_ROWS'
   };
-  public static Set<String> VALID_COMPARISON_DISPLAYS {
+  public static Set<String> validComparisonDisplays {
     get {
       return new Set<String>(VALID_COMPARISON_DISPLAYS_INTERNAL);
     }
@@ -78,7 +77,7 @@ public with sharing class RecordHealthCheckConstants {
     'APEX',
     'COMPARE_TWO_QUERIES'
   };
-  public static Set<String> VALID_CHECK_TYPES {
+  public static Set<String> validCheckTypes {
     get {
       return new Set<String>(VALID_CHECK_TYPES_INTERNAL);
     }
@@ -101,7 +100,7 @@ public with sharing class RecordHealthCheckConstants {
     'LISTS_CONTAIN_ALL',
     'LISTS_MATCH_EXACTLY'
   };
-  public static Set<String> VALID_OPERATORS {
+  public static Set<String> validOperators {
     get {
       return new Set<String>(VALID_OPERATORS_INTERNAL);
     }
@@ -113,7 +112,7 @@ public with sharing class RecordHealthCheckConstants {
     'LISTS_CONTAIN_ALL',
     'LISTS_MATCH_EXACTLY'
   };
-  public static Set<String> DUAL_QUERY_OPERATORS {
+  public static Set<String> dualQueryOperators {
     get {
       return new Set<String>(DUAL_QUERY_OPERATORS_INTERNAL);
     }
@@ -124,7 +123,7 @@ public with sharing class RecordHealthCheckConstants {
     'SKIP_RECORD',
     'AS_BLANK'
   };
-  public static Set<String> VALID_NULL_BEHAVIORS {
+  public static Set<String> validNullBehaviors {
     get {
       return new Set<String>(VALID_NULL_BEHAVIORS_INTERNAL);
     }
@@ -136,18 +135,18 @@ public with sharing class RecordHealthCheckConstants {
     'SKIP',
     'UNABLE_TO_EVALUATE'
   };
-  public static Set<String> VALID_EMPTY_BEHAVIORS {
+  public static Set<String> validEmptyBehaviors {
     get {
       return new Set<String>(VALID_EMPTY_BEHAVIORS_INTERNAL);
     }
   }
 
-  public static Set<String> VALID_SEVERITIES {
+  public static Set<String> validSeverities {
     get {
       return new Set<String>{ 'CRITICAL', 'WARNING', 'INFO' };
     }
   }
-  public static Set<String> VALID_COMPARISON_VALUE_SOURCES {
+  public static Set<String> validComparisonValueSources {
     get {
       return new Set<String>{
         'FIXED_VALUE',
@@ -156,7 +155,7 @@ public with sharing class RecordHealthCheckConstants {
       };
     }
   }
-  public static Set<String> VALID_MULTIPLE_RECORDS_HANDLING {
+  public static Set<String> validMultipleRecordsHandling {
     get {
       return new Set<String>{
         'ONE_RESULT',
@@ -174,7 +173,7 @@ public with sharing class RecordHealthCheckConstants {
     'WHEN_FORMULA_TRUE',
     'WHEN_COUNT_QUERY_MATCHES'
   };
-  public static Set<String> VALID_APPLICABILITY_MODES {
+  public static Set<String> validApplicabilityModes {
     get {
       return new Set<String>(VALID_APPLICABILITY_MODES_INTERNAL);
     }
@@ -185,7 +184,7 @@ public with sharing class RecordHealthCheckConstants {
    * The applicability check counts rows and compares the count to an integer
    * threshold, so only the ordered/equality operators apply — not the text or
    * list operators in VALID_OPERATORS. Mirrors
-   * RecordHealthCheckEngine.applyApplicabilityComparison.
+   * RecordHealthCheckScopePipeline.applyApplicabilityComparison.
    */
   private static final Set<String> VALID_APPLICABILITY_OPERATORS_INTERNAL = new Set<String>{
     'EQUALS',
@@ -195,7 +194,7 @@ public with sharing class RecordHealthCheckConstants {
     'LESS_THAN',
     'LESS_THAN_OR_EQUAL'
   };
-  public static Set<String> VALID_APPLICABILITY_OPERATORS {
+  public static Set<String> validApplicabilityOperators {
     get {
       return new Set<String>(VALID_APPLICABILITY_OPERATORS_INTERNAL);
     }
@@ -206,15 +205,39 @@ public with sharing class RecordHealthCheckConstants {
   // original Automatic/Manual, Show/Hide, etc. strings. Map at the Apex boundary.
 
   public static String toLwcTriggerMode(String cardRunMode) {
-    return cardRunMode == 'RUN_ON_LOAD' ? 'Automatic' : 'Manual';
+    if (cardRunMode == 'RUN_ON_LOAD') {
+      return 'Automatic';
+    }
+    if (cardRunMode == 'RUN_ON_REQUEST') {
+      return 'Manual';
+    }
+    throw new IllegalArgumentException(
+      'Unknown When Checks Run value: ' + cardRunMode
+    );
   }
 
   public static String toLwcRevealMode(String cardRevealMode) {
-    return cardRevealMode == 'ONE_BY_ONE' ? 'OneAtATime' : 'AllAtOnce';
+    if (cardRevealMode == 'ONE_BY_ONE') {
+      return 'OneAtATime';
+    }
+    if (cardRevealMode == 'ALL_AT_ONCE') {
+      return 'AllAtOnce';
+    }
+    throw new IllegalArgumentException(
+      'Unknown Reveal Mode value: ' + cardRevealMode
+    );
   }
 
   public static String toLwcDisplayMode(String displayMode) {
-    return displayMode == 'SHOW_COUNT_ONLY' ? 'Hide' : 'Show';
+    if (displayMode == 'SHOW_COUNT_ONLY') {
+      return 'Hide';
+    }
+    if (displayMode == 'SHOW_EACH_CHECK') {
+      return 'Show';
+    }
+    throw new IllegalArgumentException(
+      'Unknown display mode value: ' + displayMode
+    );
   }
 
   public static String toLwcComparisonDisplay(String foundExpectedDisplay) {
@@ -224,7 +247,12 @@ public with sharing class RecordHealthCheckConstants {
     if (foundExpectedDisplay == 'ALL_ROWS') {
       return 'AllRows';
     }
-    return 'OnDemand';
+    if (foundExpectedDisplay == 'ON_DEMAND') {
+      return 'OnDemand';
+    }
+    throw new IllegalArgumentException(
+      'Unknown Found/Expected Display value: ' + foundExpectedDisplay
+    );
   }
 
   public static String toLwcSeverity(String failureSeverity) {

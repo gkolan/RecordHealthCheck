@@ -279,7 +279,7 @@
         <label>9. Lifecycle Events</label>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field
-        >PublishResultEvent__c</field></layoutItems>
+        >PublishUserResultEvent__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns />
         <style>TwoColumnsLeftToRight</style>

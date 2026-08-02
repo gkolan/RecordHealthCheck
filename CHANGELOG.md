@@ -1,236 +1,53 @@
-# Changelog
+# Release notes
 
-This project follows [Semantic Versioning](https://semver.org/). Notable changes are documented here starting with the first public release.
+Record Health Check follows [Semantic Versioning](https://semver.org/) for package artifacts. This
+page describes the Framework a new installer receives. It intentionally avoids historical
+interfaces and product-generation terminology.
 
-## Unreleased
+## Current release
 
-### Added
+### Evaluation and integration
 
-- **Display: Value Format** (`DisplayValueFormat__c`) on the Rule lets an administrator declare how
-  Found and Expected are written on the card: Number, Currency, Percent, Ratio as Percent,
-  Checkbox, Date, Date/Time, Text, or Raw. One format covers both sides, so the two values always read in the same units. It
-  works on Query, Formula, and Compare two queries Rules, and never changes pass or fail. Existing
-  Rules default to **Auto** and keep their current wording. See
-  [Reference: Display value format](docs/reference/reference-display-value-format.md).
-- **Ratio as Percent** (`RATIO_PERCENT`) renders `0.75` as `75%` without changing Salesforce-style
-  `PERCENT`, which continues to render `12.5` as `12.5%`.
-- Raw record merge tokens accept strict quoted attributes such as
-  `{!record.Amount format="CURRENCY" fallback="Not available"}`. Format values use canonical,
-  uppercase API names; the former pipe syntax is not supported.
-- Apex plugins can opt into shared typed-value formatting while existing explicit Found and
-  Expected strings remain authoritative.
-- The release gate now inventories every packageable `force-app` member against
-  `manifest/package.xml`, preventing missing or stale manifest entries from reaching an install.
-- The release gate also verifies each permission set's entry-point classes, event objects, and
-  custom permissions, and enforces a 200-character description safety budget below Salesforce's
-  255-character deployment limit.
+- Formula, Query, Compare two queries, and bulk Apex Rule plugins use one bounded evaluation
+  pipeline for Lightning, Apex, and Flow.
+- `RecordHealthCheck.evaluate(RecordHealthCheckRequest)` returns ordered, typed evaluation results
+  with optional display content.
+- Apex plugins implement `RecordHealthCheckRule`, receive one `RecordHealthCheckScope`, and return
+  one `RecordHealthCheckOutcome` per requested record ID.
+- Flow actions expose Rule and Check Set evaluation without requiring custom Apex.
+- Optional Set Run, Rule Result, and Error Log Platform Events carry independent machine-readable
+  contract versions.
 
-### Changed
+### Trust and safety
 
-- Added a documented Code Analyzer release profile, a current SLDS linter gate, and an all-severity
-  CI failure threshold. Generic rule exclusions and their measured starting counts are recorded in
-  the code analysis standard.
+- Business-record SOQL runs in user mode. Administrator-authored templates reject unsafe query
+  shapes and system-mode execution.
+- Plugin dispatch rejects DML, callouts, email, event publication, and asynchronous work.
+- Public results protect access details; authorized Show Diagnostics viewers can investigate the
+  specific restricted reason.
+- Merge tokens use explicit namespaces, typed fallbacks, bounded resolution, and safe Action URL
+  handling.
+- Rules per run, records per request, query rows, FormulaEval work, token count, and completed text
+  all have documented limits.
 
-- Boolean Yes/No text and comparison operator wording now come from translatable Custom Labels.
-- Naming Checkbox now renders typed or text `1` as Yes and `0` as No. Auto leaves text `1` and `0`
-  unchanged because they may represent counts or codes.
+### Administrator experience
 
-- **Auto** now reads how a queried field is defined in Setup: a Currency field renders as money and
-  a Percent field gains a percent sign with no Rule change. Naming a format still wins over the
-  field definition.
-- On Auto, picklist and multi-select picklist values now read as the labels visible to the running
-  user instead of stored API names. Unknown or retired values keep their API spelling, and
-  comparisons still use API values.
-- In an org with more than one currency, an amount renders in the currency its own record uses, and
-  leads with the ISO code (`USD 70,000.00`) because a bare `$` cannot tell US, Australian, and
-  Canadian dollars apart on one card. Single-currency orgs keep the symbol (`$70,000.00`).
-- Text shaped like an ISO date but naming an impossible one, such as `2026-02-30`, now keeps its
-  original spelling. It previously rolled over to a real date the record never held.
-- An aggregate such as `SUM(Amount)` is labelled with the org's corporate currency, which is what
-  Salesforce converts it to, rather than the running user's currency.
-- Each side of a comparison keeps its own currency. On a Compare two queries Rule, and on a Query
-  Rule whose Expected value comes from a comparison query, the Expected chip now reads in the
-  currency of the row it came from instead of borrowing the Found side's, so a corporate-currency
-  total is no longer labelled with the currency of the record it is compared against.
-- On Auto, an Expected value aligned to a Found value keeps its leading zeros: `00100` stays
-  `00100` rather than being read as the number `100`.
-- A list preview labels each entry with the currency of the row it came from, so a list mixing euro
-  and dollar records no longer reads as if it were all in the first row's currency.
-- **Display: Found Text** and **Display: Expected Text** now apply on Formula and Compare two
-  queries Rules as well as Query Rules, anywhere the Framework writes the Found and Expected
-  values. They previously did nothing outside Query, with no warning. An Apex Rule writes its own
-  values and is unaffected. On a Formula Rule, Expected wording replaces the "Passes when" echo and
-  the row returns to the plain Expected caption.
-- On a list-membership check, Auto reads the field definition from the record when **Find in List
-  Formula** names a field, so a Find in List Formula of `AnnualRevenue` reads as money with no Rule
-  change.
-- A `Time` field reads as a 24-hour clock time (`17:30`) instead of the stored `17:30:00.000Z`.
-- A number shows at most six decimal places on a chip, rounded for display only. Values between
-  four and six decimal places previously lost digits to `Decimal.format()`, which keeps three.
-- Number grouping now follows the running user's locale instead of always using a comma, so
-  `70000.0` reads `70,000` for an English (US) user and `70.000` for a German (Germany) one. Chips
-  for users outside English (US) locales may change separators.
-- Found and Expected rendering moved out of `RecordHealthCheckComparisonEngine` into a new
-  `RecordHealthCheckDisplayFormat` class. `formatValue`, `formatList`, `describeExpected`,
-  `describeExpectedForActual`, and `describeExpectedList` keep their existing signatures and gain an
-  overload that takes the Rule's format, so no caller has to change.
-- The shipped pipeline-risk example now demonstrates Currency formatting on both sides and the
-  strict `format="CURRENCY" fallback="Not available"` record-token syntax. Its deterministic demo
-  verifier asserts the rendered Found, Expected, and failure-message values.
+- Lightning App Builder provides a Check Set picker filtered to the record-page object.
+- The card distinguishes Pass, Fail, Skipped, Unable to Evaluate, and System Error outcomes.
+- Found and Expected values support locale-aware Number, Currency, Percent, Ratio as Percent,
+  Checkbox, Date, Date/Time, Text, and Raw display formats.
+- Optional remediation text and safe links guide a user without changing Salesforce data.
+- Example Check Sets and deterministic demo data cover Account, Contact, and Opportunity scenarios.
 
-### Fixed
+### Engineering gates
 
-- Removed Code Analyzer findings for Apex annotation casing, missing control-flow braces, field
-  placement, unused test values, hardcoded test IDs, trigger logic, and SLDS styling values.
-- Limited list display preparation to the ten entries the card can show, while retaining the true
-  list total, and made the corporate-currency query explicitly use user access.
+- The package manifest and Permission Sets are checked against shipped metadata.
+- Apex tests use the shared TestDataFactory for Salesforce record creation.
+- Salesforce Code Analyzer, ESLint, the SLDS linter, formatting, documentation structure, links,
+  field limits, query shapes, product language, Apex coverage, and deployment validation are release
+  gates.
 
-- The install manifest now lists `RecordHealthCheckQueryEvaluatorSupport`, without which a fresh
-  install failed to compile the Query and Compare two queries evaluators.
-- Multi-currency rendering now checks whether `CurrencyIsoCode` was selected before reading it,
-  avoiding caught `SObjectException` noise while preserving the documented fallback behavior.
-
-### Removed
-
-- Removed the legacy `{!record.Field|Fallback text}` merge-token form. Existing templates using it
-  must be changed before upgrade to `{!record.Field fallback="Fallback text"}`. Validation reports
-  the old form as `MALFORMED_TOKEN`; there is intentionally no compatibility parser.
-- Removed a sample report that hardcoded a real Account Id, and removed personal DevHub
-  backup manifests that did not belong in the product repository.
-- Removed an unused root stylesheet left over from an unpublished docs site scaffold.
-- Removed standard-object list view overrides from `integration-tests/` so fixture deploys cannot
-  overwrite org `AllAccounts` / `AllOpenCases` / similar views.
-
-### Changed
-
-- Inactive Rules are no longer noted in the card header, where a regular user could not act on
-  them. Under diagnostics the count now leads the summary stats bar as an `N Inactive` pill whose
-  hover lists the omitted Rule names (names are sent only to the diagnostics audience).
-- Moved contributor/community docs (`CONTRIBUTING`, `SECURITY`, `CODE_OF_CONDUCT`,
-  `CODEOWNERS`, `RELEASING`) under `.github/` so the repository root stays product-focused.
-  GitHub still discovers these paths automatically.
-- Softened License and Salesforce API README badges to grey so the Deploy action stands out.
-- Install manifest includes the `Examples` Custom Metadata list views.
-- Contributor and PR template links/instructions no longer point at local-only paths.
-- `integration-tests/` is no longer a `packageDirectories` entry, so a bare
-  `sf project deploy start` installs Core only; CI still deploys fixtures with `--source-dir`.
-- Normalized remaining metadata API versions to 66.0 and corrected the User permission set
-  description (no metrics log object).
-- Field-limits reference page is gated in CI via `npm run check:field-limits`.
-
-## [2.0.0] - 2026-07-15
-
-### Breaking changes
-
-- Internal wire property `debugMode` renamed to `showDiagnostics` (matches `ShowDiagnostics__c`).
-- `RecordHealthCheckApexEvaluatorDispatcher` renamed to `RecordHealthCheckApexEvaluator`.
-- `RecordHealthCheckDualSoqlEvaluator` renamed to `RecordHealthCheckCompareQueriesEvaluator`.
-- Plugin API `RecordHealthCheckProvenance` / `actualProvenance` / `expectedProvenance` renamed to `RecordHealthCheckValueSource` / `actualValueSource` / `expectedValueSource`.
-- `RecordHealthCheckComparatorEngine` renamed to `RecordHealthCheckComparisonEngine` (comparison helper methods renamed accordingly).
-- Rule and Check Set field API names changed as listed in `docs/installation/04-upgrading.md`; the current release does not read v1.x names.
-- Public constant names ending in `COMPARATORS` now end in `OPERATORS`; value-resolver methods named `scalarFromRow` / `scalarList` are now `singleValueFromRow` / `singleValueList`.
-- Reason code `INVALID_COMPARATOR` is now `INVALID_OPERATOR`.
-- Category vocabulary changed, Severity `Error` became `Critical`, and long-text fields that became Text are limited to 255 characters.
-- `MaxQueryRows__c` defaults to 200, `EmptyValueHandling__c` to `AS_NO_MATCH`, and `EvaluationOrder__c` to 100.
-
-### Added
-
-- Versioned, bounded synchronous Rule/Check Set façade and Flow action.
-- Opt-in, Publish After Commit Set Run and Rule Result lifecycle events.
-- Stable reason-code catalog, diagnostics-only restricted detail, and explicit skip causes.
-- Completed the hard-cut identity contract across LWC, Apex, Flow, diagnostics, and tests:
-  `checkSetDeveloperName` identifies a Check Set and `ruleDeveloperName` identifies a Rule. No
-  compatibility aliases or internal mapping fields remain. `completeRun` now also accepts
-  `recordId`.
-- Promoted the synchronous Apex and Flow response contract from pre-release `0.1` to stable `1.0`;
-  this remains independent from the lifecycle-event `1.0` contract and product version `2.0.0`.
-- Standardized the public Apex lifecycle source as `APEX_API` / `SOURCE_APEX_API`.
-- Added `Record_Health_Check_Log__e`, a versioned (`1.0`), restricted diagnostics platform event
-  for framework errors. The logger now buffers every `ERROR` line and publishes it once per
-  transaction via `RecordHealthCheckLogger.flush()`, so a check that fails to run leaves a durable,
-  `RunId`-correlated trace instead of only an ephemeral `System.debug` line. Default on and
-  configurable per Check Set through `PublishErrorLogEvent__c`; uncheck the field to opt out.
-  `PublishImmediately` ensures the event survives the rollback a failing check
-  triggers. Core only emits the event: persistence, retention, and reporting are owned by the
-  Record Health Check extension package. Subscribers must call
-  `RecordHealthCheckLogger.enterSubscriberContext()` to avoid feedback loops.
-- Added `RecordId__c` to all three platform events (`Record_Health_Check_Set_Run__e`,
-  `Record_Health_Check_Rule_Result__e`, `Record_Health_Check_Log__e`), populated with the evaluated
-  record's ID whenever one is available. The record is stamped onto each `RecordHealthCheckResult`
-  at the evaluation boundary and carried through to the events. Field values remain excluded.
-- Split integration documentation into shareable Apex API, Flow action, Lightning component, and
-  platform-event references while preserving the former combined URL as a navigation page.
-- Added a Set-first integration overview with explicit product boundaries, quickstarts, status and
-  failure semantics, limits, testing guidance, and surface-selection links.
-
-## [1.2.0] - 2026-07-09
-
-### App Builder & setup
-
-- Admins pick a Check Set from a dropdown in Lightning App Builder instead of typing a developer name. The list shows active Check Sets for that page's object, and auto-selects when there is only one.
-- Removed obsolete component properties. After upgrade, open existing record pages in App Builder,
-  re-add or reconfigure the component with the new **Check Set** picker, and save. There is no
-  automatic migration for the old properties.
-- If the LWC has no Check Set selected, Apex reports whether any Check Sets exist for that object so the banner can say choose one, activate one, or create one.
-- Setup banners speak to end users first (**Health Check Needs Setup** / not ready yet), with a short note to ask a Salesforce admin. They no longer read like App Builder how-to steps.
-
-### What you see on the card
-
-- Unexpected system failures show as red **System Error**, separate from gray **Unable to Check**.
-- If Panel Heading is blank, the card uses the Check Set label (or developer name) so the title is never empty.
-- Inactive Rules are noted quietly (`N inactive rules omitted`).
-- When more than 25 Rules are active, the badge shows **First 25 of N**.
-- Skip messages name the required check that blocked them.
-- When passed or skipped rows are hidden on purpose, the card says `All checks passed. Details are hidden.` instead of looking empty.
-- Card wording is shorter: no em dashes, no extra "by this Check Set" clauses, and no App Builder how-to text on the end-user card.
-- Long value chips still clamp to two lines; the overflow control is now a quiet **`...`** / **`less`** toggle (screen readers still hear “Show more” / “Show less”).
-
-### Engine & reliability
-
-- Missing or inactive Rules report as `RULE_NOT_FOUND` / `RULE_INACTIVE` instead of the generic "config not found" code.
-- Blank-setup cases use clear codes: `SETUP_REQUIRED`, `INACTIVE_CHECK_SETS_ONLY`, `NO_ACTIVE_CHECK_SETS`.
-- Invalid Check Set field messages use the Setup labels admins see; object mismatch says the record's object, not "record type".
-- Pure `Date` values format as dates (not datetimes) in orgs where Apex type checks overlap.
-- When the same check runs more than once in one transaction, cached results keep Fix-it links and the Formula **Passes when** label.
-- Schema describe results are cached for the Apex transaction so busy record pages do less repeated metadata work.
-
-### Permissions & diagnostics
-
-- One permission covers advanced and debug detail: `Record_Health_Check_View_Diagnostics`. The older `Record_Health_Check_Debug` permission is removed.
-- Found/Expected source notes no longer appear on the card; with debug on, they show in the browser console under **Source detail**.
-- Console diagnostics are cleaner: short outcome line, compact run info, and a results table with reason code and evaluator type.
-- Tooltips wait **600ms** of hover before showing, so scanning rows does not flash popovers. Keyboard focus still shows sooner.
-
-### Docs & tests
-
-- LWC Jest suite: **106** tests; Apex local suite: **162** tests (**96%** org-wide coverage on scratch).
-- Updated security notes, package manifest, docs, examples, help text, troubleshooting, and the design spec for the Check Set picker, setup messages, console-only source notes, the single details permission, Schema describe caching, and the upgrade steps for old LWC properties.
-- Troubleshooting guide clarifies that `Record_Health_Check_View_Diagnostics` alone still unlocks Formula **Passes when**; full card/console troubleshooting still needs **Show Troubleshooting Details**.
-- Client-side circular-dependency and skip messages now match Apex wording.
-- Setup availability (`getCheckSetAvailabilityForRecord`) is no longer Aura-cacheable, so activating a Check Set refreshes the blank-setup banner on the next load.
-
-## [1.1.0] - 2026-07-04
-
-- Humanized **Found** / **Expected** values: numbers gain thousands separators (`70000.0` → `"70,000"`, a trailing `.0` dropped), Booleans read `"Yes"` / `"No"`, dates and datetimes render in the viewer's locale and time zone, and semicolon-delimited multi-select picklists render comma-separated. Applied at the shared `RecordHealthCheckComparisonEngine.formatValue` choke point, so typed values and metadata operand strings on both sides humanize identically; ordinary text, IDs, and codes are left unchanged.
-- Long value chips now clamp to two lines with a quiet **Show more** / **Show less** toggle that appears only when the value overflows, so a long formula or list no longer dominates the card.
-- Added guided remediation: a **FAIL** row now renders an optional read-only "Fix it" deep link (`ActionLabel__c` / `ActionUrl__c`) and `FixMessage__c` guidance. The URL supports one or more `{!FieldName}` merge tokens (including relationship paths), resolved against the record and URL-encoded, then sanitized (same-org relative or `https://` only; unsafe or over-2000-char URLs are dropped). Widened `ActionUrl__c` to Long Text Area (2000).
-- Added readable multi-row comparison: an `Every record must pass` Query check now summarizes its **Found** line as a count (`1 of 5 Contacts did not pass`) instead of dumping every row value, with optional `DisplayFoundText__c` / `DisplayExpectedText__c` wording (supports `{!failCount}` / `{!totalCount}` tokens).
-- Added a divider above Found/Expected on busy inline rows, and Rerun now collapses any comparison caret the user had opened.
-- Wired the `Example - Every Contact Has Email` rule with a fix link and friendly summary as a demo.
-- Added comparison display controls for Found/Expected values, including Check Set `FoundExpectedDisplay__c` and the component-level `comparisonDisclosure` initial caret setting.
-- Added gated comparison provenance details via `RecordHealthCheckValueSource` and the `Record_Health_Check_View_Diagnostics` custom permission.
-- Added metadata-only category and remediation fields for future grouped display and guided fixes.
-- Improved provenance notes: row counts pluralize consistently (`1 row` / `3 rows`) and source notes now attach directly to the matching Found/Expected value.
-- Simplified `Record_Health_Check_Rule__mdt` / `Set__mdt` labels, descriptions, and layouts for friendlier first-time admin setup (no engine changes).
-- Reworked the Check Set display defaults for a friendlier first run: renamed `CardRevealMode__c` from **Result Display Style** to **How checks appear** (clearer description and inline help that explain the on-load behavior), and changed its default to `OneAtATime` so checks reveal one at a time as the run advances. Passed and skipped checks now default to `Show` (`PassedChecksDisplay__c` / `SkippedChecksDisplay__c`) so viewers see what passed and what was skipped; `Hide` remains the power-user opt-in for a summarize-only, failures-focused view. Example Check Sets updated to match, except `Account_Data_Quality`, kept as the intentional failures-only demo.
-- Updated docs, examples, and plugin guidance for comparison display, provenance, and the then-current 98-test LWC suite.
-
-## [1.0.0] - 2026-06-23
-
-Initial release: metadata-driven record health checks, Lightning record-page component, Apex evaluation engine, 10 sample Check Sets and 88 Rules, and documentation under `docs/`.
-
-[Unreleased]: https://github.com/gkolan/RecordHealthCheck/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/gkolan/RecordHealthCheck/compare/v1.2.0...v2.0.0
-[1.2.0]: https://github.com/gkolan/RecordHealthCheck/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/gkolan/RecordHealthCheck/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/gkolan/RecordHealthCheck/releases/tag/v1.0.0
+For installation and verification, start with
+[Install and verify](docs/installation/02-install-and-verify.md). For the public contracts, use the
+[Apex API](docs/api/apex-api.md), [Flow actions](docs/integration/flow-actions.md), and
+[Apex Rule plugin reference](docs/reference/reference-apex.md).

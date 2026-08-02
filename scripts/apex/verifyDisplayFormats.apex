@@ -54,7 +54,7 @@ System.debug(
 
 Set<String> formatsSeen = new Set<String>();
 for (RecordHealthCheckDefinition check : definition.checks) {
-  RecordHealthCheckResult result = RecordHealthCheckController.evaluateCheck(
+  RecordHealthCheckResultItem result = RecordHealthCheckController.evaluateCheck(
     setName,
     check.developerName,
     target.Id,
@@ -68,11 +68,11 @@ for (RecordHealthCheckDefinition check : definition.checks) {
     'RHC_FORMAT | ' +
       format.rightPad(9) +
       ' | ' +
-      result.status.rightPad(6) +
+      result.evaluation.status.rightPad(6) +
       ' | Found: ' +
-      result.actualValue +
+      result.display.actualValue +
       ' | Expected: ' +
-      result.expectedValue +
+      result.display.expectedValue +
       ' | ' +
       check.label
   );

@@ -16,7 +16,7 @@
  *
  * A plugin also never touches rendered strings, display formats, action URLs,
  * currency display, or admin diagnostics. It reports a verdict and typed values;
- * the core does the rest. Anything else would recouple the extension boundary to
+ * the Framework does the rest. Anything else would recouple the extension boundary to
  * the display layer that the result contract deliberately separates.
  */
 global class RecordHealthCheckOutcome {

@@ -39,7 +39,7 @@ Setup label `Currency` are not. Supported names are `AUTO`, `NUMBER`, `CURRENCY`
 `record.*` tokens because those tokens retain a raw typed value. Result tokens already contain
 completed display text and cannot be formatted again. Attributes may appear in either order;
 attribute names are lower-case, values must be double-quoted, and duplicate or unknown attributes
-are configuration errors. The old pipe form is not supported.
+are configuration errors. Attribute values must use the quoted syntax shown above.
 
 Use a fallback when the value might be blank and empty wording would confuse the reader. A bare
 token is enough when no substitute is needed or the value is always present, such as
@@ -84,7 +84,8 @@ Use Rule and Check Set tokens when the message should name the check or card:
 {!rhcSet.cardTitle}
 ```
 
-Unknown namespaces and properties are configuration errors. Legacy flat tokens such as `{!Id}` are rejected. <!-- legacy-token-ok -->
+Unknown namespaces and properties are configuration errors. Every token must include one of the
+documented namespaces; `{!Id}` is therefore rejected. <!-- rejected-token-fixture -->
 
 Blank tokens behave differently in display text (including Action Label), Action URLs, and SOQL. See
 [Fallbacks](#fallbacks).
@@ -172,7 +173,7 @@ fallbacks in SOQL return `MISSING_BIND_VALUE` rather than running a misleading q
 
 | Reason code | Typical cause |
 | --- | --- |
-| `LEGACY_FLAT_TOKEN` | Flat `{!Id}`-style token rejected under namespaced syntax <!-- legacy-token-ok --> |
+| `TOKEN_NAMESPACE_REQUIRED` | Token such as `{!Id}` omits a required namespace <!-- rejected-token-fixture --> |
 | `UNSUPPORTED_TOKEN_NAMESPACE` | Namespace is not on the allowed list |
 | `MISSING_TOKEN_VALUE` | URL token resolved blank with no fallback |
 | `MISSING_BIND_VALUE` | SOQL fallback could not be converted to the field type |

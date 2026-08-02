@@ -13,13 +13,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   // anonymous Apex). Each real LWC request is its own transaction, so the counter
   // naturally starts at zero there without any reset. A 5-call safety margin
   // leaves room for applicability checks on the remaining checks to still resolve.
-  // Tests reset this @TestVisible field directly to isolate per-method counts.
+  // Tests reset this counter directly to isolate per-method counts.
   @TestVisible
   private static Integer formulaEvalCallCount = 0;
   private static final Integer FORMULA_EVAL_TX_LIMIT = 100;
   private static final Integer FORMULA_EVAL_SAFETY_MARGIN = 5;
-  // Distinguishes a resolved null from a display formula that could not resolve.
-  private static final Object ABSENT = new Map<String, Object>();
+  public static final Integer FORMULA_CALL_BUDGET =
+    FORMULA_EVAL_TX_LIMIT - FORMULA_EVAL_SAFETY_MARGIN;
 
   // evaluateFormulaAnyType tries up to 8 return types and every failed
   // attempt consumes a real, platform-counted FormulaEval call. When a caller
@@ -30,6 +30,11 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   // records resolve in a single call. Transaction-scoped, like formulaEvalCallCount.
   @TestVisible
   private static Map<String, formulaeval.FormulaReturnType> resolvedReturnTypeByFormula = new Map<String, formulaeval.FormulaReturnType>();
+
+  /** Returns FormulaEval calls consumed by this framework transaction. */
+  public static Integer callsUsed() {
+    return formulaEvalCallCount;
+  }
 
   public RecordHealthCheckFormulaEvaluator withRunContext(
     RecordHealthCheckRunContext value
@@ -45,13 +50,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
    * - ExpectedRecordFormula__c comparison-side resolution; and
    * - FindInListFormula__c as the primary value for list-membership checks.
    */
-  public RecordHealthCheckResult evaluate(
+  public RecordHealthCheckInternalResult evaluate(
     Record_Health_Check_Rule__mdt rule,
     Id recordId,
     SObject record
   ) {
     Long startMs = System.currentTimeMillis();
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    RecordHealthCheckInternalResult result = new RecordHealthCheckInternalResult();
     result.ruleDeveloperName = rule.DeveloperName;
     result.label = rule.CheckTitle__c;
     result.priority = rule.EvaluationOrder__c;
@@ -71,10 +76,9 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     return result;
   }
 
-  @TestVisible
-  private RecordHealthCheckResult applyEvaluationException(
+  private RecordHealthCheckInternalResult applyEvaluationException(
     Record_Health_Check_Rule__mdt rule,
-    RecordHealthCheckResult result,
+    RecordHealthCheckInternalResult result,
     Exception ex
   ) {
     result.status = 'UNABLE_TO_EVALUATE';
@@ -92,11 +96,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     return result;
   }
 
-  @TestVisible
-  private RecordHealthCheckResult applyEvaluationResult(
+  private RecordHealthCheckInternalResult applyEvaluationResult(
     Record_Health_Check_Rule__mdt rule,
     SObject record,
-    RecordHealthCheckResult result,
+    RecordHealthCheckInternalResult result,
     Object evalResult
   ) {
     if (evalResult == null) {
@@ -116,7 +119,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       // "Passes when" key (e.g. Passes when ISBLANK(BillingCity)). When the admin
       // has declared explicit Found/Expected single-value formulas, those resolved
       // values replace the echo so a balance check can show readable numbers.
-      applyFoundExpectedValues(rule, record, result);
+      RecordHealthCheckFormulaDisplay.apply(
+        rule,
+        record,
+        result,
+        this,
+        runContext
+      );
       if (passed) {
         result.status = 'PASS';
       } else {
@@ -131,136 +140,12 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         );
       }
     } else {
-      // Non-boolean result — invalid formula for a Formula check
-      result.status = 'UNABLE_TO_EVALUATE';
+      result.status = RecordHealthCheckStatus.UNABLE_TO_EVALUATE;
       result.reasonCode = 'INVALID_FORMULA';
       result.message = safeCannotEvaluateMessage(rule);
-      result.detailMessage = 'Formula did not return a Boolean value.';
+      result.detailMessage = 'Formula returned a non-Boolean value.';
     }
     return result;
-  }
-
-  /**
-   * Sets a Formula check's Found (actualValue) and Expected (expectedValue)
-   * display values.
-   * Found: only when DisplayFoundFormula__c is set — resolved as a single-value
-   * and formatted like Query checks. Blank leaves actualValue null (no Found
-   * chip), matching the original behavior.
-   * Expected: the resolved DisplayExpectedFormula__c single-value when set
-   * otherwise the unquoted PassConditionFormula__c text (original behavior).
-   * Display is purely additive: pass/fail has already been decided by the
-   * boolean PassConditionFormula__c. A single-value formula that fails to resolve (non-single-value
-   * result, null traversal, FormulaEval budget) must never change the row's
-   * status, so each resolution is isolated and falls back to the default.
-   */
-  @TestVisible
-  private void applyFoundExpectedValues(
-    Record_Health_Check_Rule__mdt rule,
-    SObject record,
-    RecordHealthCheckResult result
-  ) {
-    // A bare field path can contribute its Setup definition to Auto (including
-    // a picklist label). A calculated expression has no one field definition.
-    // The record still names the currency for a Currency Rule.
-    String displayIsoCode = RecordHealthCheckDisplayFormat.currencyIsoCodeFrom(
-      record
-    );
-
-    if (String.isNotBlank(rule.DisplayFoundFormula__c)) {
-      Object found = resolveSingleValueForDisplay(
-        rule.DisplayFoundFormula__c,
-        record,
-        rule.FormulaResultType__c
-      );
-      if (found != ABSENT) {
-        Object displayFound = RecordHealthCheckDisplayFormat.valueForDisplay(
-          found,
-          rule.DisplayValueFormat__c,
-          record,
-          rule.DisplayFoundFormula__c
-        );
-        result.actualValue = RecordHealthCheckComparisonEngine.formatValue(
-          displayFound,
-          rule.DisplayValueFormat__c,
-          displayIsoCode
-        );
-        result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-          'Found formula',
-          found == null ? 'null' : String.valueOf(found),
-          null
-        );
-      }
-    }
-
-    if (String.isNotBlank(rule.DisplayExpectedFormula__c)) {
-      Object expected = resolveSingleValueForDisplay(
-        rule.DisplayExpectedFormula__c,
-        record,
-        rule.FormulaResultType__c
-      );
-      if (expected != ABSENT) {
-        Object displayExpected = RecordHealthCheckDisplayFormat.valueForDisplay(
-          expected,
-          rule.DisplayValueFormat__c,
-          record,
-          rule.DisplayExpectedFormula__c
-        );
-        result.expectedValue = RecordHealthCheckComparisonEngine.formatValue(
-          displayExpected,
-          rule.DisplayValueFormat__c,
-          displayIsoCode
-        );
-        result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-          'Expected formula',
-          expected == null ? 'null' : String.valueOf(expected),
-          null
-        );
-      }
-    }
-
-    // No explicit Expected formula (or it could not resolve): echo the boolean
-    // condition so the row still shows what was required. This is a pass/fail
-    // *condition*, not a comparison value, so it carries its own key ("Passes
-    // when") and is shown unquoted — quoting it like a single-value (Expected
-    // "ISBLANK(City)") framed the formula as an expected value and misread.
-    if (result.expectedValue == null) {
-      result.expectedValue = rule.PassConditionFormula__c;
-      result.expectedValueLabel = RecordHealthCheckResult.PASSES_WHEN_LABEL;
-      result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-        'Pass/Fail condition',
-        rule.PassConditionFormula__c,
-        null
-      );
-    }
-
-    // Author wording replaces what the Framework wrote on either side, the same
-    // way it does on a Query check.
-    RecordHealthCheckTemplateService.applyFoundExpectedText(
-      rule,
-      record,
-      result
-    );
-  }
-
-  /**
-   * Resolves a display-only single-value formula, returning ABSENT (not throwing) when
-   * it cannot be evaluated, so a bad Found/Expected formula falls back to the
-   * default display instead of failing the check.
-   */
-  private Object resolveSingleValueForDisplay(
-    String formulaExpression,
-    SObject record,
-    String declaredReturnType
-  ) {
-    try {
-      return resolveFormulaSingleValue(
-        formulaExpression,
-        record,
-        declaredReturnType
-      );
-    } catch (Exception ex) {
-      return ABSENT;
-    }
   }
 
   /**
@@ -307,16 +192,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     String formulaExpression,
     SObject record
   ) {
-    return resolveFormulaSingleValue(formulaExpression, record, null);
+    return resolveFormulaSingleValue(formulaExpression, record, 'AUTO');
   }
 
   /**
    * overload accepting the admin-declared return type (the
-   * FormulaResultType__c picklist value). When non-blank and not 'AUTO'
-   * the formula is evaluated once with that type instead of trying up to eight
-   * saving FormulaEval calls in bulk/Flow loops. An unrecognized or mis-declared
-   * type falls back gracefully to trying all return types, so a wrong declaration never
-   * fails a check that would otherwise resolve.
+   * FormulaResultType__c picklist value). An explicit type is evaluated once.
+   * Only AUTO may probe the supported return types.
    */
   public Object resolveFormulaSingleValue(
     String formulaExpression,
@@ -340,14 +222,13 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
   }
 
   /**
-   * Maps the FormulaResultType__c picklist value to a FormulaReturnType
-   * or null for 'AUTO'/blank/unrecognized (caller tries all types).
+   * Maps FormulaResultType__c. Only explicit AUTO tries supported types.
    */
   @TestVisible
   private formulaeval.FormulaReturnType mapDeclaredReturnType(
     String declaredReturnType
   ) {
-    if (String.isBlank(declaredReturnType)) {
+    if (declaredReturnType == 'AUTO') {
       return null;
     }
     switch on declaredReturnType {
@@ -367,8 +248,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         return formulaeval.FormulaReturnType.STRING;
       }
       when else {
-        // 'AUTO' and any unrecognized value fall back to trying all return types.
-        return null;
+        throw new FormulaEvaluationException(
+          'INVALID_CONFIG',
+          'Formula Result Type is required and must be AUTO, BOOLEAN, NUMBER, DATE, DATETIME, or TEXT.'
+        );
       }
     }
   }
@@ -396,9 +279,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     formulaeval.FormulaReturnType returnType
   ) {
     // guard against the 100-call-per-transaction FormulaEval platform limit
-    if (
-      formulaEvalCallCount >= FORMULA_EVAL_TX_LIMIT - FORMULA_EVAL_SAFETY_MARGIN
-    ) {
+    if (formulaEvalCallCount >= FORMULA_CALL_BUDGET) {
       throw new FormulaEvaluationException(
         'FORMULA_EVAL_LIMIT',
         'FormulaEval transaction limit approaching (' +
@@ -421,20 +302,21 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     SObject record,
     formulaeval.FormulaReturnType declaredType
   ) {
-    // try a preferred return type before trying all types — first the
-    // admin-declared type (FormulaResultType__c), else the type that
-    // already resolved this formula in this transaction. Either way a single
-    // call replaces trying up to eight types for repeated evaluations
-    // (bulk/Flow loops). A preferred type can still fail for a particular record
-    // (e.g. a value that overflows a numeric type, or a mis-declared type), so
-    // fall through to trying all types and re-cache on success.
+    // An administrator-declared type is a strict contract. Do not reinterpret a
+    // mismatch as AUTO because that hides configuration errors.
+    if (declaredType != null) {
+      return evaluateFormula(formulaExpression, record, declaredType);
+    }
+
+    // AUTO may reuse a type that already resolved this formula in this
+    // transaction, then probe the supported types if that cached choice fails.
     String cacheKey =
       String.valueOf(record.getSObjectType()) +
       '|' +
       formulaExpression;
-    formulaeval.FormulaReturnType preferredType = declaredType != null
-      ? declaredType
-      : resolvedReturnTypeByFormula.get(cacheKey);
+    formulaeval.FormulaReturnType preferredType = resolvedReturnTypeByFormula.get(
+      cacheKey
+    );
     if (preferredType != null) {
       try {
         Object value = evaluateFormula(
@@ -444,8 +326,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         );
         resolvedReturnTypeByFormula.put(cacheKey, preferredType);
         return value;
-      } catch (System.NoAccessException nae) {
-        throw nae;
       } catch (Exception ex) {
         resolvedReturnTypeByFormula.remove(cacheKey);
       }
@@ -471,8 +351,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
         Object value = evaluateFormula(formulaExpression, record, rt);
         resolvedReturnTypeByFormula.put(cacheKey, rt);
         return value;
-      } catch (System.NoAccessException nae) {
-        throw nae;
       } catch (Exception ex) {
         lastException = ex;
       }
@@ -482,7 +360,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  @TestVisible
   private String classifyFormulaException(Exception fex) {
     String msg = fex.getMessage();
     if (msg != null && msg.containsIgnoreCase('access')) {
@@ -507,7 +384,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     String template,
     SObject record,
     Record_Health_Check_Rule__mdt rule,
-    RecordHealthCheckResult result,
+    RecordHealthCheckInternalResult result,
     Boolean resultFinalized
   ) {
     return RecordHealthCheckTemplateService.resolveDisplay(
@@ -537,7 +414,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     String template,
     SObject record,
     Record_Health_Check_Rule__mdt rule,
-    RecordHealthCheckResult result
+    RecordHealthCheckInternalResult result
   ) {
     return RecordHealthCheckTemplateService.resolveUrl(
       template,
@@ -549,7 +426,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     );
   }
 
-  @TestVisible
   private String safeCannotEvaluateMessage(Record_Health_Check_Rule__mdt rule) {
     return String.isNotBlank(rule.UnableToEvaluateMessage__c)
       ? rule.UnableToEvaluateMessage__c

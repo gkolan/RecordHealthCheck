@@ -14,7 +14,7 @@ open an individual field when you need the full detail.
 | 4. Define the decision | What value is found, what is expected, and how are they compared? | The Evaluation Type table below |
 | 5. Explain the result | What should someone understand and do after a failure or an unable result? | [Check Title](#check-title-checktitle__c), [Message When Failed](#message-when-failed-failuremessage__c), and [Fix Message](#fix-message-fixmessage__c) |
 | 6. Add a next action | Would a safe same-org destination help resolve the result? | [Action Label](#action-label-actionlabel__c) and [Action URL](#action-url-actionurl__c) |
-| 7. Publish when needed | Does another process need the finalized Rule outcome? | [Publish Result Event](#publish-result-event-publishresultevent__c) |
+| 7. Publish when needed | Does another process need the finalized Rule outcome? | [Publish User Result Event](#publish-user-result-event-publishuserresultevent__c) |
 
 | What the Rule must verify | Evaluation Type | Start with |
 | --- | --- | --- |
@@ -75,7 +75,7 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 | [Prerequisite Rule](#prerequisite-rule-prerequisiterule__c) | `PrerequisiteRule__c` | When this check applies |
 | [Apex Class](#apex-class-apexclass__c) | `ApexClass__c` | Custom Apex (`APEX`) |
 | [Apex Parameters (JSON)](#apex-parameters-json-apexparametersjson__c) | `ApexParametersJson__c` | Custom Apex (`APEX`) |
-| [Publish Result Event](#publish-result-event-publishresultevent__c) | `PublishResultEvent__c` | Lifecycle events |
+| [Publish User Result Event](#publish-user-result-event-publishuserresultevent__c) | `PublishUserResultEvent__c` | Lifecycle events |
 
 ## Read an individual field
 
@@ -244,7 +244,7 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 | Capacity | 32768 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Optional for every Evaluation Type; displayed for `FAIL` unless an Apex plugin returns its own message. |
+| Used when | Optional for every Evaluation Type; displayed for `FAIL`. Apex plugins return evaluation data, while metadata owns user-facing guidance. |
 | Description | <p>The message users see when this check results in Fail. It supports the display merge tokens documented in the <a href="../guides/configure-check-sets-and-rules.md#11-merge-tokens">merge-token guide</a>.</p><p>Press Enter to start a new line; each line is shown as a separate line on the card.</p> |
 | Help text | <p>Shown when the check fails. Merge tokens can insert record and Framework values with optional fallback text.</p><p>Press Enter for a new line.</p> |
 | Allowed values | Any value valid for the field type |
@@ -403,7 +403,7 @@ Examples:
 | Capacity | Restricted picklist |
 | Always required | No |
 | Default | **Auto**: `AUTO` |
-| Used when | Optional on any Rule. Apex Rules may choose the same formatter with typed display values; explicit plugin strings take precedence. |
+| Used when | Optional on any Rule. Apex Rules use the same formatter with the typed values returned by the plugin. |
 | Description | <p>Display only. Controls how Found and Expected are written, including separate Salesforce Percent and Ratio as Percent semantics. Both sides use the same format, and formatting never changes pass or fail.</p><p>Leave "Auto" unless you want a specific look, such as showing Annual Revenue as currency, a fraction as a percentage, or an external Id as raw text.</p> |
 | Help text | <p>Display only. Does not change pass or fail. Sets how Found and Expected are written, such as "Currency" for Annual Revenue, "Number" for an employee count, or "Raw" for an external Id.</p><p>Leave "Auto" unless you need a specific look.</p> |
 | Allowed values | **Auto**: `AUTO`<br>**Number**: `NUMBER`<br>**Currency**: `CURRENCY`<br>**Percent**: `PERCENT`<br>**Ratio as Percent**: `RATIO_PERCENT`<br>**Checkbox**: `BOOLEAN`<br>**Date**: `DATE`<br>**Date/Time**: `DATETIME`<br>**Text**: `TEXT`<br>**Raw**: `RAW` |
@@ -559,9 +559,9 @@ SELECT Id FROM Account WHERE Name LIKE '{!record.Name}%'
 | Capacity | 255 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Set when Source Query returns a selected field or aliased aggregate; leave blank for bare `COUNT()`. |
-| Description | <p>The API name of the field to read from the "Source Query" result. Needed when the Source Query returns field values.</p><p>Leave blank when the Source Query uses COUNT() or another aggregate.</p> |
-| Help text | <p>Which column from the "Source Query" to read, e.g. MailingCity. Leave blank for COUNT()/aggregate queries.</p> |
+| Used when | Set when Source Query returns a selected field or an aliased aggregate; leave blank only for bare `COUNT()`. |
+| Description | <p>The API name of the field or aggregate alias to read from the "Source Query" result.</p><p>Leave blank only for bare `COUNT()`. For `SUM()`, `MIN()`, `MAX()`, `AVG()`, `COUNT(field)`, or `COUNT_DISTINCT(field)`, give the expression an alias and enter that alias here.</p> |
+| Help text | <p>Column or aggregate alias to read, such as `MailingCity` or `totalAmount`. Leave blank only for bare `COUNT()`.</p> |
 | Allowed values | Any value valid for the field type |
 
 Example: use `totalAmount` for the aliased aggregate below. Leave this field blank for bare `COUNT()`.
@@ -604,9 +604,9 @@ SELECT MailingState FROM Contact WHERE AccountId = {!record.Id} AND MailingState
 | Capacity | 255 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Set when Comparison Query returns a selected field or aliased aggregate; leave blank for bare `COUNT()`. |
-| Description | <p>The API name of the field to read from the "Comparison Query" result. Needed when that query returns field values rather than a COUNT() aggregate.</p><p>Leave blank for COUNT()/aggregate queries.</p> |
-| Help text | <p>Which column from the "Comparison Query" to read, e.g. `Country_Code__c`. Leave blank for COUNT()/aggregate queries.</p> |
+| Used when | Set when Comparison Query returns a selected field or an aliased aggregate; leave blank only for bare `COUNT()`. |
+| Description | <p>The API name of the field or aggregate alias to read from the "Comparison Query" result.</p><p>Leave blank only for bare `COUNT()`. Other aggregate expressions require an alias entered here.</p> |
+| Help text | <p>Column or aggregate alias to read, such as `Country_Code__c` or `comparisonTotal`. Leave blank only for bare `COUNT()`.</p> |
 | Allowed values | Any value valid for the field type |
 
 Example: use `comparisonTotal` for the aliased aggregate below.
@@ -993,7 +993,7 @@ SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id} AND MailingState = {!
 | Capacity | 32768 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Optional for Apex Rules; passed to the plugin as `context.parameters`. |
+| Used when | Optional for Apex Rules; passed to the plugin as `scope.parameters`. |
 | Description | <p>Optional JSON parameters passed to the class named in "Apex Class". Must be valid JSON; invalid JSON makes the check report that it cannot run (reason INVALID_APEX_PARAMETERS).</p><p>These are per-check parameters, not org-wide settings. Leave blank if the class needs none.</p> |
 | Help text | <p>Optional. Valid JSON passed to your Apex class, e.g. {"threshold": 5}. Leave blank if the class needs no parameters.</p> |
 | Allowed values | Any value valid for the field type |
@@ -1002,12 +1002,12 @@ SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id} AND MailingState = {!
 
 ## Lifecycle events
 
-### Publish Result Event (`PublishResultEvent__c`)
+### Publish User Result Event (`PublishUserResultEvent__c`)
 
 | Attribute | Value |
 | --- | --- |
-| Setup label | **Publish Result Event** |
-| API name | `PublishResultEvent__c` |
+| Setup label | **Publish User Result Event** |
+| API name | `PublishUserResultEvent__c` |
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |

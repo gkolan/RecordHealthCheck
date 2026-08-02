@@ -5,9 +5,6 @@
 
 /** Central authorization checks for privileged Record Health Check features. */
 public with sharing class RecordHealthCheckAccess {
-  @TestVisible
-  private static Boolean viewDetailsPermissionOverride;
-
   /**
    * Single Advanced-tier permission. Power-user explanation (Passes when,
    * value source) and troubleshooting internals (raw exceptions, timings) are one
@@ -16,9 +13,6 @@ public with sharing class RecordHealthCheckAccess {
    * subset is shown — it is a per-set switch, not a second permission.
    */
   public static Boolean canViewDetails() {
-    if (Test.isRunningTest() && viewDetailsPermissionOverride != null) {
-      return viewDetailsPermissionOverride;
-    }
     return FeatureManagement.checkPermission(
       'Record_Health_Check_View_Diagnostics'
     );

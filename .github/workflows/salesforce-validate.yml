@@ -1,6 +1,7 @@
 name: Salesforce release gate
 
 on:
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -8,6 +9,7 @@ permissions:
 
 jobs:
   scratch-org:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -22,20 +24,50 @@ jobs:
         run: npm run lint:slds
       - name: Verify package manifest covers all product metadata
         run: npm run check:manifest
+      - name: Verify Framework and fixture package boundary
+        run: npm run check:package-boundary
+      - name: Verify query-shape inventory
+        run: npm run check:query-shapes
+      - name: Enforce Apex architecture and test-seam policy
+        run: npm run check:apex-architecture
+      - name: Verify documentation contracts
+        run: npm run check:docs
+      - name: Verify namespaced tokens
+        run: npm run check:namespaced-tokens
+      - name: Verify exact configuration identity contract
+        run: npm run check:configuration-identity
+      - name: Verify field limits
+        run: npm run check:field-limits
       - name: Verify permission-set limits and access contracts
         run: npm run check:permission-sets
-      - run: npm install --global @salesforce/cli
-      - run: echo y | sf plugins install code-analyzer
+      - run: npm install --global @salesforce/cli@2.139.6
+      - run: echo y | sf plugins install code-analyzer@5.14.0
+      - name: Record analyzer toolchain versions
+        run: |
+          sf --version
+          sf plugins --core
       - name: Authenticate Dev Hub
         env:
           SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
         run: echo "$SFDX_AUTH_URL" | sf org login sfdx-url --sfdx-url-stdin --alias devhub --set-default-dev-hub
       - run: sf org create scratch --definition-file config/project-scratch-def.json --alias rhc-ci --set-default --duration-days 1 --wait 15
-      - name: Validate production Core artifact
+      - name: Dry-run production package deployment
+        run: sf project deploy start --manifest manifest/package.xml --target-org rhc-ci --test-level RunLocalTests --dry-run --wait 30
+      - name: Deploy production package artifact
         run: sf project deploy start --manifest manifest/package.xml --target-org rhc-ci --test-level RunLocalTests --wait 30
+      - name: Dry-run observability extension deployment
+        run: sf project deploy start --source-dir extensions/observability/force-app --target-org rhc-ci --test-level RunLocalTests --dry-run --wait 30
+      - name: Deploy observability extension and tests
+        run: sf project deploy start --source-dir extensions/observability/force-app --target-org rhc-ci --test-level RunLocalTests --wait 30
+      - name: Dry-run integration harness deployment
+        run: sf project deploy start --source-dir integration-tests --target-org rhc-ci --test-level RunLocalTests --dry-run --wait 30
       - name: Deploy integration fixtures and fixture-dependent tests
         run: sf project deploy start --source-dir integration-tests --target-org rhc-ci --test-level RunLocalTests --wait 30
       - run: sf apex run test --target-org rhc-ci --test-level RunLocalTests --code-coverage --wait 30 --result-format human
+      - name: Enforce production Apex coverage class by class
+        run: npm run check:apex-coverage -- rhc-ci --list
+      - name: Verify bounded query behavior against the accepted baseline
+        run: npm run check:query-verdicts -- --target-org rhc-ci --namespace rhc
       - name: Run metadata validator
         run: sf apex run --target-org rhc-ci --file scripts/apex/validateMetadata.apex
       # Run static analysis last. The checked-in profile explains the few generic
@@ -43,6 +75,23 @@ jobs:
       - name: Run final Salesforce Code Analyzer gate
         run: |
           mkdir -p code-analyzer/logs
-          sf code-analyzer run --workspace force-app --workspace integration-tests --rule-selector Recommended --output-file code-analyzer/report.html --severity-threshold 5
+          sf code-analyzer run --workspace force-app --workspace integration-tests --workspace extensions/observability/force-app --rule-selector Recommended --include-fixes --output-file code-analyzer/release-profile.json --output-file code-analyzer/release-profile.html --severity-threshold 5
+      - name: Run neutral advisory architecture audit
+        if: always()
+        continue-on-error: true
+        run: |
+          sf code-analyzer run --workspace force-app --workspace integration-tests --workspace extensions/observability/force-app --config-file code-analyzer-neutral.yml --rule-selector Recommended --include-fixes --output-file code-analyzer/neutral-audit.json --output-file code-analyzer/neutral-audit.html
+      - name: Upload Code Analyzer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-analyzer-evidence
+          path: |
+            code-analyzer/release-profile.json
+            code-analyzer/release-profile.html
+            code-analyzer/neutral-audit.json
+            code-analyzer/neutral-audit.html
+            code-analyzer/logs/
+          retention-days: 90
       - if: always()
         run: sf org delete scratch --target-org rhc-ci --no-prompt

@@ -80,7 +80,7 @@ Copy this value into **Display: Found Text**:
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks populated Contact emails for a confirmed placeholder or test domain. |
-| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Contact Data Quality |
+| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Consistency |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Warning |
 | **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | One or more Contacts use a placeholder email domain. Replace each placeholder with a verified address or clear it according to your data policy. |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check Contact Email. Confirm the user can read Contact, AccountId, and Email. |
@@ -91,7 +91,7 @@ Copy this value into **Display: Found Text**:
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Contacts/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `100` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked only after replacing the sample domain with a confirmed value |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 The prerequisite and this Rule must belong to the same Check Set. Give
 `Has_At_Least_One_Contact` a lower **Evaluation Order** so it runs first. Comparison Query, list,
@@ -114,7 +114,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees
@@ -125,8 +125,8 @@ The query rows, empty-value handling, and prerequisite become these Framework ou
 | --- | --- |
 | **`PASS`** | Every returned Email excludes the confirmed placeholder domain. |
 | **`FAIL`** | Any returned Email containing that domain shows Needs attention with Warning severity. |
-| **`SKIPPED`** | The Rule is skipped when its Contact prerequisite does not pass or when the query returns no populated Contact emails. |
-| **Found** | Found shows the Email value that determined the result when the user reveals Found and Expected. |
+| **`SKIPPED`** | The Rule is skipped when its Contact prerequisite does not pass or when no returned Contact has a populated Email to evaluate. |
+| **Found** | Found summarizes how many returned Contact emails use the placeholder domain, using the configured result-count merge tokens. |
 | **Expected** | Expected shows that returned Email values must not contain the configured placeholder text. |
 
 ## Security and access
@@ -144,7 +144,7 @@ Before activation, test placeholder-domain, verified-domain, and restricted-Cont
 1. Replace `@example.com` with your confirmed placeholder domain before activation.
 2. Give one related Contact an address at that domain. Confirm Warning.
 3. Replace it with a verified address, rerun, and confirm a pass.
-4. Clear every related Contact Email and confirm the Rule passes because blank Email values are ignored.
+4. Clear every related Contact Email and confirm the Rule is skipped because no populated Email remains to evaluate.
 5. Remove every related Contact and confirm the prerequisite causes this Rule to return `SKIPPED`.
 6. Repeat the placeholder-domain test as a user with restricted Contact access and confirm the Rule does not reveal hidden Email values.
 

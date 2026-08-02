@@ -30,9 +30,23 @@ sf org create scratch \
   --duration-days "$DURATION_DAYS" \
   --wait 30
 
-echo "Deploying Record Health Check core, examples, layouts, and list views..."
+echo "Deploying the Record Health Check framework..."
 sf project deploy start \
   --source-dir force-app \
+  --target-org "$TARGET_ALIAS" \
+  --test-level RunLocalTests \
+  --dry-run \
+  --wait 30
+
+sf project deploy start \
+  --source-dir force-app \
+  --target-org "$TARGET_ALIAS" \
+  --test-level RunLocalTests \
+  --wait 30
+
+echo "Deploying optional example metadata from integration fixtures..."
+sf project deploy start \
+  --source-dir integration-tests \
   --target-org "$TARGET_ALIAS" \
   --wait 30
 
@@ -50,7 +64,8 @@ sf project deploy start \
 echo "Assigning the admin permission set..."
 sf org assign permset \
   --name Record_Health_Check_Admin \
-  --target-org "$TARGET_ALIAS"
+  --target-org "$TARGET_ALIAS" \
+  --json
 
 echo "Creating or reactivating demo owner Jordan Blake..."
 sf apex run \

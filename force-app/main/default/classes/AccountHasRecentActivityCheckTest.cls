@@ -16,19 +16,21 @@ private class AccountHasRecentActivityCheckTest {
     );
 
     RecordHealthCheckTestDataFactory.createTask(
-      new Task(
-        WhatId = account.Id,
-        Subject = 'Recent call',
-        Status = 'Completed',
-        ActivityDate = Date.today()
+      RecordHealthCheckTestDataFactory.task(
+        new Map<String, Object>{
+          'WhatId' => account.Id,
+          'Subject' => 'Recent call',
+          'Status' => 'Completed',
+          'ActivityDate' => Date.today()
+        }
       )
     );
 
-    RecordHealthCheckResult result = evaluate(account.Id, null);
+    RecordHealthCheckInternalResult result = evaluate(account.Id, null);
 
-    System.assertEquals('PASS', result.status);
-    System.assertEquals('1', result.actualValue);
-    System.assertEquals('1', result.expectedValue);
+    Assert.areEqual('PASS', result.status);
+    Assert.areEqual('1', result.actualValue);
+    Assert.areEqual('1', result.expectedValue);
   }
 
   @IsTest
@@ -37,11 +39,11 @@ private class AccountHasRecentActivityCheckTest {
       'RHC Recent Activity Fail'
     );
 
-    RecordHealthCheckResult result = evaluate(account.Id, null);
+    RecordHealthCheckInternalResult result = evaluate(account.Id, null);
 
-    System.assertEquals('FAIL', result.status);
-    System.assertEquals('0', result.actualValue);
-    System.assertEquals('1', result.expectedValue);
+    Assert.areEqual('FAIL', result.status);
+    Assert.areEqual('0', result.actualValue);
+    Assert.areEqual('1', result.expectedValue);
   }
 
   @IsTest
@@ -51,59 +53,113 @@ private class AccountHasRecentActivityCheckTest {
     );
 
     RecordHealthCheckTestDataFactory.createTask(
-      new Task(
-        WhatId = account.Id,
-        Subject = 'Old call',
-        Status = 'Completed',
-        ActivityDate = Date.today().addDays(-400)
+      RecordHealthCheckTestDataFactory.task(
+        new Map<String, Object>{
+          'WhatId' => account.Id,
+          'Subject' => 'Old call',
+          'Status' => 'Completed',
+          'ActivityDate' => Date.today().addDays(-400)
+        }
       )
     );
 
     // A 90-day window excludes the 400-day-old task.
-    RecordHealthCheckResult result = evaluate(
+    RecordHealthCheckInternalResult result = evaluate(
       account.Id,
       new Map<String, Object>{ 'daysBack' => 90 }
     );
 
-    System.assertEquals('FAIL', result.status);
-    System.assertEquals('0', result.actualValue);
-    System.assertEquals('1', result.expectedValue);
+    Assert.areEqual('FAIL', result.status);
+    Assert.areEqual('0', result.actualValue);
+    Assert.areEqual('1', result.expectedValue);
   }
 
   @IsTest
-  static void invalidDaysBackFallsBackToDefault() {
+  static void invalidDaysBackIsRejected() {
     Account account = RecordHealthCheckTestDataFactory.createAccount(
       'RHC Recent Activity Default'
     );
 
     RecordHealthCheckTestDataFactory.createTask(
-      new Task(
-        WhatId = account.Id,
-        Subject = 'Recent call',
-        Status = 'Completed',
-        ActivityDate = Date.today()
+      RecordHealthCheckTestDataFactory.task(
+        new Map<String, Object>{
+          'WhatId' => account.Id,
+          'Subject' => 'Recent call',
+          'Status' => 'Completed',
+          'ActivityDate' => Date.today()
+        }
       )
     );
 
-    // Out-of-range and unparseable values both fall back to the 30-day default
-    // which still includes today's task.
-    System.assertEquals(
-      'PASS',
+    // Invalid configuration must be visible instead of silently changing the
+    // administrator's requested window.
+    Assert.areEqual(
+      'UNABLE_TO_EVALUATE',
       evaluate(account.Id, new Map<String, Object>{ 'daysBack' => 999999 })
         .status
     );
-    System.assertEquals(
-      'PASS',
+    Assert.areEqual(
+      'INVALID_CONFIG',
+      evaluate(account.Id, new Map<String, Object>{ 'daysBack' => 999999 })
+        .reasonCode
+    );
+    Assert.areEqual(
+      'UNABLE_TO_EVALUATE',
       evaluate(account.Id, new Map<String, Object>{ 'daysBack' => 'abc' })
         .status
     );
   }
 
+  @IsTest
+  static void recentEventPassesAndUnsupportedParameterTypeIsRejected() {
+    Account account = RecordHealthCheckTestDataFactory.createAccount(
+      'RHC Recent Event'
+    );
+    RecordHealthCheckTestDataFactory.createEvent(
+      RecordHealthCheckTestDataFactory.event(
+        new Map<String, Object>{
+          'WhatId' => account.Id,
+          'Subject' => 'Recent meeting',
+          'ActivityDate' => Date.today(),
+          'StartDateTime' => Datetime.now(),
+          'EndDateTime' => Datetime.now().addHours(1)
+        }
+      )
+    );
+
+    Test.startTest();
+    RecordHealthCheckInternalResult decimalResult = evaluate(
+      account.Id,
+      new Map<String, Object>{ 'daysBack' => Decimal.valueOf('30') }
+    );
+    RecordHealthCheckInternalResult unsupportedResult = evaluate(
+      account.Id,
+      new Map<String, Object>{ 'daysBack' => true }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      RecordHealthCheckStatus.PASS,
+      decimalResult.status,
+      'A recent Event must satisfy the Rule with a Decimal window.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckStatus.UNABLE_TO_EVALUATE,
+      unsupportedResult.status,
+      'An unsupported parameter type must be rejected.'
+    );
+    Assert.areEqual(
+      'INVALID_CONFIG',
+      unsupportedResult.reasonCode,
+      'The result must explain the invalid configuration.'
+    );
+  }
+
   /**
-   * The check is bulk, so a single-record assertion is a scope of one. Kept
-   * returning the 1.x shape so the existing assertions stay readable.
+   * The check is bulk, so a single-record assertion is a scope of one. This
+   * helper returns the internal result shape so the assertions stay readable.
    */
-  private static RecordHealthCheckResult evaluate(
+  private static RecordHealthCheckInternalResult evaluate(
     Id recordId,
     Map<String, Object> parameters
   ) {
@@ -112,7 +168,7 @@ private class AccountHasRecentActivityCheckTest {
         parameters
       )
       .get(recordId);
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
+    RecordHealthCheckInternalResult result = new RecordHealthCheckInternalResult();
     result.status = outcome.status;
     result.reasonCode = outcome.reasonCode;
     result.actualValue = outcome.found == null
@@ -149,9 +205,13 @@ private class AccountHasRecentActivityCheckTest {
   static void queryCountDoesNotGrowWithScopeSize() {
     List<Account> accounts = new List<Account>();
     for (Integer i = 0; i < 200; i++) {
-      accounts.add(new Account(Name = 'Bulk Scope ' + i));
+      accounts.add(
+        RecordHealthCheckTestDataFactory.account(
+          new Map<String, Object>{ 'Name' => 'Bulk Scope ' + i }
+        )
+      );
     }
-    insert accounts;
+    RecordHealthCheckTestDataFactory.createAccounts(accounts);
     List<Id> accountIds = new List<Id>(new Map<Id, Account>(accounts).keySet());
 
     Test.startTest();
@@ -167,14 +227,14 @@ private class AccountHasRecentActivityCheckTest {
     Integer afterAll = Limits.getQueries() - before;
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       afterSingle,
       afterAll,
       'A scope of 200 must cost the same queries as a scope of 1.'
     );
-    System.assertEquals(2, afterAll, 'One query for Task, one for Event.');
-    System.assertEquals(1, single.size());
-    System.assertEquals(
+    Assert.areEqual(2, afterAll, 'One query for Task, one for Event.');
+    Assert.areEqual(1, single.size());
+    Assert.areEqual(
       200,
       all.size(),
       'Every record in scope must receive an outcome.'
@@ -189,10 +249,14 @@ private class AccountHasRecentActivityCheckTest {
   @IsTest
   static void accountsWithNoActivityStillReceiveAnOutcome() {
     List<Account> accounts = new List<Account>{
-      new Account(Name = 'No Activity A'),
-      new Account(Name = 'No Activity B')
+      RecordHealthCheckTestDataFactory.account(
+        new Map<String, Object>{ 'Name' => 'No Activity A' }
+      ),
+      RecordHealthCheckTestDataFactory.account(
+        new Map<String, Object>{ 'Name' => 'No Activity B' }
+      )
     };
-    insert accounts;
+    RecordHealthCheckTestDataFactory.createAccounts(accounts);
     List<Id> accountIds = new List<Id>(new Map<Id, Account>(accounts).keySet());
 
     Test.startTest();
@@ -202,12 +266,12 @@ private class AccountHasRecentActivityCheckTest {
     );
     Test.stopTest();
 
-    System.assertEquals(2, outcomes.size());
+    Assert.areEqual(2, outcomes.size());
     for (Id accountId : accountIds) {
       RecordHealthCheckOutcome outcome = outcomes.get(accountId);
-      System.assertNotEquals(null, outcome, 'Missing key for ' + accountId);
-      System.assertEquals(RecordHealthCheckStatus.FAIL, outcome.status);
-      System.assertEquals('0', outcome.found.storedValue, 'Zero, not absent.');
+      Assert.areNotEqual(null, outcome, 'Missing key for ' + accountId);
+      Assert.areEqual(RecordHealthCheckStatus.FAIL, outcome.status);
+      Assert.areEqual('0', outcome.found.storedValue, 'Zero, not absent.');
     }
   }
 
@@ -223,11 +287,7 @@ private class AccountHasRecentActivityCheckTest {
     Integer used = Limits.getQueries() - before;
     Test.stopTest();
 
-    System.assertEquals(0, outcomes.size());
-    System.assertEquals(
-      2,
-      used,
-      'Queries are bound to the scope, not skipped.'
-    );
+    Assert.areEqual(0, outcomes.size());
+    Assert.areEqual(2, used, 'Queries are bound to the scope, not skipped.');
   }
 }

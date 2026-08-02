@@ -97,6 +97,7 @@ global with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
     return Date.newInstance(reference.year(), quarterMonth, 1);
   }
 
+  @TestVisible
   private Integer resolveStaleDays(Map<String, Object> parameters) {
     if (parameters == null) {
       return DEFAULT_STALE_DAYS;

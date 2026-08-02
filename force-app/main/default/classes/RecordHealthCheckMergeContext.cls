@@ -8,7 +8,7 @@ public class RecordHealthCheckMergeContext {
   public SObject record;
   public Record_Health_Check_Rule__mdt rule;
   public SObject checkSet;
-  public RecordHealthCheckResult result;
+  public RecordHealthCheckInternalResult result;
   public RecordHealthCheckRunContext run;
   public Integer failedRecordCount;
   public Integer totalRecordCount;
@@ -28,7 +28,7 @@ public class RecordHealthCheckMergeContext {
     return this;
   }
   public RecordHealthCheckMergeContext withResult(
-    RecordHealthCheckResult value,
+    RecordHealthCheckInternalResult value,
     Boolean finalized
   ) {
     result = value;

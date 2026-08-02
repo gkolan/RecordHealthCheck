@@ -60,6 +60,8 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Comparison Operator** | [`ComparisonOperator__c`](../../metadata/fields-check-rule.md#comparison-operator-comparisonoperator__c) | Equals |
 | **Applies To** | [`ApplicabilityMode__c`](../../metadata/fields-check-rule.md#applies-to-applicabilitymode__c) | When a count query matches |
 | **Applies When (Count Query)** | [`ApplicabilityCountQuery__c`](../../metadata/fields-check-rule.md#applies-when-count-query-applicabilitycountquery__c) | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
+| **Count Must Be** | [`ApplicabilityCountOperator__c`](../../metadata/fields-check-rule.md#count-must-be-applicabilitycountoperator__c) | Greater than |
+| **Count Value** | [`ApplicabilityCountThreshold__c`](../../metadata/fields-check-rule.md#count-value-applicabilitycountthreshold__c) | `0` |
 
 ## Optional configuration
 
@@ -70,7 +72,7 @@ These values improve presentation. Change them for your process, or leave an opt
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Info |
 | **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name fallback="this record"}` has one or more open Opportunities with no Contact Roles. Add the appropriate stakeholders before the forecast review. |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks that every open Opportunity has at least one Contact Role. |
-| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Buying Committee Coverage |
+| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Relationship coverage |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to compare the query results. Confirm the user can read every object and field named in both queries. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review open Opportunities and add the missing Contact Roles. |
@@ -78,7 +80,7 @@ These values improve presentation. Change them for your process, or leave an opt
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Opportunities/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `10` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked only after confirming this example matches your business process |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 Comparison display text, event publishing, and prerequisite behavior are optional. Expected-value, value-to-find, Formula-result, and Apex fields do not apply to Compare two queries.
 
@@ -99,7 +101,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees
@@ -118,7 +120,7 @@ The card turns the two aggregate query results into these user-facing values:
 
 Record Health Check runs both coverage counts with the running user's Salesforce access.
 
-- Open Opportunities and their Opportunity Contact Roles.
+- The result includes only open Opportunities and Opportunity Contact Roles the running user can access.
 
 - Hidden Opportunities or Contact Roles can lower either side of the comparison. Equal visible counts describe the user's view, not records the user cannot access.
 

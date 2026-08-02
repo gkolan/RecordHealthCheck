@@ -3,11 +3,11 @@
 # Bulk query shape inventory
 
 Every admin-authored SOQL template in this repository, classified into the bulk
-execution strategy that Core 2.0.0 uses to run it once per scope instead of once
+execution strategy that the framework uses to run it once per scope instead of once
 per record. The grammar these strategies belong to is described in
-`specs/core-contracts/04a-bulk-query-grammar.md`.
+`specs/framework-contracts/04a-bulk-query-grammar.md`.
 
-**152 templates · 8 strategies · 0 unclassified**
+**150 templates · 7 strategies · 0 unclassified**
 
 ## Strategy totals
 
@@ -17,12 +17,11 @@ per record. The grammar these strategies belong to is described in
 | `SELF` | 27 | Query the evaluated records themselves; correlation column is Id |
 | `TOKEN_INDIRECT` | 12 | Collect distinct token values across the scope, query them once, map back |
 | `ORDERED_PICK_IN_MEMORY` | 3 | ORDER BY + LIMIT 1 on another field; rank per record in Apex |
-| `ANTI_CORRELATED_IN_MEMORY` | 2 | Negated correlation has no grouped form; filter per record in Apex |
 | `CHILD_PATH` | 2 | Group child rows by the relationship path that carried the token |
 | `ORDERED_PICK_AGGREGATE` | 1 | ORDER BY + LIMIT 1 on the selected field becomes MIN/MAX with GROUP BY |
 | `SCOPE_INVARIANT` | 1 | No record token; one query serves every record in the scope |
 
-5 template(s) resolve rows in Apex rather than in SOQL. Those are the
+3 template(s) resolve rows in Apex rather than in SOQL. Those are the
 ones the per-scope row budget governs, because the engine drops the per-record
 predicate to issue a single query.
 
@@ -30,14 +29,6 @@ predicate to issue a single query.
 
 | Strategy | Package | Rule | Field | Correlation | Note |
 | --- | --- | --- | --- | --- | --- |
-| `ANTI_CORRELATED_IN_MEMORY` | integration-tests | `Account_QC_ListDoesNotContainAny` | `ComparisonQuery__c` | `Id != record.Id` | Query the scope-wide set once without the predicate, then exclude per record |
-| `ANTI_CORRELATED_IN_MEMORY` | integration-tests | `Industry_Is_Unique_Across_Accounts` | `ComparisonQuery__c` | `Id != record.Id` | Query the scope-wide set once without the predicate, then exclude per record |
-| `CHILD_DIRECT` | force-app | `Example_Contacts_Have_Email` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
-| `CHILD_DIRECT` | force-app | `Example_No_High_Priority_Issues` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
-| `CHILD_DIRECT` | force-app | `Example_Open_Deals_Have_Contacts` | `ApplicabilityCountQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
-| `CHILD_DIRECT` | force-app | `Example_Open_Deals_Have_Contacts` | `ComparisonQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
-| `CHILD_DIRECT` | force-app | `Example_Pipeline_Protects_Revenue` | `ApplicabilityCountQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
-| `CHILD_DIRECT` | force-app | `Example_Pipeline_Protects_Revenue` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Account_Active_Signed_Contract` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Account_Adv_AllOppsHaveAmount` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Account_Adv_AnyOppAbove50k` | `ApplicabilityCountQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
@@ -125,6 +116,12 @@ predicate to issue a single query.
 | `CHILD_DIRECT` | integration-tests | `Ex_CTQ_ListsOverlap` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Ex_Q_AllOppsPositiveAmt` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Ex_Q_ContactStateVsBilling` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
+| `CHILD_DIRECT` | integration-tests | `Example_Contacts_Have_Email` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
+| `CHILD_DIRECT` | integration-tests | `Example_No_High_Priority_Issues` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
+| `CHILD_DIRECT` | integration-tests | `Example_Open_Deals_Have_Contacts` | `ApplicabilityCountQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
+| `CHILD_DIRECT` | integration-tests | `Example_Open_Deals_Have_Contacts` | `ComparisonQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
+| `CHILD_DIRECT` | integration-tests | `Example_Pipeline_Protects_Revenue` | `ApplicabilityCountQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
+| `CHILD_DIRECT` | integration-tests | `Example_Pipeline_Protects_Revenue` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Fewer_Than_Ten_Open_Cases` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Has_At_Least_One_Contact` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Has_At_Least_Two_Contacts` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
@@ -136,8 +133,8 @@ predicate to issue a single query.
 | `CHILD_DIRECT` | integration-tests | `Open_Opportunities_Have_Amount` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Open_Pipeline_Covers_Annual_Revenue` | `ApplicabilityCountQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
 | `CHILD_DIRECT` | integration-tests | `Open_Pipeline_Covers_Annual_Revenue` | `SourceQuery__c` | `AccountId = record.Id` | GROUP BY AccountId |
-| `CHILD_PATH` | force-app | `Example_Executive_Sponsorship` | `SourceQuery__c` | `Opportunity.AccountId = record.Id` | GROUP BY Opportunity.AccountId |
-| `CHILD_PATH` | force-app | `Example_Open_Deals_Have_Contacts` | `SourceQuery__c` | `Opportunity.AccountId = record.Id` | GROUP BY Opportunity.AccountId |
+| `CHILD_PATH` | integration-tests | `Example_Executive_Sponsorship` | `SourceQuery__c` | `Opportunity.AccountId = record.Id` | GROUP BY Opportunity.AccountId |
+| `CHILD_PATH` | integration-tests | `Example_Open_Deals_Have_Contacts` | `SourceQuery__c` | `Opportunity.AccountId = record.Id` | GROUP BY Opportunity.AccountId |
 | `ORDERED_PICK_AGGREGATE` | integration-tests | `Account_DVF_Date` | `SourceQuery__c` | `AccountId = record.Id` | MIN/MAX(CloseDate) GROUP BY AccountId |
 | `ORDERED_PICK_IN_MEMORY` | integration-tests | `Account_CTQ_T7_ContactCityMatchesBilling` | `SourceQuery__c` | `AccountId = record.Id` | Selects MailingCity but orders by CreatedDate |
 | `ORDERED_PICK_IN_MEMORY` | integration-tests | `Account_DVF_Percent` | `SourceQuery__c` | `AccountId = record.Id` | Selects Probability but orders by CloseDate |

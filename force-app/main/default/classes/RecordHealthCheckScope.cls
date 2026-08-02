@@ -35,10 +35,10 @@ global class RecordHealthCheckScope {
     }
   }
 
-  /** Parsed from ApexParametersJson__c. Never null; an unconfigured Rule gets an empty map. */
+  /** Parsed from ApexParametersJson__c. Never null; every access is deeply detached. */
   global Map<String, Object> parameters {
     get {
-      return new Map<String, Object>(parametersInternal);
+      return copyParameters(parametersInternal);
     }
   }
 
@@ -47,11 +47,19 @@ global class RecordHealthCheckScope {
   }
 
   /**
+   * Returns one immutable scope identity without allocating a detached list.
+   * Prefer this in index-based loops; `recordIds` remains the safe bulk copy.
+   */
+  global Id recordIdAt(Integer indexAt) {
+    return recordIdsInternal[indexAt];
+  }
+
+  /**
    * Built by the engine only. Duplicate Ids are removed here, preserving first
    * occurrence, and a scope mixing object types is rejected before any
    * evaluator sees it, because a Rule is authored against one object.
    */
-  public RecordHealthCheckScope(
+  global RecordHealthCheckScope(
     String objectApiName,
     List<Id> recordIds,
     Map<String, Object> parameters,
@@ -63,9 +71,7 @@ global class RecordHealthCheckScope {
     this.ruleDeveloperName = ruleDeveloperName;
     this.checkSetDeveloperName = checkSetDeveloperName;
     this.runId = runId;
-    this.parametersInternal = parameters == null
-      ? new Map<String, Object>()
-      : parameters;
+    this.parametersInternal = copyParameters(parameters);
     this.recordIdsInternal = dedupe(recordIds, objectApiName);
   }
 
@@ -75,24 +81,75 @@ global class RecordHealthCheckScope {
     if (recordIds == null) {
       return ordered;
     }
+    Schema.SObjectType expectedType;
+    for (Id recordId : recordIds) {
+      if (recordId != null) {
+        expectedType = recordId.getSObjectType();
+        break;
+      }
+    }
+    if (expectedType == null) {
+      return ordered;
+    }
+    String expectedName = expectedType.getDescribe().getName();
+    if (
+      objectApiName != null && !objectApiName.equalsIgnoreCase(expectedName)
+    ) {
+      throw mixedObjectType(objectApiName, expectedName);
+    }
     for (Id recordId : recordIds) {
       if (recordId == null || seen.contains(recordId)) {
         continue;
       }
-      String actual = recordId.getSObjectType().getDescribe().getName();
-      if (objectApiName != null && !objectApiName.equalsIgnoreCase(actual)) {
-        throw new RecordHealthCheckScopeException(
-          'A scope cannot mix object types. Expected ' +
-            objectApiName +
-            ' but received ' +
-            actual +
-            '.'
-        );
+      Schema.SObjectType actualType = recordId.getSObjectType();
+      if (actualType != expectedType) {
+        String actualName = actualType.getDescribe().getName();
+        throw mixedObjectType(expectedName, actualName);
       }
       seen.add(recordId);
       ordered.add(recordId);
     }
     return ordered;
+  }
+
+  private static Map<String, Object> copyParameters(
+    Map<String, Object> parameters
+  ) {
+    Map<String, Object> copy = new Map<String, Object>();
+    if (parameters == null) {
+      return copy;
+    }
+    for (String key : parameters.keySet()) {
+      copy.put(key, copyParameterValue(parameters.get(key)));
+    }
+    return copy;
+  }
+
+  private static Object copyParameterValue(Object value) {
+    if (value instanceof Map<String, Object>) {
+      return copyParameters((Map<String, Object>) value);
+    }
+    if (value instanceof List<Object>) {
+      List<Object> copy = new List<Object>();
+      for (Object member : (List<Object>) value) {
+        copy.add(copyParameterValue(member));
+      }
+      return copy;
+    }
+    return value;
+  }
+
+  private static RecordHealthCheckScopeException mixedObjectType(
+    String expectedName,
+    String actualName
+  ) {
+    return new RecordHealthCheckScopeException(
+      'A scope cannot mix object types. Expected ' +
+        expectedName +
+        ' but received ' +
+        actualName +
+        '.'
+    );
   }
 
   global class RecordHealthCheckScopeException extends Exception {

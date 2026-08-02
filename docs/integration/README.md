@@ -15,9 +15,9 @@ does not create a second configuration model.
 | Goal | Start here | What you will learn |
 | --- | --- | --- |
 | Show health to a user on a record page | [Lightning component](lightning-component.md) | Automatic versus explicit runs, visible rows, and optional user-initiated events |
-| Make an immediate decision in code | [Apex API](../reference/reference-apex-api.md) | Run a Check Set or Rule and branch on a typed response |
-| Branch in automation without custom Apex | [Flow actions](flow-actions.md) | Configure an Action and Decision element with explicit status paths |
-| Notify independent automation after commit | [Lifecycle events](lifecycle-events.md) | Enable publication, subscribe, and handle replay or duplicate delivery |
+| Make an immediate or asynchronous decision in code | [API examples](../api/README.md) | Choose synchronous Apex, Queueable, Batch, or Scheduled Apex |
+| Branch in automation without custom Apex | [Flow API](../api/flow.md) | Configure an Action and Decision element with explicit status paths |
+| Notify independent automation after commit | [Platform Event subscriptions](../platform-events/README.md) | Build a Flow or Apex subscriber and handle replay or duplicate delivery |
 | Implement a decision the other Evaluation Types cannot express | [Recent Account activity](../examples/apex/01-recent-activity.md) | Write the class used by a Verify with Apex Rule |
 
 ## What Record Health Check is
@@ -50,12 +50,12 @@ Record Health Check is not:
 | Goal | Start here | Immediate output | Optional event source |
 | --- | --- | --- | --- |
 | Show health on a record page | [Lightning component](lightning-component.md) | Rows and Set summary | `USER_INITIATED`; automatic load is blocked |
-| Make a code-level decision | [Apex API](../reference/reference-apex-api.md) | Typed Rule or Set response | `APEX_API`, `SCHEDULED`, or `BATCH` |
+| Make a code-level decision | [Apex API](../api/apex-api.md) | Typed Rule or Set response | `APEX_API`, `SCHEDULED`, or `BATCH` |
 | Branch in automation without code | [Flow actions](flow-actions.md) | Flow output variables and JSON | `FLOW` |
 | React asynchronously or export results | [Platform events](lifecycle-events.md) | Event body | Depends on the publisher |
 | Add a custom evaluation algorithm | [Recent Account activity](../examples/apex/01-recent-activity.md) | Normal Rule result | Inherits the calling run |
 
-## Core model
+## Evaluation model
 
 ```text
 Check Set
@@ -63,9 +63,9 @@ Check Set
 ├── Rule B
 └── Rule C
 
-runSet(...) ──> RecordHealthCheckSetResult
-                 ├── aggregate status and counts
-                 └── results[]: RecordHealthCheckResult
+evaluate(request) -> RecordHealthCheckResponse
+                     ├── summary with outcome counts
+                     └── results[] with evaluation and optional display data
 ```
 
 The successful status is `PASS`, not `SUCCESS`.
@@ -83,37 +83,31 @@ A Check Set uses the strongest contained result in this order:
 
 ## Contract versions
 
-The synchronous Apex and Flow response contract is stable at `1.0`. Lifecycle events use a
-separate stable `1.0` schema and report Core product version `2.0.0`. Matching version numbers do not
-make the schemas interchangeable; each can version independently.
+The synchronous response and lifecycle-event schemas carry independent contract-version fields.
+Subscribers must use the contract field that arrives with each event instead of inferring a
+schema from the installed package version.
 
-## Quick start with Apex
+## Basic Apex pattern
 
 ```apex
-RecordHealthCheckSetResult health = RecordHealthCheck.runSet(
-  'Example_Account_Relationship_Risk',
-  accountId
+RecordHealthCheckResponse health = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forCheckSet(
+    'Account_Readiness', // Exact QualifiedApiName returned by Salesforce.
+    accountId
+  )
 );
 
-switch on health.status {
-  when 'PASS' {
-    // Continue the healthy path.
-  }
-  when 'FAIL' {
-    // Use health.failedCount and health.results for business handling.
-  }
-  when else {
-    // Handle skipped, unable, and system-error outcomes explicitly.
-  }
+if (health.summary.failed > 0) {
+  // Use health.results for business handling.
 }
 ```
 
-For method overloads, fields, limits, and exceptions, use the [Apex API reference](../reference/reference-apex-api.md).
+For method overloads, fields, limits, and exceptions, use the [Apex API reference](../api/apex-api.md).
 
-## Quick start with Flow
+## Basic Flow pattern
 
 1. Add **Run Record Health Check Set** from the **Record Health Check** action category.
-2. Provide **Check Set API Name** and **Record ID**.
+2. Provide **Check Set Qualified API Name** and **Record ID**.
 3. Add a Decision element with explicit branches for the returned **Status**.
 4. Connect the fault path.
 5. Use the count outputs or Result JSON when the decision needs Rule-level detail.
@@ -132,8 +126,8 @@ that an event subscriber completed.
 
 Lifecycle publication is off by default; error-log publication is on by default:
 
-- Check Set **Publish Run Event** enables one completed Set event.
-- Rule **Publish Result Event** enables one event for that server-finalized Rule.
+- Check Set **Publish User Run Event** enables one completed Set event.
+- Rule **Publish User Result Event** enables one event for that server-finalized Rule.
 - Check Set **Publish Error Log Event** publishes Framework `ERROR` diagnostics; uncheck it to opt
   that Check Set out without changing Salesforce debug logs.
 - Automatic Lightning page-load runs never publish.
@@ -143,7 +137,6 @@ Lifecycle publication is off by default; error-log publication is on by default:
 | Limit | Value |
 | --- | --- |
 | Records in one public Apex or Flow call | 200 |
-| Planned Rule evaluations in one call | 15 |
 | Concurrent Lightning Rule evaluations | 5 |
 | Platform-event publish chunk | 100 |
 
@@ -161,7 +154,7 @@ Handle these cases separately:
 - A successful response followed by a transaction rollback, which suppresses Publish After Commit events.
 - Duplicate or replayed subscriber processing.
 
-Use stable Statuses, Reason Codes, Failure Severities, and Developer Names for automation. Branch
+Use stable Statuses, Reason Codes, Failure Severities, and Qualified API Names for automation. Branch
 automation on those fields rather than administrator-authored message text.
 
 ## Test before enabling events
@@ -175,9 +168,10 @@ automation on those fields rather than administrator-authored message text.
 
 ## Next steps
 
-- [Apex API](../reference/reference-apex-api.md)
-- [Flow actions](flow-actions.md)
+- [API examples](../api/README.md)
+- [Flow API](../api/flow.md)
 - [Lightning component](lightning-component.md)
-- [Platform events](lifecycle-events.md)
+- [Platform Event subscriptions](../platform-events/README.md)
+- [Lifecycle event behavior](lifecycle-events.md)
 - [Reason Codes](../reference/reference-reason-codes.md)
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

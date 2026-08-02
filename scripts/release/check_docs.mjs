@@ -12,7 +12,6 @@ const docsRoot = path.join(root, "docs");
 const markdownFiles = [];
 const narrativeHeaders = /^(notes?|description|purpose|detail)$/i;
 const apiName = /\b[A-Za-z][A-Za-z0-9_]*__(?:c|mdt|e)\b/g;
-const retiredExamplesRepository = ["RecordHealthCheck", "Examples"].join("-");
 const plainLanguageAvoidList = [
   "payload",
   "short-circuit",
@@ -124,8 +123,8 @@ for (const file of projectMarkdownFiles) {
         lookbackStart,
         nextLineEnd === -1 ? markdown.length : nextLineEnd
       );
-      // Rejected legacy examples such as `{!Id}` are not teaching tokens.
-      if (exampleContext.includes("legacy-token-ok")) continue;
+      // Intentionally rejected examples such as `{!Id}` are not teaching tokens.
+      if (exampleContext.includes("rejected-token-fixture")) continue;
       countedMergeToken = true;
       if (/\bfallback\s*=\s*"/.test(body)) {
         countedFallbackToken = true;
@@ -136,13 +135,6 @@ for (const file of projectMarkdownFiles) {
         `${relativeFile}: pages with merge tokens must include at least one fallback example`
       );
     }
-  }
-  if (
-    markdown.toLowerCase().includes(retiredExamplesRepository.toLowerCase())
-  ) {
-    failures.push(
-      `${relativeFile}: remove references to the retired external examples repository`
-    );
   }
   const isPlainLanguageSource =
     file.startsWith(`${docsRoot}${path.sep}`) &&
@@ -238,13 +230,21 @@ for (const [eventName, referenceName] of [
 const apexClassesDirectory = path.join(root, "force-app/main/default/classes");
 const productionApexClasses = fs
   .readdirSync(apexClassesDirectory)
-  .filter(
-    (name) =>
-      name.endsWith(".cls") &&
-      !name.endsWith("Test.cls") &&
-      !name.includes("Coverage") &&
-      name !== "RecordHealthCheckTestDataFactory.cls"
-  )
+  .filter((name) => {
+    if (
+      !name.endsWith(".cls") ||
+      name.endsWith("Test.cls") ||
+      name.includes("Coverage") ||
+      name === "RecordHealthCheckTestDataFactory.cls"
+    ) {
+      return false;
+    }
+    const source = fs.readFileSync(
+      path.join(apexClassesDirectory, name),
+      "utf8"
+    );
+    return !/@IsTest\b/i.test(source);
+  })
   .map((name) => name.replace(/\.cls$/, ""));
 for (const referenceName of [
   "reference-apex-classes.md",

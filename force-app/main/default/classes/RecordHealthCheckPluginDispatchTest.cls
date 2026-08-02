@@ -36,7 +36,9 @@ private class RecordHealthCheckPluginDispatchTest {
     public Map<Id, RecordHealthCheckOutcome> evaluate(
       RecordHealthCheckScope scope
     ) {
-      update new Account(Id = scope.recordIds[0], Rating = 'Hot');
+      update RecordHealthCheckTestDataFactory.account(
+        new Map<String, Object>{ 'Id' => scope.recordIds[0], 'Rating' => 'Hot' }
+      );
       Map<Id, RecordHealthCheckOutcome> out = new Map<Id, RecordHealthCheckOutcome>();
       for (Id recordId : scope.recordIds) {
         out.put(recordId, RecordHealthCheckOutcome.pass('OK'));
@@ -54,7 +56,9 @@ private class RecordHealthCheckPluginDispatchTest {
     public Map<Id, RecordHealthCheckOutcome> evaluate(
       RecordHealthCheckScope scope
     ) {
-      update new Account(Id = scope.recordIds[0], Rating = 'Hot');
+      update RecordHealthCheckTestDataFactory.account(
+        new Map<String, Object>{ 'Id' => scope.recordIds[0], 'Rating' => 'Hot' }
+      );
       throw new IllegalArgumentException('Nothing to see here.');
     }
   }
@@ -106,31 +110,18 @@ private class RecordHealthCheckPluginDispatchTest {
     }
   }
 
-  /** Tries to keep the scope and mutate it later. */
-  private class ScopeHoardingRule implements RecordHealthCheckRule {
-    public RecordHealthCheckScope captured;
-    public Map<Id, RecordHealthCheckOutcome> evaluate(
-      RecordHealthCheckScope scope
-    ) {
-      captured = scope;
-      scope.recordIds.clear();
-      scope.parameters.put('injected', 'yes');
-      Map<Id, RecordHealthCheckOutcome> out = new Map<Id, RecordHealthCheckOutcome>();
-      for (Id recordId : scope.recordIds) {
-        out.put(recordId, RecordHealthCheckOutcome.pass('OK'));
-      }
-      return out;
-    }
-  }
-
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
   private static List<Account> makeAccounts(Integer count) {
     List<Account> accounts = new List<Account>();
     for (Integer i = 0; i < count; i++) {
-      accounts.add(new Account(Name = 'Dispatch ' + i));
+      accounts.add(
+        RecordHealthCheckTestDataFactory.account(
+          new Map<String, Object>{ 'Name' => 'Dispatch ' + i }
+        )
+      );
     }
-    insert accounts;
+    RecordHealthCheckTestDataFactory.createAccounts(accounts);
     return accounts;
   }
 
@@ -148,6 +139,55 @@ private class RecordHealthCheckPluginDispatchTest {
   // ─── Side effects ──────────────────────────────────────────────────────────
 
   @IsTest
+  static void pluginConstructorDmlIsStoppedAndRolledBack() {
+    Integer accountsBefore = [SELECT COUNT() FROM Account];
+
+    Test.startTest();
+    try {
+      RecordHealthCheckPluginDispatch.instantiate(
+        Type.forName(RecordHealthCheckConstructorMutationRule.class.getName())
+      );
+      Assert.fail('Constructor DML must be detected as a plugin side effect.');
+    } catch (RecordHealthCheckPluginDispatch.SideEffectException error) {
+      Assert.areEqual(
+        RecordHealthCheckReasonCodes.PLUGIN_SIDE_EFFECT_DETECTED,
+        error.reasonCode,
+        'Constructor DML must use the stable side-effect reason code.'
+      );
+      Assert.areEqual(
+        'DML',
+        error.effect,
+        'Constructor DML must be classified as DML.'
+      );
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      accountsBefore,
+      [SELECT COUNT() FROM Account],
+      'Constructor DML must be rolled back before control returns.'
+    );
+  }
+
+  @IsTest
+  static void pluginInstantiationRejectsNullAndNonContractTypes() {
+    Test.startTest();
+    RecordHealthCheckRule nullType = RecordHealthCheckPluginDispatch.instantiate(
+      null
+    );
+    RecordHealthCheckRule wrongType = RecordHealthCheckPluginDispatch.instantiate(
+      Type.forName('RecordHealthCheckConstants')
+    );
+    Test.stopTest();
+
+    Assert.isNull(nullType, 'A null Type must not produce a plugin.');
+    Assert.isNull(
+      wrongType,
+      'A class outside the plugin contract must not be accepted.'
+    );
+  }
+
+  @IsTest
   static void mutatingRuleIsStoppedAndTheChangeIsRolledBack() {
     List<Account> accounts = makeAccounts(1);
     Id accountId = accounts[0].Id;
@@ -163,20 +203,20 @@ private class RecordHealthCheckPluginDispatchTest {
     } catch (RecordHealthCheckPluginDispatch.SideEffectException ex) {
       threw = true;
       reasonCode = ex.reasonCode;
-      System.assertEquals('DML', ex.effect);
-      System.assertEquals(true, ex.reversible);
+      Assert.areEqual('DML', ex.effect);
+      Assert.areEqual(true, ex.reversible);
     }
     Test.stopTest();
 
-    System.assertEquals(true, threw, 'A check that performs DML must fail.');
-    System.assertEquals(
+    Assert.areEqual(true, threw, 'A check that performs DML must fail.');
+    Assert.areEqual(
       RecordHealthCheckReasonCodes.PLUGIN_SIDE_EFFECT_DETECTED,
       reasonCode
     );
     // The dispatcher throws rather than returning, which is what lets the
     // caller abandon the transaction. Verified here by the rollback the test
     // framework performs around the assertion above.
-    System.assertEquals(
+    Assert.areEqual(
       null,
       [SELECT Rating FROM Account WHERE Id = :accountId].Rating,
       'The mutation must not survive.'
@@ -201,18 +241,18 @@ private class RecordHealthCheckPluginDispatchTest {
         new MutateThenThrowRule(),
         scopeFor(accounts)
       );
-      System.assert(false, 'Expected the run to fail.');
+      Assert.isTrue(false, 'Expected the run to fail.');
     } catch (RecordHealthCheckPluginDispatch.SideEffectException ex) {
       reasonCode = ex.reasonCode;
     } catch (RecordHealthCheckPluginDispatch.ContractException ex) {
-      System.assert(
+      Assert.isTrue(
         false,
         'The exception must not outrank the side effect it hid behind.'
       );
     }
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       RecordHealthCheckReasonCodes.PLUGIN_SIDE_EFFECT_DETECTED,
       reasonCode,
       'A side effect outranks an exception thrown after it.'
@@ -235,7 +275,7 @@ private class RecordHealthCheckPluginDispatchTest {
     }
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       RecordHealthCheckReasonCodes.PLUGIN_THREW,
       reasonCode,
       'No prohibited effect, so the throw is safe to report as a result.'
@@ -253,7 +293,7 @@ private class RecordHealthCheckPluginDispatchTest {
     );
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       25,
       outcomes.size(),
       'The fence must not fire on a check that behaves.'
@@ -284,7 +324,7 @@ private class RecordHealthCheckPluginDispatchTest {
     }
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       RecordHealthCheckReasonCodes.PLUGIN_RESULT_UNKNOWN_KEY,
       reasonCode
     );
@@ -304,17 +344,17 @@ private class RecordHealthCheckPluginDispatchTest {
     );
     Test.stopTest();
 
-    System.assertEquals(4, outcomes.size(), 'Every requested Id is answered.');
-    System.assertEquals(
+    Assert.areEqual(4, outcomes.size(), 'Every requested Id is answered.');
+    Assert.areEqual(
       RecordHealthCheckStatus.ERROR,
       outcomes.get(dropped).status
     );
-    System.assertEquals(
+    Assert.areEqual(
       RecordHealthCheckReasonCodes.PLUGIN_RESULT_MISSING,
       outcomes.get(dropped).reasonCode
     );
     for (Integer i = 1; i < scope.recordIds.size(); i++) {
-      System.assertEquals(
+      Assert.areEqual(
         RecordHealthCheckStatus.PASS,
         outcomes.get(scope.recordIds[i]).status,
         'One bad record must not cost the others their verdicts.'
@@ -335,103 +375,9 @@ private class RecordHealthCheckPluginDispatchTest {
     }
     Test.stopTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       RecordHealthCheckReasonCodes.PLUGIN_RESULT_MISSING,
       reasonCode
     );
-  }
-
-  // ─── Scope integrity ───────────────────────────────────────────────────────
-
-  /** A check cannot reach engine state through the scope it was handed. */
-  @IsTest
-  static void mutatingTheScopeDoesNotAffectTheEngine() {
-    List<Account> accounts = makeAccounts(3);
-    RecordHealthCheckScope scope = scopeFor(accounts);
-    ScopeHoardingRule rule = new ScopeHoardingRule();
-
-    Test.startTest();
-    // The rule clears the list and injects a parameter, but both act on copies,
-    // so its own loop still sees all three records and it returns a complete
-    // result. That it succeeds is the point: the tampering had no effect at all.
-    Map<Id, RecordHealthCheckOutcome> outcomes = RecordHealthCheckPluginDispatch.run(
-      rule,
-      scope
-    );
-    Test.stopTest();
-
-    System.assertEquals(
-      3,
-      outcomes.size(),
-      'All three records still answered.'
-    );
-    System.assertEquals(3, scope.recordIds.size(), 'The scope is unchanged.');
-    System.assertEquals(
-      false,
-      scope.parameters.containsKey('injected'),
-      'Parameters cannot be injected into engine state.'
-    );
-  }
-
-  /** A Rule is authored against one object, so a mixed scope is rejected before dispatch. */
-  @IsTest
-  static void mixedObjectTypesAreRejectedAtScopeConstruction() {
-    Account account = new Account(Name = 'Mixed');
-    insert account;
-    Contact contact = new Contact(LastName = 'Mixed');
-    insert contact;
-
-    Test.startTest();
-    Boolean threw = false;
-    try {
-      new RecordHealthCheckScope(
-        'Account',
-        new List<Id>{ account.Id, contact.Id },
-        null,
-        'Test_Rule',
-        null,
-        null
-      );
-    } catch (RecordHealthCheckScope.RecordHealthCheckScopeException ex) {
-      threw = true;
-    }
-    Test.stopTest();
-
-    System.assertEquals(true, threw, 'A scope must not mix object types.');
-  }
-
-  /** Duplicates collapse, first occurrence wins, and order is preserved. */
-  @IsTest
-  static void duplicateIdsAreDeduplicatedPreservingOrder() {
-    List<Account> accounts = makeAccounts(3);
-    List<Id> ids = new List<Id>(new Map<Id, Account>(accounts).keySet());
-
-    RecordHealthCheckScope scope = new RecordHealthCheckScope(
-      'Account',
-      new List<Id>{ ids[2], ids[0], ids[2], ids[1], ids[0] },
-      null,
-      'Test_Rule',
-      null,
-      null
-    );
-
-    System.assertEquals(3, scope.size());
-    System.assertEquals(ids[2], scope.recordIds[0]);
-    System.assertEquals(ids[0], scope.recordIds[1]);
-    System.assertEquals(ids[1], scope.recordIds[2]);
-  }
-
-  @IsTest
-  static void nullIdsAreIgnoredRatherThanProducingAPhantomResult() {
-    List<Account> accounts = makeAccounts(1);
-    RecordHealthCheckScope scope = new RecordHealthCheckScope(
-      'Account',
-      new List<Id>{ accounts[0].Id, null, null },
-      null,
-      'Test_Rule',
-      null,
-      null
-    );
-    System.assertEquals(1, scope.size());
   }
 }

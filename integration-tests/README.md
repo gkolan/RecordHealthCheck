@@ -12,7 +12,7 @@ customer sandbox or production org.
 | Path                                                      | What deploys                                                          |
 | --------------------------------------------------------- | --------------------------------------------------------------------- |
 | README **Deploy** buttons (`githubsfdeploy`)              | Default package directory only: `force-app`                           |
-| `sf project deploy start --manifest manifest/package.xml` | Framework + `Example_` artifacts listed in the manifest               |
+| `sf project deploy start --manifest manifest/package.xml` | Framework only; no business-policy Check Sets or Rules                |
 | `sf project deploy start` (no flags)                      | `force-app` only (this directory is not a `packageDirectories` entry) |
 | Release gate                                              | Explicit `--source-dir integration-tests` after the Framework deploy  |
 
@@ -23,7 +23,7 @@ metadata into the target org.
 
 ## Contents (high level)
 
-- Fixture Check Sets and Rules (not `Example_`-prefixed product samples)
+- Fixture Check Sets and Rules, including a retained copy of the optional core examples
 - `Account_Display_Formats`: one Check Set whose Rules cover every **Display: Value Format**
   option across Query, Formula, and Compare two queries. Set it up with
   `./scripts/setup-display-formats.sh`, which creates a scratch org, seeds the Account and
@@ -31,7 +31,7 @@ metadata into the target org.
 
 ## Display-format scratch orgs and deterministic data
 
-Run the maintained fixture in both currency modes. Both commands deploy Core and the integration
+Run the maintained fixture in both currency modes. Both commands deploy Framework and the integration
 fixtures, seed the same Account and Opportunity, and execute `verifyDisplayFormats.apex`:
 
 ```bash
@@ -61,10 +61,10 @@ the installed Framework:
 
 | Script                           | Demonstrates                                                                                             |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `scripts/demo_apex_api.apex`     | `RecordHealthCheck.runSet` and `runRule`, typed responses, correlation IDs, and status handling          |
+| `scripts/demo_apex_api.apex`     | `RecordHealthCheck.evaluate(request)`, typed responses, correlation IDs, and status handling             |
 | `scripts/demo_flow_actions.apex` | The exact `@InvocableMethod` Set and Rule actions exposed in Flow Builder, including their output fields |
 
-Deploy Core before the fixtures, then run the scripts in order:
+Deploy Framework before the fixtures, then run the scripts in order:
 
 ```bash
 sf project deploy start --source-dir force-app --target-org my-scratch-org --wait 30
@@ -77,13 +77,12 @@ sf apex run --file integration-tests/scripts/demo_flow_actions.apex --target-org
 `integration-tests` intentionally remains outside `sfdx-project.json`. A normal product install
 deploys only `force-app`; deploying demo fixtures always requires the explicit second command.
 
-Product examples that ship to users live under `force-app` and are listed in
-`manifest/package.xml`.
+The optional installable copy lives in the separate `RecordHealthCheck-Examples/core-examples`
+package. The copy here exists only so integration runs exercise the same configurations.
 
-## Shipped example data
+## Example fixture data
 
-Realistic data for the four shipped `Example_` Check Sets is product-demo data, not an integration
-fixture. The single supported scratch-org command is `./scripts/setup-demo.sh`; its seed and verifier
-live under `scripts/apex`. See the
+The single supported scratch-org command is `./scripts/setup-demo.sh`; its seed and verifier live
+under `scripts/apex`. See the
 [scratch-org setup guide](../docs/installation/05-create-rhc-scratch-org.md) for the complete,
 deterministic scenario.

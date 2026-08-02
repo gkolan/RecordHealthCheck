@@ -81,7 +81,7 @@ Confirm the `High` Priority API value and replace `3` with the limit approved by
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Cases/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `140` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked only after confirming the Priority value and approved capacity limit |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Checked only when an approved subscriber needs this per-Rule result |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Checked only when an approved subscriber needs this per-Rule result |
 
 Source Query Field stays blank because bare `COUNT()` produces the value directly. Comparison
 Query, row-empty, list, Formula-result, and Apex fields do not apply. The count is `0` when no Case
@@ -104,7 +104,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Checked only when an approved subscriber needs one completion summary |
+| **Publish User Run Event** | Checked only when an approved subscriber needs one completion summary |
 | **Active** | Checked |
 
 ## What the user sees

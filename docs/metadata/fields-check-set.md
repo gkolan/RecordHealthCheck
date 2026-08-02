@@ -13,7 +13,7 @@ open an individual field only when you need its exact details.
 | What should users see first? | All checks immediately, or a summary they can reveal? | [Reveal Mode](#reveal-mode-cardrevealmode__c) |
 | How much result detail is useful? | Should Found, Expected, passed, and skipped results always appear, appear conditionally, or stay hidden? | [Found/Expected Display](#foundexpected-display-foundexpecteddisplay__c), [Passed Checks](#passed-checks-passedchecksdisplay__c), and [Skipped Checks](#skipped-checks-skippedchecksdisplay__c) |
 | What happens during a problem? | Should later checks continue, and do administrators temporarily need diagnostics? | [Stop after a system error](#stop-after-a-system-error-stoponsystemerror__c) and [Show Diagnostics](#show-diagnostics-showdiagnostics__c) |
-| Does another process need the completed run? | Should a deliberate run publish one summary event? | [Publish Run Event](#publish-run-event-publishrunevent__c) |
+| Does another process need the completed run? | Should a deliberate run publish one summary event? | [Publish User Run Event](#publish-user-run-event-publishuserrunevent__c) |
 | Should Framework errors publish automatically? | Keep the default error-event stream, or opt this Check Set out? | [Publish Error Log Event](#publish-error-log-event-publisherrorlogevent__c) |
 
 For the complete creation flow, use [Create your first Rule](../installation/03-create-your-first-rule.md).
@@ -35,7 +35,7 @@ For the complete creation flow, use [Create your first Rule](../installation/03-
 | [Passed Checks](#passed-checks-passedchecksdisplay__c) | `PassedChecksDisplay__c` | Result display |
 | [Skipped Checks](#skipped-checks-skippedchecksdisplay__c) | `SkippedChecksDisplay__c` | Result display |
 | [Show Diagnostics](#show-diagnostics-showdiagnostics__c) | `ShowDiagnostics__c` | Troubleshooting |
-| [Publish Run Event](#publish-run-event-publishrunevent__c) | `PublishRunEvent__c` | Lifecycle events |
+| [Publish User Run Event](#publish-user-run-event-publishuserrunevent__c) | `PublishUserRunEvent__c` | Lifecycle events |
 | [Publish Error Log Event](#publish-error-log-event-publisherrorlogevent__c) | `PublishErrorLogEvent__c` | Error events |
 
 ## Read an individual field
@@ -266,12 +266,12 @@ For the complete creation flow, use [Create your first Rule](../installation/03-
 
 ## 6. Lifecycle events
 
-### Publish Run Event (`PublishRunEvent__c`)
+### Publish User Run Event (`PublishUserRunEvent__c`)
 
 | Attribute | Value |
 | --- | --- |
-| Setup label | **Publish Run Event** |
-| API name | `PublishRunEvent__c` |
+| Setup label | **Publish User Run Event** |
+| API name | `PublishUserRunEvent__c` |
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |

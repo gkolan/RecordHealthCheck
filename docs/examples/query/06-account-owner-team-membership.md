@@ -88,7 +88,7 @@ These values improve presentation. Change them for your process, or leave an opt
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/AccountTeamMembers/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `110` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked only when Account Teams are enabled and your policy requires an explicit row for the owner |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 This is the Query Evaluation Type's list-membership mode. **Source Query** stays blank because the
 value comes from `OwnerId` and the candidate list comes from **Comparison Query**. Expected-value,
@@ -111,7 +111,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees

@@ -16,18 +16,16 @@
 >   Merge-token substitution uses a different path; see
 >   [Reference: Merge tokens](reference-merge-tokens.md).
 
-When a Formula, Query, or Compare two queries Rule finishes, the Framework turns the raw Found and
-Expected values into short display text for the card chips. The goal is readable comparison values
-without changing how the Rule decides pass or fail.
-
-Apex Rules normally set their own Found and Expected strings, which take precedence. A plugin may
-choose the shared formatter by returning typed display values instead of either string.
+When any Evaluation Type finishes, the Framework can turn typed Found and Expected values into
+short display text for the card chips. The goal is readable comparison values without changing how
+the Rule decides pass or fail. Apex plugins return `RecordHealthCheckValue` objects through
+`RecordHealthCheckOutcome`; they do not author rendered strings or bypass the shared formatter.
 
 ## Choosing a format
 
 **Display: Value Format** (`DisplayValueFormat__c`) on the Rule sets how both Found and Expected are
-written. Leave it on **Auto** and the Framework works the format out from the value's type, which is
-what every Rule did before this field existed. Name a format and that choice is used instead.
+written. Leave it on **Auto** and the Framework works the format out from the field definition and
+value type. Name a format when the business meaning requires a specific presentation.
 
 | Format | What it does | Example |
 | --- | --- | --- |
@@ -45,8 +43,8 @@ what every Rule did before this field existed. Name a format and that choice is 
 One format covers both sides of the comparison, so Found and Expected always read in the same units.
 A Rule that names Currency shows `$70,000.00` against `at least $50,000.00`, never one of each.
 
-Text and Raw behave the same way today: both return the value as written and neither humanizes
-anything. They are kept apart so a Rule records why the author chose it - Text for names and free
+Text and Raw both return the value as written and neither humanizes anything. They are kept apart
+so a Rule records why the author chose it: Text for names and free
 text, Raw for identifiers, external keys, and codes.
 
 `PERCENT` follows Salesforce Percent-field semantics and does not multiply. `RATIO_PERCENT` is the

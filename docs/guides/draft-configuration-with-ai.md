@@ -3,8 +3,6 @@
 > [!NOTE]
 > On this page, give an AI assistant enough Framework and Salesforce context to draft reviewable Check Set and Rule configuration without inventing fields, values, or unsupported behavior.
 
-**Version:** 2.0.0 (2026-07-13)
-
 This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-check-rule.md) references. Write explanations in direct, plain language and define Salesforce terms when a reader may not know them.
 
 ## 1. What this product does
@@ -39,7 +37,7 @@ Table: API field name | Value | Notes
 Name the pattern (e.g. "QUERY + ONE_RESULT + RECORD_FORMULA") and cite a shipped DeveloperName if one exists.
 
 ## Class sketch (Apex only)
-When EvaluationType__c = APEX: list SOQL/objects to read, JSON keys for ApexParametersJson__c, PASS/FAIL logic, and the required actualValue/expectedValue fields. Cite the optional Examples pack when applicable.
+When EvaluationType__c = APEX: list bulk SOQL and objects to read, JSON keys for ApexParametersJson__c, PASS/FAIL logic, and the Found/Expected values. Cite a shipped example when applicable.
 
 ## Applicability & dependencies
 Only if not ALL_RECORDS / no dependency.
@@ -57,7 +55,7 @@ RULES YOU MUST FOLLOW:
 7. SOQL merge tokens: `{!record.FieldApiName}` on the current record (e.g. `{!record.Id}`, `{!record.Name}`). Add a quoted `fallback` attribute when a blank value needs a substitute (e.g. `{!record.AnnualRevenue fallback="0"}`, `{!record.Customer_Tier__c fallback="Standard"}`).
 8. Max 25 active Rules per Check Set per run. Use applicability checks to reduce noise.
 9. Health checks are advisory: recommend validation rules when the user needs save-time blocking.
-10. If metadata cannot express the rule, recommend Apex (RecordHealthCheckRule interface) and say what the class must do. Cite an example from https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). Treat every example class as an optional Examples-pack dependency; Core ships no example implementations. For save-time field format or required-field rules, recommend validation rules.
+10. If metadata cannot express the Rule, recommend Apex (`RecordHealthCheckRule`) and say what the class must do. Cite a shipped example from https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/ (1=multi-object OR, 2=child aggregation, 3=composite score). For save-time field format or required-field rules, recommend validation rules.
 11. QueryResultHandling__c = ONE_RESULT for aggregates and single COUNT(); ANY_ROW_PASSES / ALL_ROWS_PASS for row-by-row; COMPARE_AS_LISTS for list operators.
 12. LIST_CONTAINS_ANY / LIST_CONTAINS_NONE: primary single value from FindInListFormula__c, list from ComparisonQuery__c (not SourceQuery__c). PassConditionFormula__c is record-formula-only.
 13. Use field API names the user provided, or mark unverified names as placeholders to confirm in Setup.
@@ -66,7 +64,7 @@ DECISION ORDER:
 - On-record only, no SOQL → FORMULA
 - One SOQL result vs static / formula / second query → QUERY
 - Two SOQL results compared → COMPARE_TWO_QUERIES
-- Complex date math, scoring, callouts → APEX
+- Complex date math or scoring → APEX. A Rule plugin must not perform DML, callouts, asynchronous enqueueing, or event publication.
 
 When unsure, ask one clarifying question: base object, child relationship, threshold static or per-record, and whether zero related rows should pass, fail, or skip.
 ```
@@ -96,7 +94,7 @@ User describes a business rule
 │            QueryResultHandling__c = COMPARE_AS_LISTS
 │            ComparisonOperator__c = LIST_CONTAINS_ANY | LIST_CONTAINS_NONE
 │
-└─ Needs code, external data, or unsupported shape?
+└─ Needs code or an unsupported Salesforce-data shape?
    └─ EvaluationType__c = APEX
       ApexClass__c = class implementing RecordHealthCheckRule
       ApexParametersJson__c = optional JSON object for per-Rule configuration
@@ -107,13 +105,13 @@ User describes a business rule
 
 | Level | When | Shipped class (if any) | Doc |
 | ----- | ---- | ---------------------- | --- |
-| 1 Multi-object | Task **or** Event in **one** row | `AccountHasRecentActivityCheck` | `apex/01-recent-activity.md` |
+| 1 Multi-object | Task **or** Event activity for each Account | `AccountHasRecentActivityCheck` | `apex/01-recent-activity.md` |
 | 2 Child aggregation | Same child must fail combined conditions | `AccountOpenOpportunityHealthCheck` | `apex/02-open-opportunity-health.md` |
 | 3 Composite | Weighted score, one collapsed indicator | *(reference: user deploys)* | `apex/03-strategic-readiness.md` |
 
 For phone/email format or required-field-on-save rules, recommend **validation rules**.
 
-When recommending Apex, also output a **Class sketch** section: what to query, what `status` to return, required `actualValue`/`expectedValue` for `PASS` / `FAIL`, and suggested `ApexParametersJson__c` keys.
+When recommending Apex, also output a **Class sketch** section: what to query, what `status` to return, useful Found/Expected values for `PASS` / `FAIL`, and suggested `ApexParametersJson__c` keys.
 
 ### Validation rule vs health check
 
@@ -149,7 +147,7 @@ Minimum fields when creating a new Check Set:
 | `FoundExpectedDisplay__c` | Found/Expected Display | Yes | `ON_DEMAND` (default), `FAILURES_ONLY`, or `ALL_ROWS` |
 | `IsActive__c` | Active | No | `true` |
 | `ShowDiagnostics__c` | Show Diagnostics | No | `false` in production. When `true`, user also needs `Record_Health_Check_View_Diagnostics` (from `Record_Health_Check_Admin`). See [Show Diagnostics guide](troubleshoot-with-show-diagnostics.md). |
-| `PublishRunEvent__c` | Publish Run Event | No | `false` by default; page-load runs never publish |
+| `PublishUserRunEvent__c` | Publish User Run Event | No | `false` by default; page-load runs never publish |
 | `PublishErrorLogEvent__c` | Publish Error Log Event | No | `true` by default; set `false` to opt this Check Set out of ERROR log events |
 
 **Component wiring:** In Lightning App Builder, select the intended **Check Set** for the record page. The stored LWC property is `checkSetName`; Apex still receives that value as `checkSetDeveloperName`.
@@ -166,14 +164,14 @@ Always include (all Evaluation Types):
 | `CheckTitle__c` | Check Title | Yes | `Open pipeline ≥ 1.5× annual revenue` |
 | `EvaluationType__c` | Evaluation Type | Yes | `QUERY` |
 | `EvaluationOrder__c` | Evaluation Order | Yes | `10` (use gaps: 10, 20, 30…) |
-| `Category__c` | Category | No | `COMPLETENESS`, `READINESS`, `COMPLIANCE`, `RELATIONSHIP_COVERAGE`, or blank. Metadata only: UI grouping not implemented yet. |
+| `Category__c` | Category | No | API values such as `COMPLETENESS`, `CONSISTENCY`, `ELIGIBILITY`, `READINESS`, or `RELATIONSHIP_COVERAGE`; Setup shows readable labels. Metadata only: UI grouping not implemented yet. |
 | `FailureSeverity__c` | Failure Severity | Yes | `CRITICAL`, `WARNING`, or `INFO` |
 | `FailureMessage__c` | Message When Failed | Yes | Names the record, then states what is below target: copy the example from below the table |
 | `FixMessage__c` | Fix Message | No | `Review open opportunities…` (renders on FAIL rows) |
 | `ActionLabel__c` | Action Label | No | Short link text; display merge tokens allowed (80-character field). Blank defaults to `Fix this` when Action URL is set |
 | `ActionUrl__c` | Action URL | No | `/lightning/r/Report/00O.../view?fv0={!record.Id}` or `https://example.com/pipeline-playbook` |
 | `ApplicabilityMode__c` | Applies To | Yes | `ALL_RECORDS`, `WHEN_FORMULA_TRUE`, or `WHEN_COUNT_QUERY_MATCHES` |
-| `PublishResultEvent__c` | Publish Result Event | No | `false` by default; page-load runs never publish |
+| `PublishUserResultEvent__c` | Publish User Result Event | No | `false` by default; page-load runs never publish |
 | `IsActive__c` | Active | No | `true` |
 
 The `FailureMessage__c` example reads:
@@ -202,11 +200,11 @@ When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex
 
 | Item | What to include |
 | ---- | --------------- |
-| `recordId` | `context.recordId` for SOQL; query extra fields: `context.record` is partial |
-| Parent / custom fields | `Parent.BillingCity` in SELECT, or `Primary_Contact__r.Email` |
+| Scope | `scope.recordIds` contains the complete bounded record scope; query it once, outside record loops |
+| Parent / custom fields | Select exact readable fields such as `Parent.BillingCity` or `Primary_Contact__r.Email` in user mode |
 | JSON defaults | Apex constants + `ApexParametersJson__c` keys (e.g. `daysBack`) with bounds |
-| Examples-pack vs custom | Use an Examples-pack class only when that pack is installed and the pattern matches |
-| Outcome | `PASS`/`FAIL`; required `actualValue`/`expectedValue` on both statuses |
+| Shipped vs custom | Use a shipped class only when its documented object and parameters match the requirement |
+| Outcome | Return exactly one `RecordHealthCheckOutcome` per scoped record ID; attach Found/Expected values when they explain the verdict |
 | Applicability | Why `ApplicabilityMode__c` is not `ALL_RECORDS` if the Rule only runs when a condition is met |
 
 ## 5. Rule fields by Evaluation Type
@@ -292,20 +290,42 @@ Full walkthroughs: [Apex examples](../examples/README.md#apex-examples) · [Rece
 **Apex interface summary:** Full patterns: [Apex reference](../reference/reference-apex.md).
 
 ```apex
-public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-  Id recordId = context.recordId;           // page record: use in SOQL binds
-  Map<String, Object> params = context.parameters;  // from ApexParametersJson__c
-  // Query fields WITH USER_MODE: context.record is partial; only requested fields are loaded
-  RecordHealthCheckResult result = new RecordHealthCheckResult();
-  result.status = 'PASS' or 'FAIL';
-  result.actualValue / result.expectedValue  // required for PASS / FAIL
-  return result;
+global with sharing class AccountExampleCheck
+  implements RecordHealthCheckRule {
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    Map<Id, Account> accountsById = new Map<Id, Account>([
+      SELECT Id, Industry
+      FROM Account
+      WHERE Id IN :scope.recordIds
+      WITH USER_MODE
+    ]);
+    Map<Id, RecordHealthCheckOutcome> outcomesById =
+      new Map<Id, RecordHealthCheckOutcome>();
+    for (Id recordId : scope.recordIds) {
+      Account accountRecord = accountsById.get(recordId);
+      outcomesById.put(
+        recordId,
+        String.isNotBlank(accountRecord?.Industry)
+          ? RecordHealthCheckOutcome.pass('INDUSTRY_PRESENT')
+          : RecordHealthCheckOutcome.fail('INDUSTRY_MISSING')
+      );
+    }
+    return outcomesById;
+  }
 }
 ```
 
-- Query with `WITH USER_MODE`. Load fields not on `context.record` via SOQL.
-- On `FAIL`, set `message` only when metadata **FailureMessage__c** is not enough; metadata still supplies **Severity**.
-- Pair with applicability (`ApplicabilityMode__c` = `FORMULA` or `SOQL`) when the check should not run for every record.
+- Query once in user mode before iterating through the scope.
+- Return exactly one outcome for every ID and no outcomes for unknown IDs.
+- Do not perform DML, callouts, asynchronous enqueueing, or event publication. The engine rejects
+  these side effects.
+- Catch record-specific problems when one record can fail independently; an uncaught exception
+  affects the complete scope.
+- Pair the Rule with `RecordHealthCheckRuleContractTest` so bulk, access, mutation, side-effect,
+  and limit behavior is verified before deployment.
+- Use `WHEN_FORMULA_TRUE` or `WHEN_COUNT_QUERY_MATCHES` when the Rule should not run for every record.
 
 **Shipped classes:**
 
@@ -321,7 +341,7 @@ Recommend only the shipped class names listed above. For composite scoring, name
 | `ApplicabilityMode__c` | Additional fields |
 | --- | --- |
 | `ALL_RECORDS` | None |
-| `FORMULA` | `ApplicabilityFormula__c` (Boolean, `true` = run check) |
+| `WHEN_FORMULA_TRUE` | `ApplicabilityFormula__c` (Boolean, `true` = run check) |
 | `WHEN_COUNT_QUERY_MATCHES` | `ApplicabilityCountQuery__c` (`SELECT COUNT()` or `SELECT COUNT(Id)`), `ApplicabilityCountOperator__c`, `ApplicabilityCountThreshold__c` |
 
 ### 5.6 Dependencies
@@ -397,7 +417,7 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 | Multiplier on COMPARE_TWO_QUERIES right side | Both sides are raw query values only | Use QUERY + RECORD_FORMULA, or APEX |
 | Blocking save on fail | Product is read-time only | Validation rule or Flow |
 | More than 25 active rules | Hard cap per run | Split Check Sets or deactivate low-value rules |
-| Org-wide batch audit | No packaged scheduler | Apex batch calling `RecordHealthCheck.runRule` |
+| Org-wide batch audit | No packaged scheduler | Apex batch calling `RecordHealthCheck.evaluate(request)` |
 
 ## 9. SOQL rules for LLMs
 
@@ -427,7 +447,7 @@ Prerequisite must return `PASS` or dependent is `SKIPPED`.
 
 ### Null / empty rows
 
-- Aggregates return `null` when no rows match: pair with applicability SOQL (`COUNT > 0`) or `EmptyValueHandling__c = SkipRecordsWithMissingValue`.
+- Aggregates return `null` when no rows match: pair with applicability SOQL (`COUNT > 0`) or `EmptyValueHandling__c = SKIP_RECORD`.
 - **`NoRowsResult__c`:** `PASS`, `FAIL`, `SKIP`, `UNABLE_TO_EVALUATE` when a query returns **zero rows** (including COMPARE_TWO_QUERIES ONE_RESULT when either side's query is empty).
 - **`EmptyValueHandling__c`:** when rows exist but a field under test is null and the comparison operator cannot decide (typically `SKIP_RECORD`), the check is **SKIPPED** with `VALUE_IS_EMPTY`: not governed by `NoRowsResult__c`.
 
@@ -473,17 +493,19 @@ Shipped: `Account_EU_HasAtLeastOneContact`.
 | API field | Value |
 | --- | --- |
 | `EvaluationType__c` | `QUERY` |
-| `SourceQuery__c` | `SELECT SUM(TotalPrice) totalPipeline FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND TotalPrice != null` |
+| `SourceQuery__c` | `SELECT SUM(Amount) totalPipeline FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false AND Amount != null` |
 | `SourceQueryField__c` | `totalPipeline` |
 | `QueryResultHandling__c` | `ONE_RESULT` |
 | `ComparisonOperator__c` | `GREATER_THAN_OR_EQUAL` |
 | `ExpectedValueSource__c` | `RECORD_FORMULA` |
 | `ExpectedRecordFormula__c` | `AnnualRevenue * 1.5` |
 | `EmptyValueHandling__c` | `SKIP_RECORD` |
-| `ApplicabilityMode__c` | `FORMULA` |
-| `ApplicabilityFormula__c` | `NOT(ISBLANK(AnnualRevenue)) && AnnualRevenue > 0` |
+| `ApplicabilityMode__c` | `WHEN_FORMULA_TRUE` |
+| `ApplicabilityFormula__c` | `AND(NOT(ISBLANK(AnnualRevenue)), AnnualRevenue > 0)` |
 
-Use `Amount` instead of `TotalPrice` if products are not used. Similar shipped pattern: `Account_CTQ_SumVsAnnualRevenue` (1:1 revenue, via COMPARE_TWO_QUERIES).
+This example uses the Opportunity `Amount` field. If the business requirement is based on product
+line items, use Apex to aggregate `OpportunityLineItem.TotalPrice` safely. Similar shipped pattern:
+`Account_CTQ_SumVsAnnualRevenue` (1:1 revenue, via COMPARE_TWO_QUERIES).
 
 ### 10.4 Billing State appears in Contact states (list membership)
 
@@ -505,7 +527,7 @@ Shipped: `Account_QC_ListContainsAny` (`LIST_CONTAINS_ANY`).
 | --- | --- |
 | `EvaluationType__c` | `FORMULA` |
 | `PassConditionFormula__c` | `NOT(ISBLANK(BillingCountry))` |
-| `ApplicabilityMode__c` | `FORMULA` |
+| `ApplicabilityMode__c` | `WHEN_FORMULA_TRUE` |
 | `ApplicabilityFormula__c` | `ISPICKVAL(Type, "Partner")` |
 
 Shipped: `Account_Adv_PartnerBillingCountry`.
@@ -527,7 +549,7 @@ Copy this value into `FailureMessage__c`:
 {!record.Name fallback="this record"} has no completed tasks or logged events in the last 90 days.
 ```
 
-Sample Rule in the Examples **apex-advanced-checks** pack (see pack README). Doc: [apex/01-recent-activity.md](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/01-recent-activity.md).
+This class ships with Record Health Check. See [Recent Account activity](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/01-recent-activity.md).
 
 ### 10.7 Unhealthy open Opportunities (Apex: Child aggregation)
 
@@ -536,7 +558,7 @@ Sample Rule in the Examples **apex-advanced-checks** pack (see pack README). Doc
 | `EvaluationType__c` | `APEX` |
 | `ApexClass__c` | `AccountOpenOpportunityHealthCheck` |
 | `ApexParametersJson__c` | `{"staleDays": 30}` |
-| `ApplicabilityMode__c` | `SOQL` |
+| `ApplicabilityMode__c` | `WHEN_COUNT_QUERY_MATCHES` |
 | `ApplicabilityCountQuery__c` | `SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false` |
 | `ApplicabilityCountOperator__c` | `GREATER_THAN` |
 | `ApplicabilityCountThreshold__c` | `0` |
@@ -552,7 +574,7 @@ Doc: [apex/02-open-opportunity-health.md](https://github.com/gkolan/RecordHealth
 | `EvaluationType__c` | `APEX` |
 | `ApexClass__c` | `AccountStrategicReadinessCheck` *(not in package: deploy separately)* |
 | `ApexParametersJson__c` | `{"minScore": 80, "activityDaysBack": 60}` |
-| `ApplicabilityMode__c` | `FORMULA` |
+| `ApplicabilityMode__c` | `WHEN_FORMULA_TRUE` |
 | `ApplicabilityFormula__c` | `ISPICKVAL(Type, "Strategic")` |
 
 Include a **Class sketch** when outputting this pattern. Full reference code: [apex/03-strategic-readiness.md](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/apex/03-strategic-readiness.md).
@@ -569,7 +591,7 @@ Include a **Class sketch** when outputting this pattern. Full reference code: [a
 
 ## 12. Example library (reference for LLMs)
 
-Core ships no example Custom Metadata. Use the local [examples library](../examples/README.md) to
+Record Health Check ships clearly prefixed example Custom Metadata. Use the local [examples library](../examples/README.md) to
 select a distinct pattern, then output configuration the reader can create in Salesforce Setup.
 
 | Evaluation Type | Use the examples to learn |

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
-import completeRun from "@salesforce/apex/RecordHealthCheckController.completeRun";
 import {
   synthesizeResult,
   normalizeResult,
@@ -27,8 +25,10 @@ export class HealthCheckRunner {
   _activeEvaluations = 0;
   _evaluationQueue = [];
 
-  constructor(host) {
+  constructor(host, services) {
     this.host = host;
+    this.evaluateCheck = services.evaluateCheck;
+    this.completeRun = services.completeRun;
   }
 
   get isRunning() {
@@ -60,6 +60,14 @@ export class HealthCheckRunner {
 
   run(reuseRunId = false, source = "USER_INITIATED") {
     if (this._runInProgress) return;
+    if (!["USER_INITIATED", "RUN_ON_LOAD"].includes(source)) {
+      throw Object.assign(
+        new Error("The execution source is not recognized."),
+        {
+          reasonCode: "INVALID_EXECUTION_SOURCE"
+        }
+      );
+    }
     this._runInProgress = true;
     if (!reuseRunId || !this._runId) {
       this._runId = newRunId();
@@ -69,7 +77,7 @@ export class HealthCheckRunner {
     this.host.runComplete = false;
     this._resultBuffer = {};
     this._stopped = false;
-    this._source = source === "USER_INITIATED" ? source : "RUN_ON_LOAD";
+    this._source = source;
     this._resetEvaluationPool();
 
     // Reset all rows to PENDING and clear previous results
@@ -88,7 +96,7 @@ export class HealthCheckRunner {
 
     // Pre-seed circular dependencies as errors so their Promises resolve immediately
     // rather than hanging indefinitely awaiting each other.
-    // Message wording matches RecordHealthCheckEngine (names the blocking prereq).
+    // Message wording matches RecordHealthCheckScopePipeline (names the blocking prerequisite).
     const cycleNames = detectDependencyCycles(this.host.checks);
     const checkMap = {};
     for (const check of this.host.checks) {
@@ -97,7 +105,7 @@ export class HealthCheckRunner {
     for (const name of cycleNames) {
       const check = checkMap[name];
       if (check) {
-        const prereqName = check.dependsOnRuleDeveloperName || name;
+        const prereqName = check.dependsOnRuleDeveloperName;
         this._resultBuffer[name] = synthesizeResult(
           check,
           "UNABLE_TO_EVALUATE",
@@ -186,37 +194,34 @@ export class HealthCheckRunner {
   async _runOneCheck(check, taskMap, checkMap, runCheck, token) {
     if (this._stopped || token !== this._runToken) return;
 
-    // Client-side dependency gate before calling Apex.
+    // Enforce the Prerequisite Rule before calling Apex.
     if (check.dependsOnRuleDeveloperName) {
-      const dependencyCheck = checkMap[check.dependsOnRuleDeveloperName];
-      if (!dependencyCheck) {
-        // Dependency was not included in this run (e.g. excluded by the framework cap).
-        // Skip with a clear reason rather than silently falling through.
+      const prerequisiteRule = checkMap[check.dependsOnRuleDeveloperName];
+      if (!prerequisiteRule) {
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
           "DEPENDENCY_NOT_IN_RUN",
-          `Skipped because "${check.dependsOnRuleDeveloperName}" was not included in this run.`
+          `Skipped because Prerequisite Rule "${check.dependsOnRuleDeveloperName}" was not included in the Framework run.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
         return;
       }
       if (!taskMap[check.dependsOnRuleDeveloperName]) {
-        runCheck(dependencyCheck);
+        runCheck(prerequisiteRule);
       }
       await taskMap[check.dependsOnRuleDeveloperName];
       if (this._stopped || token !== this._runToken) return;
       const prereqResult = this._resultBuffer[check.dependsOnRuleDeveloperName];
       if (!prereqResult || prereqResult.status !== "PASS") {
         const prereqLabel =
-          (dependencyCheck && dependencyCheck.label) ||
-          check.dependsOnRuleDeveloperName;
+          prerequisiteRule.label || check.dependsOnRuleDeveloperName;
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
           "PREREQUISITE_NOT_MET",
-          `Skipped because "${prereqLabel}" did not pass.`
+          `Skipped because Prerequisite Rule "${prereqLabel}" did not pass.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
@@ -240,9 +245,9 @@ export class HealthCheckRunner {
 
     let result;
     try {
-      result = await evaluateCheck({
-        checkSetDeveloperName: this.host.checkSetName,
-        ruleDeveloperName: check.developerName,
+      result = await this.evaluateCheck({
+        checkSetQualifiedApiName: this.host.checkSetName,
+        ruleQualifiedApiName: check.qualifiedApiName,
         recordId: this.host.recordId,
         runId: this._runId,
         source: this._source
@@ -319,13 +324,14 @@ export class HealthCheckRunner {
       this.host.hasCompletedRunOnce = true;
       this._runInProgress = false;
       if (this._source === "USER_INITIATED") {
-        completeRun({
-          checkSetDeveloperName: this.host.checkSetName,
+        this.completeRun({
+          checkSetQualifiedApiName: this.host.checkSetName,
           runId: this._runId,
           source: this._source,
-          recordId: this.host.recordId
-        }).catch(() => {
-          // Lifecycle publication is best effort and never changes UI results.
+          recordId: this.host.recordId,
+          resultsJson: JSON.stringify(Object.values(this._resultBuffer))
+        }).catch((error) => {
+          this.host._handleCompletionFailure?.(error);
         });
       }
       if (this.host.showDiagnostics) {

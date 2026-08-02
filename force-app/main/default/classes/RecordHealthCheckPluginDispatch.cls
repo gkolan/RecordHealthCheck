@@ -43,6 +43,50 @@ public with sharing class RecordHealthCheckPluginDispatch {
   }
 
   /**
+   * Constructs a plugin inside the same counter-and-savepoint fence used for
+   * evaluation. Constructors are executable Apex and therefore part of the
+   * extension boundary, not configuration-only reflection.
+   */
+  public static RecordHealthCheckRule instantiate(Type pluginType) {
+    if (pluginType == null) {
+      return null;
+    }
+    Savepoint before = Database.setSavepoint();
+    Integer dmlBefore = Limits.getDmlStatements();
+    Integer dmlRowsBefore = Limits.getDmlRows();
+    Integer calloutsBefore = Limits.getCallouts();
+    Integer queueableBefore = Limits.getQueueableJobs();
+    Integer futureBefore = Limits.getFutureCalls();
+    Integer emailBefore = Limits.getEmailInvocations();
+    Object instance;
+    Exception constructionFailure;
+    try {
+      instance = pluginType.newInstance();
+    } catch (Exception ex) {
+      constructionFailure = ex;
+    } finally {
+      SideEffectException violation = detect(
+        dmlBefore,
+        dmlRowsBefore,
+        calloutsBefore,
+        queueableBefore,
+        futureBefore,
+        emailBefore
+      );
+      if (violation != null) {
+        Database.rollback(before);
+        throw violation;
+      }
+    }
+    if (constructionFailure != null) {
+      throw constructionFailure;
+    }
+    return instance instanceof RecordHealthCheckRule
+      ? (RecordHealthCheckRule) instance
+      : null;
+  }
+
+  /**
    * Runs one plugin against one scope and returns an outcome per record Id.
    *
    * @throws SideEffectException when the plugin mutated state. Fatal by design:
@@ -128,6 +172,7 @@ public with sharing class RecordHealthCheckPluginDispatch {
    * Compares resource counters captured around the call. A nonzero delta is a
    * contract violation regardless of intent.
    */
+  @TestVisible
   private static SideEffectException detect(
     Integer dmlBefore,
     Integer dmlRowsBefore,

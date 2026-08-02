@@ -5,18 +5,15 @@
 
 /**
  * Example RecordHealthCheckRule — flags pending approval steps whose assigned
- * user is inactive, and names the offending user(s) in the failure message.
+ * user is inactive and returns the offending users as a typed Found list.
  * Built for Salesforce Advanced Approvals (managed package "sbaa"), but every
  * object and field API name is read dynamically and may be overridden through
  * ApexParametersJson__c. Because nothing references the managed package at compile
  * time, this class compiles and deploys in orgs that do NOT have Advanced
  * Approvals installed — it simply returns UNABLE_TO_EVALUATE there.
  * {"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c"
- * "userField":"sbaa__User__c","statusField":"sbaa__Status__c"
- * "pendingStatuses":["Requested"],"maxNames":5}
- * Unlike the other Apex examples, this class sets its own failure message so it
- * can list the inactive approver names. The evaluator preserves a non-blank
- * plugin message; severity and label still come from the metadata record.
+ * "userField":"sbaa__User__c","statusField":"sbaa__Status__c",
+ * "pendingStatuses":["Requested"]}
  */
 global with sharing class ApprovalInactiveApproverCheck implements RecordHealthCheckRule {
   @TestVisible
@@ -30,9 +27,6 @@ global with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
   private static final List<String> DEFAULT_PENDING_STATUSES = new List<String>{
     'Requested'
   };
-  private static final Integer DEFAULT_MAX_NAMES = 5;
-  private static final Integer MIN_MAX_NAMES = 1;
-  private static final Integer MAX_MAX_NAMES = 25;
 
   global Map<Id, RecordHealthCheckOutcome> evaluate(
     RecordHealthCheckScope scope
@@ -140,6 +134,7 @@ global with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
     return byRecord;
   }
 
+  @TestVisible
   private static Map<Id, String> loadInactiveNames(Set<Id> assignedUserIds) {
     Map<Id, String> names = new Map<Id, String>();
     if (assignedUserIds == null || assignedUserIds.isEmpty()) {
@@ -204,10 +199,6 @@ global with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
     public String userField = DEFAULT_USER_FIELD;
     public String statusField = DEFAULT_STATUS_FIELD;
     public List<String> pendingStatuses = DEFAULT_PENDING_STATUSES.clone();
-    // Retained as a parsed setting, but the check no longer renders names into
-    // a sentence: how many to show before truncating is a display decision the
-    // core owns through DISPLAY_LIST_PREVIEW_CAP.
-    public Integer maxNames = DEFAULT_MAX_NAMES;
   }
 
   @TestVisible
@@ -246,18 +237,6 @@ global with sharing class ApprovalInactiveApproverCheck implements RecordHealthC
       }
     }
 
-    Object maxRaw = parameters.get('maxNames');
-    if (maxRaw != null) {
-      try {
-        Integer parsed = Integer.valueOf(String.valueOf(maxRaw));
-        if (parsed >= MIN_MAX_NAMES && parsed <= MAX_MAX_NAMES) {
-          settings.maxNames = parsed;
-        }
-      } catch (Exception ex) {
-        // Invalid maxNames is non-fatal: restore the documented default explicitly.
-        settings.maxNames = DEFAULT_MAX_NAMES;
-      }
-    }
     return settings;
   }
 

@@ -7,6 +7,120 @@
 public class RecordHealthCheckTestDataFactory {
   public static final String HEALTHY_ACCOUNT_NAME_PREFIX = 'Record Health Test Account';
 
+  public static Account account(Map<String, Object> fields) {
+    return (Account) buildRecord(Account.SObjectType, fields);
+  }
+
+  public static Contact contact(Map<String, Object> fields) {
+    return (Contact) buildRecord(Contact.SObjectType, fields);
+  }
+
+  public static Opportunity opportunity(Map<String, Object> fields) {
+    return (Opportunity) buildRecord(Opportunity.SObjectType, fields);
+  }
+
+  public static Task task(Map<String, Object> fields) {
+    return (Task) buildRecord(Task.SObjectType, fields);
+  }
+
+  public static Event event(Map<String, Object> fields) {
+    return (Event) buildRecord(Event.SObjectType, fields);
+  }
+
+  public static Case caseRecord(Map<String, Object> fields) {
+    return (Case) buildRecord(Case.SObjectType, fields);
+  }
+
+  public static User user(Map<String, Object> fields) {
+    return (User) buildRecord(User.SObjectType, fields);
+  }
+
+  public static Record_Health_Check_Rule__mdt rule(Map<String, Object> fields) {
+    return (Record_Health_Check_Rule__mdt) buildRecord(
+      Record_Health_Check_Rule__mdt.SObjectType,
+      fields
+    );
+  }
+
+  public static Record_Health_Check_Set__mdt checkSet(
+    Map<String, Object> fields
+  ) {
+    return (Record_Health_Check_Set__mdt) buildRecord(
+      Record_Health_Check_Set__mdt.SObjectType,
+      fields
+    );
+  }
+
+  public static User currentUser() {
+    return RecordHealthCheckPersonaTestDataFactory.currentUser();
+  }
+
+  /** Assigns a packaged permission set to a test user. */
+  public static void assignPermissionSet(
+    User userRecord,
+    String permissionSetName
+  ) {
+    PermissionSet permissionSet = [
+      SELECT Id
+      FROM PermissionSet
+      WHERE Name = :permissionSetName
+      LIMIT 1
+    ];
+    System.runAs(currentUser()) {
+      insert new PermissionSetAssignment(
+        AssigneeId = userRecord.Id,
+        PermissionSetId = permissionSet.Id
+      );
+    }
+  }
+
+  /** Creates a uniquely named inactive user for permission and ownership tests. */
+  public static User createInactiveUser(String firstName, String lastName) {
+    return RecordHealthCheckPersonaTestDataFactory.createInactiveUser(
+      firstName,
+      lastName
+    );
+  }
+
+  public static Id syntheticId(
+    Schema.SObjectType objectType,
+    Integer sequence
+  ) {
+    String suffix = String.valueOf(sequence ?? 0).leftPad(12, '0');
+    return Id.valueOf(objectType.getDescribe().getKeyPrefix() + suffix);
+  }
+
+  private static SObject buildRecord(
+    Schema.SObjectType objectType,
+    Map<String, Object> fields
+  ) {
+    SObject result = objectType.newSObject();
+    for (String fieldName : fields?.keySet() ?? new Set<String>()) {
+      result.put(fieldName, fields.get(fieldName));
+    }
+    return result;
+  }
+
+  public static String qualifiedRuleName(String developerName) {
+    return [
+      SELECT QualifiedApiName
+      FROM Record_Health_Check_Rule__mdt
+      WHERE DeveloperName = :developerName
+      LIMIT 1
+    ]
+    .QualifiedApiName;
+  }
+
+  public static String qualifiedCheckSetName(String developerName) {
+    return [
+      SELECT QualifiedApiName
+      FROM Record_Health_Check_Set__mdt
+      WHERE DeveloperName = :developerName
+      LIMIT 1
+    ]
+    .QualifiedApiName;
+  }
+
   public static Boolean hasIntegrationFixtures() {
     return [
         SELECT COUNT()
@@ -82,6 +196,33 @@ public class RecordHealthCheckTestDataFactory {
     return accountRecord;
   }
 
+  /** Persists arbitrary test records while keeping test DML at one review point. */
+  public static void createRecords(List<SObject> records) {
+    insertAllowingDuplicateRules(records);
+  }
+
+  public static void createAccounts(List<Account> records) {
+    List<SObject> values = new List<SObject>();
+    values.addAll(records);
+    insertAllowingDuplicateRules(values);
+  }
+
+  public static void createOpportunities(List<Opportunity> records) {
+    List<SObject> values = new List<SObject>();
+    values.addAll(records);
+    insertAllowingDuplicateRules(values);
+  }
+
+  public static User createMinimumAccessUser(String alias) {
+    return RecordHealthCheckPersonaTestDataFactory.createMinimumAccessUser(
+      alias
+    );
+  }
+
+  public static User createUser(User userRecord) {
+    return RecordHealthCheckPersonaTestDataFactory.createUser(userRecord);
+  }
+
   /**
    * A user pinned to a locale, for tests that assert on grouping separators or
    * date formats. Running those assertions under System.runAs keeps them stable
@@ -91,28 +232,10 @@ public class RecordHealthCheckTestDataFactory {
    * DML in the calling test.
    */
   public static User createUserWithLocale(String localeSidKey, String alias) {
-    Profile standardProfile = [
-      SELECT Id
-      FROM Profile
-      WHERE Name = 'Standard User'
-      LIMIT 1
-    ];
-    String token = uniqueToken();
-    User localeUser = new User(
-      ProfileId = standardProfile.Id,
-      LastName = 'Display Format',
-      Alias = alias,
-      Email = 'rhc.' + alias + '@example.invalid',
-      Username = 'rhc.' + alias + '.' + token + '@example.invalid',
-      EmailEncodingKey = 'UTF-8',
-      LanguageLocaleKey = 'en_US',
-      LocaleSidKey = localeSidKey,
-      TimeZoneSidKey = 'America/Los_Angeles'
+    return RecordHealthCheckPersonaTestDataFactory.createUserWithLocale(
+      localeSidKey,
+      alias
     );
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      insert localeUser;
-    }
-    return localeUser;
   }
 
   public static Account createDeletedAccount(String name) {
@@ -159,6 +282,10 @@ public class RecordHealthCheckTestDataFactory {
     return contactRecord;
   }
 
+  public static Contact createContact(Map<String, Object> fields) {
+    return createContact(contact(fields));
+  }
+
   public static Opportunity createOpportunity(
     Id accountId,
     String name,
@@ -176,6 +303,16 @@ public class RecordHealthCheckTestDataFactory {
     return opportunityRecord;
   }
 
+  public static Opportunity createOpportunity(Opportunity opportunity) {
+    List<SObject> values = new List<SObject>{ opportunity };
+    insertAllowingDuplicateRules(values);
+    return opportunity;
+  }
+
+  public static Opportunity createOpportunity(Map<String, Object> fields) {
+    return createOpportunity(opportunity(fields));
+  }
+
   public static Task createCompletedTask(Id whatId) {
     return createTask(
       new Task(
@@ -191,6 +328,20 @@ public class RecordHealthCheckTestDataFactory {
     populateRequiredFields(taskRecord);
     insertAllowingDuplicateRules(new List<SObject>{ taskRecord });
     return taskRecord;
+  }
+
+  public static Task createTask(Map<String, Object> fields) {
+    return createTask(task(fields));
+  }
+
+  public static Event createEvent(Event eventRecord) {
+    populateRequiredFields(eventRecord);
+    insertAllowingDuplicateRules(new List<SObject>{ eventRecord });
+    return eventRecord;
+  }
+
+  public static Event createEvent(Map<String, Object> fields) {
+    return createEvent(event(fields));
   }
 
   public static List<Contact> createContacts(List<Contact> contacts) {
@@ -215,7 +366,7 @@ public class RecordHealthCheckTestDataFactory {
 
     Database.SaveResult[] saveResults = Database.insert(records, dmlOptions);
     for (Database.SaveResult saveResult : saveResults) {
-      System.assertEquals(
+      Assert.areEqual(
         true,
         saveResult.isSuccess(),
         'Test data insert failed: ' + JSON.serialize(saveResult.getErrors())
@@ -317,50 +468,6 @@ public class RecordHealthCheckTestDataFactory {
       FROM Account
       WHERE Name LIKE :namePattern
       ORDER BY CreatedDate DESC
-      LIMIT 1
-    ];
-  }
-
-  public static Record_Health_Check_Rule__mdt queryRule(String developerName) {
-    return [
-      SELECT
-        DeveloperName,
-        MasterLabel,
-        CheckTitle__c,
-        CheckDescription__c,
-        EvaluationOrder__c,
-        IsActive__c,
-        EvaluationType__c,
-        FailureSeverity__c,
-        PassConditionFormula__c,
-        FindInListFormula__c,
-        SourceQuery__c,
-        SourceQueryField__c,
-        ExpectedValueSource__c,
-        ExpectedFixedValue__c,
-        ExpectedRecordFormula__c,
-        ComparisonQuery__c,
-        ComparisonQueryField__c,
-        ComparisonOperator__c,
-        QueryResultHandling__c,
-        NoRowsResult__c,
-        EmptyValueHandling__c,
-        FailureMessage__c,
-        UnableToEvaluateMessage__c,
-        ApexClass__c,
-        ApexParametersJson__c,
-        MaxQueryRows__c,
-        PrerequisiteRule__c,
-        ApplicabilityMode__c,
-        ApplicabilityFormula__c,
-        ApplicabilityCountQuery__c,
-        ApplicabilityCountOperator__c,
-        ApplicabilityCountThreshold__c,
-        Record_Health_Check_Set__c,
-        Record_Health_Check_Set__r.IsActive__c,
-        Record_Health_Check_Set__r.ObjectApiName__c
-      FROM Record_Health_Check_Rule__mdt
-      WHERE DeveloperName = :developerName
       LIMIT 1
     ];
   }

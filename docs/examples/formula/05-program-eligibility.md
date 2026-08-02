@@ -24,7 +24,7 @@ A territory planner is reviewing Accounts for a small-business program whose con
 | Skill | How this example teaches it |
 | --- | --- |
 | Compare a number with a threshold | Employee count is evaluated against the program limit. |
-| Make **Found** and **Expected** meaningful | Users see the current count and required maximum. |
+| Make **Found** and **Expected** meaningful | Users see the current count and required minimum. |
 | Write an eligibility message | The result explains the decision without exposing formula syntax. |
 
 ## Why use Verify with a formula
@@ -67,7 +67,7 @@ Keep the display formulas consistent with the Pass Condition. The engine does no
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Compares Number of Employees with a minimum of 10 and displays both values. |
-| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Data Quality |
+| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Eligibility |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Warning |
 | **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | Names the record, then points to Found and Expected: copy it from below the table |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to compare employee count. Confirm the user can read Number of Employees. |
@@ -78,7 +78,7 @@ Keep the display formulas consistent with the Pass Condition. The engine does no
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/edit` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `80` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 Copy this value into **Message When Failed**:
 
@@ -108,7 +108,7 @@ Use these Check Set values:
 | **Found/Expected Display** | Every check |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees

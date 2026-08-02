@@ -13,8 +13,8 @@ Use a different scratch-org alias when needed:
 DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-demo.sh my-demo-alias
 ```
 
-The setup deploys the core package, the `Example_Account_Relationship_Risk`
-check set and its eight `Example_` rules, filtered example list views, reviewed
+The setup deploys the Framework package, then explicitly deploys the retained integration-fixture
+copy of the optional Check Sets and Rules. It also deploys the demo record page and reviewed
 Set and Rule layouts, and an Account record page containing the health-check
 component. It assigns `Record_Health_Check_Admin`, creates a login password,
 and seeds the complete Acme scenario plus the realistic Account, Contact, and Opportunity portfolio

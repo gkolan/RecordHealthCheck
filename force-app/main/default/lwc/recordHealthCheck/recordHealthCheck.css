@@ -62,14 +62,8 @@
   overflow: visible;
 }
 
-/* SLDS 1 cards use tokenized elevation. SLDS 2 remains flat by construction:
-   the shared card rule does not declare box-shadow at all. */
-.rhc-theme--slds1 .rhc-card {
+.rhc-theme .rhc-card {
   box-shadow: var(--rhc-theme-card-shadow);
-}
-
-.rhc-theme--slds2 .rhc-card {
-  border: 0 !important;
 }
 
 .rhc-body > :last-child {

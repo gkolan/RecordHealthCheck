@@ -5,7 +5,7 @@ Run from the repository root with:
   python3 scripts/release/inventory_bulk_query_shapes.py
   python3 scripts/release/inventory_bulk_query_shapes.py --check
 
-Core 2.0.0 makes every Evaluation Type scope-based. A single-record template such
+The framework makes every Evaluation Type scope-based. A single-record template such
 as `SELECT COUNT() FROM Case WHERE AccountId = {!record.Id}` cannot be bulkified by
 swapping the token for `IN :scope.recordIds`: the engine also needs a column that
 attributes each returned row back to one input record, and a few shapes have no
@@ -49,7 +49,6 @@ TOKEN_INDIRECT = "TOKEN_INDIRECT"
 SCOPE_INVARIANT = "SCOPE_INVARIANT"
 ORDERED_PICK_AGGREGATE = "ORDERED_PICK_AGGREGATE"
 ORDERED_PICK_IN_MEMORY = "ORDERED_PICK_IN_MEMORY"
-ANTI_CORRELATED_IN_MEMORY = "ANTI_CORRELATED_IN_MEMORY"
 UNCLASSIFIED = "UNCLASSIFIED"
 
 STRATEGY_SUMMARY = {
@@ -60,12 +59,11 @@ STRATEGY_SUMMARY = {
     SCOPE_INVARIANT: "No record token; one query serves every record in the scope",
     ORDERED_PICK_AGGREGATE: "ORDER BY + LIMIT 1 on the selected field becomes MIN/MAX with GROUP BY",
     ORDERED_PICK_IN_MEMORY: "ORDER BY + LIMIT 1 on another field; rank per record in Apex",
-    ANTI_CORRELATED_IN_MEMORY: "Negated correlation has no grouped form; filter per record in Apex",
 }
 
 # Strategies that resolve rows in Apex rather than in SOQL. These are the ones the
 # per-scope row cap governs, because the engine drops the per-record predicate.
-IN_MEMORY_STRATEGIES = {ORDERED_PICK_IN_MEMORY, ANTI_CORRELATED_IN_MEMORY}
+IN_MEMORY_STRATEGIES = {ORDERED_PICK_IN_MEMORY}
 
 # ─── Patterns ────────────────────────────────────────────────────────────────
 
@@ -99,14 +97,14 @@ def classify(soql):
     negations = RE_NEQ_TOKEN.findall(soql)
     limit = RE_LIMIT.search(soql)
     order_by = RE_ORDER_BY.search(soql)
+    order_clause = re.search(r"(?is)\bORDER\s+BY\s+(.+?)(?:\bLIMIT\b|$)", soql)
 
-    # A negated correlation ("every OTHER record") has no GROUP BY form at all.
+    # A negated correlation ("every OTHER record") has no safe bounded bulk form.
     if negations:
-        field, token = negations[0]
         return (
-            ANTI_CORRELATED_IN_MEMORY,
-            f"{field} != record.{token}",
-            "Query the scope-wide set once without the predicate, then exclude per record",
+            UNCLASSIFIED,
+            "-",
+            "Negated record correlation is unsupported",
         )
 
     if not tokens:
@@ -114,6 +112,13 @@ def classify(soql):
             SCOPE_INVARIANT,
             "-",
             "Same rows for every record; evaluate once and reuse",
+        )
+
+    if limit and order_clause and "," in order_clause.group(1):
+        return (
+            UNCLASSIFIED,
+            "-",
+            "Multi-field ORDER BY with LIMIT has no supported bulk form",
         )
 
     if not equalities:
@@ -219,9 +224,9 @@ def render(rows):
         "# Bulk query shape inventory",
         "",
         "Every admin-authored SOQL template in this repository, classified into the bulk",
-        "execution strategy that Core 2.0.0 uses to run it once per scope instead of once",
+        "execution strategy that the framework uses to run it once per scope instead of once",
         "per record. The grammar these strategies belong to is described in",
-        "`specs/core-contracts/04a-bulk-query-grammar.md`.",
+        "`specs/framework-contracts/04a-bulk-query-grammar.md`.",
         "",
         f"**{len(rows)} templates · {len(counts)} strategies · "
         f"{counts.get(UNCLASSIFIED, 0)} unclassified**",
@@ -275,6 +280,11 @@ SELF_TEST_CASES = (
     ),
     ("SELECT Name FROM Restricted_Country__c WHERE Active__c = true", SCOPE_INVARIANT),
     (
+        "SELECT Name FROM Restricted_Country__c WHERE Active__c = true "
+        "ORDER BY Region__c, Name",
+        SCOPE_INVARIANT,
+    ),
+    (
         "SELECT CloseDate FROM Opportunity WHERE AccountId = {!record.Id} "
         "ORDER BY CloseDate ASC LIMIT 1",
         ORDERED_PICK_AGGREGATE,
@@ -285,8 +295,18 @@ SELF_TEST_CASES = (
         ORDERED_PICK_IN_MEMORY,
     ),
     (
+        "SELECT CloseDate FROM Opportunity WHERE AccountId = {!record.Id} "
+        "ORDER BY CloseDate DESC, Amount DESC LIMIT 1",
+        UNCLASSIFIED,
+    ),
+    (
+        "SELECT Name FROM Contact WHERE AccountId = {!record.Id} "
+        "ORDER BY LastName, FirstName",
+        CHILD_DIRECT,
+    ),
+    (
         "SELECT Industry FROM Account WHERE Id != {!record.Id} AND Industry != null",
-        ANTI_CORRELATED_IN_MEMORY,
+        UNCLASSIFIED,
     ),
     # Must be rejected: a per-record LIMIT above 1 has no grouped equivalent, and a
     # token used outside an equality gives the engine nothing to correlate on.

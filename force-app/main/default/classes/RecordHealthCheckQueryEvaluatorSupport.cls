@@ -5,6 +5,10 @@
 
 /** Shared execution and empty-result behavior for both SOQL evaluators. */
 public with sharing class RecordHealthCheckQueryEvaluatorSupport {
+  private static final Pattern FROM_OBJECT_PATTERN = Pattern.compile(
+    '(?is)\\bFROM\\s+([A-Za-z0-9_]+)'
+  );
+
   public static List<SObject> runQuery(String soql, Integer maxRows) {
     String queryToRun;
     try {
@@ -39,9 +43,9 @@ public with sharing class RecordHealthCheckQueryEvaluatorSupport {
     return rows;
   }
 
-  public static RecordHealthCheckResult buildEmptyResult(
+  public static RecordHealthCheckInternalResult buildEmptyResult(
     Record_Health_Check_Rule__mdt rule,
-    RecordHealthCheckResult result,
+    RecordHealthCheckInternalResult result,
     RecordHealthCheckValueSource.Detail actualValueSource
   ) {
     result.actualValueSource = actualValueSource;
@@ -66,8 +70,8 @@ public with sharing class RecordHealthCheckQueryEvaluatorSupport {
     return result;
   }
 
-  public static RecordHealthCheckResult buildNullIndeterminateResult(
-    RecordHealthCheckResult result
+  public static RecordHealthCheckInternalResult buildNullIndeterminateResult(
+    RecordHealthCheckInternalResult result
   ) {
     result.status = 'SKIPPED';
     result.reasonCode = 'VALUE_IS_EMPTY';
@@ -81,5 +85,43 @@ public with sharing class RecordHealthCheckQueryEvaluatorSupport {
     return String.isNotBlank(rule.UnableToEvaluateMessage__c)
       ? rule.UnableToEvaluateMessage__c
       : 'This check could not be evaluated. Contact your administrator.';
+  }
+
+  /** Returns a best-effort plural label for the source query's object. */
+  public static String pluralizeObject(Record_Health_Check_Rule__mdt rule) {
+    String objectName;
+    if (String.isNotBlank(rule.SourceQuery__c)) {
+      Matcher matcher = FROM_OBJECT_PATTERN.matcher(rule.SourceQuery__c);
+      if (matcher.find()) {
+        objectName = matcher.group(1);
+      }
+    }
+    if (String.isBlank(objectName)) {
+      return 'records';
+    }
+    Schema.SObjectType objectType = RecordHealthCheckDescribeCache.resolveSObjectType(
+      objectName
+    );
+    if (objectType != null) {
+      return RecordHealthCheckDescribeCache.describeSObject(objectType)
+        .getLabelPlural();
+    }
+    String lower = objectName.toLowerCase();
+    if (
+      lower.endsWith('y') &&
+      !'aeiou'.contains(lower.substring(lower.length() - 2, lower.length() - 1))
+    ) {
+      return objectName.substring(0, objectName.length() - 1) + 'ies';
+    }
+    if (
+      lower.endsWith('s') ||
+      lower.endsWith('x') ||
+      lower.endsWith('z') ||
+      lower.endsWith('ch') ||
+      lower.endsWith('sh')
+    ) {
+      return objectName + 'es';
+    }
+    return objectName + 's';
   }
 }

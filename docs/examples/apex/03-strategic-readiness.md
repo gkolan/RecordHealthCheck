@@ -29,7 +29,7 @@ separate reviews:
 | --- | --- |
 | Build a weighted readiness score | Apex combines several Account signals into one score. |
 | Keep thresholds configurable | Apex Parameters (JSON) lets an admin tune the decision. |
-| Explain a calculated outcome | The result shows the score, target, and missing readiness criteria. |
+| Explain a calculated outcome | The result shows the score and passing target; the guidance names the four inputs to review. |
 
 ## Readiness criteria
 
@@ -71,16 +71,16 @@ Before activation, choose the policy that matches your process:
 
 | Card value | Meets minimum | Below minimum | Not Strategic |
 | --- | --- | --- | --- |
-| **Status** | `PASS` | `FAIL` | `SKIP` |
-| **Found** | Score plus the readiness items met | Score plus the readiness items met | Not applicable |
-| **Expected** | Minimum plus any items still missing | Minimum plus the items to improve | Not applicable |
+| **Status** | `PASS` | `FAIL` | `SKIPPED` |
+| **Found** | Numeric score from `0` through `100` | Numeric score from `0` through `100` | Not applicable |
+| **Expected** | Configured minimum score | Configured minimum score | Not applicable |
 | **Message** | None | Configured Critical message | Applicability explains skip |
 
 ## Why use Verify with Apex
 
 | Approach | What the user gets |
 | --- | --- |
-| **One Verify with Apex** | One readiness result with a score out of 100, the criteria met, and the criteria that still need attention. An administrator can change the passing score in **Apex Parameters (JSON)**. |
+| **One Verify with Apex** | One readiness result with a score out of 100 and a configurable passing score. The failure and fix guidance names the four source areas to review. |
 | **Four separate Query or Rules that use Verify with a formula** | Four pass-or-fail results, one for Contacts, pipeline, activity, and billing. Use this approach when every area is required or should remain visible on its own. |
 | **Rules with prerequisites** | Checks can run in a required order, but their results are not added into one score. Use prerequisites when a later check should wait for an earlier check to pass. |
 
@@ -88,23 +88,23 @@ Before activation, choose the policy that matches your process:
 
 | Input in Apex | Where it comes from |
 | --- | --- |
-| `context.recordId` | The Account being evaluated at run time |
-| `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
+| `scope.recordIds` | The Accounts being evaluated in this run |
+| `scope.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
 Record Health Check supplies the Account ID automatically; leave it out of the parameter JSON:
 
-- On a Lightning record page, `context.recordId` is the ID of the open record.
-- From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
-- From Flow, it is the value supplied to the action's **Record ID** input.
+- On a Lightning record page, the scope normally contains the open record.
+- Bulk Apex requests can place as many as 200 record IDs in one scope.
+- Flow supplies its **Record ID** input to the scope-building pipeline.
 
 Use the supplied ID as a SOQL bind variable:
 
 ```apex
-Id accountId = context.recordId;
+List<Id> accountIds = scope.recordIds;
 ```
 
-The complete class below passes `context.recordId` to its Account, Contact, Opportunity, Task, and
-Event query methods.
+The complete class below queries Accounts, Contacts, Opportunities, Tasks, and Events once per
+scope and then assembles one score for every requested Account.
 
 ## Step 1: Understand the parameters
 
@@ -123,10 +123,10 @@ After deploying the class:
 2. Create or edit the Rule record.
 3. Paste the object into **Apex Parameters (JSON)** (`ApexParametersJson__c`) on `Record_Health_Check_Rule__mdt`.
 
-Record Health Check parses the JSON and supplies both named values in `context.parameters`.
+Record Health Check parses the JSON and supplies both named values in `scope.parameters`.
 `minScore` accepts `1`–`100`, and `activityDaysBack` accepts `1`–`3650`; missing or invalid values
 use 80 and 30. See
-[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
+[Parameter parsing patterns](../../reference/reference-apex.md#scope)
 for validation and type-conversion guidance.
 
 ## Implementation summary
@@ -134,8 +134,9 @@ for validation and type-conversion guidance.
 The class queries the
 three Account billing fields, counts visible Contacts, sums visible open Opportunity Amount, and
 counts visible completed Tasks plus Events inside the window. Each true criterion adds 25 points.
-It returns `PASS` when `score >= minScore`. Found shows the score and the items that earned points;
-Expected shows the minimum and the items that still need attention.
+It returns `PASS` when `score >= minScore`. Found shows the numeric score, and Expected shows the
+configured minimum. The Rule's guidance directs the user to Contacts, open pipeline, recent
+activity, and billing address when the score is low.
 
 Applicability evaluates `ISPICKVAL(Type, "Strategic")` before Apex runs. An open Opportunity with
 blank Amount earns no pipeline points; any missing billing component loses all billing points; one
@@ -154,13 +155,11 @@ This is the complete class deployed by the pack. Comments explain the Record Hea
  */
 
 /**
- * Example RecordHealthCheckRule that calculates one readiness score for
- * Strategic Accounts. This class, its test, and its Rule metadata are included
- * in packs/apex-advanced-checks/manifest/package.xml. Install Record Health
- * Check first, and then deploy that pack manifest.
- * Apex Parameters (JSON): {"minScore": 80, "activityDaysBack": 60}
+ * Reference RecordHealthCheckRule for a weighted Strategic Account readiness score.
+ * Example implementation retained here only as an integration-test fixture.
+ * {"minScore": 80, "activityDaysBack": 60}
  */
-public with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
+global with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_MIN_SCORE = 80;
   private static final Integer DEFAULT_ACTIVITY_DAYS = 30;
   private static final Integer MIN_SCORE = 1;
@@ -169,140 +168,152 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
   private static final Integer MAX_ACTIVITY_DAYS = 3650;
   private static final Integer POINTS_PER_CRITERION = 25;
 
-  public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-    // Record Health Check supplies the Account ID. Administrators control only
-    // the minimum score and activity window through Apex Parameters (JSON).
-    // Invalid values use the documented defaults instead of stopping the Rule.
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    List<Id> recordIds = scope.recordIds;
     Integer minScore = resolveInt(
-      context.parameters,
+      scope.parameters,
       'minScore',
       DEFAULT_MIN_SCORE,
       MIN_SCORE,
       MAX_SCORE
     );
     Integer activityDays = resolveInt(
-      context.parameters,
+      scope.parameters,
       'activityDaysBack',
       DEFAULT_ACTIVITY_DAYS,
       MIN_ACTIVITY_DAYS,
       MAX_ACTIVITY_DAYS
     );
 
-    // Read the billing fields with the running user's Salesforce access.
-    Account acct = [
-      SELECT BillingStreet, BillingCity, BillingCountry
-      FROM Account
-      WHERE Id = :context.recordId
-      WITH USER_MODE
-    ];
+    // Five queries for the whole scope, where the single-record version needed
+    // five per record. Each returns the SET of Accounts meeting one criterion,
+    // so an Account absent from a set simply scores nothing for it.
+    Map<Id, Account> accounts = loadAccounts(recordIds);
+    Set<Id> withContacts = accountsWithContacts(recordIds);
+    Set<Id> withPipeline = accountsWithOpenPipeline(recordIds);
+    Set<Id> withActivity = accountsWithRecentActivity(recordIds, activityDays);
 
-    // Each business requirement is worth 25 points. Keep the names of met and
-    // missing requirements so Found and Expected help users diagnose the score.
-    Integer score = 0;
-    List<String> metCriteria = new List<String>();
-    List<String> missingCriteria = new List<String>();
-    if (hasContacts(context.recordId)) {
-      score += POINTS_PER_CRITERION;
-      metCriteria.add('Contact');
-    } else {
-      missingCriteria.add('Contact');
-    }
-    if (hasOpenPipeline(context.recordId)) {
-      score += POINTS_PER_CRITERION;
-      metCriteria.add('open pipeline');
-    } else {
-      missingCriteria.add('open pipeline');
-    }
-    if (hasRecentActivity(context.recordId, activityDays)) {
-      score += POINTS_PER_CRITERION;
-      metCriteria.add('recent activity');
-    } else {
-      missingCriteria.add('recent activity');
-    }
-    if (billingComplete(acct)) {
-      score += POINTS_PER_CRITERION;
-      metCriteria.add('billing address');
-    } else {
-      missingCriteria.add('billing address');
-    }
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(minScore);
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
+    for (Id recordId : recordIds) {
+      Account acct = accounts.get(recordId);
+      if (acct == null) {
+        // Deleted between selection and execution, or invisible to this user.
+        // Never FAIL: failing a record the user cannot see would leak that it
+        // exists.
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate(
+            RecordHealthCheckReasonCodes.RECORD_NO_LONGER_AVAILABLE
+          )
+        );
+        continue;
+      }
 
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    // The Rule passes when the score meets the administrator's selected minimum.
-    result.status = score >= minScore ? 'PASS' : 'FAIL';
-    // Return useful Found and Expected values on both pass and fail. The Check
-    // Set controls whether users see them immediately or open them on demand.
-    result.actualValue =
-      score +
-      '/100; met: ' +
-      (metCriteria.isEmpty() ? 'none' : String.join(metCriteria, ', '));
-    result.expectedValue =
-      minScore +
-      '+; improve: ' +
-      (missingCriteria.isEmpty()
-        ? 'all criteria met'
-        : String.join(missingCriteria, ', '));
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'Strategic readiness score',
-      String.valueOf(score),
-      'sum of met criteria'
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Minimum required score',
-      String.valueOf(minScore),
-      null
-    );
-    return result;
+      Integer score = 0;
+      if (withContacts.contains(recordId)) {
+        score += POINTS_PER_CRITERION;
+      }
+      if (withPipeline.contains(recordId)) {
+        score += POINTS_PER_CRITERION;
+      }
+      if (withActivity.contains(recordId)) {
+        score += POINTS_PER_CRITERION;
+      }
+      if (billingComplete(acct)) {
+        score += POINTS_PER_CRITERION;
+      }
+
+      results.put(
+        recordId,
+        (score >= minScore
+            ? RecordHealthCheckOutcome.pass('APEX_PASS')
+            : RecordHealthCheckOutcome.fail('APEX_FAIL'))
+          .withFound(RecordHealthCheckValue.ofCount(score))
+          .withComparison('GREATER_THAN_OR_EQUAL', expected)
+      );
+    }
+    return results;
   }
 
-  private static Boolean hasContacts(Id accountId) {
-    // A visible Contact earns the Contact-coverage points.
-    return [
-        SELECT COUNT()
-        FROM Contact
-        WHERE AccountId = :accountId
+  private static Map<Id, Account> loadAccounts(List<Id> recordIds) {
+    return new Map<Id, Account>(
+      [
+        SELECT Id, BillingStreet, BillingCity, BillingCountry
+        FROM Account
+        WHERE Id IN :recordIds
         WITH USER_MODE
-      ] > 0;
+      ]
+    );
   }
 
-  private static Boolean hasOpenPipeline(Id accountId) {
-    // SUM can be null when no visible open Opportunity has Amount. Null or zero
-    // does not earn pipeline points.
-    AggregateResult ar = [
-      SELECT SUM(Amount) total
+  private static Set<Id> accountsWithContacts(List<Id> recordIds) {
+    Set<Id> found = new Set<Id>();
+    for (AggregateResult row : [
+      SELECT AccountId accountId
+      FROM Contact
+      WHERE AccountId IN :recordIds
+      WITH USER_MODE
+      GROUP BY AccountId
+    ]) {
+      found.add((Id) row.get('accountId'));
+    }
+    return found;
+  }
+
+  private static Set<Id> accountsWithOpenPipeline(List<Id> recordIds) {
+    Set<Id> found = new Set<Id>();
+    for (AggregateResult row : [
+      SELECT AccountId accountId, SUM(Amount) total
       FROM Opportunity
-      WHERE AccountId = :accountId AND IsClosed = FALSE
+      WHERE AccountId IN :recordIds AND IsClosed = FALSE
       WITH USER_MODE
-    ];
-    Decimal total = (Decimal) ar.get('total');
-    return total != null && total > 0;
+      GROUP BY AccountId
+    ]) {
+      Decimal total = (Decimal) row.get('total');
+      if (total != null && total > 0) {
+        found.add((Id) row.get('accountId'));
+      }
+    }
+    return found;
   }
 
-  private static Boolean hasRecentActivity(Id accountId, Integer daysBack) {
-    // A completed Task or an Event inside the selected window earns the recent
-    // activity points. Both queries respect the running user's access.
+  private static Set<Id> accountsWithRecentActivity(
+    List<Id> recordIds,
+    Integer daysBack
+  ) {
     Date cutoff = Date.today().addDays(-daysBack);
-    Integer tasks = [
-      SELECT COUNT()
+    Set<Id> found = new Set<Id>();
+    for (AggregateResult row : [
+      SELECT WhatId whatId
       FROM Task
-      WHERE WhatId = :accountId AND IsClosed = TRUE AND ActivityDate >= :cutoff
+      WHERE WhatId IN :recordIds AND IsClosed = TRUE AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
-    Integer events = [
-      SELECT COUNT()
+      GROUP BY WhatId
+    ]) {
+      found.add((Id) row.get('whatId'));
+    }
+    for (AggregateResult row : [
+      SELECT WhatId whatId
       FROM Event
-      WHERE WhatId = :accountId AND ActivityDate >= :cutoff
+      WHERE WhatId IN :recordIds AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
-    return tasks + events > 0;
+      GROUP BY WhatId
+    ]) {
+      found.add((Id) row.get('whatId'));
+    }
+    return found;
   }
 
   private static Boolean billingComplete(Account acct) {
-    // All three billing fields are required to earn the address points.
     return String.isNotBlank(acct.BillingStreet) &&
       String.isNotBlank(acct.BillingCity) &&
       String.isNotBlank(acct.BillingCountry);
   }
 
+  @TestVisible
   private static Integer resolveInt(
     Map<String, Object> parameters,
     String key,
@@ -310,7 +321,6 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
     Integer min,
     Integer max
   ) {
-    // Blank, nonnumeric, and out-of-range JSON values use the documented default.
     if (parameters == null) {
       return defaultValue;
     }
@@ -332,37 +342,39 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
 
 ## Context and result contract
 
-Record Health Check calls:
+Record Health Check calls the plugin once for a scope:
 
 ```apex
-RecordHealthCheckResult evaluate(RecordHealthCheckContext context)
+Map<Id, RecordHealthCheckOutcome> evaluate(RecordHealthCheckScope scope)
 ```
 
 The context contains:
 
-| Context field | Type | What it contains |
+| Scope field | Type | What it contains |
 | --- | --- | --- |
-| `recordId` | `Id` | Record being evaluated; use this value in SOQL |
-| `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; only requested fields are loaded |
+| `recordIds` | `List<Id>` | Detached, deduplicated IDs to evaluate; use the collection in bulk SOQL |
+| `objectApiName` | `String` | API name shared by every ID in the scope, such as `Account` |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
+| `checkSetDeveloperName` | `String` | Developer Name of the Check Set that supplied the Rule |
+| `runId` | `String` | Correlation identifier for the evaluation run |
 
-For a completed check, the class must return all three required values:
+The returned map must contain exactly one entry for every requested ID. Build each outcome with a
+status factory and typed values:
 
-| Result field | What the class must return |
+| Outcome field | What the class must return |
 | --- | --- |
-| `status` | `PASS` or `FAIL` |
-| `actualValue` | Nonblank **Found** value describing what the class observed |
-| `expectedValue` | Nonblank **Expected** value describing the passing requirement |
-| `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
-| `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
+| `status` | An outcome created by `pass`, `fail`, `unableToEvaluate`, or `skipped` |
+| `reasonCode` | A stable, nonblank code that explains the programmatic reason |
+| `found` | A typed `RecordHealthCheckValue` describing what the class observed |
+| `comparisonOperator` | The operator behind the decision, such as `GREATER_THAN_OR_EQUAL` |
+| `expected` | A typed `RecordHealthCheckValue` describing the passing requirement |
 
 For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
-runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
-duration, and other card details. An invalid status, blank Found value, blank Expected value, or
+runs. The framework supplies identity, label, severity, messages, display values, and diagnostics.
+Missing or extra map keys, a null outcome, an invalid status, forbidden side effects, or an
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
+[Returning an outcome](../../reference/reference-apex.md#outcome).
 
 
 ## Step 3: Configure the Rule
@@ -392,12 +404,12 @@ Confirm the `Strategic` Type picklist API value in your org. Skip comes from app
 | **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | This strategic account is not ready: readiness score is below the required minimum. Improve the readiness checks or lower `minScore` in Apex Parameters (JSON). |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to calculate strategic readiness. Confirm the running user can read the Account and related records used by this Rule. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
-| **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review the missing readiness items shown in Found: Contact, open pipeline, recent activity, or billing address. |
+| **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review Contact coverage, open pipeline, recent activity, and billing address to identify which criteria did not add points. |
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | Leave blank: one portable link cannot correct all four readiness areas. |
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | Leave blank; use an org-specific readiness report or playbook only after verifying it. |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `30` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 `minScore` and `activityDaysBack` change the passing score and activity window without changing the class.
 
@@ -423,7 +435,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees
@@ -435,8 +447,8 @@ The Apex class turns the weighted score and configured threshold into these user
 | **`PASS`** | A Strategic Account at or above `minScore` passes. |
 | **`FAIL`** | A score below `minScore` shows Needs attention with Critical severity. |
 | **`SKIPPED`** | A non-Strategic Account is skipped by Formula applicability before the Apex class runs. |
-| **Found** | Found shows the score and criteria met, such as `75/100; met: Contact, open pipeline, billing address`. |
-| **Expected** | Expected shows the passing threshold and gaps, such as `80+; improve: recent activity`. |
+| **Found** | Found shows the calculated score, such as `75`. |
+| **Expected** | Expected shows the configured passing threshold, such as `80`. |
 
 Scores move in 25-point increments, so a minimum of 80 effectively requires 100. Use 75 when
 meeting three of the four criteria should pass.
@@ -470,14 +482,15 @@ placeholder with an Account ID you can access:
 
 ```apex
 Id accountId = '001XXXXXXXXXXXXXXX';
-RecordHealthCheckResult result = RecordHealthCheck.runRule(
-  'Strategic_Account_Is_Ready',
-  accountId
+RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forRule('Strategic_Account_Is_Ready', accountId)
+    .withResultMode(RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY)
 );
-System.debug(LoggingLevel.INFO, JSON.serializePretty(result));
+System.debug(LoggingLevel.INFO, JSON.serializePretty(response));
 ```
 
-Confirm `status`, `actualValue`, and `expectedValue` match the same Account on the card.
+Confirm `evaluation.status`, `display.foundDisplayValue`, and
+`display.expectedDisplayValue` match the same Account on the card.
 
 ### Lightning record page
 

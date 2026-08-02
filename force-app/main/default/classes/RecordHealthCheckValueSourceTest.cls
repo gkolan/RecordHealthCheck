@@ -6,13 +6,25 @@
 @IsTest
 private class RecordHealthCheckValueSourceTest {
   @IsTest
+  static void defaultDetailStartsWithoutSourceLabel() {
+    Test.startTest();
+    RecordHealthCheckValueSource.Detail detail = new RecordHealthCheckValueSource.Detail();
+    Test.stopTest();
+
+    Assert.isNull(
+      detail.sourceLabel,
+      'The default Detail must start without a source label.'
+    );
+  }
+
+  @IsTest
   static void rendersSourceRawAndCoercion() {
     RecordHealthCheckValueSource.Detail d = new RecordHealthCheckValueSource.Detail(
       'NumberOfEmployees',
       'null',
       'blank treated as 0'
     );
-    System.assertEquals(
+    Assert.areEqual(
       'NumberOfEmployees → null (blank treated as 0)',
       RecordHealthCheckValueSource.render(d)
     );
@@ -25,7 +37,7 @@ private class RecordHealthCheckValueSourceTest {
       '0 rows',
       null
     );
-    System.assertEquals(
+    Assert.areEqual(
       'Contacts → 0 rows',
       RecordHealthCheckValueSource.render(d)
     );
@@ -38,7 +50,7 @@ private class RecordHealthCheckValueSourceTest {
       null,
       null
     );
-    System.assertEquals(
+    Assert.areEqual(
       'Pass/Fail condition',
       RecordHealthCheckValueSource.render(d)
     );
@@ -51,7 +63,7 @@ private class RecordHealthCheckValueSourceTest {
       '42',
       null
     );
-    System.assertEquals('42', RecordHealthCheckValueSource.render(d));
+    Assert.areEqual('42', RecordHealthCheckValueSource.render(d));
   }
 
   @IsTest
@@ -61,7 +73,7 @@ private class RecordHealthCheckValueSourceTest {
       null,
       'blank treated as 0'
     );
-    System.assertEquals(
+    Assert.areEqual(
       '(blank treated as 0)',
       RecordHealthCheckValueSource.render(d)
     );
@@ -69,7 +81,7 @@ private class RecordHealthCheckValueSourceTest {
 
   @IsTest
   static void returnsNullForNullDetail() {
-    System.assertEquals(null, RecordHealthCheckValueSource.render(null));
+    Assert.areEqual(null, RecordHealthCheckValueSource.render(null));
   }
 
   @IsTest
@@ -79,7 +91,7 @@ private class RecordHealthCheckValueSourceTest {
       '   ',
       null
     );
-    System.assertEquals(
+    Assert.areEqual(
       null,
       RecordHealthCheckValueSource.render(d),
       'An all-blank detail renders nothing rather than an empty note.'
@@ -88,14 +100,14 @@ private class RecordHealthCheckValueSourceTest {
 
   @IsTest
   static void rowCountPluralizesCorrectly() {
-    System.assertEquals('0 rows', RecordHealthCheckValueSource.rowCount(0));
-    System.assertEquals(
+    Assert.areEqual('0 rows', RecordHealthCheckValueSource.rowCount(0));
+    Assert.areEqual(
       '1 row',
       RecordHealthCheckValueSource.rowCount(1),
       'A single row uses the singular unit, not "1 row(s)".'
     );
-    System.assertEquals('3 rows', RecordHealthCheckValueSource.rowCount(3));
-    System.assertEquals(
+    Assert.areEqual('3 rows', RecordHealthCheckValueSource.rowCount(3));
+    Assert.areEqual(
       '0 rows',
       RecordHealthCheckValueSource.rowCount(null),
       'Null is treated as 0.'

@@ -12,18 +12,16 @@ Integer queriesBefore = Limits.getQueries();
 Integer rowsBefore = Limits.getQueryRows();
 Integer cpuBefore = Limits.getCpuTime();
 Integer heapBefore = Limits.getHeapSize();
-List<RecordHealthCheckResult> responses = RecordHealthCheck.run(
-  'Account_Data_Quality',
-  'Account_DQ_BillingCity',
-  recordIds
+RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forRule('Account_DQ_BillingCity', recordIds)
 );
-Integer responseBytes = Blob.valueOf(JSON.serialize(responses)).size();
+Integer responseBytes = Blob.valueOf(JSON.serialize(response)).size();
 System.debug(
   'RHC_CAPACITY=' +
     JSON.serialize(
       new Map<String, Object>{
         'records' => recordIds.size(),
-        'evaluations' => responses.size(),
+        'evaluations' => response.results.size(),
         'queries' => Limits.getQueries() - queriesBefore,
         'queryRows' => Limits.getQueryRows() - rowsBefore,
         'cpuMs' => Limits.getCpuTime() - cpuBefore,

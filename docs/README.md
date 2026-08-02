@@ -15,11 +15,11 @@ Health Check, begin with **Install and verify**, then create one Rule or copy an
 | I want to… | Start here | What you will learn |
 | --- | --- | --- |
 | Understand the product before installing it | [How Record Health Check works](installation/01-how-it-works.md) | Check Sets, Rules, result meanings, and when to use a health check |
-| Install it and see a working card | [Install and verify](installation/02-install-and-verify.md) | Deploy Core, add a Check Set, place the card, and verify a result |
+| Install it and see a working card | [Install and verify](installation/02-install-and-verify.md) | Deploy Record Health Check, add a Check Set, place the card, and verify a result |
 | Create my first check in Salesforce Setup | [Create your first Rule](installation/03-create-your-first-rule.md) | Configure a Formula Rule without writing Apex or using the command line |
 | Copy a practical example | [Examples library](examples/README.md) | Choose Formula, Query, Compare Two Queries, or Apex and adapt a complete example |
 | Configure advanced behavior | [Configure Check Sets and Rules](guides/configure-check-sets-and-rules.md) | Applicability, dependencies, messages, actions, display behavior, and troubleshooting |
-| Upgrade an existing installation | [Upgrade Record Health Check](installation/04-upgrading.md) | Back up, migrate renamed fields, validate, and prepare rollback |
+| Revalidate an existing installation | [Revalidate Record Health Check](installation/04-upgrading.md) | Back up current configuration, dry-run the deployment, verify integrations, and prepare rollback |
 | Call health checks from code or automation | [Integration overview](integration/README.md) | Choose Lightning, Apex, Flow, or platform events |
 | Look up one Setup field | [Metadata reference](metadata/README.md) | Find the exact label, API name, allowed values, default, and behavior |
 
@@ -60,7 +60,7 @@ Evaluation Type fits, the exact Setup values, what users see, and how to test it
 | [Configure Check Sets and Rules](guides/configure-check-sets-and-rules.md) | You need the complete mental model, Evaluation Type guidance, or go-live checklist |
 | [Configure action links](guides/configure-action-links.md) | A failed Rule should tell users what to do or where to go |
 | [Troubleshoot with Show Diagnostics](guides/troubleshoot-with-show-diagnostics.md) | An administrator needs authorized troubleshooting details |
-| [Choose the card design system](guides/choose-card-design-system.md) | You need to choose SLDS 1 or SLDS 2 for a component placement |
+| [Understand adaptive card styling](guides/choose-card-design-system.md) | You need to understand how one placement adapts across established Lightning styling and Cosmos |
 | [Draft configuration with AI](guides/draft-configuration-with-ai.md) | You want an AI assistant to draft configuration from a business requirement |
 
 ## Integrate with Salesforce automation
@@ -68,9 +68,9 @@ Evaluation Type fits, the exact Setup values, what users see, and how to test it
 | Surface | Use it when… | Documentation |
 | --- | --- | --- |
 | Lightning record page | Users need to see and rerun checks on a record | [Lightning component](integration/lightning-component.md) |
-| Apex | Code needs a typed Rule or Check Set result immediately | [Apex API](reference/reference-apex-api.md) |
-| Flow | Automation needs to branch on a result without custom code | [Flow actions](integration/flow-actions.md) |
-| Platform events | Subscribers need an optional after-commit notification | [Lifecycle events](integration/lifecycle-events.md) |
+| Apex and asynchronous Apex | Code needs a typed result now or needs to scan in bounded transactions | [API examples](api/README.md) |
+| Flow | Automation needs to branch on a result without custom Apex | [Flow API](api/flow.md) |
+| Platform events | Flow or Apex needs to subscribe to outcomes or Framework errors | [Platform Event subscriptions](platform-events/README.md) |
 
 Start with the [integration overview](integration/README.md) if you are unsure which surface fits.
 
@@ -87,6 +87,7 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 | [Field limits](reference/reference-fields-limits.md) | Salesforce storage limits and Framework completed-text limits |
 | [Architecture](reference/reference-architecture.md) | Published Framework architecture: principles, layers, runtime, security, limits, ownership |
 | [Apex classes](reference/reference-apex-classes.md) | What each production Apex class owns and when to use it |
+| [Configuration identity standard](development/configuration-identity-and-package-boundary-standard.md) | Exact Qualified API Name rules and the Framework/examples package boundary |
 
 ## Important behavior to know
 
@@ -94,8 +95,9 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 - A normal business issue returns `FAIL`. An unexpected execution problem returns `ERROR`.
 - Formula and query evaluation uses the running user's Salesforce access.
 - Lifecycle-event publication is optional and off by default.
-- Core ships the Framework plus a clearly prefixed `Example_` Check Set and Rules. Use the
- [examples library](examples/README.md) for additional Formula, Query, Compare two queries, and Apex patterns.
+- Record Health Check ships the Framework without business-policy Check Sets or Rules. Use the
+  [examples library](examples/README.md) for teaching patterns or install optional starter metadata
+  from [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples/tree/main/core-examples).
 
 ## Related
 

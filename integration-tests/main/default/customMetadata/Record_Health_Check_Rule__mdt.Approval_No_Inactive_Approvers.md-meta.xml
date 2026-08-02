@@ -40,7 +40,7 @@
         <field>ApexParametersJson__c</field>
         <value
       xsi:type="xsd:string"
-    >{"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c","userField":"sbaa__User__c","statusField":"sbaa__Status__c","pendingStatuses":["Requested"],"maxNames":5}</value>
+    >{"approvalObject":"sbaa__Approval__c","targetField":"sbaa__TargetRecordId__c","userField":"sbaa__User__c","statusField":"sbaa__Status__c","pendingStatuses":["Requested"]}</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

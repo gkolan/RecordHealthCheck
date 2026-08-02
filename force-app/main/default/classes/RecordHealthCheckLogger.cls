@@ -37,26 +37,20 @@ public with sharing class RecordHealthCheckLogger {
   // System.debug is ephemeral and usually off in production, so a check that
   // errors would otherwise leave no trace. ERROR lines are ALSO held as
   // Record_Health_Check_Log__e events and published once at the transaction
-  // boundary via flush() — the counterpart to Nebula's saveLog(). Core only
+  // boundary via flush() — the counterpart to Nebula's saveLog(). Framework only
   // publishes the versioned event; the extension package owns persistence, retention,
   // and reporting. Holding events (not per-line publish) keeps a 200-record bulk run
   // that errors on every record to one chunked publish, well under DML limits.
-  @TestVisible
   private static final String LOG_CONTRACT_VERSION = '1.0';
   private static final Integer PUBLISH_CHUNK_SIZE = 100;
   private static final Integer MESSAGE_MAX = 4000;
   private static final Integer STACK_MAX = 32000;
 
-  // Production behavior comes from the Check Set's default-on
-  // PublishErrorLogEvent__c field. Tests can override that setting without
-  // creating Custom Metadata records dynamically.
   @TestVisible
-  private static Boolean publishErrorEventSettingOverride;
+  private static RecordHealthCheckSettingsProvider settingsProvider = new RecordHealthCheckSettingsProvider();
   // Loop guard: a subscriber processing a log event sets this so its own ERROR
   // logging cannot republish onto the same bus.
-  @TestVisible
   private static Boolean inSubscriberContext = false;
-  @TestVisible
   private static Boolean debugEnabled = false;
   // Transaction-scoped buffer of ERROR events awaiting flush().
   private static final List<Record_Health_Check_Log__e> PENDING_EVENTS = new List<Record_Health_Check_Log__e>();
@@ -186,7 +180,7 @@ public with sharing class RecordHealthCheckLogger {
         EventId__c = newEventId(event),
         RunId__c = runId,
         OccurredAt__c = System.now(),
-        CoreVersion__c = RecordHealthCheckLifecyclePublisher.CORE_VERSION,
+        FrameworkVersion__c = RecordHealthCheckLifecyclePublisher.FRAMEWORK_VERSION,
         Level__c = lvl.name(),
         Code__c = sanitize(event, 120),
         CheckSetDeveloperName__c = checkSetDeveloperName,
@@ -208,16 +202,9 @@ public with sharing class RecordHealthCheckLogger {
    * that occur before valid configuration is available are still observable.
    */
   private Boolean isErrorEventPublicationEnabled() {
-    if (Test.isRunningTest() && publishErrorEventSettingOverride != null) {
-      return publishErrorEventSettingOverride;
-    }
-    if (String.isBlank(checkSetDeveloperName)) {
-      return true;
-    }
-    Record_Health_Check_Set__mdt checkSet = Record_Health_Check_Set__mdt.getInstance(
+    return settingsProvider.isErrorEventPublicationEnabled(
       checkSetDeveloperName
     );
-    return checkSet == null || checkSet.PublishErrorLogEvent__c != false;
   }
 
   /** Prefers the exception message; otherwise a compact, sorted field summary. */
@@ -244,7 +231,7 @@ public with sharing class RecordHealthCheckLogger {
   }
 
   private static String randomSuffix() {
-    return EncodingUtil.convertToHex(Crypto.generateAesKey(128)).left(8);
+    return String.valueOf(Crypto.getRandomInteger()).replace('-', '').left(8);
   }
 
   /**
@@ -315,14 +302,8 @@ public with sharing class RecordHealthCheckLogger {
 
   @TestVisible
   private static List<Record_Health_Check_Log__e> pendingEventsForTest() {
+    debugEnabled = true;
     return PENDING_EVENTS;
-  }
-
-  @TestVisible
-  private static void resetLogSinkForTest() {
-    PENDING_EVENTS.clear();
-    publishErrorEventSettingOverride = null;
-    inSubscriberContext = false;
   }
 
   /**
@@ -380,7 +361,6 @@ public with sharing class RecordHealthCheckLogger {
     return line;
   }
 
-  @TestVisible
   private static String sanitize(String value, Integer maxLength) {
     if (value == null) {
       return null;

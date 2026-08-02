@@ -20,33 +20,39 @@ if (demoAccounts.isEmpty()) {
   demoAccount = demoAccounts[0];
 }
 
-RecordHealthCheckSetResult setResult = RecordHealthCheck.runSet(
-  'Account_Data_Quality',
-  demoAccount.Id,
-  'demo-apex-set-' + String.valueOf(Datetime.now().getTime())
+RecordHealthCheckResponse setResult = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forCheckSet(
+      'Account_Data_Quality',
+      demoAccount.Id
+    )
+    .withRunId('demo-apex-set-' + String.valueOf(Datetime.now().getTime()))
 );
 System.assertNotEquals(null, setResult, 'The Check Set API must return a result.');
-System.assertNotEquals(null, setResult.status, 'The Check Set result must have a status.');
 System.assert(!setResult.results.isEmpty(), 'The demo Check Set must run at least one Rule.');
 
-RecordHealthCheckResult ruleResult = RecordHealthCheck.runRule(
-  'Account_DQ_BillingCity',
-  demoAccount.Id,
-  'demo-apex-rule-' + String.valueOf(Datetime.now().getTime())
+RecordHealthCheckResponse ruleResult = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forRule(
+      'Account_DQ_BillingCity',
+      demoAccount.Id
+    )
+    .withRunId('demo-apex-rule-' + String.valueOf(Datetime.now().getTime()))
 );
-System.assertEquals('PASS', ruleResult.status, 'The seeded Billing City Rule should pass.');
+System.assertEquals(
+  'PASS',
+  ruleResult.results[0].evaluation.status,
+  'The seeded Billing City Rule should pass.'
+);
 
 System.debug(
   'RHC_APEX_API_DEMO=' +
     JSON.serialize(
       new Map<String, Object>{
         'accountId' => demoAccount.Id,
-        'setStatus' => setResult.status,
-        'passedCount' => setResult.passedCount,
-        'failedCount' => setResult.failedCount,
-        'unableCount' => setResult.unableCount,
-        'ruleStatus' => ruleResult.status,
-        'ruleReasonCode' => ruleResult.reasonCode
+        'passedCount' => setResult.summary.passed,
+        'failedCount' => setResult.summary.failed,
+        'unableCount' => setResult.summary.unable,
+        'ruleStatus' => ruleResult.results[0].evaluation.status,
+        'ruleReasonCode' => ruleResult.results[0].evaluation.reasonCode
       }
     )
 );

@@ -121,7 +121,7 @@
         <label>6. Platform Events</label>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field
-        >PublishRunEvent__c</field></layoutItems>
+        >PublishUserRunEvent__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>

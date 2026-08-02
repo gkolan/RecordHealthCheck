@@ -12,7 +12,7 @@
  * not run, is what lets a consumer say "I could not evaluate three of these"
  * instead of implying all is well.
  */
-global class RecordHealthCheckStatus {
+global abstract class RecordHealthCheckStatus {
   /** The check ran and the record met the condition. */
   global static final String PASS = 'PASS';
 
@@ -44,8 +44,5 @@ global class RecordHealthCheckStatus {
 
   global static Boolean isActionable(String status) {
     return status != null && ACTIONABLE.contains(status);
-  }
-
-  private RecordHealthCheckStatus() {
   }
 }

@@ -30,6 +30,15 @@ global with sharing class AccountHasRecentActivityCheck implements RecordHealthC
     List<Id> recordIds = scope.recordIds;
 
     Integer daysBack = resolveDaysBack(scope.parameters);
+    if (daysBack == null) {
+      for (Id recordId : recordIds) {
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate('INVALID_CONFIG')
+        );
+      }
+      return results;
+    }
     Date cutoff = Date.today().addDays(-daysBack);
 
     // Seed every Id with zero BEFORE overlaying the aggregates. An aggregate
@@ -72,26 +81,16 @@ global with sharing class AccountHasRecentActivityCheck implements RecordHealthC
 
     RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(1);
     for (Id recordId : recordIds) {
-      // Per-record isolation is the plugin's job. The engine can only catch at
-      // the scope boundary, where it cannot tell which record was responsible,
-      // so one bad record here would otherwise cost every result in the scope.
-      try {
-        Integer total = activityCounts.get(recordId);
-        RecordHealthCheckOutcome outcome = total > 0
-          ? RecordHealthCheckOutcome.pass('APEX_PASS')
-          : RecordHealthCheckOutcome.fail('APEX_FAIL');
-        results.put(
-          recordId,
-          outcome
-            .withFound(RecordHealthCheckValue.ofCount(total))
-            .withComparison('GREATER_THAN_OR_EQUAL', expected)
-        );
-      } catch (Exception ex) {
-        results.put(
-          recordId,
-          RecordHealthCheckOutcome.unableToEvaluate('ACTIVITY_COUNT_FAILED')
-        );
-      }
+      Integer total = activityCounts.get(recordId);
+      RecordHealthCheckOutcome outcome = total > 0
+        ? RecordHealthCheckOutcome.pass('APEX_PASS')
+        : RecordHealthCheckOutcome.fail('APEX_FAIL');
+      results.put(
+        recordId,
+        outcome
+          .withFound(RecordHealthCheckValue.ofCount(total))
+          .withComparison('GREATER_THAN_OR_EQUAL', expected)
+      );
     }
 
     return results;
@@ -116,10 +115,8 @@ global with sharing class AccountHasRecentActivityCheck implements RecordHealthC
    * Bounded deliberately: an unbounded window is not a useful health check, and
    * a negative one would silently invert the question being asked.
    *
-   * An unparseable or out-of-range value falls back to the default rather than
-   * failing the check. That is the 1.x behavior and is preserved here, though
-   * it does mean a mistyped parameter is silently ignored rather than reported
-   * to the administrator who typed it.
+   * Null means the administrator supplied an invalid value; the caller returns
+   * INVALID_CONFIG for every scoped record without running a query.
    */
   private Integer resolveDaysBack(Map<String, Object> parameters) {
     Object raw = parameters == null ? null : parameters.get('daysBack');
@@ -135,14 +132,11 @@ global with sharing class AccountHasRecentActivityCheck implements RecordHealthC
       try {
         parsed = Integer.valueOf((String) raw);
       } catch (Exception ex) {
-        return DEFAULT_DAYS_BACK;
+        return null;
       }
     } else {
-      return DEFAULT_DAYS_BACK;
+      return null;
     }
-    return (parsed < MIN_DAYS_BACK ||
-      parsed > MAX_DAYS_BACK)
-      ? DEFAULT_DAYS_BACK
-      : parsed;
+    return (parsed < MIN_DAYS_BACK || parsed > MAX_DAYS_BACK) ? null : parsed;
   }
 }
