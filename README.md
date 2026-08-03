@@ -1,24 +1,14 @@
 # Record Health Check
 
-[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE)
-[![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml)
-[![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json)
-[![Deploy to Salesforce](assets/img/badge-deploy.svg)](https://githubsfdeploy.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
-[![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
+[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE) [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Apex coverage: 99.41%](https://img.shields.io/badge/Apex%20coverage-99.41%25-brightgreen)](docs/development/code-coverage-statistics.md) [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json) [![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
 
 > **Make informed decisions before taking action on Salesforce data.**
->
-> Record Health Check evaluates Salesforce records directly on the record page, surfacing what
-> needs attention, why it matters, and how to resolve it without modifying the record or blocking
-> users.
 
-Every Rule returns **Pass**, **Fail**, **Skipped**, or **Unable to Check**. When a record needs
-attention, the card can show its **Critical**, **Warning**, or **Info** severity; explain what was
-**Found** and **Expected**; and provide fix instructions with an optional read-only **Fix it** link.
+Record Health Check is a metadata-driven framework that evaluates a Salesforce record directly on its record page. It provides read-only guidance about what needs attention, why it matters, and how to resolve it, without modifying the record or blocking users.
 
-Administrators define **Check Sets** and **Rules** in Custom Metadata. The Framework evaluates them
-at read time, so one card can review the current record, related records, aggregate results, and
-data that existed before the Rules were created, without writing to the record.
+Every Rule returns **Pass**, **Fail**, **Skipped**, or **Unable to Check**. When a record needs attention, the card can show its **Critical**, **Warning**, or **Info** severity, explain what was **Found** and **Expected**, and provide fix instructions with an optional read-only **Fix it** link.
+
+Administrators define **Check Sets** and **Rules** in Custom Metadata. The framework evaluates them at read time, so one card can review the current record, related records, aggregate results, and data that existed before the Rules were created, all without writing to the record.
 
 > [!NOTE]
 > Record Health Check provides advisory guidance; it never blocks a save. When Salesforce must
@@ -66,10 +56,6 @@ data that existed before the Rules were created, without writing to the record.
 
 ## What you get
 
-Record Health Check is a metadata-driven Framework you deploy as source. Administrators define the
-questions; users get advisory answers on the record page without blocked saves or silent field
-writes.
-
 ### On the record page
 
 | What users see                                        | Why it helps                                                                                |
@@ -87,11 +73,11 @@ writes.
 | Four Evaluation Types                   | Formula on the current record, Query over related data, Compare two queries, or custom Apex          |
 | Applicability conditions                | Skip Rules that do not apply (for example Partner-only checks on a Customer Account) and explain why |
 | Run timing and card display             | Run on open or on demand; control how passed and skipped Rules appear                                |
-| SLDS 1 or SLDS 2 card treatment         | Match each placement to your org's design system in App Builder                                      |
+| Adaptive SLDS card treatment            | Automatically follows the active Salesforce design system without per-page configuration             |
 
-### Also in the package
+### Also available
 
-- Shipped `Example_` Account Check Set, Rules, and Apex evaluator so a sandbox install is immediately demonstrable
+- Optional starter Check Sets and Rules live in the separate [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples/tree/main/core-examples) repository; the Framework install adds no business-policy records
 - `Record_Health_Check_User` and `Record_Health_Check_Admin` permission sets (runner vs configure/troubleshoot)
 - Opt-in platform events for Set runs and Rule results, plus Apex and Flow entry points for automation
 - Diagnostics gated by permission so troubleshooting detail stays off everyday cards

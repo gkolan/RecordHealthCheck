@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The RHC Persona Record object provides isolated records for verifying framework sharing and field-access behavior. It captures Accessible Value and Restricted Value with private ownership. Commonly used for disposable integration tests of least-privilege health-check execution.</description>
+    <label>RHC Persona Record</label>
+    <nameField>
+        <displayFormat>RHC-PER-{0000}</displayFormat>
+        <label>Persona Record Number</label>
+        <startingNumber>1</startingNumber>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>RHC Persona Records</pluralLabel>
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

@@ -2,6 +2,9 @@
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>66.0</apiVersion>
     <isExposed>true</isExposed>
+    <masterLabel>Record Health Check</masterLabel>
+    <description
+  >Runs metadata-driven record health checks with SLDS 1 and SLDS 2 styling.</description>
     <!--
         Record page only. The component requires a record context (recordId) to
         evaluate checks; App/Home pages provide none, so lightning__AppPage was
@@ -18,14 +21,6 @@
         label="Check Set"
         datasource="apex://RecordHealthCheckSetPicklist"
         description="Choose the Check Set to run on this record page. The list shows active Check Sets whose Record Object API Name matches this page's object. If the list is empty, create and activate a Check Set for this object under Setup - Custom Metadata Types - Record Health Check Set."
-      />
-            <property
-        name="designSystem"
-        type="String"
-        label="Design System"
-        datasource="SLDS 1,SLDS 2"
-        default="SLDS 1"
-        description="Choose the SLDS visual treatment for Record Health Check. SLDS 1 is the default while SLDS 2 adoption is still new; choose SLDS 2 for pages using the Salesforce Cosmos theme. This setting does not change the org theme."
       />
         </targetConfig>
     </targetConfigs>

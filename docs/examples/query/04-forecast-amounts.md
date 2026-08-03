@@ -68,7 +68,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 Copy this value into **Display: Found Text**:
 
 ```text
-{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount|0} open opportunities need Amount
+{!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount fallback="0"} open opportunities need Amount
 ```
 
 ## Optional configuration
@@ -76,7 +76,7 @@ Copy this value into **Display: Found Text**:
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks every visible open Opportunity for an Amount greater than zero; skips Accounts with none. |
-| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Sales Readiness |
+| **Category** | [`Category__c`](../../metadata/fields-check-rule.md#category-category__c) | Readiness |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Warning |
 | **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | One or more open Opportunities have Amount zero or blank. Enter a positive Amount on every open Opportunity. |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check open Opportunity Amounts. Confirm the user can read the queried fields. |
@@ -87,7 +87,7 @@ Copy this value into **Display: Found Text**:
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Opportunities/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `70` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 Comparison Query, list, Formula, and Apex fields do not apply.
 
@@ -108,7 +108,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees
@@ -120,7 +120,7 @@ The query rows and no-row behavior become these Framework outcomes and card valu
 | **`PASS`** | Every visible open Opportunity has Amount greater than zero. |
 | **`FAIL`** | At least one visible open Opportunity has blank, zero, or negative Amount, so the card shows Needs attention with Warning severity. |
 | **`SKIPPED`** | An Account with no open Opportunities is skipped because **No rows result** is **Skipped**. |
-| **Found** | Found shows the Amount that determined the result when the user reveals Found and Expected. |
+| **Found** | Found summarizes how many returned Opportunities need an Amount, using the configured result-count merge tokens. |
 | **Expected** | Expected shows the fixed comparison value: an Amount greater than `0`. |
 
 ## Security and access

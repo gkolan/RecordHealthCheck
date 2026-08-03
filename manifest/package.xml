@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-<!-- Record Health Check — core plus the clearly prefixed example Check Set, Rules, Apex evaluator, and test. -->
+<!-- Record Health Check framework metadata. Optional Check Sets and Rules live in RecordHealthCheck-Examples. -->
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>*</members>
+        <name>CustomLabel</name>
+    </types>
     <types>
         <members>Record_Health_Check_Rule__mdt</members>
         <members>Record_Health_Check_Set__mdt</members>
@@ -8,27 +12,6 @@
         <members>Record_Health_Check_Rule_Result__e</members>
         <members>Record_Health_Check_Set_Run__e</members>
         <name>CustomObject</name>
-    </types>
-    <types>
-        <members
-    >Record_Health_Check_Set__mdt.Example_Account_Relationship_Risk</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_Account_Owner_Active</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_Channel_Partner_Governance</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_Contacts_Have_Email</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_Customer_Engagement_Current</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_Executive_Sponsorship</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_Industry_Aligns_With_Parent</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_No_High_Priority_Issues</members>
-        <members
-    >Record_Health_Check_Rule__mdt.Example_Pipeline_Protects_Revenue</members>
-        <name>CustomMetadata</name>
     </types>
     <types>
         <members>Record_Health_Check_Set__mdt.ObjectApiName__c</members>
@@ -39,7 +22,8 @@
         <members>Record_Health_Check_Set__mdt.StopOnSystemError__c</members>
         <members>Record_Health_Check_Set__mdt.CardRevealMode__c</members>
         <members>Record_Health_Check_Set__mdt.PassedChecksDisplay__c</members>
-        <members>Record_Health_Check_Set__mdt.PublishRunEvent__c</members>
+        <members>Record_Health_Check_Set__mdt.PublishErrorLogEvent__c</members>
+        <members>Record_Health_Check_Set__mdt.PublishUserRunEvent__c</members>
         <members>Record_Health_Check_Set__mdt.SkippedChecksDisplay__c</members>
         <members>Record_Health_Check_Set__mdt.ShowDiagnostics__c</members>
         <members>Record_Health_Check_Set__mdt.FoundExpectedDisplay__c</members>
@@ -66,7 +50,8 @@
         <members
     >Record_Health_Check_Rule__mdt.ApplicabilityCountQuery__c</members>
         <members>Record_Health_Check_Rule__mdt.PassConditionFormula__c</members>
-        <members>Record_Health_Check_Rule__mdt.PublishResultEvent__c</members>
+        <members
+    >Record_Health_Check_Rule__mdt.PublishUserResultEvent__c</members>
         <members>Record_Health_Check_Rule__mdt.FindInListFormula__c</members>
         <members>Record_Health_Check_Rule__mdt.SourceQuery__c</members>
         <members>Record_Health_Check_Rule__mdt.ComparisonQuery__c</members>
@@ -92,11 +77,12 @@
     >Record_Health_Check_Rule__mdt.DisplayExpectedFormula__c</members>
         <members>Record_Health_Check_Rule__mdt.FormulaResultType__c</members>
         <members>Record_Health_Check_Rule__mdt.DisplayFoundText__c</members>
+        <members>Record_Health_Check_Rule__mdt.DisplayValueFormat__c</members>
         <members>Record_Health_Check_Rule__mdt.DisplayExpectedText__c</members>
         <members>Record_Health_Check_Log__e.CheckSetDeveloperName__c</members>
         <members>Record_Health_Check_Log__e.Code__c</members>
         <members>Record_Health_Check_Log__e.ContractVersion__c</members>
-        <members>Record_Health_Check_Log__e.CoreVersion__c</members>
+        <members>Record_Health_Check_Log__e.FrameworkVersion__c</members>
         <members>Record_Health_Check_Log__e.EventId__c</members>
         <members>Record_Health_Check_Log__e.ExceptionType__c</members>
         <members>Record_Health_Check_Log__e.Level__c</members>
@@ -108,25 +94,26 @@
         <members>Record_Health_Check_Log__e.StackTrace__c</members>
         <members>Record_Health_Check_Log__e.UserId__c</members>
         <members
-    >Record_Health_Check_Rule_Result__e.CheckSetDeveloperName__c</members>
+    >Record_Health_Check_Rule_Result__e.CheckSetQualifiedApiName__c</members>
         <members
     >Record_Health_Check_Rule_Result__e.ContainsRestrictedDetail__c</members>
         <members>Record_Health_Check_Rule_Result__e.ContractVersion__c</members>
-        <members>Record_Health_Check_Rule_Result__e.CoreVersion__c</members>
+        <members
+    >Record_Health_Check_Rule_Result__e.FrameworkVersion__c</members>
         <members>Record_Health_Check_Rule_Result__e.EventId__c</members>
         <members>Record_Health_Check_Rule_Result__e.OccurredAt__c</members>
         <members>Record_Health_Check_Rule_Result__e.RecordId__c</members>
         <members>Record_Health_Check_Rule_Result__e.ReasonCode__c</members>
         <members
-    >Record_Health_Check_Rule_Result__e.RuleDeveloperName__c</members>
+    >Record_Health_Check_Rule_Result__e.RuleQualifiedApiName__c</members>
         <members>Record_Health_Check_Rule_Result__e.RunId__c</members>
         <members>Record_Health_Check_Rule_Result__e.Severity__c</members>
         <members>Record_Health_Check_Rule_Result__e.Source__c</members>
         <members>Record_Health_Check_Rule_Result__e.Status__c</members>
         <members
-    >Record_Health_Check_Set_Run__e.CheckSetDeveloperName__c</members>
+    >Record_Health_Check_Set_Run__e.CheckSetQualifiedApiName__c</members>
         <members>Record_Health_Check_Set_Run__e.ContractVersion__c</members>
-        <members>Record_Health_Check_Set_Run__e.CoreVersion__c</members>
+        <members>Record_Health_Check_Set_Run__e.FrameworkVersion__c</members>
         <members>Record_Health_Check_Set_Run__e.EligibleRuleCount__c</members>
         <members>Record_Health_Check_Set_Run__e.EvaluatedRuleCount__c</members>
         <members>Record_Health_Check_Set_Run__e.EventId__c</members>
@@ -147,27 +134,117 @@
         <members>AccountHasRecentActivityCheckTest</members>
         <members>RecordHealthCheck</members>
         <members>RecordHealthCheckAccess</members>
+        <members>RecordHealthCheckAsyncTest</members>
+        <members>RecordHealthCheckApexAdapterTest</members>
+        <members>RecordHealthCheckConstructorFailureRule</members>
         <members>RecordHealthCheckApexEvaluator</members>
+        <members>RecordHealthCheckApexPluginResolver</members>
+        <members>RecordHealthCheckApexScopeTest</members>
+        <members>RecordHealthCheckBatch</members>
+        <members>RHCEvaluatorEdgeBehaviorTest</members>
+        <members>RHCComparisonDisplayEdgeBehaviorTest</members>
+        <members>RHCDualQueryEdgeBehaviorTest</members>
+        <members>RHCFormulaEdgeBehaviorTest</members>
+        <members>RHCSoqlEvaluatorEdgeBehaviorTest</members>
         <members>RecordHealthCheckAdminDetail</members>
+        <members>RecordHealthCheckBulkQuerySupport</members>
+        <members>RecordHealthCheckBulkQueryRewriter</members>
+        <members>RecordHealthCheckBulkQueryRewriteTest</members>
+        <members>RecordHealthCheckBulkQuerySupportTest</members>
+        <members>RecordHealthCheckBulkEvaluatorsTest</members>
+        <members>RecordHealthCheckApexResultFinalizer</members>
         <members>RecordHealthCheckComparisonEngine</members>
+        <members>RecordHealthCheckComparisonDisplay</members>
         <members>RecordHealthCheckConfigService</members>
+        <members>RecordHealthCheckConfigFindingMapper</members>
+        <members>RecordHealthCheckConfigFindingMapperTest</members>
+        <members>RecordHealthCheckDefinitionLoader</members>
+        <members>RecordHealthCheckDefinitionLoaderTest</members>
         <members>RecordHealthCheckConfigValidator</members>
         <members>RecordHealthCheckConstants</members>
-        <members>RecordHealthCheckContext</members>
         <members>RecordHealthCheckController</members>
         <members>RecordHealthCheckDefinition</members>
         <members>RecordHealthCheckDefinitionResponse</members>
         <members>RecordHealthCheckDescribeCache</members>
+        <members>RecordHealthCheckDisplayFormat</members>
+        <members>RecordHealthCheckDisplayFieldResolver</members>
+        <members>RecordHealthCheckDisplayFieldTest</members>
+        <members>RecordHealthCheckDisplayCurrencyRenderer</members>
+        <members>RHCDisplayCurrencyRendererTest</members>
+        <members>RecordHealthCheckDisplayCurrencyResolver</members>
+        <members>RecordHealthCheckDisplayNumberRenderer</members>
+        <members>RecordHealthCheckDisplayTextRenderer</members>
+        <members>RecordHealthCheckDisplayTextRendererTest</members>
+        <members>RecordHealthCheckDisplayFormatTest</members>
+        <members>RecordHealthCheckDisplayNumberTest</members>
+        <members>RecordHealthCheckDisplayTemporalTest</members>
+        <members>RecordHealthCheckDisplayCurrencyTest</members>
+        <members>RecordHealthCheckDiagnosticTrace</members>
+        <members>RecordHealthCheckDiagnosticTraceTest</members>
+        <members>RHCDisplayCurrencyResolutionTest</members>
+        <members>RHCDisplayCurrencyComparisonTest</members>
         <members>RecordHealthCheckCompareQueriesEvaluator</members>
-        <members>RecordHealthCheckEngine</members>
+        <members>RecordHealthCheckCompareQuerySupport</members>
+        <members>RecordHealthCheckCompareQuerySupportTest</members>
+        <members>RecordHealthCheckFieldPlanner</members>
         <members>RecordHealthCheckEvaluatorException</members>
+        <members>RecordHealthCheckEvaluatorRegistry</members>
+        <members>RecordHealthCheckEvaluatorRegistryTest</members>
         <members>RecordHealthCheckFormulaEvaluator</members>
+        <members>RecordHealthCheckFormulaDisplay</members>
+        <members>RecordHealthCheckFormulaSyntax</members>
+        <members>RecordHealthCheckFlowSupport</members>
+        <members>RecordHealthCheckFlowGroupExecutor</members>
         <members>RecordHealthCheckLifecyclePublisher</members>
         <members>RecordHealthCheckLogger</members>
         <members>RecordHealthCheckMergeContext</members>
         <members>RecordHealthCheckMetadataValidator</members>
+        <members>RHCMetadataDependencyValidator</members>
+        <members>RHCMetadataDependencyValidatorTest</members>
+        <members>RecordHealthCheckMetadataIssueMapper</members>
+        <members>RecordHealthCheckMetadataIssueMapperTest</members>
+        <members>RecordHealthCheckMetadataSetValidator</members>
+        <members>RHCMetadataSetValidatorTest</members>
+        <members>RecordHealthCheckQueryEvaluatorSupport</members>
+        <members>RecordHealthCheckQueueable</members>
         <members>RecordHealthCheckValueSource</members>
-        <members>RecordHealthCheckResult</members>
+        <members>RecordHealthCheckInternalResult</members>
+        <members>RecordHealthCheckEventPublication</members>
+        <members>RecordHealthCheckEvaluationResult</members>
+        <members>RecordHealthCheckExecutionOrigin</members>
+        <members>RecordHealthCheckOptions</members>
+        <members>RecordHealthCheckOutcome</members>
+        <members>RecordHealthCheckPluginDispatch</members>
+        <members>RecordHealthCheckPluginDispatchTest</members>
+        <members>RHCPluginScopeIntegrityTest</members>
+        <members>RecordHealthCheckContractRegistryTest</members>
+        <members>RecordHealthCheckContractTypesTest</members>
+        <members>RecordHealthCheckRequest</members>
+        <members>RecordHealthCheckResponse</members>
+        <members>RecordHealthCheckResultDisplay</members>
+        <members>RecordHealthCheckResultItem</members>
+        <members>RecordHealthCheckResultMode</members>
+        <members>RecordHealthCheckRunSummary</members>
+        <members>RecordHealthCheckRuleContractTest</members>
+        <members>RecordHealthCheckRuleContractHarnessTest</members>
+        <members>RecordHealthCheckRuleContractTestData</members>
+        <members>RecordHealthCheckScopePipeline</members>
+        <members>RecordHealthCheckScopePlanner</members>
+        <members>RecordHealthCheckScopeResultSupport</members>
+        <members>RecordHealthCheckSettingsProvider</members>
+        <members>RecordHealthCheckScopePipelineTest</members>
+        <members>RecordHealthCheckScopeEvaluationTest</members>
+        <members>RecordHealthCheckScopeApplicabilityTest</members>
+        <members>RecordHealthCheckScopePrerequisiteTest</members>
+        <members>RecordHealthCheckScopePlannerTest</members>
+        <members>RecordHealthCheckScopeDisplayTest</members>
+        <members>RecordHealthCheckSelection</members>
+        <members>RecordHealthCheckQualifiedIdentity</members>
+        <members>RecordHealthCheckAsyncSupport</members>
+        <members>RecordHealthCheckScope</members>
+        <members>RecordHealthCheckScheduled</members>
+        <members>RecordHealthCheckStatus</members>
+        <members>RecordHealthCheckValue</members>
         <members>RecordHealthCheckReasonCodes</members>
         <members>RecordHealthCheckRunContext</members>
         <members>RecordHealthCheckRunRuleFlowAction</members>
@@ -177,29 +254,53 @@
         <members>RecordHealthCheckSetAvailability</members>
         <members>RecordHealthCheckSetPicklist</members>
         <members>RecordHealthCheckSoqlEvaluator</members>
+        <members>RecordHealthCheckSoqlEvaluation</members>
+        <members>RecordHealthCheckSoqlEvaluationTest</members>
+        <members>RecordHealthCheckSoqlBindValueResolver</members>
+        <members>RecordHealthCheckSoqlTokenBinder</members>
+        <members>RecordHealthCheckSoqlTokenBinderTest</members>
+        <members>RecordHealthCheckSoqlEdgeTest</members>
+        <members>RecordHealthCheckSoqlScopeEdgeTest</members>
         <members>RecordHealthCheckSoqlTemplate</members>
-        <members>RecordHealthCheckSetResult</members>
         <members>RecordHealthCheckTemplateService</members>
+        <members>RecordHealthCheckTemplateParser</members>
+        <members>RecordHealthCheckTemplateValueResolver</members>
         <members>RecordHealthCheckToken</members>
         <members>RecordHealthCheckTokenIssue</members>
         <members>RecordHealthCheckTokenRegistry</members>
         <members>RecordHealthCheckValueResolver</members>
         <members>RecordHealthCheckApiTest</members>
+        <members>RecordHealthCheckAutomationAsyncTest</members>
+        <members>RecordHealthCheckAutomationFlowTest</members>
+        <members>RHCConfigRuleValidationTest</members>
         <members>RecordHealthCheckConfigServiceTest</members>
+        <members>RecordHealthCheckConfigValidationTest</members>
         <members>RecordHealthCheckControllerTest</members>
-        <members>RecordHealthCheckCoverageTest</members>
-        <members>RecordHealthCheckCoverageThresholdTest</members>
+        <members>RecordHealthCheckConstructorMutationRule</members>
+        <members>RecordHealthCheckAdversarialBoundaryTest</members>
+        <members>RecordHealthCheckApexResultFinalizerTest</members>
         <members>RecordHealthCheckDescribeCacheTest</members>
-        <members>RecordHealthCheckEngineTest</members>
+        <members>RecordHealthCheckFieldPlannerTest</members>
+        <members>RecordHealthCheckFormulaDisplayTest</members>
+        <members>RecordHealthCheckFormulaSyntaxTest</members>
+        <members>RecordHealthCheckEvaluationMutationRule</members>
+        <members>RecordHealthCheckEvaluatorBehaviorTest</members>
+        <members>RHCSoqlEvaluatorBehaviorTest</members>
+        <members>RHCDualQueryBehaviorTest</members>
+        <members>RHCBulkQueryLimitTest</members>
         <members>RecordHealthCheckLifecyclePublisherTest</members>
         <members>RecordHealthCheckLoggerTest</members>
+        <members>RHCMetadataValidatorSmokeTest</members>
         <members>RecordHealthCheckMetadataValidatorTest</members>
         <members>RecordHealthCheckSecurityAndOpsTest</members>
+        <members>RHCScopePipelineFailureTest</members>
         <members>RecordHealthCheckSetPicklistTest</members>
         <members>RecordHealthCheckValueSourceTest</members>
         <members>RecordHealthCheckSoqlTemplateTest</members>
         <members>RecordHealthCheckTemplateServiceTest</members>
+        <members>RecordHealthCheckTemplateParserTest</members>
         <members>RecordHealthCheckTestDataFactory</members>
+        <members>RecordHealthCheckPersonaTestDataFactory</members>
         <members>RecordHealthCheckValueResolverTest</members>
         <name>ApexClass</name>
     </types>
@@ -208,6 +309,7 @@
         <name>LightningComponentBundle</name>
     </types>
     <types>
+        <members>Record_Health_Check_Run</members>
         <members>Record_Health_Check_View_Diagnostics</members>
         <name>CustomPermission</name>
     </types>
@@ -224,8 +326,8 @@
         <name>Layout</name>
     </types>
     <types>
-        <members>Record_Health_Check_Rule__mdt.Examples</members>
-        <members>Record_Health_Check_Set__mdt.Examples</members>
+        <members>Record_Health_Check_Rule__mdt.All</members>
+        <members>Record_Health_Check_Set__mdt.All</members>
         <name>ListView</name>
     </types>
     <version>66.0</version>

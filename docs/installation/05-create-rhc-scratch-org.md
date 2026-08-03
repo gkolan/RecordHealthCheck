@@ -16,8 +16,9 @@ sf org login web --set-default-dev-hub --alias my-dev-hub
 sf org display --target-org my-dev-hub
 ```
 
-The setup reads `config/project-scratch-def.json`. It creates a 30-day Developer Edition scratch org with
-Salesforce sample data, Lightning Experience, and API password generation enabled.
+The setup reads `config/display-formats-scratch-def.json`. It creates a 30-day, multi-currency
+Developer Edition scratch org with Salesforce sample data, Lightning Experience, and API password
+generation enabled. Pass an optional second argument to use a shorter duration.
 
 ## Step 1: Create the same demo org
 
@@ -33,11 +34,12 @@ only when you no longer need that org, or choose another alias.
 Setup performs the following operations in order:
 
 1. Creates a 30-day scratch org from the checked-in definition.
-2. Deploys `force-app`, including Core and the `Example_Account_Relationship_Risk` Check Set and Rules.
-3. Deploys the demo Account record page, layouts, and list views.
+2. Deploys the Framework-only `force-app` package.
+3. Deploys the optional Check Sets and Rules from the integration-fixture copy, then deploys the demo Account record page.
 4. Assigns `Record_Health_Check_Admin` to the scratch-org user.
 5. Creates the deterministic Acme data set and its inactive owner scenario.
-6. Generates a password, validates all RHC metadata, and runs the exact demo verification.
+6. Creates the realistic Account, Contact, and Opportunity portfolio for all four optional Check Sets.
+7. Generates a password, validates all RHC metadata, and verifies both demo scenarios.
 
 The command exits unsuccessfully if any step fails or if the final engine result is not exactly **3 passed, 4
 failed, and 1 skipped**.
@@ -76,6 +78,21 @@ Acme Account so recent-activity results remain deterministic.
 | Recent activity | Exactly 2 completed Tasks in the last 90 days |
 | Cases | Exactly 4 open, High-priority Cases |
 
+### Object-specific example portfolio
+
+The same setup command also creates four fictional companies, eight populated Contacts, and eight
+populated Opportunities in USD and EUR. The portfolio includes complete records and deliberately
+incomplete records so the Contact and Opportunity cards demonstrate both success and remediation.
+
+`Harborline Dispatch Pilot` includes three Tasks, two Events, and two Opportunity Contact Roles:
+Priya Shah is the primary Executive Sponsor, and Evan Brooks is the Technical Buyer. Its Amount and
+Next Step remain blank intentionally, producing exactly two passed and two failed Opportunity checks.
+Jonas Keller similarly produces exactly two passed and two failed Contact checks while retaining
+realistic department, address, reporting-line, email, and business-context data.
+
+The setup uses dates relative to the day it runs. Calendar dates therefore move, but record counts,
+relationships, and health-check outcomes remain deterministic.
+
 The verification also checks all eight Rule outcomes individually:
 
 | Rule Developer Name | Expected status |
@@ -88,6 +105,13 @@ The verification also checks all eight Rule outcomes individually:
 | `Example_Pipeline_Protects_Revenue` | `FAIL` |
 | `Example_No_High_Priority_Issues` | `FAIL` |
 | `Example_Channel_Partner_Governance` | `SKIPPED` |
+
+`Example_Pipeline_Protects_Revenue` is also an optional display-format example. It formats both
+the aggregate Found value and record-formula Expected value as currency, applies administrator
+captions, and resolves the strict token
+`{!record.AnnualRevenue format="CURRENCY" fallback="Not available"}` in its failure message. The
+verification script asserts the formatted `$70,000` Found value, `$375,000` Expected value, and
+that no unresolved token remains.
 
 ## Step 2: Open and test the experience
 

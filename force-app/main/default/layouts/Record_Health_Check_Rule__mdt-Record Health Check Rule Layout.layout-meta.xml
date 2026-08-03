@@ -90,21 +90,26 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>3. Evaluation Type</label>
+        <label>3. Evaluation Type &amp; Value Display</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
                 <field>EvaluationType__c</field>
             </layoutItems>
         </layoutColumns>
-        <layoutColumns />
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>DisplayValueFormat__c</field>
+            </layoutItems>
+        </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>
     <layoutSections>
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>4. Record Formula — Found (Left) vs Expected (Right)</label>
+        <label>4. Record Formula: Found (Left) vs Expected (Right)</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -131,7 +136,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>5. Query Values — Found (Left) vs Expected (Right)</label>
+        <label>5. Query Values: Found (Left) vs Expected (Right)</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -274,7 +279,7 @@
         <label>9. Lifecycle Events</label>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field
-        >PublishResultEvent__c</field></layoutItems>
+        >PublishUserResultEvent__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns />
         <style>TwoColumnsLeftToRight</style>

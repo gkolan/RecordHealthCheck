@@ -18,7 +18,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Less than comparison operator: COUNT() must be strictly below the threshold. Useful for capping unbounded growth — in this case flagging accounts with an unusually high open case volume that may indicate a support backlog.</value>
+    >Less than comparison operator: COUNT() must be strictly below the threshold. Useful for capping unbounded growth: in this case flagging accounts with an unusually high open case volume that may indicate a support backlog.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

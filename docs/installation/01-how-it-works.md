@@ -71,9 +71,11 @@ How it appears to users:
 - **Unable to evaluate:** access, setup, or available data prevented a conclusion.
 - **System error:** an unexpected evaluator or platform problem occurred; review troubleshooting details.
 
-Core includes no example Custom Metadata or Apex implementations. The local
-[examples library](../examples/README.md) documents Formula, Query, Compare two queries, and Apex
-patterns that you can adapt.
+Record Health Check installs without business-policy Check Sets or Rules. This keeps a production
+installation neutral: administrators deliberately create or install the configuration their org
+will enforce. The [examples library](../examples/README.md) teaches reusable patterns, while the
+optional [core examples](https://github.com/gkolan/RecordHealthCheck-Examples/tree/main/core-examples)
+provide sandbox-ready metadata in a separate repository.
 
 ## First troubleshooting checks
 
@@ -81,7 +83,7 @@ patterns that you can adapt.
   targets the record page object. Create a Check Set before configuring the component.
 - **Check Set is not found:** confirm the Check Set metadata was deployed and is active.
 - **Rule is skipped:** review **Applies To**, dependencies, and whether the record meets the applicability condition.
-- **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!record.Id}` when it filters records for the open record. For an optional parent lookup, use a typed fallback such as `{!record.ParentId|001000000000000AAA}`.
+- **SOQL query returns no rows:** confirm related records exist and the query uses the current record token `{!record.Id}` when it filters records for the open record. For an optional parent lookup, use a typed fallback such as `{!record.ParentId fallback="001000000000000AAA"}`.
 - **SOQL query returns more than one row:** use an aggregate such as `COUNT()` or choose **How To Read Query Results** = **Any record passes** (`ANY_ROW_PASSES`).
 - **Formula errors:** confirm the formula returns true/false for pass/fail and uses valid field API names.
 - **User does not see troubleshooting details:** confirm **Show Diagnostics** is checked on the Check Set and the user has the Permission Set named `Record_Health_Check_Admin`.

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Accessible_Value__c</fullName>
+    <description
+  >Stores synthetic content that the restricted integration persona is permitted to evaluate.</description>
+    <inlineHelpText
+  >Enter a non-sensitive value used by restricted-persona integration tests.</inlineHelpText>
+    <label>Accessible Value</label>
+    <length>80</length>
+    <required>false</required>
+    <type>Text</type>
+</CustomField>

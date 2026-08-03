@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Three required fields in a single rule using AND(). Extends the one-field pattern (`Account_DQ_BillingCity`) and two-field (`Account_FC_TwoFieldsAnd`) examples. The AND() wraps any number of NOT(ISBLANK()) checks — the rule fails if any field is missing.</value>
+    >Three required fields in a single rule using AND(). Extends the one-field pattern (`Account_DQ_BillingCity`) and two-field (`Account_FC_TwoFieldsAnd`) examples. The AND() wraps any number of NOT(ISBLANK()) checks: the rule fails if any field is missing.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

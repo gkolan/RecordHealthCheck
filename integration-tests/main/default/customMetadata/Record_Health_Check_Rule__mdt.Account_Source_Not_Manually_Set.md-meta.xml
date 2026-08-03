@@ -52,7 +52,7 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Account Source has been manually set — this field is owned by automation.</value>
+    >Account Source has been manually set: this field is owned by automation.</value>
     </values>
     <values>
         <field>SourceQueryField__c</field>

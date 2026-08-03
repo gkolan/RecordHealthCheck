@@ -14,7 +14,7 @@ open an individual field when you need the full detail.
 | 4. Define the decision | What value is found, what is expected, and how are they compared? | The Evaluation Type table below |
 | 5. Explain the result | What should someone understand and do after a failure or an unable result? | [Check Title](#check-title-checktitle__c), [Message When Failed](#message-when-failed-failuremessage__c), and [Fix Message](#fix-message-fixmessage__c) |
 | 6. Add a next action | Would a safe same-org destination help resolve the result? | [Action Label](#action-label-actionlabel__c) and [Action URL](#action-url-actionurl__c) |
-| 7. Publish when needed | Does another process need the finalized Rule outcome? | [Publish Result Event](#publish-result-event-publishresultevent__c) |
+| 7. Publish when needed | Does another process need the finalized Rule outcome? | [Publish User Result Event](#publish-user-result-event-publishuserresultevent__c) |
 
 | What the Rule must verify | Evaluation Type | Start with |
 | --- | --- | --- |
@@ -45,7 +45,8 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 | [Fix Message](#fix-message-fixmessage__c) | `FixMessage__c` | What users see |
 | [Action Label](#action-label-actionlabel__c) | `ActionLabel__c` | What users see |
 | [Action URL](#action-url-actionurl__c) | `ActionUrl__c` | What users see |
-| [Evaluation Type](#evaluation-type-evaluationtype__c) | `EvaluationType__c` | Check type (`EvaluationType__c`) |
+| [Evaluation Type](#evaluation-type-evaluationtype__c) | `EvaluationType__c` | Check type and value display |
+| [Display: Value Format](#display-value-format-displayvalueformat__c) | `DisplayValueFormat__c` | Check type and value display |
 | [Pass Condition](#pass-condition-passconditionformula__c) | `PassConditionFormula__c` | Check fields on this record (`FORMULA`) |
 | [Display: Found Formula](#display-found-formula-displayfoundformula__c) | `DisplayFoundFormula__c` | Check fields on this record (`FORMULA`) |
 | [Display: Expected Formula](#display-expected-formula-displayexpectedformula__c) | `DisplayExpectedFormula__c` | Check fields on this record (`FORMULA`) |
@@ -74,7 +75,7 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 | [Prerequisite Rule](#prerequisite-rule-prerequisiterule__c) | `PrerequisiteRule__c` | When this check applies |
 | [Apex Class](#apex-class-apexclass__c) | `ApexClass__c` | Custom Apex (`APEX`) |
 | [Apex Parameters (JSON)](#apex-parameters-json-apexparametersjson__c) | `ApexParametersJson__c` | Custom Apex (`APEX`) |
-| [Publish Result Event](#publish-result-event-publishresultevent__c) | `PublishResultEvent__c` | Lifecycle events |
+| [Publish User Result Event](#publish-user-result-event-publishuserresultevent__c) | `PublishUserResultEvent__c` | Lifecycle events |
 
 ## Read an individual field
 
@@ -243,7 +244,7 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 | Capacity | 32768 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Optional for every Evaluation Type; displayed for `FAIL` unless an Apex plugin returns its own message. |
+| Used when | Optional for every Evaluation Type; displayed for `FAIL`. Apex plugins return evaluation data, while metadata owns user-facing guidance. |
 | Description | <p>The message users see when this check results in Fail. It supports the display merge tokens documented in the <a href="../guides/configure-check-sets-and-rules.md#11-merge-tokens">merge-token guide</a>.</p><p>Press Enter to start a new line; each line is shown as a separate line on the card.</p> |
 | Help text | <p>Shown when the check fails. Merge tokens can insert record and Framework values with optional fallback text.</p><p>Press Enter for a new line.</p> |
 | Allowed values | Any value valid for the field type |
@@ -251,7 +252,7 @@ that adapts to the record and result, use [Merge Syntax](../guides/configure-che
 Examples:
 
 ```text
-{!record.Name} has {!record.NumberOfEmployees|no recorded} employees and is owned by {!record.Owner.Name}.
+{!record.Name} has {!record.NumberOfEmployees fallback="no recorded"} employees and is owned by {!record.Owner.Name}.
 
 {!rhcRule.checkTitle} found a {!rhcRule.failureSeverity} {!rhcRule.category} issue for {!record.Name}.
 
@@ -282,7 +283,7 @@ The check returned {!rhcResult.status}. If you need help, reference run {!rhcRun
 Examples:
 
 ```text
-We could not evaluate {!record.Name} for parent account {!record.Parent.Name|not assigned}.
+We could not evaluate {!record.Name} for parent account {!record.Parent.Name fallback="not assigned"}.
 
 {!rhcRule.checkTitle} could not be completed in {!rhcSet.cardTitle}.
 
@@ -309,7 +310,7 @@ Try again later. If the problem continues, give support run {!rhcRun.runId}, sta
 Examples:
 
 ```text
-Ask {!record.Owner.Name} to update the phone number for {!record.Name}; the current value is {!record.Phone|not provided}.
+Ask {!record.Owner.Name} to update the phone number for {!record.Name}; the current value is {!record.Phone fallback="not provided"}.
 
 Change the found value of {!rhcResult.foundValue} to the expected value of {!rhcResult.expectedValue}.
 
@@ -342,7 +343,7 @@ Review {!record.Name}
 Contact {!record.Owner.Name}
 Fix {!rhcRule.checkTitle}
 Return to {!rhcSet.cardTitle}
-Correct {!rhcResult.foundValue} open case{!rhcResult.foundValuePluralSuffix|s}
+Correct {!rhcResult.foundValue} open case{!rhcResult.foundValuePluralSuffix fallback="s"}
 Review run {!rhcRun.runId}
 ```
 
@@ -371,11 +372,11 @@ Examples:
 ```
 
 ```text
-/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id},Subject=Review%20{!record.Name|this account},Origin=Web,Description=Rule%20{!rhcRule.developerName}%20in%20{!rhcSet.developerName}
+/lightning/o/Case/new?defaultFieldValues=AccountId={!record.Id},Subject=Review%20{!record.Name fallback="this account"},Origin=Web,Description=Rule%20{!rhcRule.developerName}%20in%20{!rhcSet.developerName}
 ```
 
 
-## 3. Check type (`EvaluationType__c`)
+## 3. Check type and value display
 
 ### Evaluation Type (`EvaluationType__c`)
 
@@ -391,6 +392,29 @@ Examples:
 | Description | <p>How this check decides pass or fail. Required - there is no default, so you must choose one, and your choice determines which other fields you fill in (complete only the matching section).</p><ul><li>"Verify with a formula" evaluates a true/false formula on the current record - fill in "Pass Condition".</li><li>"Verify with a query" runs one SOQL query and compares its result - fill in "Source Query", "Comparison Operator", and "Expected Value Comes From".</li><li>"Compare two queries" compares the results of two SOQL queries - fill in "Source Query" and "Comparison Query".</li><li>"Verify with Apex" runs your own Apex class - fill in "Apex Class".</li></ul> |
 | Help text | Required. Choose Formula for record fields, Query for related or aggregate data, Compare two queries for two result sets, or Apex for logic the other options cannot express. |
 | Allowed values | **Verify with a formula**: `FORMULA`<br>**Verify with a query**: `QUERY`<br>**Compare two queries**: `COMPARE_TWO_QUERIES`<br>**Verify with Apex**: `APEX` |
+
+### Display: Value Format (`DisplayValueFormat__c`)
+
+| Attribute | Value |
+| --- | --- |
+| Setup label | **Display: Value Format** |
+| API name | `DisplayValueFormat__c` |
+| Type | Picklist |
+| Capacity | Restricted picklist |
+| Always required | No |
+| Default | **Auto**: `AUTO` |
+| Used when | Optional on any Rule. Apex Rules use the same formatter with the typed values returned by the plugin. |
+| Description | <p>Display only. Controls how Found and Expected are written, including separate Salesforce Percent and Ratio as Percent semantics. Both sides use the same format, and formatting never changes pass or fail.</p><p>Leave "Auto" unless you want a specific look, such as showing Annual Revenue as currency, a fraction as a percentage, or an external Id as raw text.</p> |
+| Help text | <p>Display only. Does not change pass or fail. Sets how Found and Expected are written, such as "Currency" for Annual Revenue, "Number" for an employee count, or "Raw" for an external Id.</p><p>Leave "Auto" unless you need a specific look.</p> |
+| Allowed values | **Auto**: `AUTO`<br>**Number**: `NUMBER`<br>**Currency**: `CURRENCY`<br>**Percent**: `PERCENT`<br>**Ratio as Percent**: `RATIO_PERCENT`<br>**Checkbox**: `BOOLEAN`<br>**Date**: `DATE`<br>**Date/Time**: `DATETIME`<br>**Text**: `TEXT`<br>**Raw**: `RAW` |
+
+This is a different setting from [Formula Result Type](#formula-result-type-formularesulttype__c),
+which declares the type a formula returns so the Rule can calculate with it. A Formula Rule can set
+Formula Result Type to **Number** and Display: Value Format to **Currency** at the same time.
+
+Naming a format that cannot apply to a value is not an error - the value keeps its original
+spelling. Full contract:
+[Reference: Display value format](../reference/reference-display-value-format.md).
 
 
 ## 4. Check fields on this record (`FORMULA`)
@@ -517,9 +541,9 @@ Examples:
 
 ```sql
 SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}
-SELECT Id FROM Account WHERE Industry = {!record.Industry|Technology}
+SELECT Id FROM Account WHERE Industry = {!record.Industry fallback="Technology"}
 SELECT Id FROM Opportunity WHERE AccountId = {!record.Id} AND OwnerId = {!record.Owner.ManagerId}
-SELECT Id FROM Opportunity WHERE AccountId = {!record.Id} AND Amount >= {!record.AnnualRevenue|0}
+SELECT Id FROM Opportunity WHERE AccountId = {!record.Id} AND Amount >= {!record.AnnualRevenue fallback="0"}
 SELECT Id FROM Opportunity WHERE AccountId = {!record.Id} AND CreatedDate >= {!record.CreatedDate}
 SELECT Id FROM Account WHERE IsDeleted = {!record.IsDeleted}
 SELECT Id FROM Account WHERE Name LIKE '{!record.Name}%'
@@ -535,9 +559,9 @@ SELECT Id FROM Account WHERE Name LIKE '{!record.Name}%'
 | Capacity | 255 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Set when Source Query returns a selected field or aliased aggregate; leave blank for bare `COUNT()`. |
-| Description | <p>The API name of the field to read from the "Source Query" result. Needed when the Source Query returns field values.</p><p>Leave blank when the Source Query uses COUNT() or another aggregate.</p> |
-| Help text | <p>Which column from the "Source Query" to read, e.g. MailingCity. Leave blank for COUNT()/aggregate queries.</p> |
+| Used when | Set when Source Query returns a selected field or an aliased aggregate; leave blank only for bare `COUNT()`. |
+| Description | <p>The API name of the field or aggregate alias to read from the "Source Query" result.</p><p>Leave blank only for bare `COUNT()`. For `SUM()`, `MIN()`, `MAX()`, `AVG()`, `COUNT(field)`, or `COUNT_DISTINCT(field)`, give the expression an alias and enter that alias here.</p> |
+| Help text | <p>Column or aggregate alias to read, such as `MailingCity` or `totalAmount`. Leave blank only for bare `COUNT()`.</p> |
 | Allowed values | Any value valid for the field type |
 
 Example: use `totalAmount` for the aliased aggregate below. Leave this field blank for bare `COUNT()`.
@@ -565,7 +589,7 @@ Examples:
 
 ```sql
 SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false
-SELECT AnnualRevenue FROM Account WHERE Id = {!record.ParentId|001000000000000AAA}
+SELECT AnnualRevenue FROM Account WHERE Id = {!record.ParentId fallback="001000000000000AAA"}
 SELECT EndDate FROM Contract WHERE AccountId = {!record.Id} AND Status = 'Activated' ORDER BY EndDate LIMIT 1
 SELECT MailingState FROM Contact WHERE AccountId = {!record.Id} AND MailingState != null
 ```
@@ -580,9 +604,9 @@ SELECT MailingState FROM Contact WHERE AccountId = {!record.Id} AND MailingState
 | Capacity | 255 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Set when Comparison Query returns a selected field or aliased aggregate; leave blank for bare `COUNT()`. |
-| Description | <p>The API name of the field to read from the "Comparison Query" result. Needed when that query returns field values rather than a COUNT() aggregate.</p><p>Leave blank for COUNT()/aggregate queries.</p> |
-| Help text | <p>Which column from the "Comparison Query" to read, e.g. `Country_Code__c`. Leave blank for COUNT()/aggregate queries.</p> |
+| Used when | Set when Comparison Query returns a selected field or an aliased aggregate; leave blank only for bare `COUNT()`. |
+| Description | <p>The API name of the field or aggregate alias to read from the "Comparison Query" result.</p><p>Leave blank only for bare `COUNT()`. Other aggregate expressions require an alias entered here.</p> |
+| Help text | <p>Column or aggregate alias to read, such as `Country_Code__c` or `comparisonTotal`. Leave blank only for bare `COUNT()`.</p> |
 | Allowed values | Any value valid for the field type |
 
 Example: use `comparisonTotal` for the aliased aggregate below.
@@ -761,9 +785,9 @@ Examples:
 | Capacity | 255 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Optional for Query Rules using **Every record passes**; display only. |
-| Description | <p>Optional and display only. Plain text (not a formula) that overrides the auto-generated "N of M records did not pass" Found line on a multi-row ("Every record passes") query check.</p><p>It supports the display merge tokens documented in the <a href="../guides/configure-check-sets-and-rules.md#11-merge-tokens">merge-token guide</a>.</p> |
-| Help text | <p>Display only. Plain text (not a formula) for the "Found" line on an "Every record passes" check. Supports record and result merge tokens with optional fallback text.</p> |
+| Used when | Optional on any Evaluation Type whose Found line the Framework writes - Query, Formula, and Compare two queries; display only. An Apex Rule writes its own Found value, so this field does not apply there. |
+| Description | <p>Optional and display only. Plain text (not a formula) that replaces the Found line the Framework writes: the auto-generated "N of M records did not pass" summary on a multi-row ("Every record passes") query check, and the Found value on any other Query, Formula, or Compare two queries Rule.</p><p>It supports the display merge tokens documented in the <a href="../guides/configure-check-sets-and-rules.md#11-merge-tokens">merge-token guide</a>, including <code>{!rhcResult.foundValue}</code> for the value it replaces.</p> |
+| Help text | <p>Display only. Plain text (not a formula) for the "Found" line. Supports record and result merge tokens with optional fallback text.</p> |
 | Allowed values | Any value valid for the field type |
 
 Examples:
@@ -771,7 +795,7 @@ Examples:
 ```text
 {!rhcResult.failedRecordCount} of {!rhcResult.totalRecordCount} contacts for {!record.Name} are missing email.
 
-{!rhcRule.checkTitle} found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix|s}.
+{!rhcRule.checkTitle} found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix fallback="s"}.
 
 {!rhcSet.cardTitle}: {!rhcResult.failedRecordCount} related records need attention.
 
@@ -788,9 +812,9 @@ Found during run {!rhcRun.runId}.
 | Capacity | 255 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Optional for Query Rules using **Every record passes**; display only. |
-| Description | <p>Optional and display only. Plain text (not a formula) that overrides the auto-generated Expected line on a multi-row ("Every record passes") query check.</p><p>It supports the display merge tokens documented in the <a href="../guides/configure-check-sets-and-rules.md#11-merge-tokens">merge-token guide</a>.</p> |
-| Help text | <p>Display only. Plain text (not a formula) for the "Expected" line on an "Every record passes" check. Supports record and result merge tokens with optional fallback text.</p> |
+| Used when | Optional on any Evaluation Type whose Expected line the Framework writes - Query, Formula, and Compare two queries; display only. An Apex Rule writes its own Expected value, so this field does not apply there. |
+| Description | <p>Optional and display only. Plain text (not a formula) that replaces the Expected line the Framework writes, on a multi-row ("Every record passes") query check and on any other Query, Formula, or Compare two queries Rule. On a Formula Rule it replaces the "Passes when" echo of the pass condition, and the row goes back to the plain Expected caption.</p><p>It supports the display merge tokens documented in the <a href="../guides/configure-check-sets-and-rules.md#11-merge-tokens">merge-token guide</a>, including <code>{!rhcResult.expectedValue}</code> for the value it replaces.</p> |
+| Help text | <p>Display only. Plain text (not a formula) for the "Expected" line. Supports record and result merge tokens with optional fallback text.</p> |
 | Allowed values | Any value valid for the field type |
 
 Examples:
@@ -845,7 +869,7 @@ Examples:
 ```text
 {!record.Name} is a {!record.Type} account; this requirement applies only to channel partners.
 
-{!record.Name} belongs to {!record.Parent.Name|no parent account}; this check runs only for independent accounts.
+{!record.Name} belongs to {!record.Parent.Name fallback="no parent account"}; this check runs only for independent accounts.
 
 {!rhcRule.checkTitle} in {!rhcSet.cardTitle} does not apply to this segment.
 
@@ -887,10 +911,10 @@ Examples:
 
 ```sql
 SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND IsClosed = false
-SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND Owner.ManagerId = {!record.Owner.ManagerId|005000000000000AAA}
-SELECT COUNT() FROM Contract WHERE AccountId = {!record.Id} AND EndDate <= {!record.LastActivityDate|2099-12-31}
-SELECT COUNT() FROM Case WHERE AccountId = {!record.Id} AND Priority = 'High' AND CreatedDate >= {!record.CreatedDate|2026-01-01T00:00:00Z}
-SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id} AND MailingState = {!record.BillingState|Illinois}
+SELECT COUNT() FROM Opportunity WHERE AccountId = {!record.Id} AND Owner.ManagerId = {!record.Owner.ManagerId fallback="005000000000000AAA"}
+SELECT COUNT() FROM Contract WHERE AccountId = {!record.Id} AND EndDate <= {!record.LastActivityDate fallback="2099-12-31"}
+SELECT COUNT() FROM Case WHERE AccountId = {!record.Id} AND Priority = 'High' AND CreatedDate >= {!record.CreatedDate fallback="2026-01-01T00:00:00Z"}
+SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id} AND MailingState = {!record.BillingState fallback="Illinois"}
 ```
 
 ### Count Must Be (`ApplicabilityCountOperator__c`)
@@ -969,7 +993,7 @@ SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id} AND MailingState = {!
 | Capacity | 32768 characters |
 | Always required | No |
 | Default | No default |
-| Used when | Optional for Apex Rules; passed to the plugin as `context.parameters`. |
+| Used when | Optional for Apex Rules; passed to the plugin as `scope.parameters`. |
 | Description | <p>Optional JSON parameters passed to the class named in "Apex Class". Must be valid JSON; invalid JSON makes the check report that it cannot run (reason INVALID_APEX_PARAMETERS).</p><p>These are per-check parameters, not org-wide settings. Leave blank if the class needs none.</p> |
 | Help text | <p>Optional. Valid JSON passed to your Apex class, e.g. {"threshold": 5}. Leave blank if the class needs no parameters.</p> |
 | Allowed values | Any value valid for the field type |
@@ -978,12 +1002,12 @@ SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id} AND MailingState = {!
 
 ## Lifecycle events
 
-### Publish Result Event (`PublishResultEvent__c`)
+### Publish User Result Event (`PublishUserResultEvent__c`)
 
 | Attribute | Value |
 | --- | --- |
-| Setup label | **Publish Result Event** |
-| API name | `PublishResultEvent__c` |
+| Setup label | **Publish User Result Event** |
+| API name | `PublishUserResultEvent__c` |
 | Type | Checkbox |
 | Capacity | Checkbox |
 | Always required | No |

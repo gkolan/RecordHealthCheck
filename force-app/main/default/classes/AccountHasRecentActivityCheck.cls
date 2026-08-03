@@ -4,76 +4,150 @@
  */
 
 /**
- * Example implementation of RecordHealthCheckRule using the Apex evaluator.
- * Checks whether an Account has at least one completed Task or logged Event
- * within a configurable look-back window. The number of days is read from
- * ApexParametersJson__c so it can be tuned per rule without a code change
- * ApexParametersJson__c: {"daysBack": 90}
- * Failure message, severity, and label all come from the CMT record — this
- * class determines PASS/FAIL and returns comparison values for the UI.
+ * Example implementation of RecordHealthCheckRule: has the Account been touched
+ * recently? At least one completed Task or logged Event inside a configurable
+ * look-back window, tuned per Rule through ApexParametersJson__c, for example
+ * {"daysBack": 90}.
+ *
+ * This is the reference implementation for the plugin contract, so it is
+ * written the way every Rule should be: all data loading happens ABOVE the
+ * loop, and the loop does computation only. Two queries serve the whole scope,
+ * whether that scope holds one record or two hundred.
+ *
+ * Failure message, severity, and label all come from the Rule metadata. This
+ * class decides PASS or FAIL and reports the values behind that decision; it
+ * never stamps identity, severity, or anything the user sees.
  */
-public with sharing class AccountHasRecentActivityCheck implements RecordHealthCheckRule {
+global with sharing class AccountHasRecentActivityCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_DAYS_BACK = 30;
   private static final Integer MIN_DAYS_BACK = 1;
   private static final Integer MAX_DAYS_BACK = 3650;
 
-  public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-    Integer daysBack = resolveDaysBack(context.parameters);
-    Date cutoff = Date.today().addDays(-daysBack);
+  /** Evaluates recent activity once for the complete requested scope. */
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
+    List<Id> recordIds = scope.recordIds;
+    if (recordIds == null || recordIds.isEmpty()) {
+      return results;
+    }
+    Set<Id> queryRecordIds = new Set<Id>(recordIds);
 
-    Integer taskCount = [
-      SELECT COUNT()
+    Integer daysBack = resolveDaysBack(scope.parameters);
+    if (daysBack == null) {
+      for (Id recordId : recordIds) {
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate('INVALID_CONFIG')
+        );
+      }
+      return results;
+    }
+    Date cutoff = Date.today().addDays(-daysBack);
+    if (cutoff == null) {
+      return results;
+    }
+
+    // Seed every Id with zero BEFORE overlaying the aggregates. An aggregate
+    // returns no row at all for an Account with no activity, so a map built
+    // only from query results would leave exactly those Accounts missing, and
+    // "no recent activity" is precisely the population this check exists to
+    // find. Zero is a real answer here, not an absent one.
+    Map<Id, Integer> activityCounts = new Map<Id, Integer>();
+    for (Id recordId : recordIds) {
+      activityCounts.put(recordId, 0);
+    }
+
+    for (AggregateResult row : [
+      SELECT WhatId whatId, COUNT(Id) total
       FROM Task
       WHERE
-        WhatId = :context.recordId
+        WhatId IN :queryRecordIds
         AND IsClosed = TRUE
         AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
+      GROUP BY WhatId
+    ]) {
+      accumulate(
+        activityCounts,
+        (Id) row.get('whatId'),
+        (Integer) row.get('total')
+      );
+    }
 
-    Integer eventCount = [
-      SELECT COUNT()
+    for (AggregateResult row : [
+      SELECT WhatId whatId, COUNT(Id) total
       FROM Event
-      WHERE WhatId = :context.recordId AND ActivityDate >= :cutoff
+      WHERE WhatId IN :queryRecordIds AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
+      GROUP BY WhatId
+    ]) {
+      accumulate(
+        activityCounts,
+        (Id) row.get('whatId'),
+        (Integer) row.get('total')
+      );
+    }
 
-    Integer activityCount = taskCount + eventCount;
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(1);
+    for (Id recordId : recordIds) {
+      Integer total = activityCounts.get(recordId);
+      RecordHealthCheckOutcome outcome = total > 0
+        ? RecordHealthCheckOutcome.pass('APEX_PASS')
+        : RecordHealthCheckOutcome.fail('APEX_FAIL');
+      results.put(
+        recordId,
+        outcome
+          .withFound(RecordHealthCheckValue.ofCount(total))
+          .withComparison('GREATER_THAN_OR_EQUAL', expected)
+      );
+    }
 
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.status = activityCount > 0 ? 'PASS' : 'FAIL';
-    result.actualValue =
-      activityCount +
-      ' activit' +
-      (activityCount == 1 ? 'y' : 'ies');
-    result.expectedValue = 'at least 1 activity';
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'Completed tasks + events',
-      String.valueOf(activityCount),
-      'last ' + daysBack + ' days'
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Required recent activity',
-      '1',
-      'within ' + daysBack + ' days'
-    );
-    return result;
+    return results;
   }
 
+  /**
+   * A WhatId can point at objects other than the ones in scope, so only seeded
+   * keys are accumulated. Anything else would add a key the engine never asked
+   * about, which fails the whole scope.
+   */
+  private static void accumulate(
+    Map<Id, Integer> counts,
+    Id whatId,
+    Integer total
+  ) {
+    if (whatId != null && counts.containsKey(whatId)) {
+      counts.put(whatId, counts.get(whatId) + total);
+    }
+  }
+
+  /**
+   * Bounded deliberately: an unbounded window is not a useful health check, and
+   * a negative one would silently invert the question being asked.
+   *
+   * Null means the administrator supplied an invalid value; the caller returns
+   * INVALID_CONFIG for every scoped record without running a query.
+   */
   private Integer resolveDaysBack(Map<String, Object> parameters) {
-    if (parameters == null)
-      return DEFAULT_DAYS_BACK;
-    Object raw = parameters.get('daysBack');
-    if (raw == null)
-      return DEFAULT_DAYS_BACK;
-    try {
-      Integer parsed = Integer.valueOf(String.valueOf(raw));
-      return parsed >= MIN_DAYS_BACK &&
-        parsed <= MAX_DAYS_BACK
-        ? parsed
-        : DEFAULT_DAYS_BACK;
-    } catch (Exception ex) {
+    Object raw = parameters == null ? null : parameters.get('daysBack');
+    if (raw == null) {
       return DEFAULT_DAYS_BACK;
     }
+    Integer parsed;
+    if (raw instanceof Integer) {
+      parsed = (Integer) raw;
+    } else if (raw instanceof Decimal) {
+      parsed = ((Decimal) raw).intValue();
+    } else if (raw instanceof String) {
+      try {
+        parsed = Integer.valueOf((String) raw);
+      } catch (Exception ex) {
+        return null;
+      }
+    } else {
+      return null;
+    }
+    return (parsed < MIN_DAYS_BACK || parsed > MAX_DAYS_BACK) ? null : parsed;
   }
 }

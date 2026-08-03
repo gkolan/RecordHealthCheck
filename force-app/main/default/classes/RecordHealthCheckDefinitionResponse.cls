@@ -5,6 +5,8 @@
 
 public class RecordHealthCheckDefinitionResponse {
   @AuraEnabled
+  public String checkSetQualifiedApiName;
+  @AuraEnabled
   public String displayTitle;
   @AuraEnabled
   public String displayDescription;

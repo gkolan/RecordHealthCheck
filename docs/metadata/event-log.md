@@ -1,8 +1,8 @@
 # Log Platform Event (`Record_Health_Check_Log__e`)
 
 `Record_Health_Check_Log__e` carries structured Framework `ERROR` information. Unlike the two
-lifecycle events, it uses **Publish Immediately**, contains restricted diagnostic detail, and is not
-controlled by Check Set or Rule publication fields.
+lifecycle events, it uses **Publish Immediately**, contains restricted diagnostic detail, and is
+enabled by default through the Check Set's **Publish Error Log Event** setting.
 
 Use this event for restricted technical operations and support, not readiness workflows.
 
@@ -12,7 +12,7 @@ Use this event for restricted technical operations and support, not readiness wo
 | --- | --- |
 | Persisted error history | Persist Framework errors beyond debug-log and Platform Event retention |
 | Technical alerting | Notify a restricted support channel when a new error Code or exception appears |
-| Incident correlation | Group errors by Run ID, Salesforce record, Check Set, Rule, user, and Core version |
+| Incident correlation | Group errors by Run ID, Salesforce record, Check Set, Rule, user, and Framework version |
 | Release monitoring | Compare error rates before and after a Framework or configuration deployment |
 | Reproduction support | Use record and metadata identifiers to reproduce a failure under controlled access |
 
@@ -29,15 +29,19 @@ clears held entries for the transaction.
 | --- | --- |
 | Event type | High Volume |
 | Publish behavior | Publish Immediately |
-| Default | Error-event publication enabled in Framework code |
+| Default | Enabled (`PublishErrorLogEvent__c = true`) |
 | Published levels | `ERROR` only |
-| Optional Custom Metadata field | None |
+| Check Set Custom Metadata field | `PublishErrorLogEvent__c`; uncheck to opt out for that Check Set |
 | Contract version | `1.0` |
 | Failure behavior | Best effort; publishing failure is logged and does not change the health-check result |
 
 `Publish Immediately` allows an accepted event to survive a later transaction rollback. However, an
 uncatchable governor-limit abort can prevent `flush()` from running, so this event is not a complete
 replacement for Salesforce debug logs and platform exception monitoring.
+
+When the Framework cannot resolve a Check Set, publication remains enabled. This preserves error
+visibility for missing or invalid configuration. Unchecking the field affects only Log platform
+events; Salesforce debug-log output is unchanged.
 
 ## Fields
 
@@ -47,8 +51,8 @@ replacement for Salesforce debug logs and platform exception monitoring.
 | Run ID | `RunId__c` | Text(120) | Required; generated or inherited | Correlates errors from one Framework run. |
 | Occurred At | `OccurredAt__c` | DateTime | Required; generated | UTC event-construction time. |
 | Contract Version | `ContractVersion__c` | Text(10) | Required; `1.0` | Version of the diagnostics-event schema. |
-| Core Version | `CoreVersion__c` | Text(20) | Optional; Framework supplied | Framework release that produced the error. |
-| Level | `Level__c` | Text(10) | Required; `ERROR` | Log level. Core publishes only `ERROR` events. |
+| Framework Version | `FrameworkVersion__c` | Text(20) | Optional; Framework supplied | Framework release that produced the error. |
+| Level | `Level__c` | Text(10) | Required; `ERROR` | Log level. Record Health Check publishes only `ERROR` events. |
 | Code | `Code__c` | Text(120) | Optional | Stable or internal event code such as `APEX_EVALUATOR_ERROR` or `UNHANDLED_EXCEPTION`. |
 | Message | `Message__c` | Long Text Area(32,768) | Optional | Cleaned-up exception message or compact sorted field summary. |
 | Exception Type | `ExceptionType__c` | Text(120) | Optional | Apex exception type when an exception is available. |
@@ -63,7 +67,7 @@ replacement for Salesforce debug logs and platform exception monitoring.
 ```json
 {
   "ContractVersion__c": "1.0",
-  "CoreVersion__c": "2.0.0",
+  "FrameworkVersion__c": "current-release",
   "EventId__c": "rhc-run-001-APEX_EVALUATOR_ERRO-18273",
   "RunId__c": "rhc-run-001",
   "OccurredAt__c": "2026-07-21T15:30:00.000Z",
@@ -124,6 +128,7 @@ repeat.
 
 ## Related
 
+- [Subscribe with Flow or Apex](../platform-events/error-log.md)
 - [Lifecycle-events overview](../integration/lifecycle-events.md)
 - [Check Set Run Platform Event](event-set-run.md)
 - [Rule Result Platform Event](event-rule-result.md)

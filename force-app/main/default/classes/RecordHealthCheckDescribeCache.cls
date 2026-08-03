@@ -28,16 +28,12 @@ public with sharing class RecordHealthCheckDescribeCache {
     if (globalDescribe.containsKey(objectApiName)) {
       return globalDescribe.get(objectApiName);
     }
-    for (String key : globalDescribe.keySet()) {
-      if (key.equalsIgnoreCase(objectApiName)) {
-        return globalDescribe.get(key);
-      }
-    }
     return null;
   }
 
   public static Map<String, Schema.SObjectType> getGlobalDescribe() {
     if (globalDescribeByName == null) {
+      // code-analyzer-suppress-next-line AvoidMultipleMassSchemaLookups: guarded by a transaction-scoped static cache, so this executes at most once per transaction.
       globalDescribeByName = Schema.getGlobalDescribe();
     }
     return globalDescribeByName;
@@ -74,6 +70,35 @@ public with sharing class RecordHealthCheckDescribeCache {
     return description == null
       ? new Map<String, Schema.SObjectField>()
       : description.fields.getMap();
+  }
+
+  /** Resolves an exact or uniquely namespaced field API name. */
+  public static Schema.SObjectField resolveField(
+    Schema.SObjectType objectType,
+    String fieldApiName
+  ) {
+    if (objectType == null || String.isBlank(fieldApiName)) {
+      return null;
+    }
+    Map<String, Schema.SObjectField> fieldsByName = fieldMap(objectType);
+    if (fieldsByName.containsKey(fieldApiName)) {
+      return fieldsByName.get(fieldApiName);
+    }
+    Schema.SObjectField match;
+    String namespacedSuffix = '__' + fieldApiName.toLowerCase();
+    for (String candidate : fieldsByName.keySet()) {
+      String normalizedCandidate = candidate.toLowerCase();
+      if (
+        normalizedCandidate == fieldApiName.toLowerCase() ||
+        normalizedCandidate.endsWith(namespacedSuffix)
+      ) {
+        if (match != null) {
+          return null;
+        }
+        match = fieldsByName.get(candidate);
+      }
+    }
+    return match;
   }
 
   public static Schema.DescribeFieldResult describeField(

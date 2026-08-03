@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Allows a user to run Record Health Checks from supported Lightning, Flow, Apex, and asynchronous entry points.</description>
+    <label>Record Health Check Run</label>
+    <isLicensed>false</isLicensed>
+</CustomPermission>

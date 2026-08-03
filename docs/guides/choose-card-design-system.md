@@ -1,53 +1,43 @@
-# Choose the card design system
+# Understand adaptive card styling
 
 > [!NOTE]
-> On this page, choose the SLDS generation that matches each Lightning record page and understand how Record Health Check preserves the same behavior across SLDS 1 and SLDS 2 styling.
->
-> **Reference**
->
-> - This guide covers only the **Design System** setting; it changes the card's look, not your org
->   theme or any other component on the page.
-> - For every other card and Check Set setting, use the [Configure Check Sets and Rules](configure-check-sets-and-rules.md).
+> Use this page to understand how Record Health Check follows the active Salesforce design system without a per-component theme setting.
 
-Use the **Design System** component property to match the Record Health Check card to each Lightning
-record page. Select SLDS 2 for a page using the Salesforce Cosmos theme; leave SLDS 1 for established
-Lightning styling.
+## One component placement
 
-The setting changes visual treatment only. The Check Set, Rules, results, messages, actions,
-keyboard interaction, and accessible labels behave the same in SLDS 1 and SLDS 2.
+Add Record Health Check to a Lightning record page and select its Check Set. There is no Design
+System property to maintain. The same placement works when the page uses established SLDS styling
+or the Salesforce Cosmos theme.
 
-## Change the design system
+Record Health Check uses supported semantic SLDS global styling hooks. In Cosmos, the current
+surface, text, border, radius, spacing, and shadow hooks supply the visual treatment. Where a
+semantic hook is unavailable, the stylesheet falls back to an established Lightning token and then
+to a safe static value.
 
-1. In **Lightning App Builder**, open the record page containing **Record Health Check**.
-2. Select the component on the page canvas.
-3. In the component properties, choose **SLDS 1** or **SLDS 2** under **Design System**.
-4. Save and activate the page, then open a record to confirm the card matches the surrounding page.
+This approach avoids guessing the org theme from browser classes or undocumented runtime state.
+Lightning base components continue to follow the design system selected by Salesforce.
 
-## Choose between SLDS 1 and SLDS 2
+## What remains consistent
 
-| Value | When to use it |
-| --- | --- |
-| **SLDS 1** | Default. Use where the surrounding page uses established Lightning styling. |
-| **SLDS 2** | Use for pages on the Salesforce **Cosmos** theme. |
+The design system may change color, radius, spacing, and elevation. Record Health Check preserves:
 
-If you do nothing, the card uses **SLDS 1**. Existing placements can opt into
-SLDS 2 individually when their pages adopt the Cosmos theme.
+- semantic structure and heading order;
+- keyboard navigation and focus behavior;
+- assistive labels and live-region announcements;
+- Rule ordering, statuses, actions, and diagnostics;
+- responsive behavior and record-page configuration.
 
-## What it changes
+## Verification checklist
 
-The setting swaps card background, borders, radius, shadow, header, and text between
-theme variables. Checks, results, messages, and action links behave identically in
-both treatments; only the styling differs. The component stores the choice in the App
-Builder attribute `designSystem`. Behavior, semantic structure, keyboard interaction,
-and accessible labels stay the same in both treatments.
+Use this checklist before release:
 
-## Why per-placement, not org-wide
-
-Orgs adopt the Cosmos theme at their own pace, and one org can have pages on both looks
-during a transition. A per-placement setting lets the card match whichever page it sits
-on, instead of forcing one choice org-wide.
+- Place the component on representative pages in established Lightning and Cosmos environments.
+- Verify default, loading, empty, passed, failed, skipped, unable, and error states.
+- Verify diagnostic and narrow-width states.
+- Run the SLDS linter and Jest suite after every styling change.
 
 ## Related
 
-- [Configure Check Sets and Rules](configure-check-sets-and-rules.md): every card and Check Set setting
-- [Create your first Rule](../installation/03-create-your-first-rule.md): add the card to a record page
+- [Install and verify](../installation/02-install-and-verify.md)
+- [Configure metadata](../metadata/README.md)
+- [Troubleshoot with diagnostics](troubleshoot-with-show-diagnostics.md)

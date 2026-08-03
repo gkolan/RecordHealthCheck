@@ -5,11 +5,9 @@
 
 /**
  * Shared value extraction, conversion, and comparison for the SOQL evaluators.
- * Both RecordHealthCheckSoqlEvaluator and RecordHealthCheckCompareQueriesEvaluator
- * previously carried their own copies of single-value/list extraction, QueryException
- * classification, type conversion, equality, and ordered comparison — and the copies
- * had gotten out of sync (notably Date/DateTime conversion). Keeping them in one place
- * guarantees single-query and compare-queries checks behave identically.
+ * Single-value/list extraction, QueryException classification, type conversion,
+ * equality, and ordered comparison live here so single-query and compare-queries
+ * checks behave identically.
  * Apex boxes Date values through the Datetime branch when they are held as Object
  * so temporal comparisons consistently use Datetime semantics after the numeric
  * comparison attempt.
@@ -34,10 +32,19 @@ public with sharing class RecordHealthCheckValueResolver {
   public static Object singleValueFromRow(SObject row, String fieldName) {
     if (row instanceof AggregateResult) {
       AggregateResult ar = (AggregateResult) row;
-      if (String.isNotBlank(fieldName))
+      if (String.isNotBlank(fieldName)) {
         return ar.get(fieldName);
+      }
       Map<String, Object> populated = ar.getPopulatedFieldsAsMap();
-      return populated.isEmpty() ? null : populated.values()[0];
+      if (populated.containsKey('expr0')) {
+        return populated.get('expr0');
+      }
+      for (String populatedField : populated.keySet()) {
+        if (!populatedField.equalsIgnoreCase('rhcCorrelation')) {
+          return populated.get(populatedField);
+        }
+      }
+      return null;
     }
     if (String.isBlank(fieldName)) {
       throw new ResolverException(
@@ -67,7 +74,6 @@ public with sharing class RecordHealthCheckValueResolver {
     return values;
   }
 
-  @TestVisible
   private static Object traverse(SObject row, String fieldPath) {
     if (!fieldPath.contains('.')) {
       return row.get(fieldPath);
@@ -176,36 +182,42 @@ public with sharing class RecordHealthCheckValueResolver {
     }
   }
 
-  @TestVisible
   private static Boolean orderedDecimal(String operator, Decimal p, Decimal c) {
-    if (operator == 'GREATER_THAN')
+    if (operator == 'GREATER_THAN') {
       return p > c;
-    if (operator == 'GREATER_THAN_OR_EQUAL')
+    }
+    if (operator == 'GREATER_THAN_OR_EQUAL') {
       return p >= c;
-    if (operator == 'LESS_THAN')
+    }
+    if (operator == 'LESS_THAN') {
       return p < c;
-    if (operator == 'LESS_THAN_OR_EQUAL')
+    }
+    if (operator == 'LESS_THAN_OR_EQUAL') {
       return p <= c;
+    }
     throw new ResolverException(
       'INVALID_OPERATOR',
       'Comparison operator "' + operator + '" is not an ordered operator.'
     );
   }
 
-  @TestVisible
   private static Boolean orderedDateTime(
     String operator,
     Datetime p,
     Datetime c
   ) {
-    if (operator == 'GREATER_THAN')
+    if (operator == 'GREATER_THAN') {
       return p > c;
-    if (operator == 'GREATER_THAN_OR_EQUAL')
+    }
+    if (operator == 'GREATER_THAN_OR_EQUAL') {
       return p >= c;
-    if (operator == 'LESS_THAN')
+    }
+    if (operator == 'LESS_THAN') {
       return p < c;
-    if (operator == 'LESS_THAN_OR_EQUAL')
+    }
+    if (operator == 'LESS_THAN_OR_EQUAL') {
       return p <= c;
+    }
     throw new ResolverException(
       'INVALID_OPERATOR',
       'Comparison operator "' + operator + '" is not an ordered operator.'
@@ -221,7 +233,6 @@ public with sharing class RecordHealthCheckValueResolver {
       value instanceof Decimal;
   }
 
-  @TestVisible
   private static Datetime coerceDateTime(Object value) {
     // in Apex a pure Date is `instanceof Datetime` (true)
     // but casting it to Datetime yields midnight GMT — not the running user's local

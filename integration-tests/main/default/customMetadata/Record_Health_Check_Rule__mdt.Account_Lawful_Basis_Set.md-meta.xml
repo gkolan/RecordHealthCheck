@@ -44,7 +44,7 @@
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Could not evaluate lawful basis — confirm Lawful_Basis__c exists and is readable. Contact your administrator.</value>
+    >Could not evaluate lawful basis: confirm Lawful_Basis__c exists and is readable. Contact your administrator.</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

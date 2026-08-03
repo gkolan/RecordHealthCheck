@@ -8,209 +8,199 @@
  * Pure string logic, so no DML/SOQL is needed. Covers clauses inside subqueries,
  * keywords inside string literals, and oversized or nested LIMITs.
  */
-@isTest
+@IsTest
 private class RecordHealthCheckSoqlTemplateTest {
-  // ─── maskStringLiterals / depthAt ──────────────────────────────────────────
+  // ─── literal masking ───────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void maskBlanksLiteralContentsAndPreservesLength() {
     String input = 'A = \'xy\' B';
     String masked = RecordHealthCheckSoqlTemplate.maskStringLiterals(input);
-    System.assertEquals(input.length(), masked.length(), 'Length preserved.');
-    System.assertEquals(
+    Assert.areEqual(input.length(), masked.length(), 'Length preserved.');
+    Assert.areEqual(
       'A = \'  \' B',
       masked,
       'Literal contents blanked, quotes kept.'
     );
   }
 
-  @isTest
-  static void depthAtTracksParentheses() {
-    String masked = 'SELECT Id, (SELECT Id) FROM A';
-    System.assertEquals(
-      0,
-      RecordHealthCheckSoqlTemplate.depthAt(masked, 0),
-      'Outer position is depth 0.'
-    );
-    Integer innerSelect = masked.indexOf('SELECT', 5);
-    System.assertEquals(
-      1,
-      RecordHealthCheckSoqlTemplate.depthAt(masked, innerSelect),
-      'Position inside the subquery is depth 1.'
-    );
-  }
-
-  // ─── assertSingleOuterSelect ───────────────────────────────────────────────
-
-  @isTest
+  @IsTest
   static void singleOuterSelectWithSubqueryIsValid() {
-    // Inner SELECT is at depth 1, so this is a single outer SELECT — no exception.
-    RecordHealthCheckSoqlTemplate.assertSingleOuterSelect(
-      'SELECT Id, (SELECT Id FROM Contacts) FROM Account'
+    String prepared = RecordHealthCheckSoqlTemplate.prepareForExecution(
+      'SELECT Id, (SELECT Id FROM Contacts) FROM Account',
+      2000
     );
+    Assert.isTrue(prepared.contains('(SELECT Id FROM Contacts)'));
   }
 
-  @isTest
+  @IsTest
   static void multipleOuterSelectsRejected() {
     try {
-      RecordHealthCheckSoqlTemplate.assertSingleOuterSelect(
-        'SELECT Id FROM A SELECT Id FROM B'
+      RecordHealthCheckSoqlTemplate.prepareForExecution(
+        'SELECT Id FROM A SELECT Id FROM B',
+        2000
       );
-      System.assert(false, 'Expected TemplateException for two outer SELECTs.');
+      Assert.isTrue(false, 'Expected TemplateException for two outer SELECTs.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  // ─── rewriteBareCount ──────────────────────────────────────────────────────
-
-  @isTest
+  @IsTest
   static void bareCountRewrittenToCountId() {
-    System.assertEquals(
-      'SELECT COUNT(Id) FROM Contact',
-      RecordHealthCheckSoqlTemplate.rewriteBareCount(
-        'SELECT COUNT() FROM Contact'
-      )
+    String prepared = RecordHealthCheckSoqlTemplate.prepareForExecution(
+      'SELECT COUNT() FROM Contact',
+      2000
+    );
+    Assert.isTrue(
+      prepared.contains('SELECT COUNT(Id) FROM Contact'),
+      'Bare COUNT must be normalized through the supported preparation API.'
     );
   }
 
   // ─── enforceRowCap ─────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void plainQueryGetsCap() {
-    String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
+    String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id FROM Account',
       2000
     );
-    System.assert(out.toUpperCase().endsWith('LIMIT 2000'), out);
+    Assert.isTrue(out.toUpperCase().endsWith('LIMIT 2000'), out);
   }
 
-  @isTest
+  @IsTest
   static void oversizedOuterLimitIsLowered() {
-    String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
+    String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id FROM Account LIMIT 50000',
       2000
     );
-    System.assert(out.contains('LIMIT 2000'), out);
-    System.assert(!out.contains('50000'), 'Oversized limit must be lowered.');
+    Assert.isTrue(out.contains('LIMIT 2000'), out);
+    Assert.isTrue(!out.contains('50000'), 'Oversized limit must be lowered.');
   }
 
-  @isTest
+  @IsTest
   static void smallExistingLimitUntouched() {
-    String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
+    String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id FROM Account LIMIT 10',
       2000
     );
-    System.assertEquals('SELECT Id FROM Account LIMIT 10', out);
+    Assert.areEqual('SELECT Id FROM Account WITH USER_MODE LIMIT 10', out);
   }
 
-  @isTest
+  @IsTest
   static void childSubqueryLimitDoesNotCountAsOuterCap() {
-    String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
+    String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id, (SELECT Id FROM Contacts LIMIT 5) FROM Account',
       2000
     );
-    System.assert(out.contains('LIMIT 5)'), 'Inner LIMIT preserved.');
-    System.assert(out.toUpperCase().endsWith('LIMIT 2000'), 'Outer cap added.');
+    Assert.isTrue(out.contains('LIMIT 5)'), 'Inner LIMIT preserved.');
+    Assert.isTrue(out.toUpperCase().endsWith('LIMIT 2000'), 'Outer cap added.');
   }
 
-  @isTest
+  @IsTest
   static void pureAggregateGetsNoLimit() {
-    String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
+    String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT COUNT(Id) FROM Contact WHERE AccountId = \'001\'',
       2000
     );
-    System.assert(
+    Assert.isTrue(
       !out.toUpperCase().contains('LIMIT'),
       'Pure aggregate must not get LIMIT.'
     );
   }
 
-  @isTest
+  @IsTest
   static void groupByGetsCap() {
-    String out = RecordHealthCheckSoqlTemplate.enforceRowCap(
+    String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT AccountId, COUNT(Id) FROM Contact GROUP BY AccountId',
       2000
     );
-    System.assert(out.toUpperCase().contains('LIMIT 2000'), out);
+    Assert.isTrue(out.toUpperCase().contains('LIMIT 2000'), out);
   }
 
   // ─── injectUserMode ────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void userModeAppendedWhenNoTailClause() {
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id FROM Account WHERE Id = \'001\''
     );
-    System.assert(out.endsWith('WITH USER_MODE'), out);
+    Assert.isTrue(out.endsWith('WITH USER_MODE'), out);
   }
 
-  @isTest
+  @IsTest
   static void userModeInsertedBeforeOuterOrderBy() {
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id FROM Account WHERE Id = \'001\' ORDER BY Name'
     );
     Integer wm = out.indexOf('WITH USER_MODE');
     Integer ob = out.indexOf('ORDER BY');
-    System.assert(
+    Assert.isTrue(
       wm >= 0 && wm < ob,
       'WITH USER_MODE must precede ORDER BY: ' + out
     );
   }
 
-  @isTest
+  @IsTest
   static void userModeGoesOutsideChildSubqueryOrderBy() {
     // the inner ORDER BY must NOT be the injection point.
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id, (SELECT Id FROM Contacts ORDER BY LastName) FROM Account WHERE Id = \'001\''
     );
     Integer wm = out.indexOf('WITH USER_MODE');
-    System.assert(
+    Assert.isTrue(
       out.contains('ORDER BY LastName)'),
       'Inner ORDER BY preserved: ' + out
     );
-    System.assert(
+    Assert.isTrue(
       wm > out.indexOf(')'),
       'WITH USER_MODE must be outside the subquery: ' + out
     );
   }
 
-  @isTest
+  @IsTest
   static void literalClauseKeywordNotMistakenForClause() {
     String out = RecordHealthCheckSoqlTemplate.injectUserMode(
       'SELECT Id FROM Account WHERE Name = \'Order by 5\''
     );
-    System.assert(
+    Assert.isTrue(
       out.contains('Name = \'Order by 5\''),
       'Literal preserved: ' + out
     );
-    System.assert(out.endsWith('WITH USER_MODE'), out);
+    Assert.isTrue(out.endsWith('WITH USER_MODE'), out);
   }
 
-  @isTest
+  @IsTest
   static void existingUserModeIsNoOp() {
     String soql = 'SELECT Id FROM Account WHERE Id = \'001\' WITH USER_MODE';
-    System.assertEquals(
-      soql,
-      RecordHealthCheckSoqlTemplate.injectUserMode(soql)
+    Assert.areEqual(soql, RecordHealthCheckSoqlTemplate.injectUserMode(soql));
+  }
+
+  @IsTest
+  static void removeOuterUserModeIgnoresLiteralText() {
+    String input = 'SELECT Id FROM Account WHERE Name = \'WITH USER_MODE\' WITH USER_MODE LIMIT 5';
+    Assert.areEqual(
+      'SELECT Id FROM Account WHERE Name = \'WITH USER_MODE\' LIMIT 5',
+      RecordHealthCheckSoqlTemplate.removeOuterUserMode(input)
     );
   }
 
   // ─── validateNoDisallowedKeywords ──────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void dmlKeywordRejected() {
     try {
       RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
         'SELECT Id FROM Account WHERE X = 1 DELETE'
       );
-      System.assert(false, 'Expected rejection of DELETE.');
+      Assert.isTrue(false, 'Expected rejection of DELETE.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  @isTest
+  @IsTest
   static void keywordInsideLiteralIsAllowed() {
     // "update" inside a string literal must not be rejected.
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
@@ -218,59 +208,88 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void remainingBlankEscapeOffsetAndSelectBranchesAreCovered() {
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(null);
-    System.assertEquals(
+    Assert.areEqual(null, RecordHealthCheckSoqlTemplate.injectUserMode(null));
+    Assert.areEqual(
+      'SELECT Id FROM Account',
+      RecordHealthCheckSoqlTemplate.removeOuterUserMode(
+        'SELECT Id FROM Account'
+      )
+    );
+    Assert.areEqual(
+      null,
+      RecordHealthCheckSoqlTemplate.removeOuterUserMode(null)
+    );
+    Assert.areEqual(
+      false,
+      RecordHealthCheckSoqlTemplate.isAggregateQuery(null)
+    );
+    Assert.areEqual(
       false,
       RecordHealthCheckSoqlTemplate.isSingleCountQuery(null)
     );
+    Assert.areEqual(
+      false,
+      RecordHealthCheckSoqlTemplate.isSingleCountQuery(
+        'SELECT COUNT(Id) total FROM Contact GROUP BY AccountId'
+      )
+    );
     String escapedLiteral = 'A = \'x\\\'\'';
-    System.assertEquals(
+    Assert.areEqual(
       escapedLiteral.length(),
       RecordHealthCheckSoqlTemplate.maskStringLiterals(escapedLiteral).length()
     );
-    System.assert(
-      RecordHealthCheckSoqlTemplate.enforceRowCap(
+    Assert.isTrue(
+      RecordHealthCheckSoqlTemplate.prepareForExecution(
           'SELECT Id FROM Account OFFSET 2',
           10
         )
         .contains('LIMIT 10 OFFSET 2')
     );
+    String childLimit = RecordHealthCheckSoqlTemplate.prepareForExecution(
+      'SELECT Id, (SELECT Id FROM Contacts LIMIT 1) FROM Account',
+      10
+    );
+    Assert.isTrue(
+      childLimit.contains('(SELECT Id FROM Contacts LIMIT 1)'),
+      'A child LIMIT must be preserved while the outer cap is added.'
+    );
     try {
-      RecordHealthCheckSoqlTemplate.assertSingleOuterSelect('FROM Account');
-      System.assert(false, 'Expected a missing SELECT error.');
+      RecordHealthCheckSoqlTemplate.prepareForExecution('FROM Account', 10);
+      Assert.isTrue(false, 'Expected a missing SELECT error.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  @isTest
+  @IsTest
   static void forUpdatePhraseRejected() {
     try {
       RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
         'SELECT Id FROM Account FOR UPDATE'
       );
-      System.assert(false, 'Expected rejection of FOR UPDATE.');
+      Assert.isTrue(false, 'Expected rejection of FOR UPDATE.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeRejectedByKeywordValidation() {
     // WITH SYSTEM_MODE bypasses sharing/FLS and must be rejected.
     try {
       RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
         'SELECT Id FROM Account WITH SYSTEM_MODE'
       );
-      System.assert(false, 'Expected rejection of WITH SYSTEM_MODE.');
+      Assert.isTrue(false, 'Expected rejection of WITH SYSTEM_MODE.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeRejectedByPrepareForExecution() {
     // the rejection also fires on the shared execution chokepoint, so
     // the compare-queries and applicability paths (which skip validateNoDisallowedKeywords)
@@ -280,13 +299,13 @@ private class RecordHealthCheckSoqlTemplateTest {
         'SELECT Id FROM Account WITH SYSTEM_MODE',
         2000
       );
-      System.assert(false, 'Expected rejection of WITH SYSTEM_MODE.');
+      Assert.isTrue(false, 'Expected rejection of WITH SYSTEM_MODE.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeInSubqueryRejected() {
     // WITH SYSTEM_MODE nested in a subquery must be rejected too.
     String nested =
@@ -294,19 +313,19 @@ private class RecordHealthCheckSoqlTemplateTest {
       '(SELECT AccountId FROM Contact WITH SYSTEM_MODE)';
     try {
       RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(nested);
-      System.assert(false, 'Expected rejection of nested WITH SYSTEM_MODE.');
+      Assert.isTrue(false, 'Expected rejection of nested WITH SYSTEM_MODE.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
     try {
       RecordHealthCheckSoqlTemplate.prepareForExecution(nested, 2000);
-      System.assert(false, 'Expected rejection of nested WITH SYSTEM_MODE.');
+      Assert.isTrue(false, 'Expected rejection of nested WITH SYSTEM_MODE.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  @isTest
+  @IsTest
   static void systemModeInsideLiteralIsAllowed() {
     // The keyword inside a string value is not an access level — must not trip.
     RecordHealthCheckSoqlTemplate.validateNoDisallowedKeywords(
@@ -316,7 +335,7 @@ private class RecordHealthCheckSoqlTemplateTest {
 
   // ─── prepareForExecution (integration) ─────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void prepareForExecutionHandlesChildSubqueryWithInnerOrderBy() {
     String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id, (SELECT Id FROM Contacts ORDER BY LastName) FROM Account WHERE Id = \'001\'',
@@ -324,57 +343,112 @@ private class RecordHealthCheckSoqlTemplateTest {
     );
     Integer wm = out.indexOf('WITH USER_MODE');
     Integer limitIdx = out.toUpperCase().indexOf('LIMIT');
-    System.assert(
+    Assert.isTrue(
       out.contains('ORDER BY LastName)'),
       'Inner clause preserved: ' + out
     );
-    System.assert(
+    Assert.isTrue(
       wm > out.indexOf(')'),
       'WITH USER_MODE outside subquery: ' + out
     );
-    System.assert(limitIdx > wm, 'Outer LIMIT after WITH USER_MODE: ' + out);
-    System.assert(out.toUpperCase().contains('LIMIT 2000'), out);
+    Assert.isTrue(limitIdx > wm, 'Outer LIMIT after WITH USER_MODE: ' + out);
+    Assert.isTrue(out.toUpperCase().contains('LIMIT 2000'), out);
   }
 
-  @isTest
+  @IsTest
   static void prepareForExecutionRejectsBlank() {
     try {
       RecordHealthCheckSoqlTemplate.prepareForExecution('   ', 2000);
-      System.assert(false, 'Expected rejection of blank template.');
+      Assert.isTrue(false, 'Expected rejection of blank template.');
     } catch (RecordHealthCheckSoqlTemplate.TemplateException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
-  @isTest
+  @IsTest
   static void prepareForExecutionDefaultsCapWhenInvalid() {
     String out = RecordHealthCheckSoqlTemplate.prepareForExecution(
       'SELECT Id FROM Account',
       null
     );
-    System.assert(
+    Assert.isTrue(
       out.toUpperCase()
         .contains('LIMIT ' + RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS),
       out
     );
   }
 
-  @isTest
+  @IsTest
+  static void prepareForExecutionRejectsSecurityEnforced() {
+    try {
+      RecordHealthCheckSoqlTemplate.prepareForExecution(
+        'SELECT Id FROM Account WITH SECURITY_ENFORCED',
+        2000
+      );
+      Assert.isTrue(false, 'Expected SECURITY_ENFORCED to be rejected.');
+    } catch (RecordHealthCheckSoqlTemplate.TemplateException error) {
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', error.reasonCode);
+    }
+  }
+
+  @IsTest
+  static void prepareForExecutionRejectsDataCategory() {
+    try {
+      RecordHealthCheckSoqlTemplate.prepareForExecution(
+        'SELECT Id FROM KnowledgeArticleVersion WITH DATA CATEGORY Geography__c AT Europe__c',
+        2000
+      );
+      Assert.isTrue(false, 'Expected DATA CATEGORY to be rejected.');
+    } catch (RecordHealthCheckSoqlTemplate.TemplateException error) {
+      Assert.areEqual('UNSUPPORTED_BULK_QUERY_SHAPE', error.reasonCode);
+    }
+  }
+
+  @IsTest
+  static void prepareForExecutionRejectsNonNumericLimit() {
+    try {
+      RecordHealthCheckSoqlTemplate.prepareForExecution(
+        'SELECT Id FROM Account LIMIT :rowLimit',
+        2000
+      );
+      Assert.isTrue(false, 'Expected a non-numeric LIMIT to be rejected.');
+    } catch (RecordHealthCheckSoqlTemplate.TemplateException error) {
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', error.reasonCode);
+    }
+  }
+
+  @IsTest
+  static void prepareForExecutionRunsKeywordValidation() {
+    try {
+      RecordHealthCheckSoqlTemplate.prepareForExecution(
+        'SELECT Id FROM Account FOR UPDATE',
+        2000
+      );
+      Assert.isTrue(
+        false,
+        'Expected FOR UPDATE to be rejected at execution preparation.'
+      );
+    } catch (RecordHealthCheckSoqlTemplate.TemplateException error) {
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', error.reasonCode);
+    }
+  }
+
+  @IsTest
   static void isAggregateQueryDetectsDepthZeroOnly() {
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckSoqlTemplate.isAggregateQuery(
         'SELECT COUNT(Id) FROM Contact'
       )
     );
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckSoqlTemplate.isAggregateQuery(
         'SELECT AccountId, COUNT(Id) FROM Contact GROUP BY AccountId'
       )
     );
     // Aggregate only inside a subquery → outer query is not aggregate.
-    System.assertEquals(
+    Assert.areEqual(
       false,
       RecordHealthCheckSoqlTemplate.isAggregateQuery(
         'SELECT Id, (SELECT COUNT(Id) FROM Contacts) FROM Account'

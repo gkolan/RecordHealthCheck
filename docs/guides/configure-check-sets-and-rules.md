@@ -81,7 +81,7 @@ Rule DeveloperName: Example_Customer_Engagement_Current
 | **Verify with a formula** | `FORMULA` | The answer is on the current record (or a parent field reachable by formula). |
 | **Verify with a query** | `QUERY` | One SOQL result must be compared to a static value, formula, second query, or list. |
 | **Compare two queries** | `COMPARE_TWO_QUERIES` | Two independent SOQL results must be compared (single value or list). |
-| **Verify with Apex** | `APEX` | Logic needs code (multi-object date math, scoring, external callouts in a custom plugin). |
+| **Verify with Apex** | `APEX` | Logic needs code, such as multi-object date math or a weighted score. Keep external integration work outside the evaluator transaction. |
 
 Representative Account patterns in the [examples library](../examples/README.md):
 
@@ -95,7 +95,7 @@ Representative Account patterns in the [examples library](../examples/README.md)
 
 ## 3. Check Set fields
 
-Every field on `Record_Health_Check_Set__mdt`: including picklist values for **When Checks Run**, **Found/Expected Display**, display modes, and **Show Diagnostics**: is documented in **[Check Set fields](../metadata/fields-check-set.md)**.
+Every field on `Record_Health_Check_Set__mdt`, including picklist values for **When Checks Run**, **Found/Expected Display**, display modes, and **Show Diagnostics**, is documented in **[Check Set fields](../metadata/fields-check-set.md)**.
 
 ## 4. Rule fields
 
@@ -169,7 +169,10 @@ directly; the engine loads its dependency chain.
 
 ### Showing Found vs Expected (optional)
 
-By default a Formula check shows only a **Passes when** line: the pass/fail formula text, unquoted: and no **Found** value. That **Passes when** line is **Advanced-tier**: users without `Record_Health_Check_View_Diagnostics` see the failure message only (plus any display-formula Found/Expected chips). For balance and comparison checks you can declare two optional single-value formulas so the row shows readable numbers (or text/dates) on each side, like a Query check:
+By default, a Formula check shows only a **Passes when** line containing the unquoted pass/fail
+formula and no **Found** value. That line requires `Record_Health_Check_View_Diagnostics`. Other
+users see the business message plus any configured Found/Expected chips. For balance and comparison
+checks, declare two optional single-value formulas so the row shows readable values on each side:
 
 | Setup field | Effect on pass or fail | Purpose |
 | --- | --- | --- |
@@ -315,9 +318,9 @@ active Rules, but the same blank behavior matters for optional record fields and
 Append `|fallback text` when a blank value should produce clear wording instead:
 
 ```text
-{!record.Parent.Name|Independent account}
-{!record.Owner.Manager.Name|No manager assigned}
-{!rhcResult.foundValue|Not measured}
+{!record.Parent.Name fallback="Independent account"}
+{!record.Owner.Manager.Name fallback="No manager assigned"}
+{!rhcResult.foundValue fallback="Not measured"}
 ```
 
 The fallback is literal text; it is not parsed as another merge token. Without an explicit fallback, display text
@@ -333,7 +336,7 @@ Use any readable field API name from the current record. Relationship paths may 
   <thead><tr><th>Merge syntax</th><th>What it inserts</th><th>Example</th></tr></thead>
   <tbody>
     <tr><td><code>{!record.Name}</code></td><td>The current record's Name.</td><td><code>Review {!record.Name} before approval.</code></td></tr>
-    <tr><td><code>{!record.FieldApiName}</code></td><td>Any readable field on the current record. Replace <code>FieldApiName</code> with the Salesforce API name. Append <code>|Fallback value</code> when a blank value needs a substitute.</td><td><code>{!record.Customer_Tier__c|Standard} customers require an annual review.</code></td></tr>
+    <tr><td><code>{!record.FieldApiName}</code></td><td>Any readable field on the current record. Replace <code>FieldApiName</code> with the Salesforce API name. Add a quoted <code>fallback</code> attribute when a blank value needs a substitute.</td><td><code>{!record.Customer_Tier__c fallback="Standard"} customers require an annual review.</code></td></tr>
     <tr><td><code>{!record.Owner.Name}</code></td><td>A field from a related record.</td><td><code>Ask {!record.Owner.Name} to confirm the account details.</code></td></tr>
     <tr><td><code>{!record.Parent.Parent.Name}</code></td><td>A field reached through multiple lookup relationships.</td><td><code>Escalate the review to {!record.Parent.Parent.Name}.</code></td></tr>
   </tbody>
@@ -377,7 +380,7 @@ These values are available after the Rule has been evaluated.
   <tbody>
     <tr><td><code>{!rhcResult.status}</code></td><td>The final status, such as Pass, Fail, Skipped, or Unable to Evaluate.</td><td><code>The review returned {!rhcResult.status}.</code></td></tr>
     <tr><td><code>{!rhcResult.foundValue}</code></td><td>The value the Rule found.</td><td><code>Found {!rhcResult.foundValue} open cases.</code></td></tr>
-    <tr><td><code>{!rhcResult.foundValuePluralSuffix}</code></td><td>An empty value for one item or <code>s</code> for multiple items.</td><td><code>Found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix|s}.</code></td></tr>
+    <tr><td><code>{!rhcResult.foundValuePluralSuffix}</code></td><td>An empty value for one item or <code>s</code> for multiple items.</td><td><code>Found {!rhcResult.foundValue} issue{!rhcResult.foundValuePluralSuffix fallback="s"}.</code></td></tr>
     <tr><td><code>{!rhcResult.expectedValue}</code></td><td>The value the Rule expected.</td><td><code>Expected {!rhcResult.expectedValue}.</code></td></tr>
     <tr><td><code>{!rhcResult.failedRecordCount}</code></td><td>The number of returned records that failed.</td><td><code>{!rhcResult.failedRecordCount} contacts are missing email.</code></td></tr>
     <tr><td><code>{!rhcResult.totalRecordCount}</code></td><td>The total number of returned records evaluated.</td><td><code>Reviewed {!rhcResult.totalRecordCount} related contacts.</code></td></tr>
@@ -413,7 +416,7 @@ The field determines which contexts are valid:
 - A blank value resolves to blank text. A null relationship makes its record token blank.
 - The explicit fallback applies to null, empty, and whitespace-only values. It does not replace `0`, `false`, or a
   populated value.
-- Fallback text may contain spaces and additional `|` characters; everything after the first `|` is the fallback.
+- Fallback text may contain spaces and pipe characters inside its quoted value.
 - Fallback text is inserted once and never recursively expanded.
 - Curly braces are reserved for complete merge tokens. Extra, nested, or unmatched braces are rejected as
   `MALFORMED_TOKEN` instead of being rendered as text.
@@ -436,7 +439,7 @@ SOQL examples live in the local [Query](../examples/README.md#query-examples) an
 ```text
 {!record.Name} is out of balance.
 
-Debit total: {!record.Debit_Total__c|0}
+Debit total: {!record.Debit_Total__c fallback="0"}
 Expected credit net: {!record.Credit_Net__c}
 
 Contact Finance to reconcile.
@@ -473,9 +476,10 @@ Contact Finance to reconcile.
 | Stale results after metadata edit | Component not reloaded | Refresh the record page. |
 | Stale results after inline edit | No auto-rerun on record save | Click **Rerun** or refresh the page. |
 | Prerequisite skipped | Framework run cap | Lower the prerequisite's Evaluation Order so it falls within the configured execution window, or reduce active Rules. |
-| Custom automation runs slowly or hits limits | Call caps or too many Rules × records | Keep Apex calls within `MAX_EVALUATIONS_PER_CALL` (15); Flow invocations also accept at most `MAX_FLOW_RECORDS_PER_CALL` (200) requests. Prefer `runSet` with a focused Check Set; see [Apex API](../reference/reference-apex-api.md) or [Flow actions](../integration/flow-actions.md). |
+| Custom automation runs slowly or hits limits | The request includes too many records or the Check Set expands into too much work for the transaction | Keep one request within 200 records and one Check Set within the first 25 active Rules. Use `RecordHealthCheck.evaluate(...)` with a focused Check Set; see [Apex API](../api/apex-api.md) or [Flow actions](../integration/flow-actions.md). |
 | Check passes in UI but fails from custom automation | Different running user (FLS) | Automation runs as the integration or invoking user: verify field access. |
-| Expected a lifecycle event but none arrived | Publishing is off, the run was automatic page load, or the transaction rolled back | Enable **Publish Run Event** or **Publish Result Event**; use explicit Run/Rerun, Apex, or Flow; confirm the transaction committed; see [Platform events](../integration/lifecycle-events.md). |
+| Expected a lifecycle event but none arrived | Publishing is off, the run was automatic page load, or the transaction rolled back | Enable **Publish User Run Event** or **Publish User Result Event**; use explicit Run/Rerun, Apex, or Flow; confirm the transaction committed; see [Platform events](../integration/lifecycle-events.md). |
+| Expected an Error Log event but none arrived | The Check Set opted out, subscriber context suppressed a feedback loop, or publication failed | Check **Publish Error Log Event**, subscriber logs, and platform-event allocations; Salesforce debug logging remains independent. |
 
 For Reason Codes, see [Reason Codes](../reference/reference-reason-codes.md).
 
@@ -505,7 +509,7 @@ Before activating a Check Set:
 - [ ] Apex Rules reference deployed `RecordHealthCheckRule` implementations.
 - [ ] Dependencies reference active Rules with lower Evaluation Order in the same Check Set.
 - [ ] **Show Diagnostics** is off for production unless actively troubleshooting (requires `Record_Health_Check_View_Diagnostics` via `Record_Health_Check_Admin`: see [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md)).
-- [ ] Lifecycle publication switches stay off until subscribers and allocations are reviewed ([Lifecycle events](../integration/lifecycle-events.md)).
+- [ ] Lifecycle publication switches stay off until subscribers and allocations are reviewed; explicitly review the default-on **Publish Error Log Event** setting ([Lifecycle events](../integration/lifecycle-events.md)).
 - [ ] Tested on records that pass, fail, skip, and unable-to-evaluate.
 
 ## 15. Runtime and integration
@@ -524,10 +528,9 @@ Automation uses the public `RecordHealthCheck` Apex class or the separate Rule a
 
 **Programmatic flow (Apex / Flow):**
 
-1. Caller invokes `RecordHealthCheck.runRule`, `runSet`, Flow **Run Record Health Check Rule**, or Flow **Run Record Health Check Set**.
-2. The public Apex class enforces call limits and returns `RecordHealthCheckResult` or
-   `RecordHealthCheckSetResult` (`contractVersion` `1.0`).
-3. When publication switches are on, `RecordHealthCheckLifecyclePublisher` publishes Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). See [Apex API](../reference/reference-apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
+1. The caller invokes `RecordHealthCheck.evaluate(request)`, Flow **Run Record Health Check Rule**, or Flow **Run Record Health Check Set**.
+2. The public Apex class enforces request limits and returns `RecordHealthCheckResponse`.
+3. When lifecycle publication switches are on, `RecordHealthCheckLifecyclePublisher` publishes Publish After Commit events (`APEX_API` for public Apex and `FLOW` for packaged Flow actions). Independently, `RecordHealthCheckLogger` publishes ERROR events immediately when the default-on `PublishErrorLogEvent__c` setting permits it. See [Apex API](../api/apex-api.md), [Flow actions](../integration/flow-actions.md), and [Platform events](../integration/lifecycle-events.md).
 
 **Boundaries:**
 
@@ -539,8 +542,7 @@ Automation uses the public `RecordHealthCheck` Apex class or the separate Rule a
 - Read-only evaluation: no record mutations from checks.
 - Formula checks require API v63.0+ (FormulaEval). Package source API version is 66.0.
 - Up to **5** concurrent Apex evaluations per LWC run (queued beyond that) when Stop after a system error is off; fully sequential when it is on.
-- Apex callers must stay within 15 planned Rule evaluations per request. Flow invocations also
-  accept at most 200 request records per transaction.
+- Apex and Flow callers can include at most 200 records in one public request.
 - `recordId` changes after connect reload definitions; record-save does not auto-rerun checks.
 - Server-side dependency gate re-evaluates prerequisites (safe for direct Apex calls; may duplicate work from the LWC path).
 - Unsupported Apex plugin status strings are rejected with `APEX_EVALUATOR_ERROR`.
@@ -555,13 +557,13 @@ must receive one Rule result before it can decide whether starting the next Rule
 | -------- | -------- |
 | Child subquery with inner `ORDER BY`/`LIMIT` on any query-based check | Handled by depth-0-aware `RecordHealthCheckSoqlTemplate` on all paths |
 | Multi-select picklist tokens | An unquoted record field token on a resolved multi-select expands to `('A', 'B')`; the same token inside single quotes keeps `'A;B;C'`. Relationship paths follow the same rules when the related record is loaded. |
-| Same record field token used quoted and unquoted in one SOQL template | Each form is substituted independently (2026-06-22). See the quoted form below the table. |
+| Same record field token used quoted and unquoted in one SOQL template | Each form is substituted independently. See the quoted form below the table. |
 | Null field on existing row (multi-row Query) | Rows returned but value null + `SKIP_RECORD` → **SKIPPED** / `VALUE_IS_EMPTY` (not `NoRowsResult__c`) |
 | `COMPARE_TWO_QUERIES` empty query side (`ONE_RESULT`) | Governed by **`NoRowsResult__c`** before null-field logic: distinct from null on a returned row |
 | Semicolon-only multi-select bind | Value `;` alone can produce invalid `INCLUDES ()` SOQL: avoid blank multi-select values in bind tokens |
 | Apex plugin `context.record` | Engine loads merge/formula fields referenced in messages and applicability; plugins needing other fields must query by `context.recordId` |
 | Managed-package Apex class names | `Type.forName` without namespace may not resolve classes in a managed namespace: use fully qualified API names when required |
-| Prerequisite Rule outside the Framework run cap | Dependents skip with `DEPENDENCY_NOT_IN_RUN` (LWC only) |
+| Prerequisite Rule is inactive, missing, ordered after the Rule that requires it, or outside the first 25 active Rules | The Rule that requires it is skipped with `DEPENDENCY_NOT_IN_RUN` in Apex, Flow, and the Lightning component. |
 | Stop after a system error | Stops only on `ERROR`, not `FAIL` or `UNABLE_TO_EVALUATE` |
 | Empty multi-row query result | Requires an explicit `NoRowsResult__c` value (`PASS` / `FAIL` / `SKIP` / `UNABLE_TO_EVALUATE`) |
 | Static comparison values with locale formatting | Untyped text: may fall through to string comparison |
@@ -570,7 +572,7 @@ The quoted form is substituted only when that exact quoted token text appears in
 this filter:
 
 ```sql
-Name LIKE '{!record.Name|this record}%'
+Name LIKE '{!record.Name fallback="this record"}%'
 ```
 
 ## Related

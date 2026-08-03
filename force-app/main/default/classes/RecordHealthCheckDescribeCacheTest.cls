@@ -3,22 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckDescribeCacheTest {
-  @isTest
+  @IsTest
+  static void resolvesUniquelyNamespacedFieldFromUnqualifiedApiName() {
+    Schema.SObjectField field = RecordHealthCheckDescribeCache.resolveField(
+      Record_Health_Check_Set__mdt.SObjectType,
+      'FoundExpectedDisplay__c'
+    );
+
+    Assert.isNotNull(
+      field,
+      'Framework Custom Metadata fields should resolve in namespaced and unpackaged orgs.'
+    );
+    Assert.areEqual(
+      Schema.DisplayType.PICKLIST,
+      RecordHealthCheckDescribeCache.describeField(field).getType(),
+      'The resolved field should preserve its describe metadata.'
+    );
+  }
+  @IsTest
   static void cachesObjectAndFieldDescribeAcrossRepeatedCalls() {
     RecordHealthCheckDescribeCache.clearForTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckDescribeCache.containsObject('Account')
     );
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckDescribeCache.containsObject('account'),
       'Object lookup should be case-insensitive against the cached global describe'
     );
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckDescribeCache.containsObject('Account'),
       'Second global-describe lookup should reuse the cache'
@@ -30,8 +47,8 @@ private class RecordHealthCheckDescribeCacheTest {
     Schema.DescribeSObjectResult second = RecordHealthCheckDescribeCache.describeSObject(
       Account.SObjectType
     );
-    System.assertEquals(first.getName(), second.getName());
-    System.assertEquals(
+    Assert.areEqual(first.getName(), second.getName());
+    Assert.areEqual(
       first.fields.getMap().size(),
       RecordHealthCheckDescribeCache.fieldMap(Account.SObjectType).size()
     );
@@ -46,65 +63,61 @@ private class RecordHealthCheckDescribeCacheTest {
     Schema.DescribeFieldResult fieldSecond = RecordHealthCheckDescribeCache.describeField(
       billingCity
     );
-    System.assertEquals(fieldFirst.getName(), fieldSecond.getName());
-    System.assertEquals(
+    Assert.areEqual(fieldFirst.getName(), fieldSecond.getName());
+    Assert.areEqual(
       'Account',
       RecordHealthCheckDescribeCache.objectApiName(Account.SObjectType)
     );
   }
 
-  @isTest
+  @IsTest
   static void nullAndUnknownInputsAreSafe() {
     RecordHealthCheckDescribeCache.clearForTest();
 
-    System.assertEquals(
-      false,
-      RecordHealthCheckDescribeCache.containsObject(null)
-    );
-    System.assertEquals(
+    Assert.areEqual(false, RecordHealthCheckDescribeCache.containsObject(null));
+    Assert.areEqual(
       false,
       RecordHealthCheckDescribeCache.containsObject('Not_A_Real_Object__x')
     );
-    System.assertEquals(
+    Assert.areEqual(
       null,
       RecordHealthCheckDescribeCache.objectApiName((Id) null)
     );
-    System.assertEquals(
-      null,
-      RecordHealthCheckDescribeCache.describeSObject(null)
+    Assert.areEqual(null, RecordHealthCheckDescribeCache.describeSObject(null));
+    Assert.areEqual(0, RecordHealthCheckDescribeCache.fieldMap(null).size());
+    Assert.areEqual(null, RecordHealthCheckDescribeCache.describeField(null));
+    Assert.isNull(
+      RecordHealthCheckDescribeCache.resolveField(null, 'Name'),
+      'A field cannot resolve without an object type.'
     );
-    System.assertEquals(
-      0,
-      RecordHealthCheckDescribeCache.fieldMap(null).size()
-    );
-    System.assertEquals(
-      null,
-      RecordHealthCheckDescribeCache.describeField(null)
+    Assert.isNull(
+      RecordHealthCheckDescribeCache.resolveField(Account.SObjectType, ' '),
+      'A blank field API name cannot resolve.'
     );
   }
 
-  @isTest
+  @IsTest
   static void objectApiNameFromRecordIdUsesCachedDescribe() {
     RecordHealthCheckDescribeCache.clearForTest();
     Account accountRecord = RecordHealthCheckTestDataFactory.createAccount(
       'Cache Test Account'
     );
 
-    System.assertEquals(
+    Assert.areEqual(
       'Account',
       RecordHealthCheckDescribeCache.objectApiName(accountRecord.Id)
     );
   }
 
-  @isTest
+  @IsTest
   static void resolveSObjectTypeReturnsTokenForKnownObject() {
     RecordHealthCheckDescribeCache.clearForTest();
 
-    System.assertNotEquals(
+    Assert.areNotEqual(
       null,
       RecordHealthCheckDescribeCache.resolveSObjectType('account')
     );
-    System.assertEquals(
+    Assert.areEqual(
       Account.SObjectType,
       RecordHealthCheckDescribeCache.resolveSObjectType('Account')
     );
@@ -117,18 +130,18 @@ private class RecordHealthCheckDescribeCacheTest {
    * type, and isAccessible()). Keying on the Schema.SObjectField token must keep
    * those describes distinct across the whole transaction.
    */
-  @isTest
+  @IsTest
   static void sameNamedFieldsOnDifferentObjectsDoNotCollide() {
     RecordHealthCheckDescribeCache.clearForTest();
 
     // Prove the old key would have collided — if this ever stops being true the
     // regression below is no longer testing the original failure mode.
-    System.assertEquals(
+    Assert.areEqual(
       String.valueOf(Account.Name),
       String.valueOf(Contact.Name),
       'Precondition: String.valueOf collapses both tokens to the same unqualified name'
     );
-    System.assertEquals('Name', String.valueOf(Account.Name));
+    Assert.areEqual('Name', String.valueOf(Account.Name));
 
     Schema.DescribeFieldResult accountName = RecordHealthCheckDescribeCache.describeField(
       Account.Name
@@ -137,22 +150,22 @@ private class RecordHealthCheckDescribeCacheTest {
       Contact.Name
     );
 
-    System.assertEquals('Name', accountName.getName());
-    System.assertEquals('Name', contactName.getName());
-    System.assertNotEquals(
+    Assert.areEqual('Name', accountName.getName());
+    Assert.areEqual('Name', contactName.getName());
+    Assert.areNotEqual(
       accountName.getLabel(),
       contactName.getLabel(),
       'Account.Name and Contact.Name must keep distinct labels after both are cached'
     );
-    System.assertEquals('Account Name', accountName.getLabel());
-    System.assertEquals('Full Name', contactName.getLabel());
+    Assert.areEqual('Account Name', accountName.getLabel());
+    Assert.areEqual('Full Name', contactName.getLabel());
 
     // Re-fetch Account.Name after Contact.Name was cached — must still be Account.
     Schema.DescribeFieldResult accountNameAgain = RecordHealthCheckDescribeCache.describeField(
       Account.Name
     );
-    System.assertEquals('Account Name', accountNameAgain.getLabel());
-    System.assertEquals(
+    Assert.areEqual('Account Name', accountNameAgain.getLabel());
+    Assert.areEqual(
       accountName.getLabel(),
       accountNameAgain.getLabel(),
       'Cached Account.Name describe must be stable across later same-named lookups'
@@ -165,11 +178,11 @@ private class RecordHealthCheckDescribeCacheTest {
    * stays tied to its own field token (do not assume OwnerId's first reference
    * target is identical across objects: Case.OwnerId can include Group/queues).
    */
-  @isTest
+  @IsTest
   static void sameNamedLookupsKeepDistinctReferenceTargets() {
     RecordHealthCheckDescribeCache.clearForTest();
 
-    System.assertEquals(
+    Assert.areEqual(
       String.valueOf(Account.OwnerId),
       String.valueOf(Case.OwnerId),
       'Precondition: OwnerId stringifies identically across objects'
@@ -182,29 +195,29 @@ private class RecordHealthCheckDescribeCacheTest {
       Case.OwnerId
     );
 
-    System.assertEquals('OwnerId', accountOwner.getName());
-    System.assertEquals('OwnerId', caseOwner.getName());
-    System.assertEquals(false, accountOwner.getReferenceTo().isEmpty());
-    System.assertEquals(false, caseOwner.getReferenceTo().isEmpty());
-    System.assertEquals(
+    Assert.areEqual('OwnerId', accountOwner.getName());
+    Assert.areEqual('OwnerId', caseOwner.getName());
+    Assert.areEqual(false, accountOwner.getReferenceTo().isEmpty());
+    Assert.areEqual(false, caseOwner.getReferenceTo().isEmpty());
+    Assert.areEqual(
       true,
       accountOwner.getReferenceTo().contains(User.SObjectType),
       'Account.OwnerId must reference User'
     );
-    System.assertEquals(
+    Assert.areEqual(
       true,
       caseOwner.getReferenceTo().contains(User.SObjectType),
       'Case.OwnerId must still reference User (may also reference Group)'
     );
 
     // Re-fetch after both are cached — each token must keep its own reference list.
-    System.assertEquals(
+    Assert.areEqual(
       accountOwner.getReferenceTo().size(),
       RecordHealthCheckDescribeCache.describeField(Account.OwnerId)
         .getReferenceTo()
         .size()
     );
-    System.assertEquals(
+    Assert.areEqual(
       caseOwner.getReferenceTo().size(),
       RecordHealthCheckDescribeCache.describeField(Case.OwnerId)
         .getReferenceTo()
@@ -219,11 +232,8 @@ private class RecordHealthCheckDescribeCacheTest {
     Schema.DescribeFieldResult contactAccount = RecordHealthCheckDescribeCache.describeField(
       Contact.AccountId
     );
-    System.assertEquals(Account.SObjectType, accountParent.getReferenceTo()[0]);
-    System.assertEquals(
-      Account.SObjectType,
-      contactAccount.getReferenceTo()[0]
-    );
+    Assert.areEqual(Account.SObjectType, accountParent.getReferenceTo()[0]);
+    Assert.areEqual(Account.SObjectType, contactAccount.getReferenceTo()[0]);
   }
 
   /**
@@ -231,7 +241,7 @@ private class RecordHealthCheckDescribeCacheTest {
    * not collide with each other across objects, and must agree with compile-time
    * tokens for the same field so the cache is shared rather than duplicated.
    */
-  @isTest
+  @IsTest
   static void fieldMapTokensDoNotCollideAcrossObjects() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -244,9 +254,9 @@ private class RecordHealthCheckDescribeCacheTest {
       )
       .get('name');
 
-    System.assertNotEquals(null, accountNameFromMap);
-    System.assertNotEquals(null, contactNameFromMap);
-    System.assertEquals(
+    Assert.areNotEqual(null, accountNameFromMap);
+    Assert.areNotEqual(null, contactNameFromMap);
+    Assert.areEqual(
       String.valueOf(accountNameFromMap),
       String.valueOf(contactNameFromMap),
       'Precondition: field-map tokens also stringify to the same unqualified name'
@@ -258,16 +268,16 @@ private class RecordHealthCheckDescribeCacheTest {
     Schema.DescribeFieldResult fromContactMap = RecordHealthCheckDescribeCache.describeField(
       contactNameFromMap
     );
-    System.assertEquals('Account Name', fromAccountMap.getLabel());
-    System.assertEquals('Full Name', fromContactMap.getLabel());
+    Assert.areEqual('Account Name', fromAccountMap.getLabel());
+    Assert.areEqual('Full Name', fromContactMap.getLabel());
 
     // Compile-time token and field-map token for the same field must share one
     // cache entry (same Map key), not silently double-describe under two keys.
     Schema.DescribeFieldResult fromCompileTime = RecordHealthCheckDescribeCache.describeField(
       Account.Name
     );
-    System.assertEquals(fromAccountMap.getLabel(), fromCompileTime.getLabel());
-    System.assertEquals(
+    Assert.areEqual(fromAccountMap.getLabel(), fromCompileTime.getLabel());
+    Assert.areEqual(
       accountNameFromMap,
       Account.Name,
       'fieldMap Name token must equal the compile-time Account.Name token'
@@ -278,7 +288,7 @@ private class RecordHealthCheckDescribeCacheTest {
    * Stress the cache the way field planning does: many same-named fields across
    * several objects in one transaction, interleaved, then re-check each one.
    */
-  @isTest
+  @IsTest
   static void interleavedCrossObjectRoundTripKeepsDistinctDescribes() {
     RecordHealthCheckDescribeCache.clearForTest();
 
@@ -321,7 +331,7 @@ private class RecordHealthCheckDescribeCacheTest {
         described++;
       }
     }
-    System.assert(
+    Assert.isTrue(
       described >= 20,
       'Expected a broad cross-object describe set; got ' + described
     );
@@ -342,7 +352,7 @@ private class RecordHealthCheckDescribeCacheTest {
           String.valueOf(objectType) +
           '.' +
           fieldName.toLowerCase();
-        System.assertEquals(
+        Assert.areEqual(
           expectedLabelByObjectAndField.get(cacheKey),
           RecordHealthCheckDescribeCache.describeField(token).getLabel(),
           'Round-trip mismatch for ' + cacheKey
@@ -350,37 +360,37 @@ private class RecordHealthCheckDescribeCacheTest {
         verified++;
       }
     }
-    System.assertEquals(described, verified);
+    Assert.areEqual(described, verified);
 
     // Spot-check the original collision pair after the stress pass.
-    System.assertEquals(
+    Assert.areEqual(
       'Account Name',
       RecordHealthCheckDescribeCache.describeField(Account.Name).getLabel()
     );
-    System.assertEquals(
+    Assert.areEqual(
       'Full Name',
       RecordHealthCheckDescribeCache.describeField(Contact.Name).getLabel()
     );
   }
 
-  @isTest
+  @IsTest
   static void clearForTestDropsFieldCacheSoNextDescribeIsFresh() {
     RecordHealthCheckDescribeCache.clearForTest();
     Schema.DescribeFieldResult beforeClear = RecordHealthCheckDescribeCache.describeField(
       Account.Name
     );
-    System.assertEquals('Account Name', beforeClear.getLabel());
+    Assert.areEqual('Account Name', beforeClear.getLabel());
 
     RecordHealthCheckDescribeCache.clearForTest();
     Schema.DescribeFieldResult afterClear = RecordHealthCheckDescribeCache.describeField(
       Contact.Name
     );
-    System.assertEquals(
+    Assert.areEqual(
       'Full Name',
       afterClear.getLabel(),
       'After clear, Contact.Name must not inherit a stale Account.Name entry'
     );
-    System.assertEquals(
+    Assert.areEqual(
       'Account Name',
       RecordHealthCheckDescribeCache.describeField(Account.Name).getLabel()
     );

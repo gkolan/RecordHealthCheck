@@ -33,13 +33,13 @@ An account manager opens an Account before a customer call and wants to know whe
 | Card value | Activity found | No activity found |
 | --- | --- | --- |
 | **Status** | `PASS` | `FAIL` |
-| **Found** | `<N> completed tasks; <N> events` | `0 completed tasks; 0 events` |
-| **Expected** | `at least 1 completed task or event in the last <N> days` | Same |
+| **Found** | Combined visible activity count | `0` |
+| **Expected** | `1` | `1` |
 | **Message** | No failure message | The Rule's configured Warning message |
 
-Found keeps the Task and Event counts separate so the result begins the diagnosis. Expected shows
-the date window the class actually used. With diagnostics enabled, the source detail also identifies
-the configured look-back window.
+Found reports the combined number of qualifying Tasks and Events. Expected reports the minimum
+passing count. The failure guidance tells the user which activity types and configured window to
+review.
 
 ## Why use Verify with Apex
 
@@ -54,24 +54,23 @@ the configured look-back window.
 
 | Input in Apex | Where it comes from |
 | --- | --- |
-| `context.recordId` | The Account being evaluated at run time |
-| `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
+| `scope.recordIds` | The Accounts being evaluated in this run |
+| `scope.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
 Record Health Check supplies the Account ID automatically; leave it out of the parameter JSON:
 
-- On a Lightning record page, `context.recordId` is the ID of the open record.
-- From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
-- From Flow, it is the value supplied to the action's **Record ID** input.
+- On a Lightning record page, the scope normally contains the open record.
+- Bulk Apex requests can place as many as 200 record IDs in one scope.
+- Flow supplies its **Record ID** input to the scope-building pipeline.
 
-Inside the class, use `context.recordId` as a bind variable so the query evaluates the intended
-record:
+Copy `scope.recordIds` once and use it as a bind collection so one query serves the entire scope:
 
 ```apex
-Id accountId = context.recordId;
+List<Id> accountIds = scope.recordIds;
 ```
 
-The complete class below binds `context.recordId` directly in its Task and Event queries, which is
-equivalent to assigning the value to `accountId` first.
+The complete class below seeds every requested Account, runs one grouped Task query and one grouped
+Event query, and then returns one outcome for every map key.
 
 ## Step 1: Understand the parameters
 
@@ -90,9 +89,9 @@ After deploying the class:
 3. Paste the object into **Apex Parameters (JSON)** (`ApexParametersJson__c`) on `Record_Health_Check_Rule__mdt`.
 
 Record Health Check parses the JSON automatically and passes it to the class as
-`context.parameters`, a map of parameter names to values. The class uses 30 days when `daysBack`
-is absent, null, nonnumeric, or outside `1`–`3650`; the shipped Rule explicitly uses 90 days. See
-[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
+`scope.parameters`, a map of parameter names to values. The class uses 30 days only when `daysBack`
+is absent. A supplied null, nonnumeric, or out-of-range value returns `INVALID_CONFIG`; the configured Rule explicitly uses 90 days. See
+[Parameter parsing patterns](../../reference/reference-apex.md#scope)
 for validation and type-conversion guidance.
 
 ## Step 2: Create the Apex class
@@ -110,86 +109,140 @@ Expected.
  */
 
 /**
- * Example implementation of RecordHealthCheckRule using the Apex evaluator.
- * Checks whether an Account has at least one completed Task or logged Event
- * within a configurable look-back window. The number of days is read from
- * ApexParametersJson__c so an administrator can change it without editing code
- * ApexParametersJson__c: {"daysBack": 90}
- * Failure message, severity, and label all come from the CMT record: this
- * class determines PASS/FAIL and returns comparison values for the UI.
+ * Example implementation of RecordHealthCheckRule: has the Account been touched
+ * recently? At least one completed Task or logged Event inside a configurable
+ * look-back window, tuned per Rule through ApexParametersJson__c, for example
+ * {"daysBack": 90}.
+ *
+ * This is the reference implementation for the plugin contract, so it is
+ * written the way every Rule should be: all data loading happens ABOVE the
+ * loop, and the loop does computation only. Two queries serve the whole scope,
+ * whether that scope holds one record or two hundred.
+ *
+ * Failure message, severity, and label all come from the Rule metadata. This
+ * class decides PASS or FAIL and reports the values behind that decision; it
+ * never stamps identity, severity, or anything the user sees.
  */
-public with sharing class AccountHasRecentActivityCheck implements RecordHealthCheckRule {
+global with sharing class AccountHasRecentActivityCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_DAYS_BACK = 30;
   private static final Integer MIN_DAYS_BACK = 1;
   private static final Integer MAX_DAYS_BACK = 3650;
 
-  public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-    Integer daysBack = resolveDaysBack(context.parameters);
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
+    List<Id> recordIds = scope.recordIds;
+
+    Integer daysBack = resolveDaysBack(scope.parameters);
+    if (daysBack == null) {
+      for (Id recordId : recordIds) {
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate('INVALID_CONFIG')
+        );
+      }
+      return results;
+    }
     Date cutoff = Date.today().addDays(-daysBack);
 
-    Integer taskCount = [
-      SELECT COUNT()
+    // Seed every Id with zero BEFORE overlaying the aggregates. An aggregate
+    // returns no row at all for an Account with no activity, so a map built
+    // only from query results would leave exactly those Accounts missing, and
+    // "no recent activity" is precisely the population this check exists to
+    // find. Zero is a real answer here, not an absent one.
+    Map<Id, Integer> activityCounts = new Map<Id, Integer>();
+    for (Id recordId : recordIds) {
+      activityCounts.put(recordId, 0);
+    }
+
+    for (AggregateResult row : [
+      SELECT WhatId whatId, COUNT(Id) total
       FROM Task
-      WHERE
-        WhatId = :context.recordId
-        AND IsClosed = TRUE
-        AND ActivityDate >= :cutoff
+      WHERE WhatId IN :recordIds AND IsClosed = TRUE AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
+      GROUP BY WhatId
+    ]) {
+      accumulate(
+        activityCounts,
+        (Id) row.get('whatId'),
+        (Integer) row.get('total')
+      );
+    }
 
-    Integer eventCount = [
-      SELECT COUNT()
+    for (AggregateResult row : [
+      SELECT WhatId whatId, COUNT(Id) total
       FROM Event
-      WHERE WhatId = :context.recordId AND ActivityDate >= :cutoff
+      WHERE WhatId IN :recordIds AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
+      GROUP BY WhatId
+    ]) {
+      accumulate(
+        activityCounts,
+        (Id) row.get('whatId'),
+        (Integer) row.get('total')
+      );
+    }
 
-    Integer activityCount = taskCount + eventCount;
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(1);
+    for (Id recordId : recordIds) {
+      Integer total = activityCounts.get(recordId);
+      RecordHealthCheckOutcome outcome = total > 0
+        ? RecordHealthCheckOutcome.pass('APEX_PASS')
+        : RecordHealthCheckOutcome.fail('APEX_FAIL');
+      results.put(
+        recordId,
+        outcome
+          .withFound(RecordHealthCheckValue.ofCount(total))
+          .withComparison('GREATER_THAN_OR_EQUAL', expected)
+      );
+    }
 
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.status = activityCount > 0 ? 'PASS' : 'FAIL';
-    // Keep the two counts separate so Found helps an administrator understand
-    // whether the class saw completed Tasks, Events, or neither.
-    result.actualValue =
-      taskCount +
-      ' completed task' +
-      (taskCount == 1 ? '' : 's') +
-      '; ' +
-      eventCount +
-      ' event' +
-      (eventCount == 1 ? '' : 's');
-    // Include the effective window so an invalid JSON value that uses the
-    // 30-day default is visible in the result instead of being easy to miss.
-    result.expectedValue =
-      'at least 1 completed task or event in the last ' + daysBack + ' days';
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'Completed tasks + events',
-      String.valueOf(activityCount),
-      'last ' + daysBack + ' days'
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Required recent activity',
-      '1',
-      'within ' + daysBack + ' days'
-    );
-    return result;
+    return results;
   }
 
+  /**
+   * A WhatId can point at objects other than the ones in scope, so only seeded
+   * keys are accumulated. Anything else would add a key the engine never asked
+   * about, which fails the whole scope.
+   */
+  private static void accumulate(
+    Map<Id, Integer> counts,
+    Id whatId,
+    Integer total
+  ) {
+    if (whatId != null && counts.containsKey(whatId)) {
+      counts.put(whatId, counts.get(whatId) + total);
+    }
+  }
+
+  /**
+   * Bounded deliberately: an unbounded window is not a useful health check, and
+   * a negative one would silently invert the question being asked.
+   *
+   * Null means the administrator supplied an invalid value; the caller returns
+   * INVALID_CONFIG for every scoped record without running a query.
+   */
   private Integer resolveDaysBack(Map<String, Object> parameters) {
-    if (parameters == null)
-      return DEFAULT_DAYS_BACK;
-    Object raw = parameters.get('daysBack');
-    if (raw == null)
-      return DEFAULT_DAYS_BACK;
-    try {
-      Integer parsed = Integer.valueOf(String.valueOf(raw));
-      return parsed >= MIN_DAYS_BACK &&
-        parsed <= MAX_DAYS_BACK
-        ? parsed
-        : DEFAULT_DAYS_BACK;
-    } catch (Exception ex) {
+    Object raw = parameters == null ? null : parameters.get('daysBack');
+    if (raw == null) {
       return DEFAULT_DAYS_BACK;
     }
+    Integer parsed;
+    if (raw instanceof Integer) {
+      parsed = (Integer) raw;
+    } else if (raw instanceof Decimal) {
+      parsed = ((Decimal) raw).intValue();
+    } else if (raw instanceof String) {
+      try {
+        parsed = Integer.valueOf((String) raw);
+      } catch (Exception ex) {
+        return null;
+      }
+    } else {
+      return null;
+    }
+    return (parsed < MIN_DAYS_BACK || parsed > MAX_DAYS_BACK) ? null : parsed;
   }
 }
 ```
@@ -198,37 +251,39 @@ public with sharing class AccountHasRecentActivityCheck implements RecordHealthC
 
 ## Context and result contract
 
-Record Health Check calls:
+Record Health Check calls the plugin once for a scope:
 
 ```apex
-RecordHealthCheckResult evaluate(RecordHealthCheckContext context)
+Map<Id, RecordHealthCheckOutcome> evaluate(RecordHealthCheckScope scope)
 ```
 
 The context contains:
 
-| Context field | Type | What it contains |
+| Scope field | Type | What it contains |
 | --- | --- | --- |
-| `recordId` | `Id` | Record being evaluated; use this value in SOQL |
-| `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; only requested fields are loaded |
+| `recordIds` | `List<Id>` | Detached, deduplicated IDs to evaluate; use the collection in bulk SOQL |
+| `objectApiName` | `String` | API name shared by every ID in the scope, such as `Account` |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
+| `checkSetDeveloperName` | `String` | Developer Name of the Check Set that supplied the Rule |
+| `runId` | `String` | Correlation identifier for the evaluation run |
 
-For a completed check, the class must return all three required values:
+The returned map must contain exactly one entry for every requested ID. Build each outcome with a
+status factory and typed values:
 
-| Result field | What the class must return |
+| Outcome field | What the class must return |
 | --- | --- |
-| `status` | `PASS` or `FAIL` |
-| `actualValue` | Nonblank **Found** value describing what the class observed |
-| `expectedValue` | Nonblank **Expected** value describing the passing requirement |
-| `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
-| `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
+| `status` | An outcome created by `pass`, `fail`, `unableToEvaluate`, or `skipped` |
+| `reasonCode` | A stable, nonblank code that explains the programmatic reason |
+| `found` | A typed `RecordHealthCheckValue` describing what the class observed |
+| `comparisonOperator` | The operator behind the decision, such as `GREATER_THAN_OR_EQUAL` |
+| `expected` | A typed `RecordHealthCheckValue` describing the passing requirement |
 
 For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
-runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
-duration, and other card details. An invalid status, blank Found value, blank Expected value, or
+runs. The framework supplies identity, label, severity, messages, display values, and diagnostics.
+Missing or extra map keys, a null outcome, an invalid status, forbidden side effects, or an
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
+[Returning an outcome](../../reference/reference-apex.md#outcome).
 
 
 ## Step 3: Configure the Rule
@@ -260,12 +315,12 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/o/Task/new?defaultFieldValues=WhatId={!record.Id}` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `10` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 Copy this value into **Message When Failed**:
 
 ```text
-{!record.Name|this record} has no completed tasks or logged events in the last 90 days. Log a completed Task or Event inside the look-back window.
+{!record.Name fallback="this record"} has no completed tasks or logged events in the last 90 days. Log a completed Task or Event inside the look-back window.
 ```
 
 Change `daysBack` to change the window without redeploying the class.
@@ -310,7 +365,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 Formula, Query, and Compare two queries fields do not apply because this is the Verify with Apex Evaluation Type.
@@ -324,12 +379,11 @@ The Apex class turns the activity counts and effective date window into these us
 | **`PASS`** | A completed Task or Event with `ActivityDate` on or after the cutoff passes. |
 | **`FAIL`** | No matching activity shows Needs attention through a normal `FAIL`, not an evaluation error. |
 | **`SKIPPED`** | This configuration applies to every Account and has no prerequisite, so it does not produce `SKIPPED`. |
-| **Found** | Found shows separate counts for completed Tasks and Events inside the effective activity window. |
-| **Expected** | Expected shows the effective date window used by the Rule. |
+| **Found** | Found shows the combined number of visible completed Tasks and Events inside the effective activity window. |
+| **Expected** | Expected shows the minimum required activity count: `1`. |
 
-Invalid `daysBack` values use 30 days. Because Expected shows that effective 30-day window, an
-administrator can spot a mistyped parameter. The Rule still supplies the label, severity, and
-failure message.
+Invalid `daysBack` values return `UNABLE_TO_EVALUATE` with `INVALID_CONFIG`. Test configuration changes before activation because the card intentionally shows the count comparison, not the parameter value. The Rule supplies the
+label, severity, failure message, and display formatting.
 
 ## Security and access
 
@@ -358,11 +412,11 @@ Window** (replace the placeholder with an Account ID):
 
 ```apex
 Id accountId = '001XXXXXXXXXXXXXXX';
-RecordHealthCheckResult result = RecordHealthCheck.runRule(
-  'Has_Recent_Activity',
-  accountId
+RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forRule('Has_Recent_Activity', accountId)
+    .withResultMode(RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY)
 );
-System.debug(LoggingLevel.INFO, JSON.serializePretty(result));
+System.debug(LoggingLevel.INFO, JSON.serializePretty(response));
 ```
 
 ### Lightning record page
@@ -379,7 +433,7 @@ System.debug(LoggingLevel.INFO, JSON.serializePretty(result));
 | `APEX_CLASS_NOT_FOUND` | Deploy `AccountHasRecentActivityCheck`, confirm the class name in **Apex Class**, and confirm it implements `RecordHealthCheckRule`. |
 | `APEX_EVALUATOR_ERROR` | Confirm the running user can read Task/Event and the queried fields; inspect authorized diagnostics for the underlying exception. |
 | A known Task does not count | Confirm it is closed, its `WhatId` is this Account, its `ActivityDate` is inside the effective window, and the running user can see it. |
-| The window appears to be 30 days | Correct a missing, nonnumeric, or out-of-range `daysBack`; those values use the 30-day default. |
+| `INVALID_CONFIG` | Correct a null, nonnumeric, or out-of-range `daysBack`. Omit the key only when the deliberate 30-day default is appropriate. |
 
 ## Customize this Rule
 

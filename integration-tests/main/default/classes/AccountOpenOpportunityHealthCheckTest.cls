@@ -12,69 +12,80 @@
 private class AccountOpenOpportunityHealthCheckTest {
   @IsTest
   static void noOpenOpportunitiesPasses() {
-    Account account = new Account(Name = 'RHC Opp Health None');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Opp Health None' }
+    );
+    RecordHealthCheckTestDataFactory.createAccount(account);
 
-    RecordHealthCheckResult result = evaluate(account.Id, null);
+    RecordHealthCheckInternalResult result = evaluate(account.Id, null);
 
-    System.assertEquals('PASS', result.status);
-    System.assertEquals('0 unhealthy', result.actualValue);
-    System.assertEquals('0 unhealthy', result.expectedValue);
-    System.assertNotEquals(null, result.actualValueSource);
+    Assert.areEqual('PASS', result.status);
+    Assert.areEqual('0', result.actualValue);
+    Assert.areEqual('0', result.expectedValue);
   }
 
   @IsTest
   static void healthyOpenOpportunityPasses() {
-    Account account = new Account(Name = 'RHC Opp Health Healthy');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Opp Health Healthy' }
+    );
+    RecordHealthCheckTestDataFactory.createAccount(account);
 
     Date inQuarter = AccountOpenOpportunityHealthCheck.getQuarterStart(
       Date.today()
     );
-    insert new Opportunity(
-      AccountId = account.Id,
-      Name = 'Healthy deal',
-      StageName = 'Prospecting',
-      NextStep = 'Schedule demo',
-      CloseDate = inQuarter
+    RecordHealthCheckTestDataFactory.createOpportunity(
+      new Map<String, Object>{
+        'AccountId' => account.Id,
+        'Name' => 'Healthy deal',
+        'StageName' => 'Prospecting',
+        'NextStep' => 'Schedule demo',
+        'CloseDate' => inQuarter
+      }
     );
 
-    RecordHealthCheckResult result = evaluate(account.Id, null);
+    RecordHealthCheckInternalResult result = evaluate(account.Id, null);
 
-    System.assertEquals(
+    Assert.areEqual(
       'PASS',
       result.status,
       'A deal with a Next Step closing this quarter is healthy.'
     );
-    System.assertEquals('0 unhealthy', result.actualValue);
-    System.assertEquals('0 unhealthy', result.expectedValue);
+    Assert.areEqual('0', result.actualValue);
+    Assert.areEqual('0', result.expectedValue);
   }
 
   @IsTest
   static void unhealthyOpenOpportunityFails() {
-    Account account = new Account(Name = 'RHC Opp Health Unhealthy');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Opp Health Unhealthy' }
+    );
+    RecordHealthCheckTestDataFactory.createAccount(account);
 
     // No Next Step, closing far in the future, and (by default) no activity
     // stale, so the deal is unhealthy.
-    insert new Opportunity(
-      AccountId = account.Id,
-      Name = 'Neglected deal',
-      StageName = 'Prospecting',
-      CloseDate = Date.today().addYears(2)
+    RecordHealthCheckTestDataFactory.createOpportunity(
+      new Map<String, Object>{
+        'AccountId' => account.Id,
+        'Name' => 'Neglected deal',
+        'StageName' => 'Prospecting',
+        'CloseDate' => Date.today().addYears(2)
+      }
     );
 
-    RecordHealthCheckResult result = evaluate(account.Id, null);
+    RecordHealthCheckInternalResult result = evaluate(account.Id, null);
 
-    System.assertEquals('FAIL', result.status);
-    System.assertEquals('1 unhealthy', result.actualValue);
-    System.assertEquals('0 unhealthy', result.expectedValue);
+    Assert.areEqual('FAIL', result.status);
+    Assert.areEqual('1', result.actualValue);
+    Assert.areEqual('0', result.expectedValue);
   }
 
   @IsTest
   static void staleDaysParametersFallBackSafely() {
-    Account account = new Account(Name = 'RHC Opp Health Parameters');
-    insert account;
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Opp Health Parameters' }
+    );
+    RecordHealthCheckTestDataFactory.createAccount(account);
 
     for (
       Map<String, Object> parameters : new List<Map<String, Object>>{
@@ -86,12 +97,26 @@ private class AccountOpenOpportunityHealthCheckTest {
         new Map<String, Object>{ 'staleDays' => 1 }
       }
     ) {
-      System.assertEquals(
+      Assert.areEqual(
         'PASS',
         evaluate(account.Id, parameters).status,
         'Parameter parsing should never prevent evaluation.'
       );
     }
+  }
+
+  @IsTest
+  static void nullParametersUseDefaultStaleWindow() {
+    Test.startTest();
+    Integer days = new AccountOpenOpportunityHealthCheck()
+      .resolveStaleDays(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      30,
+      days,
+      'Null parameters should use the documented 30-day default.'
+    );
   }
 
   @IsTest
@@ -105,11 +130,13 @@ private class AccountOpenOpportunityHealthCheckTest {
     // LastActivityDate is a read-only system field and cannot be assigned in
     // Apex; a freshly constructed Opportunity already has it null, which counts
     // as stale.
-    Opportunity unhealthy = new Opportunity(
-      NextStep = null,
-      CloseDate = quarterStart.addMonths(6)
+    Opportunity unhealthy = RecordHealthCheckTestDataFactory.opportunity(
+      new Map<String, Object>{
+        'NextStep' => null,
+        'CloseDate' => quarterStart.addMonths(6)
+      }
     );
-    System.assertEquals(
+    Assert.areEqual(
       true,
       AccountOpenOpportunityHealthCheck.isUnhealthy(
         unhealthy,
@@ -120,11 +147,13 @@ private class AccountOpenOpportunityHealthCheckTest {
     );
 
     // A Next Step alone is enough to make it healthy (AND logic).
-    Opportunity hasNextStep = new Opportunity(
-      NextStep = 'Follow up',
-      CloseDate = quarterStart.addMonths(6)
+    Opportunity hasNextStep = RecordHealthCheckTestDataFactory.opportunity(
+      new Map<String, Object>{
+        'NextStep' => 'Follow up',
+        'CloseDate' => quarterStart.addMonths(6)
+      }
     );
-    System.assertEquals(
+    Assert.areEqual(
       false,
       AccountOpenOpportunityHealthCheck.isUnhealthy(
         hasNextStep,
@@ -142,7 +171,7 @@ private class AccountOpenOpportunityHealthCheckTest {
         '"}',
       Opportunity.class
     );
-    System.assertEquals(
+    Assert.areEqual(
       true,
       AccountOpenOpportunityHealthCheck.isUnhealthy(
         explicitlyStale,
@@ -156,13 +185,13 @@ private class AccountOpenOpportunityHealthCheckTest {
 
   @IsTest
   static void getQuarterStartReturnsFirstDayOfQuarter() {
-    System.assertEquals(
+    Assert.areEqual(
       Date.newInstance(2026, 1, 1),
       AccountOpenOpportunityHealthCheck.getQuarterStart(
         Date.newInstance(2026, 2, 14)
       )
     );
-    System.assertEquals(
+    Assert.areEqual(
       Date.newInstance(2026, 10, 1),
       AccountOpenOpportunityHealthCheck.getQuarterStart(
         Date.newInstance(2026, 12, 31)
@@ -170,14 +199,35 @@ private class AccountOpenOpportunityHealthCheckTest {
     );
   }
 
-  private static RecordHealthCheckResult evaluate(
+  /**
+   * The check is bulk, so a single-record assertion is a scope of one. Mapped
+   * back onto the internal result shape so the assertions stay readable.
+   */
+  private static RecordHealthCheckInternalResult evaluate(
     Id recordId,
     Map<String, Object> parameters
   ) {
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = recordId;
-    context.objectApiName = 'Account';
-    context.parameters = parameters;
-    return new AccountOpenOpportunityHealthCheck().evaluate(context);
+    RecordHealthCheckOutcome outcome = new AccountOpenOpportunityHealthCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          'Account',
+          new List<Id>{ recordId },
+          parameters,
+          'Open_Opportunities_Are_Healthy',
+          null,
+          null
+        )
+      )
+      .get(recordId);
+    RecordHealthCheckInternalResult result = new RecordHealthCheckInternalResult();
+    result.status = outcome.status;
+    result.reasonCode = outcome.reasonCode;
+    result.actualValue = outcome.found == null
+      ? null
+      : outcome.found.storedValue;
+    result.expectedValue = outcome.expected == null
+      ? null
+      : outcome.expected.storedValue;
+    return result;
   }
 }

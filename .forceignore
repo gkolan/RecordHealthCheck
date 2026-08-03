@@ -12,7 +12,7 @@ package.xml
 **/__tests__/**
 
 # Deferred features — archived source, not part of any deploy.
-# Capture Metrics is deferred from v1.0.0; see force-app/deferred/capture-metrics/.
+# Capture Metrics is deferred; see force-app/deferred/capture-metrics/.
 force-app/deferred/
 
 node_modules/

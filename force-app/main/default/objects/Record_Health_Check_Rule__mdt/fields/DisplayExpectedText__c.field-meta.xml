@@ -3,10 +3,10 @@
     <fullName>DisplayExpectedText__c</fullName>
     <label>Display: Expected Text</label>
     <description
-  >Optional and display only. Plain text (not a formula) that overrides the auto-generated Expected line on a multi-row ("Every record passes") query check. Supports {!rhcResult.failedRecordCount} and {!rhcResult.totalRecordCount} plus {!record.FieldName} tokens. Example: every contact has an email.</description>
+  >Optional and display only. Plain text (not a formula) that replaces the Expected line the Framework writes on a Query, Formula, or Compare two queries check, including the auto-generated Expected line on a multi-row ("Every record passes") query check. On a Formula check it replaces the "Passes when" echo of the pass condition. An Apex check writes its own Expected value, so this field does not apply there. Supports {!rhcResult.expectedValue}, {!rhcResult.failedRecordCount}, and {!rhcResult.totalRecordCount} plus {!record.FieldName} tokens. Example: every contact has an email.</description>
     <type>Text</type>
     <length>255</length>
     <inlineHelpText
-  >Display only. Plain text (not a formula) for the "Expected" line on an "Every record passes" check. Tokens: {!rhcResult.failedRecordCount}, {!rhcResult.totalRecordCount}, {!record.FieldName}.</inlineHelpText>
+  >Display only. Plain text (not a formula) for the "Expected" line. Tokens: {!rhcResult.expectedValue}, {!rhcResult.failedRecordCount}, {!rhcResult.totalRecordCount}, {!record.FieldName}.</inlineHelpText>
     <required>false</required>
 </CustomField>

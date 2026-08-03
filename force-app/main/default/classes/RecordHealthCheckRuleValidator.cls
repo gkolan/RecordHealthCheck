@@ -27,13 +27,13 @@
 public with sharing class RecordHealthCheckRuleValidator {
   // Valid-value sets are owned by RecordHealthCheckConstants so this validator and its two
   // callers can never get out of sync. Local aliases keep the producers below readable.
-  private static final Set<String> VALID_OPERATORS = RecordHealthCheckConstants.VALID_OPERATORS;
-  private static final Set<String> DUAL_QUERY_OPERATORS = RecordHealthCheckConstants.DUAL_QUERY_OPERATORS;
-  private static final Set<String> VALID_COMPARISON_VALUE_SOURCES = RecordHealthCheckConstants.VALID_COMPARISON_VALUE_SOURCES;
-  private static final Set<String> VALID_MULTIPLE_RECORDS_HANDLING = RecordHealthCheckConstants.VALID_MULTIPLE_RECORDS_HANDLING;
-  private static final Set<String> VALID_NULL_BEHAVIORS = RecordHealthCheckConstants.VALID_NULL_BEHAVIORS;
-  private static final Set<String> VALID_EMPTY_BEHAVIORS = RecordHealthCheckConstants.VALID_EMPTY_BEHAVIORS;
-  private static final Set<String> VALID_APPLICABILITY_OPERATORS = RecordHealthCheckConstants.VALID_APPLICABILITY_OPERATORS;
+  private static final Set<String> VALID_OPERATORS = RecordHealthCheckConstants.validOperators;
+  private static final Set<String> DUAL_QUERY_OPERATORS = RecordHealthCheckConstants.dualQueryOperators;
+  private static final Set<String> VALID_COMPARISON_VALUE_SOURCES = RecordHealthCheckConstants.validComparisonValueSources;
+  private static final Set<String> VALID_MULTIPLE_RECORDS_HANDLING = RecordHealthCheckConstants.validMultipleRecordsHandling;
+  private static final Set<String> VALID_NULL_BEHAVIORS = RecordHealthCheckConstants.validNullBehaviors;
+  private static final Set<String> VALID_EMPTY_BEHAVIORS = RecordHealthCheckConstants.validEmptyBehaviors;
+  private static final Set<String> VALID_APPLICABILITY_OPERATORS = RecordHealthCheckConstants.validApplicabilityOperators;
   private static final Integer FRAMEWORK_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
 
   // ─── Finding model ────────────────────────────────────────────────────────

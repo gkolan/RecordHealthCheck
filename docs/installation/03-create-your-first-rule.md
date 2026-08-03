@@ -6,12 +6,12 @@
 Use this guide to create one Check Set and one Formula Rule in Salesforce Setup. When you finish,
 an Account record page will show whether Billing City is populated.
 
-**You need:** Record Health Check Core installed, permission to manage Custom Metadata and edit
+**You need:** Record Health Check installed, permission to manage Custom Metadata and edit
 Lightning record pages, and the `Record_Health_Check_User` Permission Set.
 
 **You do not need:** Apex, Flow, or command-line tools.
 
-If Core is not installed yet, complete [Install and verify](02-install-and-verify.md) first.
+If Record Health Check is not installed yet, complete [Install and verify](02-install-and-verify.md) first.
 
 ## What you will build
 

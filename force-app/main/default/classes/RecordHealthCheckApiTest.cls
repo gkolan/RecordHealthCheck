@@ -3,184 +3,443 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckApiTest {
-  @testSetup
+  @TestSetup
   static void setup() {
+    RecordHealthCheckTestDataFactory.assignRunPermissionToCurrentUser();
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 
-  @isTest
-  static void runOneLinerReturnsAResult() {
-    Account acct = RecordHealthCheckTestDataFactory.getHealthyAccount();
-
-    Test.startTest();
-    RecordHealthCheckResult result = RecordHealthCheck.runRule(
-      'Account_DQ_BillingCity',
-      acct.Id
-    );
-    Test.stopTest();
-
-    System.assertNotEquals(null, result, 'API should always return a result.');
-    System.assertEquals(
-      'Account_DQ_BillingCity',
-      result.ruleDeveloperName,
-      'Result should be for the requested check.'
-    );
-    System.assertNotEquals(
-      null,
-      result.status,
-      'Result should carry a status.'
-    );
-  }
-
-  @isTest
-  static void runWithExplicitRunIdIsAccepted() {
-    Account acct = RecordHealthCheckTestDataFactory.getHealthyAccount();
-
-    Test.startTest();
-    RecordHealthCheckResult correlated = RecordHealthCheck.runRule(
-      'Account_DQ_BillingCity',
-      acct.Id,
-      'ticket-12345'
-    );
-    Test.stopTest();
-
-    System.assertEquals('Account_DQ_BillingCity', correlated.ruleDeveloperName);
-  }
-
-  @isTest
-  static void runSurfacesUnknownRuleAsReason() {
-    Account acct = RecordHealthCheckTestDataFactory.getHealthyAccount();
-
-    Test.startTest();
-    RecordHealthCheckResult result = RecordHealthCheck.runRule(
-      'No_Such_Check',
-      acct.Id
-    );
-    Test.stopTest();
-
-    System.assertEquals(
-      'UNABLE_TO_EVALUATE',
-      result.status,
-      'Unknown config should be a clean UNABLE_TO_EVALUATE, not an exception.'
-    );
-    System.assertEquals('RULE_NOT_FOUND', result.reasonCode);
-  }
-
-  @isTest
-  static void runSetReturnsVersionedCountsAndResults() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+  @IsTest
+  static void evaluateRuleReturnsStableEnvelope() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
-    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
-
-    Test.startTest();
-    RecordHealthCheckSetResult response = RecordHealthCheck.runSet(
-      'Account_Data_Quality',
-      accountRecord.Id,
-      'set-test-run'
-    );
-    Test.stopTest();
-
-    System.assertEquals('1.0', response.contractVersion);
-    System.assertEquals('set-test-run', response.runId);
-    System.assert(
-      response.results.size() > 0,
-      'The Set must return its Rules.'
-    );
-    System.assertEquals(
-      response.results.size(),
-      response.passedCount +
-        response.failedCount +
-        response.skippedCount +
-        response.unableCount +
-        response.systemErrorCount,
-      'Every result must appear in exactly one outcome count.'
-    );
-  }
-
-  @isTest
-  static void bulkRuleRunPreservesInputOrderAndVersion() {
-    Account first = RecordHealthCheckTestDataFactory.getHealthyAccount();
-    Account second = RecordHealthCheckTestDataFactory.createAccount(
-      'Second façade account'
-    );
-
-    Test.startTest();
-    List<RecordHealthCheckResult> responses = RecordHealthCheck.runRule(
-      'Account_DQ_BillingCity',
-      new List<Id>{ first.Id, second.Id }
-    );
-    Test.stopTest();
-
-    System.assertEquals(2, responses.size());
-    System.assertEquals('1.0', responses[0].contractVersion);
-    System.assertEquals('1.0', responses[1].contractVersion);
-  }
-
-  @isTest
-  static void bulkRequestFailsBeforeRunningWhenEvaluationBudgetIsExceeded() {
-    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
-    List<Id> recordIds = new List<Id>();
-    for (
-      Integer index = 0;
-      index <= RecordHealthCheck.MAX_EVALUATIONS_PER_CALL;
-      index++
-    ) {
-      recordIds.add(accountRecord.Id);
     }
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+      RecordHealthCheckRequest.forRule(
+        RecordHealthCheckTestDataFactory.qualifiedRuleName(
+          'Example_Profile_Phone_Available'
+        ),
+        accountRecord.Id
+      )
+    );
+    Assert.areEqual(1, response.results.size());
+    Assert.areEqual(
+      RecordHealthCheckTestDataFactory.qualifiedRuleName(
+        'Example_Profile_Phone_Available'
+      ),
+      response.results[0].evaluation.ruleQualifiedApiName
+    );
+    Assert.areNotEqual(null, response.results[0].evaluation.status);
+  }
+
+  @IsTest
+  static void explicitRunIdIsPreserved() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+      RecordHealthCheckRequest.forRule(
+          RecordHealthCheckTestDataFactory.qualifiedRuleName(
+            'Example_Profile_Phone_Available'
+          ),
+          accountRecord.Id
+        )
+        .withRunId('ticket-12345')
+    );
+    Assert.areEqual('ticket-12345', response.runId);
+  }
+
+  @IsTest
+  static void publicFacadeFlushesHeldDiagnosticsOnFailure() {
+    RecordHealthCheckLogger.log(
+      RecordHealthCheckLogger.Level.ERROR,
+      'facade-flush-run',
+      null,
+      null,
+      null,
+      'SYNTHETIC_HELD_ERROR',
+      null,
+      null
+    );
+    Assert.areEqual(
+      1,
+      RecordHealthCheckLogger.pendingEventCount(),
+      'The test must begin with one held diagnostic event.'
+    );
 
     Test.startTest();
     try {
-      RecordHealthCheck.runRule('Account_DQ_BillingCity', recordIds);
-      System.assert(
-        false,
-        'An over-budget request must fail before evaluation.'
+      RecordHealthCheck.evaluate(null);
+      Assert.fail(
+        'A null request must fail after the facade flushes diagnostics.'
       );
-    } catch (RecordHealthCheck.RecordHealthCheckRequestException expected) {
-      System.assert(
-        expected.getMessage().contains('too many checks'),
-        'The caller receives stable, actionable budget guidance.'
+    } catch (RecordHealthCheckScopePipeline.ScopePipelineException error) {
+      Assert.isTrue(
+        error.getMessage().contains('request is required'),
+        'The original request exception must survive the flush boundary.'
       );
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      0,
+      RecordHealthCheckLogger.pendingEventCount(),
+      'The public facade must clear held diagnostics even when evaluation throws.'
+    );
+  }
+
+  @IsTest
+  static void unknownQualifiedIdentityThrows() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    try {
+      RecordHealthCheck.evaluate(
+        RecordHealthCheckRequest.forRule('No_Such_Check', accountRecord.Id)
+      );
+      Assert.isTrue(false, 'Expected unknown identity to fail.');
+    } catch (RecordHealthCheckScopePipeline.ScopePipelineException expected) {
+      Assert.isTrue(expected.getMessage().contains('was not found'));
+    }
+  }
+
+  @IsTest
+  static void evaluateSetReturnsCountsAndResults() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+      RecordHealthCheckRequest.forCheckSet(
+          RecordHealthCheckTestDataFactory.qualifiedCheckSetName(
+            'Account_Data_Quality'
+          ),
+          accountRecord.Id
+        )
+        .withRunId('set-test-run')
+    );
+    Assert.areEqual('set-test-run', response.runId);
+    Assert.isTrue(response.results.size() > 0);
+    Assert.areEqual(
+      response.results.size(),
+      response.summary.passed +
+        response.summary.failed +
+        response.summary.skipped +
+        response.summary.unable +
+        response.summary.systemError
+    );
+  }
+
+  @IsTest
+  static void scopePreservesInputOrder() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Account first = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    Account second = RecordHealthCheckTestDataFactory.createAccount(
+      'Second account'
+    );
+    RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+      RecordHealthCheckRequest.forRule(
+        RecordHealthCheckTestDataFactory.qualifiedRuleName(
+          'Example_Profile_Phone_Available'
+        ),
+        new List<Id>{ first.Id, second.Id }
+      )
+    );
+    Assert.areEqual(first.Id, response.results[0].evaluation.recordId);
+    Assert.areEqual(second.Id, response.results[1].evaluation.recordId);
+  }
+
+  @IsTest
+  static void scopeLimitNamesCeilingAndSuppliedCount() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    List<Id> ids = new List<Id>();
+    for (
+      Integer index = 0;
+      index <= RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE;
+      index++
+    ) {
+      ids.add(accountRecord.Id);
+    }
+    try {
+      RecordHealthCheck.evaluate(
+        RecordHealthCheckRequest.forRule(
+          RecordHealthCheckTestDataFactory.qualifiedRuleName(
+            'Example_Profile_Phone_Available'
+          ),
+          ids
+        )
+      );
+      Assert.isTrue(false, 'Expected record scope limit.');
+    } catch (RecordHealthCheckScopePipeline.ScopePipelineException expected) {
+      Assert.isTrue(expected.getMessage().contains('suppliedCount=201'));
+      Assert.isTrue(expected.getMessage().contains('ceiling=200'));
+    }
+  }
+
+  @IsTest
+  static void ruleFlowAdapterReturnsAlignedV2Response() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckRunRuleFlowAction.Request input = new RecordHealthCheckRunRuleFlowAction.Request();
+    input.ruleQualifiedApiName = RecordHealthCheckTestDataFactory.qualifiedRuleName(
+      'Example_Profile_Phone_Available'
+    );
+    input.recordId = accountRecord.Id;
+    input.eventPublication = 'NONE';
+    List<RecordHealthCheckRunRuleFlowAction.Response> outputs = RecordHealthCheckRunRuleFlowAction.runRule(
+      new List<RecordHealthCheckRunRuleFlowAction.Request>{ input }
+    );
+    Assert.areEqual(1, outputs.size());
+    Assert.areEqual('2.0', outputs[0].contractVersion);
+    Assert.isTrue(outputs[0].isSuccess);
+    Assert.areNotEqual(null, outputs[0].status);
+  }
+
+  @IsTest
+  static void setFlowAdapterReturnsPerRecordCounts() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckRunSetFlowAction.Request input = new RecordHealthCheckRunSetFlowAction.Request();
+    input.checkSetQualifiedApiName = RecordHealthCheckTestDataFactory.qualifiedCheckSetName(
+      'Account_Data_Quality'
+    );
+    input.recordId = accountRecord.Id;
+    input.eventPublication = 'NONE';
+    List<RecordHealthCheckRunSetFlowAction.Response> outputs = RecordHealthCheckRunSetFlowAction.runSet(
+      new List<RecordHealthCheckRunSetFlowAction.Request>{ input }
+    );
+    Assert.areEqual(1, outputs.size());
+    Assert.isTrue(outputs[0].isSuccess);
+    Assert.areNotEqual(null, outputs[0].passedCount);
+    Assert.areNotEqual(null, outputs[0].resultJson);
+  }
+
+  @IsTest
+  static void flowAdaptersReturnExecutionErrorsForUnknownSelections() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckRunRuleFlowAction.Request ruleInput = new RecordHealthCheckRunRuleFlowAction.Request();
+    ruleInput.ruleQualifiedApiName = 'Unknown.Rule';
+    ruleInput.recordId = accountRecord.Id;
+    ruleInput.eventPublication = 'NONE';
+    RecordHealthCheckRunSetFlowAction.Request setInput = new RecordHealthCheckRunSetFlowAction.Request();
+    setInput.checkSetQualifiedApiName = 'Unknown.Set';
+    setInput.recordId = accountRecord.Id;
+    setInput.eventPublication = 'NONE';
+
+    Test.startTest();
+    List<RecordHealthCheckRunRuleFlowAction.Response> ruleOutputs = RecordHealthCheckRunRuleFlowAction.runRule(
+      new List<RecordHealthCheckRunRuleFlowAction.Request>{ ruleInput }
+    );
+    List<RecordHealthCheckRunSetFlowAction.Response> setOutputs = RecordHealthCheckRunSetFlowAction.runSet(
+      new List<RecordHealthCheckRunSetFlowAction.Request>{ setInput }
+    );
+    Test.stopTest();
+
+    assertRuleFlowError(ruleOutputs, 'EXECUTION', 'could not be evaluated');
+    assertSetFlowError(setOutputs, 'EXECUTION', 'could not be evaluated');
+  }
+
+  @IsTest
+  static void ruleFlowAdapterRejectsInvalidBoundaries() {
+    RecordHealthCheckRunRuleFlowAction.Request invalid = new RecordHealthCheckRunRuleFlowAction.Request();
+    List<RecordHealthCheckRunRuleFlowAction.Request> excessive = new List<RecordHealthCheckRunRuleFlowAction.Request>();
+    for (
+      Integer index = 0;
+      index <= RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE;
+      index++
+    ) {
+      excessive.add(invalid);
+    }
+
+    Test.startTest();
+    Assert.areEqual(
+      0,
+      RecordHealthCheckRunRuleFlowAction.runRule(null).size(),
+      'Null input should return no responses.'
+    );
+    assertRuleFlowError(
+      RecordHealthCheckRunRuleFlowAction.runRule(
+        new List<RecordHealthCheckRunRuleFlowAction.Request>{ invalid }
+      ),
+      'VALIDATION',
+      'required'
+    );
+    assertRuleFlowError(
+      RecordHealthCheckRunRuleFlowAction.runRule(excessive),
+      'LIMIT',
+      'MAX_RECORDS_PER_SCOPE_EXCEEDED'
+    );
+    try {
+      RecordHealthCheckFlowSupport.publication('INVALID');
+      Assert.fail('An unknown publication mode must be rejected.');
+    } catch (RecordHealthCheckFlowSupport.FlowSupportException error) {
+      Assert.isTrue(
+        error.getMessage().contains('INVALID_EVENT_PUBLICATION'),
+        'The error should identify the invalid publication mode.'
+      );
+    }
+    try {
+      RecordHealthCheckFlowSupport.normalizedPublication(null);
+      Assert.fail('A blank publication mode must be rejected.');
+    } catch (RecordHealthCheckFlowSupport.FlowSupportException error) {
+      Assert.isTrue(error.getMessage().contains('required'));
     }
     Test.stopTest();
   }
 
-  @isTest
-  static void runRuleFlowActionReturnsOneAlignedResponsePerRequest() {
-    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
-    RecordHealthCheckRunRuleFlowAction.Request request = new RecordHealthCheckRunRuleFlowAction.Request();
-    request.ruleDeveloperName = 'Account_DQ_BillingCity';
-    request.recordId = accountRecord.Id;
-
+  @IsTest
+  static void ruleFlowAdapterCoversPublicationAndMissingResultHelpers() {
     Test.startTest();
-    List<RecordHealthCheckRunRuleFlowAction.Response> responses = RecordHealthCheckRunRuleFlowAction.runRule(
-      new List<RecordHealthCheckRunRuleFlowAction.Request>{ request }
+    RecordHealthCheckEventPublication actionable = RecordHealthCheckFlowSupport.publication(
+      'ACTIONABLE'
     );
+    RecordHealthCheckEventPublication allEvents = RecordHealthCheckFlowSupport.publication(
+      'ALL'
+    );
+    try {
+      RecordHealthCheckFlowSupport.itemForRecord(
+        new RecordHealthCheckResponse(),
+        UserInfo.getUserId()
+      );
+      Assert.fail('A missing aligned result must be rejected.');
+    } catch (RecordHealthCheckFlowSupport.FlowSupportException error) {
+      Assert.isTrue(
+        error.getMessage().contains('No result'),
+        'The error should identify the missing aligned result.'
+      );
+    }
     Test.stopTest();
 
-    System.assertEquals(1, responses.size());
-    System.assertEquals('1.0', responses[0].contractVersion);
-    System.assertNotEquals(null, responses[0].status);
-    System.assertNotEquals(null, responses[0].resultJson);
+    Assert.areEqual(
+      RecordHealthCheckEventPublication.ACTIONABLE,
+      actionable,
+      'ACTIONABLE should map to its enum value.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckEventPublication.ALL,
+      allEvents,
+      'ALL should map to its enum value.'
+    );
   }
 
-  @isTest
-  static void runSetFlowActionReturnsSetCounts() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
-      return;
-    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
-    RecordHealthCheckRunSetFlowAction.Request setRequest = new RecordHealthCheckRunSetFlowAction.Request();
-    setRequest.checkSetDeveloperName = 'Account_Data_Quality';
-    setRequest.recordId = accountRecord.Id;
+  @IsTest
+  static void setFlowAdapterCoversStatusesAndInvalidBoundaries() {
+    RecordHealthCheckRunSetFlowAction.Request invalid = new RecordHealthCheckRunSetFlowAction.Request();
+    List<RecordHealthCheckRunSetFlowAction.Request> excessive = new List<RecordHealthCheckRunSetFlowAction.Request>();
+    for (
+      Integer index = 0;
+      index <= RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE;
+      index++
+    ) {
+      excessive.add(invalid);
+    }
 
     Test.startTest();
-    List<RecordHealthCheckRunSetFlowAction.Response> responses = RecordHealthCheckRunSetFlowAction.runSet(
-      new List<RecordHealthCheckRunSetFlowAction.Request>{ setRequest }
+    Assert.areEqual(
+      0,
+      RecordHealthCheckRunSetFlowAction.runSet(null).size(),
+      'Null input should return no responses.'
+    );
+    assertSetFlowError(
+      RecordHealthCheckRunSetFlowAction.runSet(
+        new List<RecordHealthCheckRunSetFlowAction.Request>{ invalid }
+      ),
+      'VALIDATION',
+      'required'
+    );
+    assertSetFlowError(
+      RecordHealthCheckRunSetFlowAction.runSet(excessive),
+      'LIMIT',
+      'MAX_RECORDS_PER_SCOPE_EXCEEDED'
+    );
+    Assert.areEqual(
+      RecordHealthCheckEventPublication.ACTIONABLE,
+      RecordHealthCheckFlowSupport.publication('ACTIONABLE'),
+      'ACTIONABLE should map to its enum value.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckEventPublication.ALL,
+      RecordHealthCheckFlowSupport.publication('ALL'),
+      'ALL should map to its enum value.'
+    );
+    try {
+      RecordHealthCheckFlowSupport.publication('INVALID');
+      Assert.fail('An unknown Set publication mode must be rejected.');
+    } catch (RecordHealthCheckFlowSupport.FlowSupportException error) {
+      Assert.isTrue(
+        error.getMessage().contains('INVALID_EVENT_PUBLICATION'),
+        'The Set Flow error should identify the invalid publication mode.'
+      );
+    }
+    try {
+      RecordHealthCheckFlowSupport.normalizedPublication(' ');
+      Assert.fail('A blank Set publication mode must be rejected.');
+    } catch (RecordHealthCheckFlowSupport.FlowSupportException error) {
+      Assert.isTrue(error.getMessage().contains('required'));
+    }
+    Assert.areEqual(
+      'ERROR',
+      statusFor('ERROR'),
+      'System errors should have highest priority.'
+    );
+    Assert.areEqual(
+      'UNABLE_TO_EVALUATE',
+      statusFor('UNABLE_TO_EVALUATE'),
+      'Unable should follow errors.'
+    );
+    Assert.areEqual(
+      'FAIL',
+      statusFor('FAIL'),
+      'Failures should follow unable results.'
+    );
+    Assert.areEqual('PASS', statusFor('PASS'), 'Pass should follow failures.');
+    Assert.areEqual(
+      'SKIPPED',
+      statusFor('SKIPPED'),
+      'An empty summary should be skipped.'
     );
     Test.stopTest();
+  }
 
-    System.assertEquals(1, responses.size());
-    System.assertNotEquals(null, responses[0].passedCount);
+  private static String statusFor(String status) {
+    RecordHealthCheckRunSummary summary = new RecordHealthCheckRunSummary();
+    if (status != 'SKIPPED') {
+      summary.add(status);
+    }
+    return RecordHealthCheckFlowSupport.overallStatus(summary);
+  }
+
+  private static void assertRuleFlowError(
+    List<RecordHealthCheckRunRuleFlowAction.Response> responses,
+    String expectedType,
+    String expectedMessage
+  ) {
+    Assert.isFalse(responses[0].isSuccess);
+    Assert.areEqual(expectedType, responses[0].errorType);
+    Assert.isTrue(responses[0].errorMessage.contains(expectedMessage));
+  }
+
+  private static void assertSetFlowError(
+    List<RecordHealthCheckRunSetFlowAction.Response> responses,
+    String expectedType,
+    String expectedMessage
+  ) {
+    Assert.isFalse(responses[0].isSuccess);
+    Assert.areEqual(expectedType, responses[0].errorType);
+    Assert.isTrue(responses[0].errorMessage.contains(expectedMessage));
   }
 }

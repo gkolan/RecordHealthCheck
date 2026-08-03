@@ -32,7 +32,7 @@ body:
       label: Steps to reproduce
       description: Numbered steps. Include the Check Set and Rule Developer Names involved.
       placeholder: |
-        1. Check Set Developer Name: Example_Account_360_Health_Check
+        1. Check Set Qualified API Name: the exact value selected in Lightning App Builder
         2. Rule Developer Name: Account_DQ_BillingCity
         3. On an Account where BillingCity is blank, open the record page…
     validations:

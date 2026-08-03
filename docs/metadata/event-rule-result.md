@@ -28,13 +28,19 @@ The Framework publishes one event for a Rule only when every condition is true:
 
 | Required condition | What to verify |
 | --- | --- |
-| Publication is enabled | **Publish Result Event** (`PublishResultEvent__c`) is checked on the Rule. |
+| Publication is enabled | **Publish User Result Event** (`PublishUserResultEvent__c`) is checked on the Rule. |
 | The result is final | The Rule finished during a deliberate Rule or Check Set run. |
 | The source is allowed | Source is `APEX_API`, `FLOW`, `USER_INITIATED`, `SCHEDULED`, or `BATCH`. |
 | Work is committed | The Salesforce transaction commits. |
 
 Automatic Lightning record-page evaluation, subscriber context, blank sources, and unknown sources
 do not publish.
+
+`USER_INITIATED` events contain the outcomes returned by the progressive Lightning browser run.
+They are filtered to the requested record and the Rules in the resolved Check Set, but they are not
+server-attested. Treat them as advisory telemetry. Automation that makes security-sensitive or
+business-critical changes must re-evaluate through a server-side Apex or Flow entry point before
+acting. Other supported sources publish directly from their server-side evaluations.
 
 ## Event definition
 
@@ -51,10 +57,10 @@ do not publish.
 
 | Setup label | API name | Type | Required/default | Meaning |
 | --- | --- | --- | --- | --- |
-| Event ID | `EventId__c` | Text(80) | Required; generated | Application-level unique key. |
+| Event ID | `EventId__c` | Text(80) | Required; generated | Deterministic application-level key derived from Run ID, Rule identity, and Record ID. |
 | Run ID | `RunId__c` | Text(120) | Required; supplied or generated | Correlates this result with its Check Set run, response, and Framework logs. |
-| Check Set API Name | `CheckSetDeveloperName__c` | Text(80) | Required | Parent Check Set `DeveloperName`. |
-| Rule API Name | `RuleDeveloperName__c` | Text(80) | Required | Finalized Rule `DeveloperName`. |
+| Check Set Qualified API Name | `CheckSetQualifiedApiName__c` | Text(80) | Required | Parent Check Set `QualifiedApiName`. |
+| Rule Qualified API Name | `RuleQualifiedApiName__c` | Text(80) | Required | Finalized Rule `QualifiedApiName`. |
 | Record ID | `RecordId__c` | Text(18) | Optional | Salesforce record evaluated when one record is available. |
 | Status | `Status__c` | Text(30) | Required | `PASS`, `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR`. |
 | Reason Code | `ReasonCode__c` | Text(80) | Optional | Stable public Reason Code. Diagnostics-only codes are not published here. |
@@ -62,7 +68,7 @@ do not publish.
 | Occurred At | `OccurredAt__c` | DateTime | Required; generated | UTC time when the Framework constructed the event. |
 | Source | `Source__c` | Text(30) | Required; caller-derived | `APEX_API`, `FLOW`, `USER_INITIATED`, `SCHEDULED`, or `BATCH`. |
 | Contract Version | `ContractVersion__c` | Text(10) | Required; `1.0` | Version of this event schema. |
-| Core Version | `CoreVersion__c` | Text(20) | Required; `2.0.0` | Framework release that produced the event. |
+| Framework Version | `FrameworkVersion__c` | Text(20) | Required | Framework release that produced the event. |
 | Contains Restricted Detail | `ContainsRestrictedDetail__c` | Checkbox | Defaults to false | Indicates that restricted detail existed on the in-memory result. It does not publish that detail. |
 
 ## Example event body
@@ -70,11 +76,11 @@ do not publish.
 ```json
 {
   "ContractVersion__c": "1.0",
-  "CoreVersion__c": "2.0.0",
-  "EventId__c": "rhc-run-001-Account_Has_Contact-27462",
+  "FrameworkVersion__c": "current-release",
+  "EventId__c": "rhc-run-001-0123456789abcdef",
   "RunId__c": "rhc-run-001",
-  "CheckSetDeveloperName__c": "Account_Readiness",
-  "RuleDeveloperName__c": "Account_Has_Contact",
+  "CheckSetQualifiedApiName__c": "rhc__Account_Readiness",
+  "RuleQualifiedApiName__c": "rhc__Account_Has_Contact",
   "RecordId__c": "001000000000001AAA",
   "Status__c": "FAIL",
   "ReasonCode__c": null,
@@ -124,8 +130,9 @@ not change the finalized Rule status.
 
 ## Related
 
+- [Subscribe with Flow or Apex](../platform-events/rule-result.md)
 - [Lifecycle-events overview](../integration/lifecycle-events.md)
 - [Check Set Run Platform Event](event-set-run.md)
 - [Log Platform Event](event-log.md)
-- [Rule fields](fields-check-rule.md): **Publish Result Event**
+- [Rule fields](fields-check-rule.md): **Publish User Result Event**
 - [Reason Codes](../reference/reference-reason-codes.md)

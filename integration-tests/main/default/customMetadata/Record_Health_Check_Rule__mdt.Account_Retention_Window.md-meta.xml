@@ -18,7 +18,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >GDPR storage limitation: flags accounts with no activity in 730 days. Time-based drift — only a read-time check catches it.</value>
+    >GDPR storage limitation: flags accounts with no activity in 730 days. Time-based drift: only a read-time check catches it.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

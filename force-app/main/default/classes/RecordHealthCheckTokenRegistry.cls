@@ -47,16 +47,21 @@ public class RecordHealthCheckTokenRegistry {
   };
 
   public static Boolean contains(String namespaceName, String property) {
-    if (namespaceName == 'record')
+    if (namespaceName == 'record') {
       return String.isNotBlank(property);
-    if (namespaceName == 'rhcRule')
+    }
+    if (namespaceName == 'rhcRule') {
       return RULE_PROPERTIES.contains(property);
-    if (namespaceName == 'rhcSet')
+    }
+    if (namespaceName == 'rhcSet') {
       return SET_PROPERTIES.contains(property);
-    if (namespaceName == 'rhcResult')
+    }
+    if (namespaceName == 'rhcResult') {
       return RESULT_PROPERTIES.contains(property);
-    if (namespaceName == 'rhcRun')
+    }
+    if (namespaceName == 'rhcRun') {
       return RUN_PROPERTIES.contains(property);
+    }
     return false;
   }
 }

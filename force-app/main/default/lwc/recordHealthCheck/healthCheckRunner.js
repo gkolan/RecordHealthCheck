@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
-import completeRun from "@salesforce/apex/RecordHealthCheckController.completeRun";
 import {
   synthesizeResult,
   normalizeResult,
@@ -13,6 +11,59 @@ import {
 } from "./healthCheckModel";
 
 const MAX_CONCURRENT_EVALUATIONS = 5;
+
+// Lightning pages can host this component more than once. A runner-local limit
+// lets every instance open five requests, so three components can create fifteen
+// simultaneous Apex transactions. Keep one scheduler per loaded module/page so
+// all instances share the same conservative browser-to-Apex budget.
+let pageScheduler = { active: 0, queue: [] };
+
+function acquirePageEvaluationSlot(isCurrent) {
+  const scheduler = pageScheduler;
+  return new Promise((resolve) => {
+    if (!isCurrent()) {
+      resolve(false);
+      return;
+    }
+    if (scheduler.active < MAX_CONCURRENT_EVALUATIONS) {
+      scheduler.active++;
+      resolve(scheduler);
+      return;
+    }
+    scheduler.queue.push({ isCurrent, resolve });
+  });
+}
+
+function tryAcquirePageEvaluationSlot(isCurrent) {
+  if (!isCurrent()) return false;
+  if (pageScheduler.active >= MAX_CONCURRENT_EVALUATIONS) return null;
+  pageScheduler.active++;
+  return pageScheduler;
+}
+
+function releasePageEvaluationSlot(scheduler) {
+  scheduler.active = Math.max(0, scheduler.active - 1);
+  while (
+    scheduler.queue.length > 0 &&
+    scheduler.active < MAX_CONCURRENT_EVALUATIONS
+  ) {
+    const next = scheduler.queue.shift();
+    if (!next.isCurrent()) {
+      next.resolve(false);
+      continue;
+    }
+    scheduler.active++;
+    next.resolve(scheduler);
+    break;
+  }
+}
+
+// Jest intentionally leaves some mocked Apex promises unresolved to verify stale
+// result handling. Give each test an isolated scheduler generation without
+// changing production behavior or releasing a real browser request early.
+export function resetPageEvaluationSchedulerForTest() {
+  pageScheduler = { active: 0, queue: [] };
+}
 
 /**
  * Run lifecycle: dependency gating, concurrency-capped evaluation, progressive reveal.
@@ -23,12 +74,11 @@ export class HealthCheckRunner {
   _runInProgress = false;
   _runToken = 0;
   _runId = null;
-  /** In-flight Apex calls across run tokens; not zeroed on invalidate. */
-  _activeEvaluations = 0;
-  _evaluationQueue = [];
 
-  constructor(host) {
+  constructor(host, services) {
     this.host = host;
+    this.evaluateCheck = services.evaluateCheck;
+    this.completeRun = services.completeRun;
   }
 
   get isRunning() {
@@ -55,11 +105,18 @@ export class HealthCheckRunner {
     this._runInProgress = false;
     this._stopped = false;
     this._resultBuffer = {};
-    this._resetEvaluationPool();
   }
 
   run(reuseRunId = false, source = "USER_INITIATED") {
     if (this._runInProgress) return;
+    if (!["USER_INITIATED", "RUN_ON_LOAD"].includes(source)) {
+      throw Object.assign(
+        new Error("The execution source is not recognized."),
+        {
+          reasonCode: "INVALID_EXECUTION_SOURCE"
+        }
+      );
+    }
     this._runInProgress = true;
     if (!reuseRunId || !this._runId) {
       this._runId = newRunId();
@@ -69,8 +126,7 @@ export class HealthCheckRunner {
     this.host.runComplete = false;
     this._resultBuffer = {};
     this._stopped = false;
-    this._source = source === "USER_INITIATED" ? source : "RUN_ON_LOAD";
-    this._resetEvaluationPool();
+    this._source = source;
 
     // Reset all rows to PENDING and clear previous results
     this.host.checks = this.host.checks.map((c) => ({
@@ -88,7 +144,7 @@ export class HealthCheckRunner {
 
     // Pre-seed circular dependencies as errors so their Promises resolve immediately
     // rather than hanging indefinitely awaiting each other.
-    // Message wording matches RecordHealthCheckEngine (names the blocking prereq).
+    // Message wording matches RecordHealthCheckScopePipeline (names the blocking prerequisite).
     const cycleNames = detectDependencyCycles(this.host.checks);
     const checkMap = {};
     for (const check of this.host.checks) {
@@ -97,7 +153,7 @@ export class HealthCheckRunner {
     for (const name of cycleNames) {
       const check = checkMap[name];
       if (check) {
-        const prereqName = check.dependsOnRuleDeveloperName || name;
+        const prereqName = check.dependsOnRuleDeveloperName;
         this._resultBuffer[name] = synthesizeResult(
           check,
           "UNABLE_TO_EVALUATE",
@@ -186,37 +242,34 @@ export class HealthCheckRunner {
   async _runOneCheck(check, taskMap, checkMap, runCheck, token) {
     if (this._stopped || token !== this._runToken) return;
 
-    // Client-side dependency gate before calling Apex.
+    // Enforce the Prerequisite Rule before calling Apex.
     if (check.dependsOnRuleDeveloperName) {
-      const dependencyCheck = checkMap[check.dependsOnRuleDeveloperName];
-      if (!dependencyCheck) {
-        // Dependency was not included in this run (e.g. excluded by the framework cap).
-        // Skip with a clear reason rather than silently falling through.
+      const prerequisiteRule = checkMap[check.dependsOnRuleDeveloperName];
+      if (!prerequisiteRule) {
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
           "DEPENDENCY_NOT_IN_RUN",
-          `Skipped because "${check.dependsOnRuleDeveloperName}" was not included in this run.`
+          `Skipped because Prerequisite Rule "${check.dependsOnRuleDeveloperName}" was not included in the Framework run.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
         return;
       }
       if (!taskMap[check.dependsOnRuleDeveloperName]) {
-        runCheck(dependencyCheck);
+        runCheck(prerequisiteRule);
       }
       await taskMap[check.dependsOnRuleDeveloperName];
       if (this._stopped || token !== this._runToken) return;
       const prereqResult = this._resultBuffer[check.dependsOnRuleDeveloperName];
       if (!prereqResult || prereqResult.status !== "PASS") {
         const prereqLabel =
-          (dependencyCheck && dependencyCheck.label) ||
-          check.dependsOnRuleDeveloperName;
+          prerequisiteRule.label || check.dependsOnRuleDeveloperName;
         const skipped = synthesizeResult(
           check,
           "SKIPPED",
           "PREREQUISITE_NOT_MET",
-          `Skipped because "${prereqLabel}" did not pass.`
+          `Skipped because Prerequisite Rule "${prereqLabel}" did not pass.`
         );
         this._resultBuffer[check.developerName] = skipped;
         this._drain(token);
@@ -227,22 +280,23 @@ export class HealthCheckRunner {
     // Set row to LOADING
     this._setCheckUiState(check.developerName, "LOADING");
 
-    if (this._activeEvaluations >= MAX_CONCURRENT_EVALUATIONS) {
-      const acquired = await this._acquireEvaluationSlot(token);
-      if (!acquired) return;
-      if (token !== this._runToken) {
-        this._releaseEvaluationSlot();
-        return;
-      }
-    } else {
-      this._activeEvaluations++;
+    let acquiredScheduler = tryAcquirePageEvaluationSlot(
+      () => token === this._runToken
+    );
+    if (acquiredScheduler === null) {
+      acquiredScheduler = await this._acquireEvaluationSlot(token);
+    }
+    if (!acquiredScheduler) return;
+    if (token !== this._runToken) {
+      this._releaseEvaluationSlot(acquiredScheduler);
+      return;
     }
 
     let result;
     try {
-      result = await evaluateCheck({
-        checkSetDeveloperName: this.host.checkSetName,
-        ruleDeveloperName: check.developerName,
+      result = await this.evaluateCheck({
+        checkSetQualifiedApiName: this.host.checkSetName,
+        ruleQualifiedApiName: check.qualifiedApiName,
         recordId: this.host.recordId,
         runId: this._runId,
         source: this._source
@@ -255,7 +309,7 @@ export class HealthCheckRunner {
         "The check could not be reached. Please try again."
       );
     } finally {
-      this._releaseEvaluationSlot();
+      this._releaseEvaluationSlot(acquiredScheduler);
     }
 
     // Discard result if a newer run has started since this call was fired
@@ -314,18 +368,19 @@ export class HealthCheckRunner {
     const allResolved = this.host.checks.every(
       (c) => this._resultBuffer[c.developerName] !== undefined
     );
-    if (allResolved) {
+    if (allResolved && !this.host.runComplete) {
       this.host.runComplete = true;
       this.host.hasCompletedRunOnce = true;
       this._runInProgress = false;
       if (this._source === "USER_INITIATED") {
-        completeRun({
-          checkSetDeveloperName: this.host.checkSetName,
+        this.completeRun({
+          checkSetQualifiedApiName: this.host.checkSetName,
           runId: this._runId,
           source: this._source,
-          recordId: this.host.recordId
-        }).catch(() => {
-          // Lifecycle publication is best effort and never changes UI results.
+          recordId: this.host.recordId,
+          resultsJson: JSON.stringify(Object.values(this._resultBuffer))
+        }).catch((error) => {
+          this.host._handleCompletionFailure?.(error);
         });
       }
       if (this.host.showDiagnostics) {
@@ -335,39 +390,11 @@ export class HealthCheckRunner {
   }
 
   _acquireEvaluationSlot(token) {
-    return new Promise((resolve) => {
-      if (token !== this._runToken) {
-        resolve(false);
-      } else {
-        this._evaluationQueue.push({ token, resolve });
-      }
-    });
+    return acquirePageEvaluationSlot(() => token === this._runToken);
   }
 
-  _releaseEvaluationSlot() {
-    // Slot frees when any in-flight request settles, including from a prior run.
-    this._activeEvaluations = Math.max(0, this._activeEvaluations - 1);
-    while (
-      this._evaluationQueue.length > 0 &&
-      this._activeEvaluations < MAX_CONCURRENT_EVALUATIONS
-    ) {
-      const next = this._evaluationQueue.shift();
-      if (next.token !== this._runToken) {
-        next.resolve(false);
-        continue;
-      }
-      this._activeEvaluations++;
-      next.resolve(true);
-      break;
-    }
-  }
-
-  _resetEvaluationPool() {
-    // Leave _activeEvaluations alone; abandoned runs decrement on settle.
-    for (const pending of this._evaluationQueue) {
-      pending.resolve(false);
-    }
-    this._evaluationQueue = [];
+  _releaseEvaluationSlot(scheduler) {
+    releasePageEvaluationSlot(scheduler);
   }
 
   _setCheckUiState(developerName, uiState) {

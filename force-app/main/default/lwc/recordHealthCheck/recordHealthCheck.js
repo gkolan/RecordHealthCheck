@@ -4,14 +4,21 @@
  */
 
 import { LightningElement, api, track } from "lwc";
-import slds1Styles from "./recordHealthCheckSlds1.css";
-import slds2Styles from "./recordHealthCheckSlds2.css";
+import themeStyles from "./recordHealthCheckTheme.css";
 import USER_ID from "@salesforce/user/Id";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
 import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
+import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
+import completeRun from "@salesforce/apex/RecordHealthCheckController.completeRun";
 import { parseAuraError } from "./healthCheckModel";
-import { annotateCheck, buildSummaryStats } from "./healthCheckPresentation";
+import { annotateCheck, buildSummaryGroups } from "./healthCheckPresentation";
 import { HealthCheckRunner } from "./healthCheckRunner";
+import {
+  buildInactiveRuleStat,
+  formatRunSummary,
+  parseDiagnosticJson,
+  setupErrorHint
+} from "./healthCheckDiagnostics";
 
 // Columns shown in the run-diagnostics table. Value-source detail stays in the nested
 // group below — those strings are long and read better one check at a time.
@@ -28,7 +35,7 @@ const RHC_DIAG_TABLE_COLUMNS = [
 
 // Pointer hover waits before the tooltip fades in so quick row scans do not flash
 // popovers. Keyboard focus keeps a shorter CSS dwell (see recordHealthCheck.css).
-const TOOLTIP_HOVER_DWELL_MS = 600;
+const TOOLTIP_HOVER_DWELL_MS = 1000;
 const ESTIMATED_TOOLTIP_HEIGHT = 180;
 
 const SETUP_ERROR_CODES = new Set([
@@ -44,23 +51,12 @@ const SETUP_ERROR_CODES = new Set([
 ]);
 
 export default class RecordHealthCheck extends LightningElement {
-  static stylesheets = [slds1Styles, slds2Styles];
+  static stylesheets = [themeStyles];
 
   _checkSetName;
 
-  /**
-   * Selects the custom visual treatment owned by Record Health Check. The org
-   * theme still determines which SLDS runtime Lightning base components use.
-   */
-  @api designSystem = "SLDS 1";
-
   get themeClass() {
-    const normalizedVersion = String(
-      this.designSystem || "SLDS 1"
-    ).toUpperCase();
-    return normalizedVersion === "SLDS 2"
-      ? "rhc-theme rhc-theme--slds2"
-      : "rhc-theme rhc-theme--slds1";
+    return "rhc-theme";
   }
 
   @api
@@ -118,6 +114,7 @@ export default class RecordHealthCheck extends LightningElement {
   @track hasCompletedRunOnce = false;
   @track componentError = null; // safe user-facing message
   @track componentErrorCode = null;
+  @track componentErrorDiagnosticCode = null;
   @track checksOmittedByLimit = false;
   @track isLoading = true;
 
@@ -132,9 +129,9 @@ export default class RecordHealthCheck extends LightningElement {
   // Run orchestration (result buffer, reveal pointer, concurrency pool, run id,
   // and the run token that discards stale in-flight results) lives in the runner;
   // the component owns lifecycle, definition loading, display, and diagnostics.
-  _runner = new HealthCheckRunner(this);
+  _runner = new HealthCheckRunner(this, { evaluateCheck, completeRun });
   _loadToken = 0;
-  _initialLoadTimer;
+  _initialLoadFrame;
   _tooltipListenersBound = false;
   _tooltipDwellTimers = new WeakMap();
   _pendingTooltipAnchors = new Set();
@@ -150,11 +147,14 @@ export default class RecordHealthCheck extends LightningElement {
   connectedCallback() {
     this._connected = true;
     window.addEventListener("resize", this._handleViewportResize);
-    // Defer one macrotask so the record page frame finishes its initial render
-    // before we fire Apex calls. Without this, Automatic mode sends up to 25
-    // concurrent requests while the page is still mounting other components.
+    // Yield the first frame to the Lightning page before loading definitions.
+    // Automatic evaluation therefore cannot compete with the page's initial
+    // component mount and first meaningful paint.
     // eslint-disable-next-line @lwc/lwc/no-async-operation
-    this._initialLoadTimer = setTimeout(() => this._loadDefinitions(), 0);
+    this._initialLoadFrame = requestAnimationFrame(() => {
+      this._initialLoadFrame = null;
+      this._loadDefinitions();
+    });
   }
 
   disconnectedCallback() {
@@ -165,9 +165,9 @@ export default class RecordHealthCheck extends LightningElement {
       this._resizeFrame = null;
     }
     this._loadToken++;
-    if (this._initialLoadTimer) {
-      clearTimeout(this._initialLoadTimer);
-      this._initialLoadTimer = null;
+    if (this._initialLoadFrame) {
+      cancelAnimationFrame(this._initialLoadFrame);
+      this._initialLoadFrame = null;
     }
     // Bump the run token and clear the concurrency pool so any in-flight
     // evaluation resolves to a discarded result instead of changing a dead component.
@@ -195,9 +195,9 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   renderedCallback() {
-    // Content grows as checks resolve, so re-measure clamped value chips on every
-    // render to reveal a "..." toggle only on those that overflow two lines.
-    this._measureClampedValues();
+    // Content grows as checks resolve, so re-measure every clampable region and
+    // reveal its +/- toggle only when the rendered text actually overflows.
+    this._measureClampedContent();
     if (this._tooltipListenersBound) {
       return;
     }
@@ -342,9 +342,9 @@ export default class RecordHealthCheck extends LightningElement {
     const loadToken = ++this._loadToken;
     const requestedCheckSetName = this.checkSetName;
     const requestedRecordId = this.recordId;
-    if (this._initialLoadTimer) {
-      clearTimeout(this._initialLoadTimer);
-      this._initialLoadTimer = null;
+    if (this._initialLoadFrame) {
+      cancelAnimationFrame(this._initialLoadFrame);
+      this._initialLoadFrame = null;
     }
     // Invalidate any run still in flight from a previously-viewed record. This
     // method is the entry point for both the first load AND the in-place record
@@ -375,7 +375,7 @@ export default class RecordHealthCheck extends LightningElement {
 
     try {
       const response = await getCheckDefinitions({
-        checkSetDeveloperName: requestedCheckSetName,
+        checkSetQualifiedApiName: requestedCheckSetName,
         recordId: requestedRecordId,
         runId
       });
@@ -394,6 +394,11 @@ export default class RecordHealthCheck extends LightningElement {
             "A health-check definition is missing its developer name."
           );
         }
+        if (!def.qualifiedApiName) {
+          throw new Error(
+            "A health-check definition is missing its qualified API name."
+          );
+        }
         if (seenNames.has(def.developerName)) {
           throw new Error(
             `Duplicate health-check developer name: ${def.developerName}.`
@@ -404,18 +409,36 @@ export default class RecordHealthCheck extends LightningElement {
 
       this.displayTitle = response.displayTitle;
       this.displayDescription = response.displayDescription;
-      this.triggerMode =
-        response.triggerMode === "Automatic" ? "Automatic" : "Manual";
-      this.revealMode =
-        response.revealMode === "OneAtATime" ? "OneAtATime" : "AllAtOnce";
+      this._requireMode(
+        response.triggerMode,
+        ["Automatic", "Manual"],
+        "When Checks Run"
+      );
+      this._requireMode(
+        response.revealMode,
+        ["OneAtATime", "AllAtOnce"],
+        "Reveal Mode"
+      );
+      this._requireMode(
+        response.successDisplayMode,
+        ["Show", "Hide"],
+        "Passed Checks Display"
+      );
+      this._requireMode(
+        response.skippedDisplayMode,
+        ["Show", "Hide"],
+        "Skipped Checks Display"
+      );
+      this._requireMode(
+        response.comparisonDisplay,
+        ["OnDemand", "FailuresOnly", "AllRows"],
+        "Found/Expected Display"
+      );
+      this.triggerMode = response.triggerMode;
+      this.revealMode = response.revealMode;
       this.successDisplayMode = response.successDisplayMode;
       this.skippedDisplayMode = response.skippedDisplayMode;
-      // Normalize comparison mode; unknown values fall back to OnDemand.
-      this.comparisonDisplay = ["OnDemand", "FailuresOnly", "AllRows"].includes(
-        response.comparisonDisplay
-      )
-        ? response.comparisonDisplay
-        : "OnDemand";
+      this.comparisonDisplay = response.comparisonDisplay;
       this.stopOnFirstError = response.stopOnFirstError;
       this.showDiagnostics = response.showDiagnostics === true;
       this.totalCheckCount = response.checks.length;
@@ -441,8 +464,11 @@ export default class RecordHealthCheck extends LightningElement {
       // Build per-check rows — all start PENDING
       this.checks = response.checks.map((def) => ({
         developerName: def.developerName,
+        qualifiedApiName: def.qualifiedApiName,
         label: def.label,
         description: def.description,
+        category: def.category || null,
+        categoryLabel: def.categoryLabel || null,
         priority: def.priority,
         dependsOnRuleDeveloperName: def.dependsOnRuleDeveloperName || null,
         uiState: "PENDING",
@@ -462,6 +488,7 @@ export default class RecordHealthCheck extends LightningElement {
       const parsed = parseAuraError(err);
       this.componentError = parsed.message;
       this.componentErrorCode = parsed.reasonCode;
+      this.componentErrorDiagnosticCode = parsed.diagnosticCode;
     }
   }
 
@@ -473,8 +500,8 @@ export default class RecordHealthCheck extends LightningElement {
    * Blank checkSetName is ambiguous until we ask Apex what Check Sets exist for
    * this object. Active sets → SETUP_REQUIRED (pick one). Inactive only →
    * INACTIVE_CHECK_SETS_ONLY. None at all → NO_ACTIVE_CHECK_SETS. Lookup failures
-   * and missing recordId fall back to SETUP_REQUIRED so we never falsely claim
-   * the org has no Check Sets.
+   * A lookup failure remains a distinct retriable system error so an Apex or
+   * network problem is never mislabeled as missing configuration.
    */
   async _applyBlankCheckSetSetupError(loadToken, requestedRecordId) {
     let availability = { hasActive: true, hasInactive: false };
@@ -487,10 +514,15 @@ export default class RecordHealthCheck extends LightningElement {
           hasActive: response?.hasActive === true,
           hasInactive: response?.hasInactive === true
         };
-      } catch {
-        // Lookup failed (e.g. transient Apex error) — fall back to SETUP_REQUIRED
-        // rather than falsely claiming the org has no Check Sets for this object.
-        availability = { hasActive: true, hasInactive: false };
+      } catch (error) {
+        if (loadToken !== this._loadToken || !this._connected) return;
+        const parsed = parseAuraError(error);
+        this.isLoading = false;
+        this.componentError =
+          "Record Health Check could not verify its setup. Please try again.";
+        this.componentErrorCode = "AVAILABILITY_LOOKUP_FAILED";
+        this.componentErrorDiagnosticCode = parsed.diagnosticCode;
+        return;
       }
     }
     if (loadToken !== this._loadToken || !this._connected) {
@@ -513,6 +545,25 @@ export default class RecordHealthCheck extends LightningElement {
     this.componentErrorCode = "NO_ACTIVE_CHECK_SETS";
   }
 
+  _requireMode(value, allowed, label) {
+    if (!allowed.includes(value)) {
+      throw Object.assign(
+        new Error(`${label} has an invalid configured value.`),
+        {
+          reasonCode: "INVALID_CONFIG"
+        }
+      );
+    }
+  }
+
+  _handleCompletionFailure(error) {
+    const parsed = parseAuraError(error);
+    this.componentError =
+      "The checks finished, but the run could not be completed. Please try again.";
+    this.componentErrorCode = "RUN_COMPLETION_FAILED";
+    this.componentErrorDiagnosticCode = parsed.diagnosticCode;
+  }
+
   get isSetupError() {
     return SETUP_ERROR_CODES.has(this.componentErrorCode);
   }
@@ -532,27 +583,7 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   get setupErrorHint() {
-    switch (this.componentErrorCode) {
-      case "CONFIG_NOT_FOUND":
-      case "SETUP_REQUIRED":
-        return "Ask your Salesforce admin to choose a Check Set for this page.";
-      case "INACTIVE_CHECK_SETS_ONLY":
-        return "Ask your Salesforce admin to activate a Check Set for this object.";
-      case "NO_ACTIVE_CHECK_SETS":
-        return "Ask your Salesforce admin to set up a Check Set for this object.";
-      case "CONFIG_INACTIVE":
-        return "Ask your Salesforce admin to activate this Check Set.";
-      case "OBJECT_MISMATCH":
-        return "Ask your Salesforce admin to choose a Check Set for this object.";
-      case "NO_ACTIVE_CHECKS":
-        return "Ask your Salesforce admin to add an active Rule.";
-      case "NO_RECORD_CONTEXT":
-        return "Ask your Salesforce admin to place this on a record page.";
-      case "INVALID_CONFIG":
-        return "Ask your Salesforce admin to review this Check Set in Setup.";
-      default:
-        return "";
-    }
+    return setupErrorHint(this.componentErrorCode);
   }
 
   get showRunButton() {
@@ -567,10 +598,6 @@ export default class RecordHealthCheck extends LightningElement {
 
   get isAllAtOnce() {
     return this.revealMode === "AllAtOnce";
-  }
-
-  get isOneAtATime() {
-    return this.revealMode === "OneAtATime";
   }
 
   get visibleChecks() {
@@ -648,9 +675,6 @@ export default class RecordHealthCheck extends LightningElement {
 
   handleToggleDetail(event) {
     const developerName = event.currentTarget.dataset.check;
-    if (!developerName) {
-      return;
-    }
     const next = !this._isRowExpanded(developerName);
     // Reassign (not mutate) so the tracked field change re-runs visibleChecks.
     this._expandedNames = {
@@ -659,24 +683,26 @@ export default class RecordHealthCheck extends LightningElement {
     };
   }
 
-  // Value chips clamp to two lines by default (see .rhc-cmp__val--clampable). A
-  // long formula or list therefore needs a quiet "..." affordance; we only
-  // want it on chips that actually overflow, which is only knowable after
-  // layout. Scan the rendered chips and reveal the sibling toggle on the ones
-  // whose full content is taller than the clamped box. Skip already-expanded
-  // chips so a re-render (another check resolving) does not hide their toggle.
-  _measureClampedValues() {
-    const chips = this.template.querySelectorAll("[data-clampval]");
-    for (const chip of chips) {
-      const pair = chip.closest(".rhc-cmp__pair");
-      const toggle = pair && pair.querySelector("[data-clamptoggle]");
+  // Found/Expected values, user messages, fix guidance, and diagnostic detail
+  // share one four-line disclosure interaction. This layout pass decides only
+  // whether the control is necessary.
+  _measureClampedContent() {
+    const regions = this.template.querySelectorAll("[data-clampcontent]");
+    for (const content of regions) {
+      const container = content.closest("[data-expandable]");
+      /* istanbul ignore next -- guards DOM detachment between query and measurement */
+      if (!container) {
+        continue;
+      }
+      const toggle = container.querySelector("[data-clamptoggle]");
+      /* istanbul ignore next -- template invariant during normal rendering */
       if (!toggle) {
         continue;
       }
-      if (chip.classList.contains("rhc-cmp__val--expanded")) {
+      if (content.classList.contains("rhc-expandable__content--expanded")) {
         continue;
       }
-      const overflowing = chip.scrollHeight - chip.clientHeight > 1;
+      const overflowing = content.scrollHeight - content.clientHeight > 1;
       toggle.hidden = !overflowing;
     }
   }
@@ -691,27 +717,33 @@ export default class RecordHealthCheck extends LightningElement {
     // eslint-disable-next-line @lwc/lwc/no-async-operation
     this._resizeFrame = requestAnimationFrame(() => {
       this._resizeFrame = null;
-      this._measureClampedValues();
+      this._measureClampedContent();
     });
   };
 
-  // Expand or re-clamp a single value chip in place. Imperative because the
-  // clamp/expand state is purely presentational and per-chip — threading it
-  // through the annotateCheck pipeline would need a stable key per chip for no
-  // functional gain.
-  handleToggleValue(event) {
+  // Expand or re-clamp one content region in place. Imperative state is kept
+  // local to the rendered region, matching the established value-chip behavior.
+  handleToggleContent(event) {
     const toggle = event.currentTarget;
-    const pair = toggle.closest(".rhc-cmp__pair");
-    const chip = pair && pair.querySelector("[data-clampval]");
-    if (!chip) {
+    const container = toggle.closest("[data-expandable]");
+    /* istanbul ignore next -- click target can detach during rerender */
+    if (!container) {
       return;
     }
-    const expanded = chip.classList.toggle("rhc-cmp__val--expanded");
-    toggle.textContent = expanded ? "−" : "+";
+    const content = container.querySelector("[data-clampcontent]");
+    /* istanbul ignore next -- template invariant during normal rendering */
+    if (!content) {
+      return;
+    }
+    const expanded = content.classList.toggle(
+      "rhc-expandable__content--expanded"
+    );
+    const label = toggle.dataset.expandLabel || "content";
+    toggle.dataset.symbol = expanded ? "−" : "+";
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
     toggle.setAttribute(
       "aria-label",
-      expanded ? "Collapse value" : "Expand value"
+      `${expanded ? "Collapse" : "Expand"} ${label}`
     );
   }
 
@@ -761,7 +793,7 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   get showSummaryStats() {
-    return this.runComplete && this.summaryStats.length > 0;
+    return this.runComplete && this.summaryGroups.length > 0;
   }
 
   /**
@@ -787,10 +819,7 @@ export default class RecordHealthCheck extends LightningElement {
     if (hiddenPasses) {
       return "All checks passed. Details are hidden.";
     }
-    if (hiddenSkips) {
-      return "All checks were skipped. Details are hidden.";
-    }
-    return "Details are hidden.";
+    return "All checks were skipped. Details are hidden.";
   }
 
   get actionTitle() {
@@ -835,7 +864,7 @@ export default class RecordHealthCheck extends LightningElement {
     this._runner.run(false, "USER_INITIATED");
   }
 
-  get summaryStats() {
+  get summaryGroups() {
     const tooltipKeys = this._summaryTooltipKeys();
     const tooltipSignature = tooltipKeys.join("|");
     const inactiveStat = this._inactiveRuleStat();
@@ -850,10 +879,30 @@ export default class RecordHealthCheck extends LightningElement {
       this._summaryStatsSource = this.checks;
       this._summaryStatsTooltipSignature = tooltipSignature;
       this._inactiveStatSignature = inactiveSignature;
-      const stats = buildSummaryStats(this.checks, new Set(tooltipKeys));
-      this._summaryStatsCache = inactiveStat ? [inactiveStat, ...stats] : stats;
+      const groups = buildSummaryGroups(this.checks, new Set(tooltipKeys));
+      if (inactiveStat) {
+        const uncategorized = groups.find(
+          (group) => group.key === "uncategorized" || group.key === "all"
+        );
+        if (uncategorized) {
+          uncategorized.stats = [inactiveStat, ...uncategorized.stats];
+        } else {
+          groups.push({
+            key: "uncategorized",
+            label: null,
+            assistiveLabel: "Checks without a category",
+            cssClass: "rhc-stats-group rhc-stats-group--unlabeled",
+            stats: [inactiveStat]
+          });
+        }
+      }
+      this._summaryStatsCache = groups;
     }
     return this._summaryStatsCache;
+  }
+
+  get summaryStats() {
+    return this.summaryGroups.flatMap((group) => group.stats);
   }
 
   /**
@@ -863,27 +912,11 @@ export default class RecordHealthCheck extends LightningElement {
    * matching how the Passed/Skipped pills reveal their rows.
    */
   _inactiveRuleStat() {
-    if (!this.showDiagnostics || this.inactiveRuleCount < 1) return null;
-    const n = this.inactiveRuleCount;
-    const names = this.inactiveRuleLabels || [];
-    const undisclosed = n - names.length;
-    const listed = undisclosed > 0 ? [...names, `+${undisclosed} more`] : names;
-    const hasTooltip = names.length > 0;
-    const baseClass = "rhc-stat rhc-stat--inactive";
-    return {
-      key: "inactive",
-      label: `${n} Inactive`,
-      cssClass: hasTooltip
-        ? `${baseClass} rhc-tooltip-anchor rhc-tooltip-anchor--footer rhc-tooltip-anchor--stat`
-        : baseClass,
-      tooltip: hasTooltip
-        ? `${n} inactive ${n === 1 ? "rule" : "rules"} omitted: ${listed.join(
-            ", "
-          )}`
-        : null,
-      tabIndex: hasTooltip ? "0" : null,
-      iconClass: "rhc-status-icon rhc-status-icon--inactive"
-    };
+    return buildInactiveRuleStat(
+      this.showDiagnostics,
+      this.inactiveRuleCount,
+      this.inactiveRuleLabels
+    );
   }
 
   get showLimitNotice() {
@@ -942,7 +975,7 @@ export default class RecordHealthCheck extends LightningElement {
       runId: this._runner.runId,
       userId: USER_ID,
       recordId: this.recordId,
-      checkSetDeveloperName: this.checkSetName,
+      checkSetQualifiedApiName: this.checkSetName,
       generatedAt: new Date().toISOString(),
       checks: this.checks.map((c) => {
         const r = c.result || {};
@@ -957,84 +990,84 @@ export default class RecordHealthCheck extends LightningElement {
           actualValueDetail: r.actualValueDetail ?? null,
           expectedValueDetail: r.expectedValueDetail ?? null,
           durationMs: r.durationMs != null ? r.durationMs : null,
-          evaluatorType: r.evaluatorType ?? null
+          evaluatorType:
+            r.evaluatorType ??
+            parseDiagnosticJson(r.adminDetail?.configurationJson)
+              .evaluationType ??
+            null,
+          message: r.message ?? null,
+          fixInstructions: r.fixInstructions ?? null,
+          actionLabel: r.actionLabel ?? null,
+          actionUrl: r.actionUrl ?? null,
+          adminMessage: r.adminDetail?.message ?? null,
+          containsRestrictedDetail:
+            r.adminDetail?.containsRestrictedDetail === true,
+          configuration: parseDiagnosticJson(r.adminDetail?.configurationJson),
+          resolution: parseDiagnosticJson(r.adminDetail?.resolutionJson),
+          rawResult: r
         };
       })
     };
   }
 
   _formatRunSummary(checks) {
-    const counts = {
-      PASS: 0,
-      FAIL: 0,
-      SKIPPED: 0,
-      ERROR: 0,
-      UNABLE_TO_EVALUATE: 0
-    };
-    let totalMs = 0;
-    for (const row of checks) {
-      const status = row.status;
-      if (Object.prototype.hasOwnProperty.call(counts, status)) {
-        counts[status]++;
-      }
-      if (row.durationMs != null) {
-        totalMs += row.durationMs;
-      }
-    }
-    const parts = [];
-    if (counts.PASS) {
-      parts.push(`${counts.PASS} Passed`);
-    }
-    if (counts.FAIL) {
-      parts.push(`${counts.FAIL} Failed`);
-    }
-    if (counts.SKIPPED) {
-      parts.push(`${counts.SKIPPED} Skipped`);
-    }
-    if (counts.UNABLE_TO_EVALUATE) {
-      parts.push(`${counts.UNABLE_TO_EVALUATE} Unable`);
-    }
-    if (counts.ERROR) {
-      parts.push(`${counts.ERROR} Error`);
-    }
-    const outcome =
-      parts.length > 0 ? parts.join(", ") : `${checks.length} checks`;
-    const timing = totalMs > 0 ? ` · ${totalMs}ms total` : "";
-    return `${outcome}${timing}`;
+    return formatRunSummary(checks);
   }
 
   _logRunDiagnostics() {
     const diag = this._buildRunDiagnostics();
     const configLabel =
-      diag.checkSetDeveloperName || "(unset checkSetDeveloperName)";
+      diag.checkSetQualifiedApiName || "(unset checkSetQualifiedApiName)";
     console.group(
       `[RHC] Health Check run ${diag.runId} | ${configLabel} | record ${diag.recordId}`
     );
     console.log(this._formatRunSummary(diag.checks));
     console.log({
       runId: diag.runId,
-      checkSet: diag.checkSetDeveloperName,
+      checkSet: diag.checkSetQualifiedApiName,
       recordId: diag.recordId,
       userId: diag.userId,
       generatedAt: diag.generatedAt
     });
     console.table(diag.checks, RHC_DIAG_TABLE_COLUMNS);
-    this._logProvenanceDiagnostics(diag.checks);
+    this._logCheckDiagnostics(diag.checks);
+    console.log("Complete copyable report", JSON.parse(JSON.stringify(diag)));
+    console.log("Copy as JSON", JSON.stringify(diag, null, 2));
     console.groupEnd();
   }
 
-  _logProvenanceDiagnostics(checks) {
-    const withDetail = checks.filter(
-      (c) => c.actualValueDetail != null || c.expectedValueDetail != null
-    );
-    if (withDetail.length === 0) {
-      return;
-    }
-    const noun = withDetail.length === 1 ? "check" : "checks";
-    console.group(`[RHC] Source detail (${withDetail.length} ${noun})`);
-    for (const c of withDetail) {
-      const heading = `${c.label} (${c.check}) · ${c.status}`;
-      console.group(heading);
+  _logCheckDiagnostics(checks) {
+    console.group(`[RHC] Full check details (${checks.length})`);
+    for (const [index, c] of checks.entries()) {
+      const heading = `${index + 1}. ${c.label} (${c.check}) · ${c.status}`;
+      console.groupCollapsed(heading);
+      console.log("Identity and outcome", {
+        qualifiedApiName: c.rawResult?.ruleDeveloperName || c.check,
+        evaluatorType: c.evaluatorType,
+        status: c.status,
+        severity: c.severity,
+        reasonCode: c.reasonCode,
+        durationMs: c.durationMs
+      });
+      console.log("Rule configuration", c.configuration);
+      console.log("Resolved evaluation", c.resolution);
+      console.log("Rendered output", {
+        message: c.message,
+        found: c.actualValue,
+        expected: c.expectedValue,
+        foundSource: c.actualValueDetail,
+        expectedSource: c.expectedValueDetail,
+        fixInstructions: c.fixInstructions,
+        actionLabel: c.actionLabel,
+        actionUrl: c.actionUrl
+      });
+      if (c.adminMessage != null) {
+        console.warn("Server diagnostic", c.adminMessage);
+      }
+      if (c.containsRestrictedDetail) {
+        console.warn("This check contains restricted diagnostic detail.");
+      }
+      console.log("Raw normalized result", c.rawResult);
       if (c.actualValueDetail != null) {
         console.log("Found", c.actualValueDetail);
       }

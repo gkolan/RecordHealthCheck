@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Restricted_Value__c</fullName>
+    <description
+  >Stores synthetic content withheld from the restricted integration persona to verify field-level security containment.</description>
+    <inlineHelpText
+  >Enter a synthetic restricted value used only by security integration tests.</inlineHelpText>
+    <label>Restricted Value</label>
+    <length>80</length>
+    <required>false</required>
+    <type>Text</type>
+</CustomField>

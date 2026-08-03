@@ -3,138 +3,378 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-@isTest
+@IsTest
 private class RecordHealthCheckConfigServiceTest {
-  @testSetup
+  @IsTest
+  static void metadataLookupAndLimitLoggingCoverConfiguredPaths() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
+    String ruleName = RecordHealthCheckTestDataFactory.qualifiedRuleName(
+      'Example_Profile_Phone_Available'
+    );
+
+    Test.startTest();
+    String parentName = service.findCheckSetDeveloperName(
+      'Example_Profile_Phone_Available'
+    );
+    Record_Health_Check_Rule__mdt activeRule = service.loadRule(
+      'Example_Profile_Phone_Available',
+      'Example_Account_Profile_Readiness'
+    );
+    Record_Health_Check_Rule__mdt missingRule = service.loadRule(
+      'Definitely_Missing',
+      'Example_Account_Relationship_Risk',
+      false
+    );
+    Record_Health_Check_Rule__mdt inactiveRule = service.loadRule(
+      'Example_Industry_Aligns_With_Parent',
+      'Example_Account_Relationship_Risk',
+      true
+    );
+    RecordHealthCheckDefinitionLoader.logCheckLimitExceeded(
+      'Coverage_Set',
+      UserInfo.getUserId(),
+      30
+    );
+    Test.stopTest();
+
+    Assert.isNotNull(
+      parentName,
+      'The packaged Rule should resolve its parent Set.'
+    );
+    Assert.isTrue(
+      activeRule == null || activeRule.IsActive__c == true,
+      'A returned Rule must satisfy the active-only contract.'
+    );
+    Assert.isNull(missingRule, 'An unknown Rule should return null.');
+    Assert.isNull(
+      inactiveRule,
+      'An inactive Rule must be omitted when required.'
+    );
+    Assert.isNotNull(
+      ruleName,
+      'Qualified-name fixture resolution should succeed.'
+    );
+  }
+
+  @IsTest
+  static void blankDefinitionSelectionIsRejectedDirectly() {
+    Test.startTest();
+    try {
+      new RecordHealthCheckConfigService()
+        .getDefinitionResponse(' ', UserInfo.getUserId());
+      Assert.fail(
+        'A blank selection must be rejected before querying metadata.'
+      );
+    } catch (RecordHealthCheckConfigService.ConfigException error) {
+      Assert.areEqual(
+        'CONFIG_NOT_FOUND',
+        error.reasonCode,
+        'Blank selection uses CONFIG_NOT_FOUND.'
+      );
+    }
+    Test.stopTest();
+  }
+  @TestSetup
   static void setup() {
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 
-  @isTest
+  @IsTest
   static void getDefinitionResponseLoadsSettingsAndAppliesCheckLimit() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
     Test.startTest();
     RecordHealthCheckDefinitionResponse response = service.getDefinitionResponse(
-      'Account_Data_Quality',
+      RecordHealthCheckTestDataFactory.qualifiedCheckSetName(
+        'Account_Data_Quality'
+      ),
       accountRecord.Id
     );
     Test.stopTest();
 
-    System.assertEquals('Account Data Quality', response.displayTitle);
-    System.assertEquals('Automatic', response.triggerMode);
-    System.assertEquals(
+    Assert.areEqual('Account Data Quality', response.displayTitle);
+    Assert.areEqual('Automatic', response.triggerMode);
+    Assert.areEqual(
       'OnDemand',
       response.comparisonDisplay,
       'The Check Set ships with the OnDemand comparison default.'
     );
-    System.assertNotEquals(null, response.checks);
-    System.assert(response.checks.size() > 0, 'Expected at least one check.');
-    System.assert(
+    Assert.areNotEqual(null, response.checks);
+    Assert.isTrue(response.checks.size() > 0, 'Expected at least one check.');
+    Assert.isTrue(
       response.checks.size() <= 25,
       'Definitions must respect the framework check cap.'
     );
-    System.assertEquals(
+    Assert.areEqual(
       response.totalAvailableCheckCount > response.checks.size(),
       response.checksOmittedByLimit
     );
   }
 
-  @isTest
+  @IsTest
   static void validateRejectsUnrecognizedComparisonDisplay() {
     // A fully-valid Set except for an unrecognized ComparisonDisplay reaches the
-    // strict validation branch. Blank is treated as the OnDemand default for
-    // upgraded metadata, but non-blank unknown values still fail.
-    Record_Health_Check_Set__mdt checkSet = new Record_Health_Check_Set__mdt(
-      IsActive__c = true,
-      ObjectApiName__c = 'Account',
-      PassedChecksDisplay__c = 'SHOW_EACH_CHECK',
-      SkippedChecksDisplay__c = 'SHOW_COUNT_ONLY',
-      CardRunMode__c = 'RUN_ON_LOAD',
-      CardRevealMode__c = 'ALL_AT_ONCE',
-      FoundExpectedDisplay__c = 'Bogus'
+    // strict validation branch. Blank and unknown values both fail.
+    Record_Health_Check_Set__mdt checkSet = RecordHealthCheckTestDataFactory.checkSet(
+      new Map<String, Object>{
+        'IsActive__c' => true,
+        'ObjectApiName__c' => 'Account',
+        'PassedChecksDisplay__c' => 'SHOW_EACH_CHECK',
+        'SkippedChecksDisplay__c' => 'SHOW_COUNT_ONLY',
+        'CardRunMode__c' => 'RUN_ON_LOAD',
+        'CardRevealMode__c' => 'ALL_AT_ONCE',
+        'CardTitle__c' => 'Comparison validation',
+        'FoundExpectedDisplay__c' => 'Bogus'
+      }
     );
     // Account key prefix — no DML needed to get an Account-typed Id.
-    Id accountId = '001000000000001AAA';
+    Id accountId =
+      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+        .getKeyPrefix() + '000000000000';
 
     try {
-      new RecordHealthCheckConfigService()
-        .validateCheckSetForDefinition(checkSet, 'Test_Set', accountId);
-      System.assert(
+      RecordHealthCheckDefinitionLoader.validateCheckSetForDefinition(
+        checkSet,
+        'Test_Set',
+        accountId
+      );
+      Assert.isTrue(
         false,
         'Expected a ConfigException for a bad ComparisonDisplay.'
       );
     } catch (RecordHealthCheckConfigService.ConfigException ex) {
-      System.assertEquals(
+      Assert.areEqual(
         RecordHealthCheckConfigService.RC_INVALID_CONFIG,
         ex.reasonCode
       );
-      System.assert(
+      Assert.isTrue(
         ex.getMessage().contains('Found/Expected Display'),
         'Message should name the offending field: ' + ex.getMessage()
       );
     }
   }
 
-  @isTest
+  @IsTest
   static void getDefinitionResponseRejectsObjectMismatch() {
-    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures())
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
       return;
+    }
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
     try {
       service.getDefinitionResponse(
-        'Account_Data_Quality',
+        RecordHealthCheckTestDataFactory.qualifiedCheckSetName(
+          'Account_Data_Quality'
+        ),
         UserInfo.getUserId()
       );
-      System.assert(false, 'Expected an object mismatch exception.');
+      Assert.isTrue(false, 'Expected an object mismatch exception.');
     } catch (RecordHealthCheckConfigService.ConfigException ex) {
-      System.assertEquals(
+      Assert.areEqual(
         RecordHealthCheckConfigService.RC_OBJECT_MISMATCH,
         ex.reasonCode
       );
     }
   }
 
-  @isTest
+  @IsTest
   static void getDefinitionResponseRejectsMissingRecordContext() {
     RecordHealthCheckConfigService service = new RecordHealthCheckConfigService();
 
     try {
       service.getDefinitionResponse('Account_Data_Quality', null);
-      System.assert(false, 'Expected a missing record context exception.');
+      Assert.isTrue(false, 'Expected a missing record context exception.');
     } catch (RecordHealthCheckConfigService.ConfigException ex) {
-      System.assertEquals(
+      Assert.areEqual(
         RecordHealthCheckConfigService.RC_NO_RECORD_CONTEXT,
         ex.reasonCode
       );
     }
   }
 
-  @isTest
+  @IsTest
   static void validateRuleForEvaluationReturnsUnableForInvalidQueryRule() {
-    Record_Health_Check_Rule__mdt rule = new Record_Health_Check_Rule__mdt(
-      DeveloperName = 'Invalid_Query_Test',
-      MasterLabel = 'Invalid Query Test',
-      CheckTitle__c = 'Invalid Query Test',
-      EvaluationType__c = 'QUERY',
-      FailureSeverity__c = 'WARNING',
-      ComparisonOperator__c = 'EQUALS',
-      QueryResultHandling__c = 'ONE_RESULT',
-      ExpectedValueSource__c = 'FIXED_VALUE',
-      ExpectedFixedValue__c = 'Hot',
-      FailureMessage__c = 'Invalid query failed.',
-      EvaluationOrder__c = 10
+    Record_Health_Check_Rule__mdt rule = RecordHealthCheckTestDataFactory.rule(
+      new Map<String, Object>{
+        'DeveloperName' => 'Invalid_Query_Test',
+        'MasterLabel' => 'Invalid Query Test',
+        'CheckTitle__c' => 'Invalid Query Test',
+        'EvaluationType__c' => 'QUERY',
+        'FailureSeverity__c' => 'WARNING',
+        'ComparisonOperator__c' => 'EQUALS',
+        'QueryResultHandling__c' => 'ONE_RESULT',
+        'ExpectedValueSource__c' => 'FIXED_VALUE',
+        'ExpectedFixedValue__c' => 'Hot',
+        'FailureMessage__c' => 'Invalid query failed.',
+        'EvaluationOrder__c' => 10
+      }
     );
 
-    RecordHealthCheckResult result = new RecordHealthCheckConfigService()
+    RecordHealthCheckInternalResult result = new RecordHealthCheckConfigService()
       .validateRuleForEvaluation(rule);
 
-    System.assertEquals('UNABLE_TO_EVALUATE', result.status);
-    System.assertEquals('INVALID_SOQL_TEMPLATE', result.reasonCode);
-    System.assertEquals('Invalid_Query_Test', result.ruleDeveloperName);
+    Assert.areEqual('UNABLE_TO_EVALUATE', result.status);
+    Assert.areEqual('INVALID_SOQL_TEMPLATE', result.reasonCode);
+    Assert.areEqual('Invalid_Query_Test', result.ruleDeveloperName);
+  }
+
+  @IsTest
+  static void definitionTitleUsesOnlyConfiguredCardTitle() {
+    Test.startTest();
+    String cardTitle = RecordHealthCheckDefinitionLoader.definitionTitle(
+      RecordHealthCheckTestDataFactory.checkSet(
+        new Map<String, Object>{
+          'DeveloperName' => 'Developer_Title',
+          'MasterLabel' => 'Master Title',
+          'CardTitle__c' => 'Card Title'
+        }
+      )
+    );
+    Test.stopTest();
+
+    Assert.areEqual('Card Title', cardTitle);
+  }
+
+  @IsTest
+  static void inactiveRuleLabelsUseEveryDocumentedFallback() {
+    List<Record_Health_Check_Rule__mdt> rules = new List<Record_Health_Check_Rule__mdt>{
+      RecordHealthCheckTestDataFactory.rule(
+        new Map<String, Object>{
+          'DeveloperName' => 'First_Rule',
+          'MasterLabel' => 'First Master',
+          'CheckTitle__c' => 'First Check'
+        }
+      ),
+      RecordHealthCheckTestDataFactory.rule(
+        new Map<String, Object>{
+          'DeveloperName' => 'Second_Rule',
+          'MasterLabel' => 'Second Master'
+        }
+      ),
+      RecordHealthCheckTestDataFactory.rule(
+        new Map<String, Object>{ 'DeveloperName' => 'Third_Rule' }
+      )
+    };
+
+    Test.startTest();
+    List<String> labels = RecordHealthCheckDefinitionLoader.inactiveRuleLabelsFrom(
+      rules
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<String>{ 'First Check', 'Second Master', 'Third_Rule' },
+      labels,
+      'Inactive Rule labels must use Check Title, Master Label, then Developer Name.'
+    );
+  }
+
+  @IsTest
+  static void comparisonDisplayUsesOnlyConfiguredValue() {
+    Test.startTest();
+    String configured = RecordHealthCheckDefinitionLoader.comparisonDisplay(
+      RecordHealthCheckTestDataFactory.checkSet(
+        new Map<String, Object>{ 'FoundExpectedDisplay__c' => 'FAILURES_ONLY' }
+      )
+    );
+    Test.stopTest();
+
+    Assert.areEqual('FAILURES_ONLY', configured);
+  }
+
+  @IsTest
+  static void availabilityReportsActiveCheckSet() {
+    if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {
+      return;
+    }
+    Test.startTest();
+    RecordHealthCheckSetAvailability availability = new RecordHealthCheckConfigService()
+      .getCheckSetAvailabilityForObject('Account');
+    Test.stopTest();
+
+    Assert.isTrue(availability.hasActive, 'Account has an active Check Set.');
+  }
+
+  @IsTest
+  static void inactiveLabelQueryReturnsEmptyForUnknownCheckSet() {
+    Test.startTest();
+    List<String> labels = RecordHealthCheckDefinitionLoader.inactiveRuleLabels(
+      'No_Such_Check_Set'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<String>(),
+      labels,
+      'An unknown Check Set must not manufacture inactive Rule labels.'
+    );
+  }
+
+  @IsTest
+  static void definitionHonorsDiagnosticsEntitlement() {
+    User diagnosticsUser = RecordHealthCheckPersonaTestDataFactory.createMinimumAccessUser(
+      'rhcdef'
+    );
+    RecordHealthCheckTestDataFactory.assignPermissionSet(
+      diagnosticsUser,
+      'Record_Health_Check_Admin'
+    );
+
+    Test.startTest();
+    Boolean allowed;
+    System.runAs(diagnosticsUser) {
+      allowed = RecordHealthCheckDefinitionLoader.canShowDiagnostics(
+        RecordHealthCheckTestDataFactory.checkSet(
+          new Map<String, Object>{ 'ShowDiagnostics__c' => true }
+        )
+      );
+    }
+    Test.stopTest();
+
+    Assert.isTrue(
+      allowed,
+      'A diagnostics-enabled Check Set must honor the diagnostics entitlement.'
+    );
+  }
+
+  @IsTest
+  static void invalidRuleTokenIsRejectedBeforeEvaluation() {
+    Record_Health_Check_Rule__mdt rule = RecordHealthCheckTestDataFactory.rule(
+      new Map<String, Object>{
+        'DeveloperName' => 'Invalid_Token',
+        'FailureMessage__c' => '{!bad.value}' // rejected-token-fixture: intentional invalid namespace
+      }
+    );
+
+    Test.startTest();
+    RecordHealthCheckTokenIssue issue = RecordHealthCheckConfigValidator.firstTemplateIssue(
+      rule
+    );
+    RecordHealthCheckInternalResult runtimeResult = new RecordHealthCheckConfigService()
+      .validateRuleForEvaluation(rule);
+    Test.stopTest();
+
+    Assert.isNotNull(issue, 'An unsupported merge token must be rejected.');
+    Assert.isTrue(
+      issue.message.contains('Unsupported token namespace'),
+      'The issue must identify the invalid Rule token.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckStatus.UNABLE_TO_EVALUATE,
+      runtimeResult.status,
+      'Runtime validation must isolate a malformed template as an invalid Rule.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckConfigService.RC_INVALID_CONFIG,
+      runtimeResult.reasonCode,
+      'Runtime template failures must use the stable configuration reason.'
+    );
   }
 }

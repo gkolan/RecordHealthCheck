@@ -9,99 +9,125 @@
  * (never converted to midnight DateTime) and relationship-path extraction with
  * missing-field classification.
  */
-@isTest
+@IsTest
 private class RecordHealthCheckValueResolverTest {
   // ─── Extraction ────────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void singleValueFromRowReadsSimpleField() {
-    Account a = new Account(Name = 'Acme');
-    System.assertEquals(
+    Account a = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'Acme' }
+    );
+    Assert.areEqual(
       'Acme',
       RecordHealthCheckValueResolver.singleValueFromRow(a, 'Name')
     );
   }
 
-  @isTest
+  @IsTest
   static void singleValueFromRowReadsAliasedAndUnaliasedAggregates() {
     AggregateResult aliased = [SELECT COUNT(Id) total FROM Account];
     AggregateResult unaliased = [SELECT COUNT(Id) FROM Account];
-    System.assertEquals(
+    Assert.areEqual(
       aliased.get('total'),
       RecordHealthCheckValueResolver.singleValueFromRow(aliased, null)
     );
-    System.assertEquals(
+    Assert.areEqual(
       unaliased.get('expr0'),
       RecordHealthCheckValueResolver.singleValueFromRow(unaliased, null)
     );
-    System.assertEquals(
+    Assert.areEqual(
       aliased.get('total'),
       RecordHealthCheckValueResolver.singleValueFromRow(aliased, 'total')
     );
   }
 
-  @isTest
+  @IsTest
+  static void singleValueFromRowIgnoresBulkCorrelationAlias() {
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'Grouped' }
+    );
+    RecordHealthCheckTestDataFactory.createAccount(account);
+    RecordHealthCheckTestDataFactory.createContact(
+      RecordHealthCheckTestDataFactory.contact(
+        new Map<String, Object>{
+          'LastName' => 'One',
+          'AccountId' => account.Id
+        }
+      )
+    );
+    AggregateResult grouped = [
+      SELECT AccountId rhcCorrelation, COUNT(Id) total
+      FROM Contact
+      WHERE AccountId = :account.Id
+      GROUP BY AccountId
+    ];
+    Assert.areEqual(
+      grouped.get('total'),
+      RecordHealthCheckValueResolver.singleValueFromRow(grouped, null)
+    );
+  }
+
+  @IsTest
   static void singleValueFromRowTraversesRelationshipPath() {
     // Build a nested SObject in memory via JSON so getSObject('Parent') resolves.
     Account a = (Account) JSON.deserialize(
       '{"attributes":{"type":"Account"},"Name":"Child","Parent":{"attributes":{"type":"Account"},"Name":"ParentCo"}}',
       Account.class
     );
-    System.assertEquals(
+    Assert.areEqual(
       'ParentCo',
       RecordHealthCheckValueResolver.singleValueFromRow(a, 'Parent.Name')
     );
   }
 
-  @isTest
+  @IsTest
   static void singleValueFromRowNullRelationshipYieldsNull() {
-    Account a = new Account(Name = 'Child');
-    System.assertEquals(
+    Account a = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'Child' }
+    );
+    Assert.areEqual(
       null,
       RecordHealthCheckValueResolver.singleValueFromRow(a, 'Parent.Name')
     );
   }
 
-  @isTest
+  @IsTest
   static void singleValueFromRowMissingFieldThrowsInvalidTemplate() {
-    Account a = new Account(Name = 'Acme');
+    Account a = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'Acme' }
+    );
     try {
       RecordHealthCheckValueResolver.singleValueFromRow(a, 'Not_A_Field__c');
-      System.assert(false, 'Expected ResolverException.');
+      Assert.isTrue(false, 'Expected ResolverException.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_SOQL_TEMPLATE', ex.reasonCode);
+      Assert.areEqual('INVALID_SOQL_TEMPLATE', ex.reasonCode);
     }
   }
 
   // ─── Equality ──────────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void valuesEqualNumericAcrossTypes() {
-    System.assertEquals(
-      true,
-      RecordHealthCheckValueResolver.valuesEqual(1, 1.0)
-    );
-    System.assertEquals(
-      false,
-      RecordHealthCheckValueResolver.valuesEqual(1, 2)
-    );
+    Assert.areEqual(true, RecordHealthCheckValueResolver.valuesEqual(1, 1.0));
+    Assert.areEqual(false, RecordHealthCheckValueResolver.valuesEqual(1, 2));
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualNullSafe() {
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckValueResolver.valuesEqual(null, null)
     );
-    System.assertEquals(
+    Assert.areEqual(
       false,
       RecordHealthCheckValueResolver.valuesEqual(null, 'x')
     );
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualDates() {
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckValueResolver.valuesEqual(
         Date.newInstance(2026, 1, 1),
@@ -110,9 +136,9 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void valuesEqualDateStringsAndInvalidIds() {
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckValueResolver.valuesEqual(
         Date.newInstance(2026, 1, 1),
@@ -122,8 +148,10 @@ private class RecordHealthCheckValueResolverTest {
     );
     assertIncompatibleEquality(Date.newInstance(2026, 1, 1), 'not-a-date');
 
-    Id accountId = '001000000000001AAA';
-    System.assertEquals(
+    Id accountId =
+      Account.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+        .getKeyPrefix() + '000000000000';
+    Assert.areEqual(
       false,
       RecordHealthCheckValueResolver.valuesEqual(accountId, 'not-an-id'),
       'An Id compared to an unparseable Id string should be false, not an exception.'
@@ -132,28 +160,28 @@ private class RecordHealthCheckValueResolverTest {
 
   // ─── Ordered comparison ────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void orderedNumeric() {
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckValueResolver.applyOrdered('GREATER_THAN', 5, 3)
     );
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckValueResolver.applyOrdered('LESS_THAN_OR_EQUAL', 3, 3)
     );
   }
 
-  @isTest
+  @IsTest
   static void orderedNativeDateUsesDateLadderNotMidnightDateTime() {
     // L6: two native Dates must compare as Dates.
     Date earlier = Date.newInstance(2026, 1, 1);
     Date later = Date.newInstance(2026, 6, 19);
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckValueResolver.applyOrdered('LESS_THAN', earlier, later)
     );
-    System.assertEquals(
+    Assert.areEqual(
       false,
       RecordHealthCheckValueResolver.applyOrdered(
         'GREATER_THAN',
@@ -163,17 +191,52 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void orderedDateTime() {
     Datetime earlier = Datetime.newInstance(2026, 1, 1, 0, 0, 0);
     Datetime later = Datetime.newInstanceGmt(2026, 1, 1, 10, 0, 0);
-    System.assertEquals(
+    Assert.areEqual(
       true,
       RecordHealthCheckValueResolver.applyOrdered('LESS_THAN', earlier, later)
     );
   }
 
-  @isTest
+  @IsTest
+  static void orderedDateTimeCoversInclusiveInvalidAndUtcTextPaths() {
+    Datetime instant = Datetime.newInstanceGmt(2026, 1, 1, 10, 0, 0);
+    Assert.isTrue(
+      RecordHealthCheckValueResolver.applyOrdered(
+        'GREATER_THAN_OR_EQUAL',
+        instant,
+        instant
+      ),
+      'Equal Datetimes satisfy the inclusive comparison.'
+    );
+    Assert.isTrue(
+      RecordHealthCheckValueResolver.applyOrdered(
+        'LESS_THAN',
+        '2026-01-01T10:00:00Z',
+        '2026-01-01T11:00:00Z'
+      ),
+      'UTC ISO text is normalized as GMT before comparison.'
+    );
+    try {
+      RecordHealthCheckValueResolver.applyOrdered(
+        'NOT_ORDERED',
+        instant,
+        instant
+      );
+      Assert.fail('An invalid Datetime operator must be rejected.');
+    } catch (RecordHealthCheckValueResolver.ResolverException error) {
+      Assert.areEqual(
+        'INCOMPATIBLE_COMPARISON_TYPES',
+        error.reasonCode,
+        'The public ladder must not fall back to string ordering.'
+      );
+    }
+  }
+
+  @IsTest
   static void orderedIncompatibleTypesThrows() {
     try {
       RecordHealthCheckValueResolver.applyOrdered(
@@ -181,39 +244,30 @@ private class RecordHealthCheckValueResolverTest {
         'not-a-number',
         'also-not'
       );
-      System.assert(false, 'Expected INCOMPATIBLE_COMPARISON_TYPES.');
+      Assert.isTrue(false, 'Expected INCOMPATIBLE_COMPARISON_TYPES.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INCOMPATIBLE_COMPARISON_TYPES', ex.reasonCode);
+      Assert.areEqual('INCOMPATIBLE_COMPARISON_TYPES', ex.reasonCode);
     }
   }
 
   // ─── Misc ──────────────────────────────────────────────────────────────────
 
-  @isTest
+  @IsTest
   static void isNumericObjectClassifies() {
-    System.assertEquals(
-      true,
-      RecordHealthCheckValueResolver.isNumericObject(5)
-    );
-    System.assertEquals(
-      true,
-      RecordHealthCheckValueResolver.isNumericObject(5.0)
-    );
-    System.assertEquals(
-      false,
-      RecordHealthCheckValueResolver.isNumericObject('5')
-    );
+    Assert.areEqual(true, RecordHealthCheckValueResolver.isNumericObject(5));
+    Assert.areEqual(true, RecordHealthCheckValueResolver.isNumericObject(5.0));
+    Assert.areEqual(false, RecordHealthCheckValueResolver.isNumericObject('5'));
   }
 
-  @isTest
+  @IsTest
   static void classifyQueryExceptionDistinguishesAccess() {
-    System.assertEquals(
+    Assert.areEqual(
       'INVALID_SOQL_TEMPLATE',
       RecordHealthCheckValueResolver.classifyQueryException(
         new TestQueryException('malformed query')
       )
     );
-    System.assertEquals(
+    Assert.areEqual(
       'FIELD_NOT_ACCESSIBLE',
       RecordHealthCheckValueResolver.classifyQueryException(
         new TestQueryException('insufficient access rights on field')
@@ -221,75 +275,31 @@ private class RecordHealthCheckValueResolverTest {
     );
   }
 
-  @isTest
+  @IsTest
   static void remainingTypedBranchesAreCovered() {
     Datetime earlier = Datetime.newInstance(2026, 1, 1, 0, 0, 0);
-    Datetime earlierGmt = Datetime.newInstanceGmt(2026, 1, 1, 0, 0, 0);
-    Datetime later = earlier.addHours(1);
     Date earlierDate = Date.newInstance(2026, 1, 1);
-    Date laterDate = earlierDate.addDays(1);
 
-    System.assert(
+    Assert.isTrue(
       RecordHealthCheckValueResolver.valuesEqual(earlier, '2026-01-01 00:00:00')
     );
     assertIncompatibleEquality(earlier, 'not-a-datetime');
     assertIncompatibleEquality(earlierDate, 'not-a-date');
 
-    for (
-      String operator : new List<String>{
-        'GREATER_THAN',
-        'GREATER_THAN_OR_EQUAL',
-        'LESS_THAN',
-        'LESS_THAN_OR_EQUAL'
-      }
-    ) {
-      RecordHealthCheckValueResolver.orderedDecimal(operator, 2, 1);
-      RecordHealthCheckValueResolver.orderedDateTime(operator, later, earlier);
-    }
-
-    assertInvalidOrderedOperator('Decimal');
-    assertInvalidOrderedOperator('DATETIME');
-    System.assertEquals(
-      earlierGmt,
-      RecordHealthCheckValueResolver.coerceDateTime('2026-01-01T00:00:00Z')
-    );
     try {
       RecordHealthCheckValueResolver.applyOrdered('Nope', 1, 1);
-      System.assert(false, 'Expected an invalid ordered operator.');
+      Assert.isTrue(false, 'Expected an invalid ordered operator.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
+      Assert.areEqual('INVALID_OPERATOR', ex.reasonCode);
     }
   }
 
   private static void assertIncompatibleEquality(Object left, Object right) {
     try {
       RecordHealthCheckValueResolver.valuesEqual(left, right);
-      System.assert(false, 'Expected incompatible equality operands.');
+      Assert.isTrue(false, 'Expected incompatible equality operands.');
     } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INCOMPATIBLE_COMPARISON_TYPES', ex.reasonCode);
-    }
-  }
-
-  private static void assertInvalidOrderedOperator(String valueType) {
-    try {
-      if (valueType == 'Decimal') {
-        RecordHealthCheckValueResolver.orderedDecimal('Nope', 1, 1);
-      } else if (valueType == 'DATETIME') {
-        RecordHealthCheckValueResolver.orderedDateTime(
-          'Nope',
-          System.now(),
-          System.now()
-        );
-      } else {
-        RecordHealthCheckValueResolver.orderedDateTime(
-          'Nope',
-          System.now(),
-          System.now()
-        );
-      }
-      System.assert(false, 'Expected an invalid operator.');
-    } catch (RecordHealthCheckValueResolver.ResolverException ex) {
-      System.assertEquals('INVALID_OPERATOR', ex.reasonCode);
+      Assert.areEqual('INCOMPATIBLE_COMPARISON_TYPES', ex.reasonCode);
     }
   }
 

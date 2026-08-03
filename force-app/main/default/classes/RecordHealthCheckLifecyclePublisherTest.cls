@@ -1,131 +1,152 @@
-/**
- * @author Gautam Kolan (https://github.com/gkolan)
- * SPDX-License-Identifier: Apache-2.0
- */
-
-@isTest
+/** Publication intent tests for the supported response contract. */
+@IsTest
 private class RecordHealthCheckLifecyclePublisherTest {
-  private static RecordHealthCheckResult result(String name, String status) {
-    RecordHealthCheckResult response = new RecordHealthCheckResult();
-    response.ruleDeveloperName = name;
-    response.status = status;
-    response.runId = 'run-test';
-    return response;
+  private class FixedSettingsProvider extends RecordHealthCheckSettingsProvider {
+    private Boolean publishRun;
+    private Set<String> ruleNames;
+    FixedSettingsProvider(Boolean publishRun, Set<String> ruleNames) {
+      this.publishRun = publishRun;
+      this.ruleNames = ruleNames;
+    }
+    public override Boolean isRunPublicationEnabled(
+      String checkSetQualifiedApiName
+    ) {
+      return publishRun;
+    }
+    public override Set<String> publishedRuleNames(
+      String checkSetQualifiedApiName
+    ) {
+      return ruleNames;
+    }
   }
 
-  private static RecordHealthCheckSetResult setResponse() {
-    RecordHealthCheckSetResult response = new RecordHealthCheckSetResult();
-    response.checkSetDeveloperName = 'Account_Data_Quality';
-    response.runId = 'run-test';
-    response.add(result('Account_DQ_BillingCity', 'PASS'));
-    response.finish();
-    return response;
-  }
-
-  @isTest
-  static void onLoadPublishesNeitherStreamEvenWhenSwitchesAreOn() {
-    RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
-    RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>{
-      'Account_DQ_BillingCity'
-    };
+  @IsTest
+  static void malformedInteractiveItemsAreIgnoredWithoutThrowing() {
+    RecordHealthCheckResponse response = new RecordHealthCheckResponse();
+    response.runId = 'malformed-interactive';
+    RecordHealthCheckResultItem malformed = new RecordHealthCheckResultItem();
+    malformed.evaluation = new RecordHealthCheckEvaluationResult();
+    malformed.evaluation.status = RecordHealthCheckStatus.FAIL;
+    response.results.add(malformed);
+    RecordHealthCheckLifecyclePublisher.settingsProvider = new FixedSettingsProvider(
+      false,
+      new Set<String>{ 'Allowed_Rule' }
+    );
     Integer beforeDml = Limits.getDmlStatements();
 
-    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
-      setResponse(),
-      RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
-    );
-    RecordHealthCheckLifecyclePublisher.publishRuleResults(
-      'Account_Data_Quality',
-      'run-test',
-      setResponse().results,
-      RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
-    );
-
-    System.assertEquals(
-      beforeDml,
-      Limits.getDmlStatements(),
-      'Page-load evaluation must publish zero events.'
-    );
-  }
-
-  @isTest
-  static void facadePublishesBothEnabledStreamsWithoutChangingResult() {
-    RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
-    RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>{
-      'Account_DQ_BillingCity'
-    };
-    RecordHealthCheckSetResult response = setResponse();
     Test.startTest();
-    Integer beforeDml = Limits.getDmlStatements();
-    RecordHealthCheckLifecyclePublisher.publishRuleResults(
-      response.checkSetDeveloperName,
-      response.runId,
-      response.results,
-      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
-    );
-    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
+    RecordHealthCheckLifecyclePublisher.publishInteractiveResponse(
       response,
-      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
-    );
-    System.assertEquals(
-      'PASS',
-      response.status,
-      'Publishing cannot alter health.'
-    );
-    System.assertEquals(
-      beforeDml + 2,
-      Limits.getDmlStatements(),
-      'Each lifecycle point uses one bulk publish.'
+      'Example_Set',
+      RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
     );
     Test.stopTest();
-  }
 
-  @isTest
-  static void defaultOffAndSubscriberGuardPublishNothing() {
-    RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = false;
-    RecordHealthCheckLifecyclePublisher.publishRuleNamesOverride = new Set<String>();
-    Integer beforeDml = Limits.getDmlStatements();
-    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
-      setResponse(),
-      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
-    );
-    RecordHealthCheckLifecyclePublisher.publishRuleResults(
-      'Account_Data_Quality',
-      'run-test',
-      setResponse().results,
-      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
-    );
-    RecordHealthCheckLifecyclePublisher.subscriberContextOverride = true;
-    RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
-    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
-      setResponse(),
-      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
-    );
-    System.assertEquals(beforeDml, Limits.getDmlStatements());
-  }
-
-  @isTest
-  static void unknownAndNullSourcesFailClosed() {
-    RecordHealthCheckLifecyclePublisher.publishRunSettingOverride = true;
-    Integer beforeDml = Limits.getDmlStatements();
-
-    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
-      setResponse(),
-      null
-    );
-    RecordHealthCheckLifecyclePublisher.publishCompletedSet(
-      setResponse(),
-      'MISSPELLED_SOURCE'
-    );
-
-    System.assertEquals(
+    Assert.areEqual(
       beforeDml,
       Limits.getDmlStatements(),
-      'Only explicitly allowlisted deliberate sources may publish.'
+      'A malformed item must be filtered without publishing.'
     );
   }
 
-  @isTest
+  @IsTest
+  static void malformedResponseWithoutSummaryIsIgnored() {
+    RecordHealthCheckResponse response = new RecordHealthCheckResponse();
+    response.summary = null;
+
+    Test.startTest();
+    RecordHealthCheckLifecyclePublisher.publishResponse(
+      response,
+      RecordHealthCheckEventPublication.ALL,
+      'Example_Set',
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
+    );
+    Test.stopTest();
+
+    Assert.isNull(
+      response.summary,
+      'A malformed caller envelope should be ignored rather than mutated.'
+    );
+  }
+  private static RecordHealthCheckResponse response(String status) {
+    RecordHealthCheckEvaluationResult evaluation = new RecordHealthCheckEvaluationResult();
+    evaluation.recordId = RecordHealthCheckTestDataFactory.syntheticId(
+      Account.SObjectType,
+      1
+    );
+    evaluation.ruleQualifiedApiName = 'Account_DQ_BillingCity';
+    evaluation.status = status;
+    RecordHealthCheckResultItem item = new RecordHealthCheckResultItem();
+    item.evaluation = evaluation;
+    RecordHealthCheckResponse result = new RecordHealthCheckResponse();
+    result.runId = 'run-test';
+    result.recordIds.add(evaluation.recordId);
+    result.ruleQualifiedApiNames.add(evaluation.ruleQualifiedApiName);
+    result.results.add(item);
+    result.summary.add(status);
+    return result;
+  }
+
+  @IsTest
+  static void noneAndActionablePassPublishNothing() {
+    Assert.areEqual(
+      '1.0',
+      RecordHealthCheckLifecyclePublisher.CONTRACT_VERSION,
+      'Lifecycle event publishers must retain the documented event contract version.'
+    );
+    Integer beforeDml = Limits.getDmlStatements();
+    RecordHealthCheckLifecyclePublisher.publishResponse(
+      response('FAIL'),
+      RecordHealthCheckEventPublication.NONE,
+      'Account_Data_Quality',
+      null
+    );
+    RecordHealthCheckLifecyclePublisher.publishResponse(
+      response('PASS'),
+      RecordHealthCheckEventPublication.ACTIONABLE,
+      'Account_Data_Quality',
+      'MISSPELLED_SOURCE'
+    );
+    Assert.areEqual(beforeDml, Limits.getDmlStatements());
+  }
+
+  @IsTest
+  static void allPublishesAndSourceIsTelemetryOnly() {
+    Integer beforeDml = Limits.getDmlStatements();
+    RecordHealthCheckLifecyclePublisher.publishResponse(
+      response('PASS'),
+      RecordHealthCheckEventPublication.ALL,
+      'Account_Data_Quality',
+      'CUSTOM_TELEMETRY_SOURCE'
+    );
+    Assert.areEqual(beforeDml + 2, Limits.getDmlStatements());
+  }
+
+  @IsTest
+  static void subscriberGuardPublishesNothing() {
+    RecordHealthCheckLifecyclePublisher.enterSubscriberContext();
+    Integer beforeDml = Limits.getDmlStatements();
+    RecordHealthCheckLifecyclePublisher.publishResponse(
+      response('FAIL'),
+      RecordHealthCheckEventPublication.ALL,
+      'Account_Data_Quality',
+      RecordHealthCheckLifecyclePublisher.SOURCE_APEX_API
+    );
+    Assert.areEqual(beforeDml, Limits.getDmlStatements());
+  }
+
+  @IsTest
+  static void onLoadCannotUseInteractivePublication() {
+    Integer beforeDml = Limits.getDmlStatements();
+    RecordHealthCheckLifecyclePublisher.publishInteractiveResponse(
+      response('FAIL'),
+      'Account_Data_Quality',
+      RecordHealthCheckLifecyclePublisher.SOURCE_RUN_ON_LOAD
+    );
+    Assert.areEqual(beforeDml, Limits.getDmlStatements());
+  }
+
+  @IsTest
   static void ruleEventsPublishInBoundedChunks() {
     List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>();
     for (
@@ -133,60 +154,106 @@ private class RecordHealthCheckLifecyclePublisherTest {
       index <= RecordHealthCheckLifecyclePublisher.PUBLISH_CHUNK_SIZE;
       index++
     ) {
-      events.add(
-        new Record_Health_Check_Rule_Result__e(
-          ContractVersion__c = '1.0',
-          EventId__c = 'chunk-' + index,
-          RunId__c = 'chunk-run',
-          CheckSetDeveloperName__c = 'Chunk_Set',
-          RuleDeveloperName__c = 'Chunk_Rule',
-          Status__c = 'PASS',
-          OccurredAt__c = System.now(),
-          Source__c = 'APEX_API',
-          CoreVersion__c = '2.0.0'
-        )
-      );
+      events.add(eventRecord('chunk-' + index));
     }
-
-    Test.startTest();
     Integer beforeDml = Limits.getDmlStatements();
     RecordHealthCheckLifecyclePublisher.publishRuleEvents(events);
-    System.assertEquals(
+    Assert.areEqual(beforeDml + 2, Limits.getDmlStatements());
+  }
+
+  @IsTest
+  static void partialPublishFailureIsInspectedWithoutThrowing() {
+    List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>{
+      eventRecord('valid-event'),
+      eventRecord(null)
+    };
+    RecordHealthCheckLifecyclePublisher.publishRuleEvents(events);
+  }
+
+  @IsTest
+  static void nullPublishResultsAreIgnoredSafely() {
+    Integer dmlBefore = Limits.getDmlStatements();
+    Test.startTest();
+    RecordHealthCheckLifecyclePublisher.inspect(
+      null,
+      'SYNTHETIC_PUBLISH_FAILURE'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      dmlBefore,
+      Limits.getDmlStatements(),
+      'Inspecting an absent publish response must not perform DML.'
+    );
+  }
+
+  @IsTest
+  static void interactivePublicationFiltersRulesAndPublishesMultiRecordRun() {
+    RecordHealthCheckResponse result = response('FAIL');
+    result.results[0].evaluation.recordId = null;
+    result.recordIds.add(
+      RecordHealthCheckTestDataFactory.syntheticId(Account.SObjectType, 2)
+    );
+    result.results.add(null);
+    result.results.add(new RecordHealthCheckResultItem());
+    RecordHealthCheckLifecyclePublisher.settingsProvider = new FixedSettingsProvider(
+      true,
+      new Set<String>{ 'Account_DQ_BillingCity' }
+    );
+    Test.startTest();
+    Integer beforeDml = Limits.getDmlStatements();
+    RecordHealthCheckLifecyclePublisher.publishInteractiveResponse(
+      result,
+      'Account_Data_Quality',
+      RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
+    );
+    Assert.areEqual(
       beforeDml + 2,
       Limits.getDmlStatements(),
-      'One event beyond the chunk size must use exactly two bulk publishes.'
+      'A selected Rule and enabled Check Set must publish both event types.'
     );
     Test.stopTest();
   }
 
-  @isTest
-  static void partialPublishFailureIsInspectedWithoutThrowing() {
-    List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>{
-      new Record_Health_Check_Rule_Result__e(
-        ContractVersion__c = '1.0',
-        EventId__c = 'valid-event',
-        RunId__c = 'partial-run',
-        CheckSetDeveloperName__c = 'Partial_Set',
-        RuleDeveloperName__c = 'Partial_Rule',
-        Status__c = 'PASS',
-        OccurredAt__c = System.now(),
-        Source__c = 'APEX_API',
-        CoreVersion__c = '2.0.0'
-      ),
-      new Record_Health_Check_Rule_Result__e(
-        ContractVersion__c = '1.0',
-        RunId__c = 'partial-run',
-        CheckSetDeveloperName__c = 'Partial_Set',
-        RuleDeveloperName__c = 'Partial_Rule',
-        Status__c = 'PASS',
-        OccurredAt__c = System.now(),
-        Source__c = 'APEX_API',
-        CoreVersion__c = '2.0.0'
-      )
-    };
+  @IsTest
+  static void interactiveMetadataLookupAndDisabledRunRemainSafe() {
+    RecordHealthCheckLifecyclePublisher.settingsProvider = new RecordHealthCheckSettingsProvider();
 
     Test.startTest();
-    RecordHealthCheckLifecyclePublisher.publishRuleEvents(events);
+    Boolean enabled = RecordHealthCheckLifecyclePublisher.isRunPublicationEnabled(
+      'Check_Set_That_Does_Not_Exist'
+    );
+    RecordHealthCheckLifecyclePublisher.publishInteractiveResponse(
+      response('FAIL'),
+      'Check_Set_That_Does_Not_Exist',
+      RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
+    );
+    RecordHealthCheckLifecyclePublisher.publishInteractiveResponse(
+      null,
+      'Check_Set_That_Does_Not_Exist',
+      RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED
+    );
     Test.stopTest();
+
+    Assert.isFalse(
+      enabled,
+      'Missing Check Set metadata must default publication off.'
+    );
+  }
+
+  private static Record_Health_Check_Rule_Result__e eventRecord(
+    String eventId
+  ) {
+    return new Record_Health_Check_Rule_Result__e(
+      ContractVersion__c = RecordHealthCheckLifecyclePublisher.CONTRACT_VERSION,
+      EventId__c = eventId,
+      RunId__c = 'test-run',
+      CheckSetQualifiedApiName__c = 'Test_Set',
+      RuleQualifiedApiName__c = 'Test_Rule',
+      Status__c = 'PASS',
+      OccurredAt__c = System.now(),
+      Source__c = 'APEX_API',
+      FrameworkVersion__c = '2.0.0'
+    );
   }
 }

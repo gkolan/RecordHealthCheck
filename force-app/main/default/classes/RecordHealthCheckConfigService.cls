@@ -4,7 +4,6 @@
  */
 
 public with sharing class RecordHealthCheckConfigService {
-  private static Map<String, Boolean> rulePublicationCache = new Map<String, Boolean>();
   // ─── Reason codes ──────────────────────────────────────────
 
   public static final String RC_CONFIG_NOT_FOUND = 'CONFIG_NOT_FOUND';
@@ -25,13 +24,13 @@ public with sharing class RecordHealthCheckConfigService {
   // The per-type rule-validation decision tree lives in RecordHealthCheckRuleValidator;
   // this class keeps only the baseline checks below (inline) plus a first-fail adapter
   // (toResult). The operator/source/null-empty value sets live with those producers.
-  private static final Set<String> VALID_DISPLAY_MODES = RecordHealthCheckConstants.VALID_DISPLAY_MODES;
-  private static final Set<String> VALID_TRIGGER_MODES = RecordHealthCheckConstants.VALID_TRIGGER_MODES;
-  private static final Set<String> VALID_REVEAL_MODES = RecordHealthCheckConstants.VALID_REVEAL_MODES;
-  private static final Set<String> VALID_COMPARISON_DISPLAYS = RecordHealthCheckConstants.VALID_COMPARISON_DISPLAYS;
-  private static final Set<String> VALID_APPLICABILITY_MODES = RecordHealthCheckConstants.VALID_APPLICABILITY_MODES;
-  private static final Set<String> VALID_CHECK_TYPES = RecordHealthCheckConstants.VALID_CHECK_TYPES;
-  private static final Set<String> VALID_SEVERITIES = RecordHealthCheckConstants.VALID_SEVERITIES;
+  private static final Set<String> VALID_DISPLAY_MODES = RecordHealthCheckConstants.validDisplayModes;
+  private static final Set<String> VALID_TRIGGER_MODES = RecordHealthCheckConstants.validTriggerModes;
+  private static final Set<String> VALID_REVEAL_MODES = RecordHealthCheckConstants.validRevealModes;
+  private static final Set<String> VALID_COMPARISON_DISPLAYS = RecordHealthCheckConstants.validComparisonDisplays;
+  private static final Set<String> VALID_APPLICABILITY_MODES = RecordHealthCheckConstants.validApplicabilityModes;
+  private static final Set<String> VALID_CHECK_TYPES = RecordHealthCheckConstants.validCheckTypes;
+  private static final Set<String> VALID_SEVERITIES = RecordHealthCheckConstants.validSeverities;
 
   private static final Integer FRAMEWORK_MAX_CHECKS = RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS;
   private static final Integer FRAMEWORK_MAX_ROWS = RecordHealthCheckConstants.FRAMEWORK_MAX_ROWS;
@@ -101,369 +100,32 @@ public with sharing class RecordHealthCheckConfigService {
     return availability;
   }
 
-  /**
-   * Loads and validates a Check Set and its active rules.
-   * Throws ConfigException for component-level failures (CONFIG_NOT_FOUND,
-   * CONFIG_INACTIVE, OBJECT_MISMATCH, NO_RECORD_CONTEXT, NO_ACTIVE_CHECKS).
-   * Returns a fully filled-in RecordHealthCheckDefinitionResponse on success.
-   */
+  /** Loads and validates a Check Set and its active rules. */
   public RecordHealthCheckDefinitionResponse getDefinitionResponse(
     String checkSetDeveloperName,
     Id recordId
   ) {
-    // Normalize at the service boundary so whitespace/blank is rejected before SOQL;
-    // blank → CONFIG_NOT_FOUND.
-    checkSetDeveloperName = RecordHealthCheckLogger.normalizeIdentifier(
+    return RecordHealthCheckDefinitionLoader.getDefinitionResponse(
+      this,
       checkSetDeveloperName,
-      80
-    );
-    if (String.isBlank(checkSetDeveloperName)) {
-      throw new ConfigException(
-        'No Check Set is selected for this Record Health Check component.',
-        RC_CONFIG_NOT_FOUND
-      );
-    }
-
-    if (recordId == null) {
-      throw new ConfigException(
-        'This component needs a record page context before it can run health checks.',
-        RC_NO_RECORD_CONTEXT
-      );
-    }
-
-    // Load Check Set
-    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
-    List<Record_Health_Check_Set__mdt> checkSets = [
-      SELECT
-        DeveloperName,
-        MasterLabel,
-        CardTitle__c,
-        CardSubtitle__c,
-        ObjectApiName__c,
-        IsActive__c,
-        CardRunMode__c,
-        PassedChecksDisplay__c,
-        SkippedChecksDisplay__c,
-        CardRevealMode__c,
-        FoundExpectedDisplay__c,
-        StopOnSystemError__c,
-        ShowDiagnostics__c
-      FROM Record_Health_Check_Set__mdt
-      WHERE DeveloperName = :checkSetDeveloperName
-      LIMIT 1
-    ];
-
-    if (checkSets.isEmpty()) {
-      throw new ConfigException(
-        'Check Set "' + checkSetDeveloperName + '" was not found.',
-        RC_CONFIG_NOT_FOUND
-      );
-    }
-
-    Record_Health_Check_Set__mdt checkSet = checkSets[0];
-    validateCheckSetForDefinition(checkSet, checkSetDeveloperName, recordId);
-
-    // Load active rules — only the fields needed to build RecordHealthCheckDefinition.
-    // Full evaluation fields are fetched per-rule at evaluation time via loadRule().
-    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
-    List<Record_Health_Check_Rule__mdt> allRules = [
-      SELECT
-        DeveloperName,
-        CheckTitle__c,
-        CheckDescription__c,
-        Category__c,
-        EvaluationOrder__c,
-        PrerequisiteRule__c
-      FROM Record_Health_Check_Rule__mdt
-      WHERE
-        Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
-        AND IsActive__c = TRUE
-      ORDER BY EvaluationOrder__c ASC NULLS LAST, DeveloperName ASC
-    ];
-
-    validateActiveRulesForDefinition(allRules, checkSetDeveloperName);
-
-    Integer totalAvailable = allRules.size();
-    Boolean checksOmitted = totalAvailable > FRAMEWORK_MAX_CHECKS;
-    List<Record_Health_Check_Rule__mdt> rulesForRun = selectRulesForRun(
-      allRules
-    );
-    Integer inactiveRuleCount = countInactiveRules(checkSetDeveloperName);
-
-    // Build response
-    RecordHealthCheckDefinitionResponse response = new RecordHealthCheckDefinitionResponse();
-    // Prefer Card Title; fall back to MasterLabel / DeveloperName so the card
-    // never renders a blank title when the admin left PanelHeading blank.
-    response.displayTitle = String.isNotBlank(checkSet.CardTitle__c)
-      ? checkSet.CardTitle__c
-      : (String.isNotBlank(checkSet.MasterLabel)
-          ? checkSet.MasterLabel
-          : checkSet.DeveloperName);
-    response.displayDescription = checkSet.CardSubtitle__c;
-    response.triggerMode = RecordHealthCheckConstants.toLwcTriggerMode(
-      checkSet.CardRunMode__c
-    );
-    response.revealMode = RecordHealthCheckConstants.toLwcRevealMode(
-      checkSet.CardRevealMode__c
-    );
-    response.successDisplayMode = RecordHealthCheckConstants.toLwcDisplayMode(
-      checkSet.PassedChecksDisplay__c
-    );
-    response.skippedDisplayMode = RecordHealthCheckConstants.toLwcDisplayMode(
-      checkSet.SkippedChecksDisplay__c
-    );
-    response.comparisonDisplay = RecordHealthCheckConstants.toLwcComparisonDisplay(
-      String.isBlank(checkSet.FoundExpectedDisplay__c)
-        ? 'ON_DEMAND'
-        : checkSet.FoundExpectedDisplay__c
-    );
-    response.stopOnFirstError = checkSet.StopOnSystemError__c;
-    response.showDiagnostics =
-      checkSet.ShowDiagnostics__c == true &&
-      RecordHealthCheckAccess.canViewDetails();
-    response.totalAvailableCheckCount = totalAvailable;
-    response.frameworkMaxChecks = RecordHealthCheckConstants.FRAMEWORK_MAX_CHECKS;
-    response.checksOmittedByLimit = checksOmitted;
-    response.inactiveRuleCount = inactiveRuleCount;
-    // Rule names are configuration detail, so they ride along only for the
-    // diagnostics audience that already sees troubleshooting fields.
-    response.inactiveRuleLabels = (response.showDiagnostics == true &&
-      inactiveRuleCount > 0)
-      ? inactiveRuleLabels(checkSetDeveloperName)
-      : new List<String>();
-
-    // Log WARN when active rules exceed FRAMEWORK_MAX_CHECKS, so truncation is
-    // visible server-side and not only in the LWC "First 25 of N shown" badge.
-    if (checksOmitted) {
-      logCheckLimitExceeded(checkSetDeveloperName, recordId, totalAvailable);
-    }
-
-    response.checks = new List<RecordHealthCheckDefinition>();
-
-    for (Record_Health_Check_Rule__mdt rule : rulesForRun) {
-      RecordHealthCheckDefinition def = new RecordHealthCheckDefinition();
-      def.developerName = rule.DeveloperName;
-      def.label = rule.CheckTitle__c;
-      def.description = rule.CheckDescription__c;
-      def.priority = rule.EvaluationOrder__c;
-      def.dependsOnRuleDeveloperName = String.isNotBlank(
-          rule.PrerequisiteRule__c
-        )
-        ? rule.PrerequisiteRule__c.trim()
-        : null;
-      response.checks.add(def);
-    }
-
-    return response;
-  }
-
-  @TestVisible
-  private void logCheckLimitExceeded(
-    String checkSetDeveloperName,
-    Id recordId,
-    Integer totalAvailable
-  ) {
-    RecordHealthCheckLogger.log(
-      RecordHealthCheckLogger.Level.WARN,
-      null,
-      checkSetDeveloperName,
-      recordId,
-      null,
-      'CHECK_LIMIT_EXCEEDED',
-      new Map<String, Object>{
-        'totalAvailable' => totalAvailable,
-        'maxPerRun' => FRAMEWORK_MAX_CHECKS,
-        'omitted' => totalAvailable - FRAMEWORK_MAX_CHECKS
-      },
-      null
-    );
-  }
-
-  @TestVisible
-  private void validateCheckSetForDefinition(
-    Record_Health_Check_Set__mdt checkSet,
-    String checkSetDeveloperName,
-    Id recordId
-  ) {
-    if (checkSet.IsActive__c == false) {
-      throw new ConfigException(
-        'Check Set "' + checkSetDeveloperName + '" is inactive.',
-        RC_CONFIG_INACTIVE
-      );
-    }
-
-    if (String.isBlank(checkSet.ObjectApiName__c)) {
-      // A blank Base Object misconfigures an existing Check Set; it does not mean
-      // the Check Set is missing, so classify it as INVALID_CONFIG.
-      throw new ConfigException(
-        'Check Set "' +
-          checkSetDeveloperName +
-          '" is missing its Record Object API Name.',
-        RC_INVALID_CONFIG
-      );
-    }
-    if (
-      !RecordHealthCheckConfigValidator.isValidObjectApiName(
-        checkSet.ObjectApiName__c
-      )
-    ) {
-      throw new ConfigException(
-        'Record Object API Name "' +
-          checkSet.ObjectApiName__c +
-          '" on Check Set "' +
-          checkSetDeveloperName +
-          '" is not valid.',
-        RC_INVALID_CONFIG
-      );
-    }
-
-    String recordObjectType = RecordHealthCheckDescribeCache.objectApiName(
       recordId
     );
-    if (
-      String.isBlank(recordObjectType) ||
-      !recordObjectType.equalsIgnoreCase(checkSet.ObjectApiName__c)
-    ) {
-      throw new ConfigException(
-        'Check Set "' +
-          checkSetDeveloperName +
-          '" is for "' +
-          checkSet.ObjectApiName__c +
-          '", but this page is for "' +
-          recordObjectType +
-          '".',
-        RC_OBJECT_MISMATCH
-      );
-    }
-
-    if (!VALID_DISPLAY_MODES.contains(checkSet.PassedChecksDisplay__c)) {
-      throw new ConfigException(
-        'Passed Checks Display "' +
-          checkSet.PassedChecksDisplay__c +
-          '" is not recognized. Valid values: SHOW_EACH_CHECK, SHOW_COUNT_ONLY.',
-        RC_INVALID_CONFIG
-      );
-    }
-    if (!VALID_DISPLAY_MODES.contains(checkSet.SkippedChecksDisplay__c)) {
-      throw new ConfigException(
-        'Skipped Checks Display "' +
-          checkSet.SkippedChecksDisplay__c +
-          '" is not recognized. Valid values: SHOW_EACH_CHECK, SHOW_COUNT_ONLY.',
-        RC_INVALID_CONFIG
-      );
-    }
-    if (!VALID_TRIGGER_MODES.contains(checkSet.CardRunMode__c)) {
-      throw new ConfigException(
-        'When Checks Run "' +
-          checkSet.CardRunMode__c +
-          '" is not recognized. Valid values: RUN_ON_LOAD, RUN_ON_REQUEST.',
-        RC_INVALID_CONFIG
-      );
-    }
-    if (!VALID_REVEAL_MODES.contains(checkSet.CardRevealMode__c)) {
-      throw new ConfigException(
-        'Reveal Mode "' +
-          checkSet.CardRevealMode__c +
-          '" is not recognized. Valid values: ALL_AT_ONCE, ONE_BY_ONE.',
-        RC_INVALID_CONFIG
-      );
-    }
-    if (
-      String.isNotBlank(checkSet.FoundExpectedDisplay__c) &&
-      !VALID_COMPARISON_DISPLAYS.contains(checkSet.FoundExpectedDisplay__c)
-    ) {
-      throw new ConfigException(
-        'Found/Expected Display "' +
-          checkSet.FoundExpectedDisplay__c +
-          '" is not recognized. Valid values: ON_DEMAND, FAILURES_ONLY, ALL_ROWS.',
-        RC_INVALID_CONFIG
-      );
-    }
-  }
-
-  @TestVisible
-  private void validateActiveRulesForDefinition(
-    List<Record_Health_Check_Rule__mdt> rules,
-    String checkSetDeveloperName
-  ) {
-    if (rules.isEmpty()) {
-      Integer inactiveCount = countInactiveRules(checkSetDeveloperName);
-      String detail = inactiveCount > 0
-        ? ' (' + inactiveCount + ' inactive)'
-        : '';
-      throw new ConfigException(
-        'Check Set "' +
-          checkSetDeveloperName +
-          '" has no active checks' +
-          detail +
-          '.',
-        RC_NO_ACTIVE_CHECKS
-      );
-    }
-  }
-
-  /** Inactive Rules on the Check Set — omitted from the run, useful for admin UX. */
-  private Integer countInactiveRules(String checkSetDeveloperName) {
-    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
-    return [
-      SELECT COUNT()
-      FROM Record_Health_Check_Rule__mdt
-      WHERE
-        Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
-        AND IsActive__c = FALSE
-    ];
-  }
-
-  /**
-   * Display names of the inactive Rules, for the diagnostics "N Inactive"
-   * tooltip. Capped at the framework check limit so a long-neglected Check Set
-   * cannot grow an unbounded tooltip; the pill still shows the exact count.
-   */
-  @TestVisible
-  private List<String> inactiveRuleLabels(String checkSetDeveloperName) {
-    // code-analyzer-suppress-next-line ApexCRUDViolation: Custom Metadata configuration is framework setup data; access is enforced by RecordHealthCheckAccess before definitions are exposed.
-    List<Record_Health_Check_Rule__mdt> inactiveRules = [
-      SELECT DeveloperName, MasterLabel, CheckTitle__c
-      FROM Record_Health_Check_Rule__mdt
-      WHERE
-        Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
-        AND IsActive__c = FALSE
-      ORDER BY EvaluationOrder__c ASC NULLS LAST, DeveloperName ASC
-      LIMIT :FRAMEWORK_MAX_CHECKS
-    ];
-    List<String> labels = new List<String>();
-    for (Record_Health_Check_Rule__mdt rule : inactiveRules) {
-      labels.add(
-        String.isNotBlank(rule.CheckTitle__c)
-          ? rule.CheckTitle__c
-          : (String.isNotBlank(rule.MasterLabel)
-              ? rule.MasterLabel
-              : rule.DeveloperName)
-      );
-    }
-    return labels;
-  }
-
-  @TestVisible
-  private List<Record_Health_Check_Rule__mdt> selectRulesForRun(
-    List<Record_Health_Check_Rule__mdt> allRules
-  ) {
-    List<Record_Health_Check_Rule__mdt> rulesForRun = new List<Record_Health_Check_Rule__mdt>();
-    Integer rulesToInclude = Math.min(FRAMEWORK_MAX_CHECKS, allRules.size());
-    for (Integer i = 0; i < rulesToInclude; i++) {
-      rulesForRun.add(allRules[i]);
-    }
-    return rulesForRun;
   }
 
   /**
    * Validates a single rule's metadata configuration for runtime evaluation.
-   * Returns a UNABLE_TO_EVALUATE RecordHealthCheckResult if the rule is invalid
+   * Returns a UNABLE_TO_EVALUATE RecordHealthCheckInternalResult if the rule is invalid
    * or null if the rule is valid and may proceed to the evaluator.
    */
-  public RecordHealthCheckResult validateRuleForEvaluation(
+  public RecordHealthCheckInternalResult validateRuleForEvaluation(
     Record_Health_Check_Rule__mdt rule
   ) {
+    RecordHealthCheckTokenIssue templateIssue = RecordHealthCheckConfigValidator.firstTemplateIssue(
+      rule
+    );
+    if (templateIssue != null) {
+      return buildUnableResult(rule, RC_INVALID_CONFIG, templateIssue.message);
+    }
     if (String.isBlank(rule.CheckTitle__c) || rule.EvaluationOrder__c == null) {
       return buildUnableResult(
         rule,
@@ -509,13 +171,15 @@ public with sharing class RecordHealthCheckConfigService {
         'INVALID_CONFIG',
         'ApplicabilityMode "' +
           rule.ApplicabilityMode__c +
-          '" is not recognized. Valid values: Always, Formula, SOQL.'
+          '" is not recognized. Valid values: ALL_RECORDS, WHEN_FORMULA_TRUE, WHEN_COUNT_QUERY_MATCHES.'
       );
     }
 
     // Applicability sub-field validation — surface a misconfigured gate here as a
     // clear config error rather than letting the engine reach it at evaluation time.
-    RecordHealthCheckResult applicabilityIssue = validateApplicability(rule);
+    RecordHealthCheckInternalResult applicabilityIssue = validateApplicability(
+      rule
+    );
     if (applicabilityIssue != null) {
       return applicabilityIssue;
     }
@@ -583,6 +247,7 @@ public with sharing class RecordHealthCheckConfigService {
         EmptyValueHandling__c,
         DisplayFoundText__c,
         DisplayExpectedText__c,
+        DisplayValueFormat__c,
         FailureMessage__c,
         UnableToEvaluateMessage__c,
         ActionLabel__c,
@@ -598,7 +263,6 @@ public with sharing class RecordHealthCheckConfigService {
         ApplicabilityCountQuery__c,
         ApplicabilityCountOperator__c,
         ApplicabilityCountThreshold__c,
-        PublishResultEvent__c,
         Record_Health_Check_Set__c,
         Record_Health_Check_Set__r.DeveloperName,
         Record_Health_Check_Set__r.MasterLabel,
@@ -620,36 +284,7 @@ public with sharing class RecordHealthCheckConfigService {
     if (requireActive == true && rule.IsActive__c != true) {
       return null;
     }
-    RecordHealthCheckTokenIssue tokenIssue = RecordHealthCheckConfigValidator.firstTemplateIssue(
-      rule
-    );
-    if (tokenIssue != null) {
-      throw new ConfigException(
-        'Invalid merge token configuration on Rule "' +
-          rule.DeveloperName +
-          '": ' +
-          tokenIssue.message,
-        tokenIssue.reasonCode
-      );
-    }
-    rulePublicationCache.put(
-      checkSetDeveloperName + ':' + ruleDeveloperName,
-      rule.PublishResultEvent__c == true
-    );
     return rule;
-  }
-
-  public static Map<String, Boolean> cachedRulePublicationSettings(
-    String checkSetDeveloperName,
-    Set<String> ruleDeveloperNames
-  ) {
-    Map<String, Boolean> found = new Map<String, Boolean>();
-    for (String ruleName : ruleDeveloperNames) {
-      String key = checkSetDeveloperName + ':' + ruleName;
-      if (rulePublicationCache.containsKey(key))
-        found.put(ruleName, rulePublicationCache.get(key));
-    }
-    return found;
   }
 
   // ─── Per-type validation — first-fail adapter over RecordHealthCheckRuleValidator ───
@@ -659,10 +294,9 @@ public with sharing class RecordHealthCheckConfigService {
 
   /**
    * Validates the ApplicabilityMode check (Formula / SOQL sub-fields). Returns null when the
-   * check is valid (or mode is Always/blank). Kept @TestVisible for parity with prior API.
+   * check is valid (or mode is Always/blank).
    */
-  @TestVisible
-  private RecordHealthCheckResult validateApplicability(
+  private RecordHealthCheckInternalResult validateApplicability(
     Record_Health_Check_Rule__mdt rule
   ) {
     return firstResult(
@@ -671,7 +305,7 @@ public with sharing class RecordHealthCheckConfigService {
     );
   }
 
-  private RecordHealthCheckResult validateFormulaRule(
+  private RecordHealthCheckInternalResult validateFormulaRule(
     Record_Health_Check_Rule__mdt rule
   ) {
     return firstResult(
@@ -680,7 +314,7 @@ public with sharing class RecordHealthCheckConfigService {
     );
   }
 
-  private RecordHealthCheckResult validateQueryRule(
+  private RecordHealthCheckInternalResult validateQueryRule(
     Record_Health_Check_Rule__mdt rule
   ) {
     List<RecordHealthCheckRuleValidator.Finding> findings = RecordHealthCheckRuleValidator.queryFindings(
@@ -691,13 +325,13 @@ public with sharing class RecordHealthCheckConfigService {
     return firstResult(findings, rule);
   }
 
-  private RecordHealthCheckResult validateApexRule(
+  private RecordHealthCheckInternalResult validateApexRule(
     Record_Health_Check_Rule__mdt rule
   ) {
     return firstResult(RecordHealthCheckRuleValidator.apexFindings(rule), rule);
   }
 
-  private RecordHealthCheckResult validateCompareQueriesRule(
+  private RecordHealthCheckInternalResult validateCompareQueriesRule(
     Record_Health_Check_Rule__mdt rule
   ) {
     List<RecordHealthCheckRuleValidator.Finding> findings = RecordHealthCheckRuleValidator.compareQueriesFindings(
@@ -708,348 +342,22 @@ public with sharing class RecordHealthCheckConfigService {
     return firstResult(findings, rule);
   }
 
-  private RecordHealthCheckResult firstResult(
+  private RecordHealthCheckInternalResult firstResult(
     List<RecordHealthCheckRuleValidator.Finding> findings,
     Record_Health_Check_Rule__mdt rule
   ) {
-    return findings.isEmpty() ? null : toResult(findings[0], rule);
+    return RecordHealthCheckConfigFindingMapper.firstResult(findings, rule);
   }
 
-  /**
-   * Maps a shared Finding to this runtime path's UNABLE_TO_EVALUATE reason code and detail
-   * message. This switch is the ONLY place the runtime output terms live — the decision
-   * tree that produced the finding is shared. Reason codes and messages here are byte-for-byte
-   * the originals so the engine and every pinned test see identical results.
-   */
-  private RecordHealthCheckResult toResult(
-    RecordHealthCheckRuleValidator.Finding finding,
-    Record_Health_Check_Rule__mdt rule
-  ) {
-    String val = finding.offendingValue;
-    switch on finding.code {
-      // ── Applicability check ──
-      when APPLICABILITY_FORMULA_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_FORMULA',
-          'Applicability Formula is required when Applicability Mode is Formula.'
-        );
-      }
-      when APPLICABILITY_SOQL_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Applicability SOQL is required when Applicability Mode is SOQL.'
-        );
-      }
-      when APPLICABILITY_SOQL_NOT_SINGLE_VALUE {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Applicability SOQL must be a single COUNT() or COUNT(Id) query without GROUP BY.'
-        );
-      }
-      when APPLICABILITY_OPERATOR_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Applicability comparison operator is required when Applicability Mode is SOQL.'
-        );
-      }
-      when APPLICABILITY_OPERATOR_INVALID {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Applicability comparison operator "' +
-            val +
-            '" is not recognized. Valid values: Equals, NotEquals, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual.'
-        );
-      }
-      when APPLICABILITY_THRESHOLD_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_CONFIG',
-          'Applicability Comparison Value is required when Applicability Mode is SOQL.'
-        );
-      }
-      // ── Formula ──
-      when FORMULA_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_FORMULA',
-          'Formula checks require Formula to be populated.'
-        );
-      }
-      // ── Query (single) ──
-      when LIST_VALUE_TO_TEST_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_FORMULA',
-          'List contains any and List contains none require Value To Test to provide the primary value.'
-        );
-      }
-      when LIST_COMPARE_QUERY_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'List contains any and List contains none require Comparison Query to provide the list.'
-        );
-      }
-      when LIST_COMPARE_FIELD_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Comparison Query Field is required for list comparison queries.'
-        );
-      }
-      when PRIMARY_QUERY_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Query checks require Source Query to be populated.'
-        );
-      }
-      when PRIMARY_QUERY_FIELD_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Source Query Field is required for non-aggregate queries.'
-        );
-      }
-      when DUAL_OPERATOR_ON_SINGLE {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Operator "' + val + '" requires Evaluation Type Compare two queries.'
-        );
-      }
-      when OPERATOR_INVALID {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Comparison operator "' + val + '" is not recognized.'
-        );
-      }
-      when OPERATOR_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Comparison operator is required for Query checks.'
-        );
-      }
-      when MULTI_ROWS_MISSING {
-        return buildUnableResult(
-          rule,
-          RC_INVALID_CONFIG,
-          'How To Interpret Query Results is required for Query checks.'
-        );
-      }
-      when MULTI_ROWS_INVALID {
-        return buildUnableResult(
-          rule,
-          RC_INVALID_CONFIG,
-          'How To Interpret Query Results "' + val + '" is not recognized.'
-        );
-      }
-      when COMPARE_AS_LISTS_ON_SINGLE {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Compare query results as lists requires Evaluation Type Compare two queries, not Check records with a query.'
-        );
-      }
-      when COMPARE_AGAINST_MISSING {
-        return buildUnableResult(
-          rule,
-          RC_INVALID_CONFIG,
-          'Expected Value Comes From is required for Query checks except IsBlank/IsNotBlank.'
-        );
-      }
-      when COMPARE_AGAINST_INVALID {
-        return buildUnableResult(
-          rule,
-          RC_INVALID_CONFIG,
-          'Expected Value Comes From "' + val + '" is not recognized.'
-        );
-      }
-      when FIXED_VALUE_MISSING {
-        return buildUnableResult(
-          rule,
-          RC_INVALID_CONFIG,
-          'Expected Value is required when Expected Value Comes From is A fixed value.'
-        );
-      }
-      when RECORD_FORMULA_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_FORMULA',
-          'Expected Formula (on this record) is required when Expected Value Comes From is A formula on this record.'
-        );
-      }
-      when ANOTHER_QUERY_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Comparison Query is required when Expected Value Comes From is Comparison query.'
-        );
-      }
-      when ANOTHER_QUERY_FIELD_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Comparison Query Field is required for non-aggregate comparison queries.'
-        );
-      }
-      // ── Compare two queries ──
-      when DUAL_PRIMARY_QUERY_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Compare two queries checks require Source Query to be populated.'
-        );
-      }
-      when DUAL_COMPARE_QUERY_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Compare two queries checks require Comparison Query to be populated.'
-        );
-      }
-      when DUAL_PRIMARY_FIELD_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Source Query Field is required for non-aggregate source queries.'
-        );
-      }
-      when DUAL_COMPARE_FIELD_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_SOQL_TEMPLATE',
-          'Comparison Query Field is required for non-aggregate comparison queries.'
-        );
-      }
-      when DUAL_OPERATOR_MISSING {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Comparison operator is required for Compare two queries checks.'
-        );
-      }
-      when DUAL_OPERATOR_INVALID {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Comparison operator "' + val + '" is not recognized.'
-        );
-      }
-      when DUAL_MULTI_ROWS_MISSING {
-        return buildUnableResult(
-          rule,
-          RC_INVALID_CONFIG,
-          'How To Interpret Query Results is required for Compare two queries checks.'
-        );
-      }
-      when DUAL_MULTI_ROWS_INVALID {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Compare two queries requires How To Interpret Query Results to be Expect one row or aggregate result, or Compare query results as lists.'
-        );
-      }
-      when DUAL_LIST_MODE_NEEDS_LIST_OPERATOR {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'Compare query results as lists mode requires a list operator: Lists overlap, List contains all, or Exact list match.'
-        );
-      }
-      when DUAL_ONE_RESULT_NO_LIST_OPERATOR {
-        return buildUnableResult(
-          rule,
-          'INVALID_OPERATOR',
-          'List operators (Lists overlap, List contains all, Exact list match) require Compare query results as lists mode.'
-        );
-      }
-      // ── Apex ──
-      when APEX_CLASS_MISSING {
-        return buildUnableResult(
-          rule,
-          'APEX_CLASS_NOT_FOUND',
-          'Apex checks require Apex Class Name to be populated.'
-        );
-      }
-      when APEX_CLASS_INVALID {
-        return buildUnableResult(
-          rule,
-          'APEX_CLASS_NOT_FOUND',
-          'Apex Class Name must identify an instantiable class implementing RecordHealthCheckRule.'
-        );
-      }
-      when APEX_PARAMS_INVALID {
-        return buildUnableResult(
-          rule,
-          'INVALID_APEX_PARAMETERS',
-          'Apex Parameters must contain valid JSON object syntax.'
-        );
-      }
-      // ── Cross-type ──
-      when MAX_ROWS_INVALID {
-        return buildUnableResult(
-          rule,
-          'GOVERNOR_LIMIT_RISK',
-          'Max Rows Override must be a whole number between 1 and ' +
-            FRAMEWORK_MAX_ROWS +
-            '.'
-        );
-      }
-      when EMPTY_VALUE_HANDLING_INVALID {
-        return buildUnableResult(
-          rule,
-          'INVALID_CONFIG',
-          'If Field Value Is Empty "' +
-            val +
-            '" is not recognized. Valid values: Ignore the record, Treat as blank, Treat as not matching.'
-        );
-      }
-      when NO_ROWS_RESULT_INVALID {
-        return buildUnableResult(
-          rule,
-          'INVALID_CONFIG',
-          'No Rows Result "' +
-            val +
-            '" is not recognized. Valid values: PASS, FAIL, SKIP, UNABLE_TO_EVALUATE.'
-        );
-      }
-      when else {
-        // Every FindingCode is mapped above; this is defensive only.
-        return buildUnableResult(
-          rule,
-          RC_INVALID_CONFIG,
-          'This check could not be evaluated. Contact your administrator.'
-        );
-      }
-    }
-  }
-
-  // ─── Result builder ───────────────────────────────────────────────────────
-
-  private RecordHealthCheckResult buildUnableResult(
+  private RecordHealthCheckInternalResult buildUnableResult(
     Record_Health_Check_Rule__mdt rule,
     String reasonCode,
     String detail
   ) {
-    RecordHealthCheckResult r = new RecordHealthCheckResult();
-    r.ruleDeveloperName = rule.DeveloperName;
-    r.label = rule.CheckTitle__c;
-    r.status = 'UNABLE_TO_EVALUATE';
-    r.reasonCode = reasonCode;
-    r.detailMessage = detail;
-    r.evaluatorType = rule.EvaluationType__c;
-    r.priority = rule.EvaluationOrder__c;
-    r.message = String.isNotBlank(rule.UnableToEvaluateMessage__c)
-      ? rule.UnableToEvaluateMessage__c
-      : 'This check could not be evaluated. Contact your administrator.';
-    return r;
+    return RecordHealthCheckConfigFindingMapper.buildUnableResult(
+      rule,
+      reasonCode,
+      detail
+    );
   }
 }

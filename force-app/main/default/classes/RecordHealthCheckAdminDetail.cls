@@ -4,11 +4,20 @@
  */
 
 /** Diagnostics-only information. This object is never set for a normal response. */
-public class RecordHealthCheckAdminDetail {
+global class RecordHealthCheckAdminDetail {
   @AuraEnabled
-  public Boolean containsRestrictedDetail;
+  /** Whether the detail contains data restricted to diagnostic viewers. */
+  global Boolean containsRestrictedDetail;
   @AuraEnabled
-  public String reasonCode;
+  /** Stable diagnostic reason code. */
+  global String reasonCode;
   @AuraEnabled
-  public String message;
+  /** Sanitized diagnostic explanation. */
+  global String message;
+  @AuraEnabled
+  /** Sanitized configuration snapshot when relevant. */
+  global String configurationJson;
+  @AuraEnabled
+  /** Sanitized resolution guidance when relevant. */
+  global String resolutionJson;
 }

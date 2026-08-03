@@ -6,157 +6,218 @@
 /** Best-effort, optional lifecycle publication for deliberately initiated runs. */
 public with sharing class RecordHealthCheckLifecyclePublisher {
   public static final String CONTRACT_VERSION = '1.0';
-  public static final String CORE_VERSION = '2.0.0';
+  public static final String FRAMEWORK_VERSION = '2.0.0';
   public static final String SOURCE_APEX_API = 'APEX_API';
   public static final String SOURCE_FLOW = 'FLOW';
   public static final String SOURCE_USER_INITIATED = 'USER_INITIATED';
   public static final String SOURCE_SCHEDULED = 'SCHEDULED';
   public static final String SOURCE_BATCH = 'BATCH';
+  public static final String SOURCE_QUEUEABLE = 'QUEUEABLE';
+  public static final String SOURCE_FUTURE = 'FUTURE';
   public static final String SOURCE_RUN_ON_LOAD = 'RUN_ON_LOAD';
+  public static final String SOURCE_AGENT = 'AGENT';
   public static final Integer PUBLISH_CHUNK_SIZE = 100;
-  private static final Set<String> PUBLISHABLE_SOURCES = new Set<String>{
-    SOURCE_APEX_API,
-    SOURCE_FLOW,
-    SOURCE_USER_INITIATED,
-    SOURCE_SCHEDULED,
-    SOURCE_BATCH
-  };
 
   @TestVisible
-  private static Boolean subscriberContextOverride = false;
-  @TestVisible
-  private static Boolean publishRunSettingOverride;
-  @TestVisible
-  private static Set<String> publishRuleNamesOverride;
+  private static RecordHealthCheckSettingsProvider settingsProvider = new RecordHealthCheckSettingsProvider();
+  private static Boolean inSubscriberContext = false;
 
-  public static void publishCompletedSet(
-    RecordHealthCheckSetResult response,
+  /** Publishes a response according to caller intent, never metadata. */
+  public static void publishResponse(
+    RecordHealthCheckResponse response,
+    RecordHealthCheckEventPublication publication,
+    String checkSetQualifiedApiName,
     String source
   ) {
-    if (!canPublish(source) || response == null)
-      return;
-    if (!isRunPublicationEnabled(response.checkSetDeveloperName))
-      return;
-
-    Record_Health_Check_Set_Run__e eventRecord = new Record_Health_Check_Set_Run__e(
-      ContractVersion__c = CONTRACT_VERSION,
-      EventId__c = newEventId(response.runId, 'SET'),
-      RunId__c = response.runId,
-      Phase__c = 'COMPLETED',
-      CheckSetDeveloperName__c = response.checkSetDeveloperName,
-      OccurredAt__c = System.now(),
-      Source__c = source,
-      CoreVersion__c = CORE_VERSION,
-      EligibleRuleCount__c = response.results.size(),
-      EvaluatedRuleCount__c = response.results.size(),
-      PassedCount__c = response.passedCount,
-      FailedCount__c = response.failedCount,
-      SkippedCount__c = response.skippedCount,
-      UnableCount__c = response.unableCount,
-      SystemErrorCount__c = response.systemErrorCount,
-      RecordId__c = response.recordId == null
-        ? null
-        : String.valueOf(response.recordId)
+    publishResponseInternal(
+      response,
+      publication,
+      checkSetQualifiedApiName,
+      source,
+      true
     );
-    publishSetEvents(new List<Record_Health_Check_Set_Run__e>{ eventRecord });
   }
 
-  public static Boolean isRunPublicationEnabled(String checkSetDeveloperName) {
-    if (publishRunSettingOverride != null)
-      return publishRunSettingOverride;
-    // code-analyzer-suppress-next-line ApexCRUDViolation: This reads the core-owned Custom Metadata publication switch; no business record data is queried.
-    List<Record_Health_Check_Set__mdt> settings = [
-      SELECT PublishRunEvent__c
-      FROM Record_Health_Check_Set__mdt
-      WHERE DeveloperName = :checkSetDeveloperName
-      LIMIT 1
-    ];
-    return !settings.isEmpty() && settings[0].PublishRunEvent__c == true;
-  }
-
-  public static void publishRuleResults(
-    String checkSetDeveloperName,
-    String runId,
-    List<RecordHealthCheckResult> results,
+  /** Applies administrator publication choices only to a user-pressed LWC run. */
+  public static void publishInteractiveResponse(
+    RecordHealthCheckResponse response,
+    String checkSetQualifiedApiName,
     String source
   ) {
-    if (!canPublish(source) || results == null || results.isEmpty())
+    if (
+      response == null ||
+      source != SOURCE_USER_INITIATED ||
+      inSubscriberContext
+    ) {
       return;
-    Set<String> names = new Set<String>();
-    for (RecordHealthCheckResult result : results) {
-      names.add(result.ruleDeveloperName);
     }
-    Set<String> enabled = publishRuleNamesOverride;
-    if (enabled == null) {
-      enabled = new Set<String>();
-      Map<String, Boolean> cached = RecordHealthCheckConfigService.cachedRulePublicationSettings(
-        checkSetDeveloperName,
-        names
+    Boolean publishSet = isRunPublicationEnabled(checkSetQualifiedApiName);
+    Set<String> enabledRules = settingsProvider.publishedRuleNames(
+      checkSetQualifiedApiName
+    );
+    RecordHealthCheckResponse filtered = new RecordHealthCheckResponse();
+    filtered.runId = response.runId;
+    filtered.recordIds.addAll(response.recordIds);
+    filtered.ruleQualifiedApiNames.addAll(response.ruleQualifiedApiNames);
+    filtered.summary = response.summary;
+    for (RecordHealthCheckResultItem item : response.results) {
+      if (
+        item != null &&
+        item.evaluation != null &&
+        String.isNotBlank(item.evaluation.ruleQualifiedApiName) &&
+        (enabledRules.contains(item.evaluation.ruleQualifiedApiName) ||
+        enabledRules.contains(
+          item.evaluation.ruleQualifiedApiName.substringAfter('__')
+        ))
+      ) {
+        filtered.results.add(item);
+      }
+    }
+    publishResponseInternal(
+      filtered,
+      RecordHealthCheckEventPublication.ALL,
+      checkSetQualifiedApiName,
+      source,
+      false
+    );
+    if (publishSet) {
+      publishSetEvents(
+        buildSetEvents(response, checkSetQualifiedApiName, source)
       );
-      Set<String> unresolved = names.clone();
-      unresolved.removeAll(cached.keySet());
-      for (String name : cached.keySet()) {
-        if (cached.get(name) == true)
-          enabled.add(name);
-      }
-      if (!unresolved.isEmpty()) {
-        // code-analyzer-suppress-next-line ApexCRUDViolation: This reads core-owned Custom Metadata publication switches; no business record data is queried.
-        for (Record_Health_Check_Rule__mdt rule : [
-          SELECT DeveloperName
-          FROM Record_Health_Check_Rule__mdt
-          WHERE
-            Record_Health_Check_Set__r.DeveloperName = :checkSetDeveloperName
-            AND DeveloperName IN :unresolved
-            AND PublishResultEvent__c = TRUE
-        ]) {
-          enabled.add(rule.DeveloperName);
-        }
-      }
+    }
+  }
+
+  private static void publishResponseInternal(
+    RecordHealthCheckResponse response,
+    RecordHealthCheckEventPublication publication,
+    String checkSetQualifiedApiName,
+    String source,
+    Boolean publishSet
+  ) {
+    if (
+      response == null ||
+      response.summary == null ||
+      publication == null ||
+      publication == RecordHealthCheckEventPublication.NONE ||
+      inSubscriberContext
+    ) {
+      return;
     }
 
-    List<Record_Health_Check_Rule_Result__e> events = new List<Record_Health_Check_Rule_Result__e>();
-    for (RecordHealthCheckResult result : results) {
-      if (!enabled.contains(result.ruleDeveloperName))
+    List<RecordHealthCheckResultItem> selected = new List<RecordHealthCheckResultItem>();
+    for (RecordHealthCheckResultItem item : response.results) {
+      if (
+        item == null ||
+        item.evaluation == null ||
+        (publication == RecordHealthCheckEventPublication.ACTIONABLE &&
+        !RecordHealthCheckStatus.isActionable(item.evaluation.status))
+      ) {
         continue;
-      events.add(
+      }
+      selected.add(item);
+    }
+    if (
+      selected.isEmpty() &&
+      publication == RecordHealthCheckEventPublication.ACTIONABLE
+    ) {
+      return;
+    }
+
+    List<Record_Health_Check_Rule_Result__e> ruleEvents = new List<Record_Health_Check_Rule_Result__e>();
+    for (RecordHealthCheckResultItem item : selected) {
+      RecordHealthCheckEvaluationResult evaluation = item.evaluation;
+      ruleEvents.add(
         new Record_Health_Check_Rule_Result__e(
           ContractVersion__c = CONTRACT_VERSION,
           EventId__c = newEventId(
-            String.isBlank(result.runId) ? runId : result.runId,
-            result.ruleDeveloperName
+            response.runId,
+            evaluation.ruleQualifiedApiName + '-' + evaluation.recordId
           ),
-          RunId__c = String.isBlank(result.runId) ? runId : result.runId,
-          CheckSetDeveloperName__c = checkSetDeveloperName,
-          RuleDeveloperName__c = result.ruleDeveloperName,
-          Status__c = result.status,
-          ReasonCode__c = result.reasonCode,
-          Severity__c = result.severity,
+          RunId__c = response.runId,
+          CheckSetQualifiedApiName__c = checkSetQualifiedApiName,
+          RuleQualifiedApiName__c = evaluation.ruleQualifiedApiName,
+          Status__c = evaluation.status,
+          ReasonCode__c = evaluation.reasonCode,
+          Severity__c = evaluation.severity,
           OccurredAt__c = System.now(),
           Source__c = source,
-          CoreVersion__c = CORE_VERSION,
-          ContainsRestrictedDetail__c = result.adminDetail != null &&
-            result.adminDetail.containsRestrictedDetail == true,
-          RecordId__c = result.recordId == null
+          FrameworkVersion__c = FRAMEWORK_VERSION,
+          ContainsRestrictedDetail__c = false,
+          RecordId__c = evaluation.recordId == null
             ? null
-            : String.valueOf(result.recordId)
+            : String.valueOf(evaluation.recordId)
         )
       );
     }
-    publishRuleEvents(events);
+    publishRuleEvents(ruleEvents);
+
+    if (publishSet != true) {
+      return;
+    }
+    publishSetEvents(
+      buildSetEvents(response, checkSetQualifiedApiName, source)
+    );
   }
 
-  @TestVisible
-  private static Boolean canPublish(String source) {
-    return PUBLISHABLE_SOURCES.contains(source) &&
-      subscriberContextOverride != true;
+  public static Boolean isRunPublicationEnabled(
+    String checkSetQualifiedApiName
+  ) {
+    return settingsProvider.isRunPublicationEnabled(checkSetQualifiedApiName);
+  }
+
+  /** Prevents event subscribers from recursively publishing lifecycle events. */
+  public static void enterSubscriberContext() {
+    inSubscriberContext = true;
   }
 
   private static String newEventId(String runId, String suffix) {
-    return String.valueOf(runId).left(50) +
-      '-' +
-      String.valueOf(suffix).left(20) +
-      '-' +
-      EncodingUtil.convertToHex(Crypto.generateAesKey(128)).left(8);
+    String identity = String.valueOf(runId) + '|' + String.valueOf(suffix);
+    String digest = EncodingUtil.convertToHex(
+      Crypto.generateDigest('SHA-256', Blob.valueOf(identity))
+    );
+    return String.valueOf(runId).left(50) + '-' + digest.left(16);
+  }
+
+  private static List<Record_Health_Check_Set_Run__e> buildSetEvents(
+    RecordHealthCheckResponse response,
+    String checkSetQualifiedApiName,
+    String source
+  ) {
+    Map<Id, RecordHealthCheckRunSummary> summariesByRecord = new Map<Id, RecordHealthCheckRunSummary>();
+    for (Id recordId : response.recordIds) {
+      summariesByRecord.put(recordId, new RecordHealthCheckRunSummary());
+    }
+    for (RecordHealthCheckResultItem item : response.results) {
+      Id recordId = item?.evaluation?.recordId;
+      if (recordId != null && summariesByRecord.containsKey(recordId)) {
+        summariesByRecord.get(recordId).add(item.evaluation.status);
+      }
+    }
+    List<Record_Health_Check_Set_Run__e> events = new List<Record_Health_Check_Set_Run__e>();
+    for (Id recordId : response.recordIds) {
+      RecordHealthCheckRunSummary summary = summariesByRecord.get(recordId);
+      events.add(
+        new Record_Health_Check_Set_Run__e(
+          ContractVersion__c = CONTRACT_VERSION,
+          EventId__c = newEventId(response.runId, 'SET-' + recordId),
+          RunId__c = response.runId,
+          Phase__c = 'COMPLETED',
+          CheckSetQualifiedApiName__c = checkSetQualifiedApiName,
+          OccurredAt__c = System.now(),
+          Source__c = source,
+          FrameworkVersion__c = FRAMEWORK_VERSION,
+          EligibleRuleCount__c = response.ruleQualifiedApiNames.size(),
+          EvaluatedRuleCount__c = summary.total(),
+          PassedCount__c = summary.passed,
+          FailedCount__c = summary.failed,
+          SkippedCount__c = summary.skipped,
+          UnableCount__c = summary.unable,
+          SystemErrorCount__c = summary.systemError,
+          RecordId__c = String.valueOf(recordId)
+        )
+      );
+    }
+    return events;
   }
 
   private static void publishSetEvents(
@@ -190,13 +251,18 @@ public with sharing class RecordHealthCheckLifecyclePublisher {
     }
   }
 
+  @TestVisible
   private static void inspect(
     List<Database.SaveResult> saveResults,
     String logCode
   ) {
+    if (saveResults == null) {
+      return;
+    }
     for (Database.SaveResult saveResult : saveResults) {
-      if (saveResult.isSuccess())
+      if (saveResult.isSuccess()) {
         continue;
+      }
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.WARN,
         null,

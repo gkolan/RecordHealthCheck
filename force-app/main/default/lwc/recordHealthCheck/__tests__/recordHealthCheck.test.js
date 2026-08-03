@@ -7,11 +7,26 @@ import { createElement } from "lwc";
 import RecordHealthCheck from "c/recordHealthCheck";
 import {
   annotateCheck,
+  buildSummaryGroups,
   buildSummaryStats,
   splitMessageLines,
   safeActionUrl
 } from "../healthCheckPresentation";
-import { HealthCheckRunner } from "../healthCheckRunner";
+import {
+  HealthCheckRunner,
+  resetPageEvaluationSchedulerForTest
+} from "../healthCheckRunner";
+import {
+  detectDependencyCycles,
+  normalizeResult,
+  parseAuraError
+} from "../healthCheckModel";
+import {
+  buildInactiveRuleStat,
+  formatRunSummary,
+  parseDiagnosticJson,
+  setupErrorHint
+} from "../healthCheckDiagnostics";
 import getCheckDefinitions from "@salesforce/apex/RecordHealthCheckController.getCheckDefinitions";
 import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheckController.getCheckSetAvailabilityForRecord";
 import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
@@ -60,7 +75,11 @@ async function appendAndLoad(element) {
 }
 
 async function clickRun(element) {
-  element.shadowRoot.querySelector(".rhc-action-button").click();
+  const action = element.shadowRoot.querySelector(".rhc-action-button");
+  // Lightning record pages can place the component inside a host form. Keep
+  // this control non-submitting so a run cannot reset the page lifecycle.
+  expect(action.type).toBe("button");
+  action.click();
   await flushPromises();
   await flushPromises();
   await flushPromises();
@@ -68,6 +87,7 @@ async function clickRun(element) {
 
 beforeEach(() => {
   jest.useFakeTimers();
+  resetPageEvaluationSchedulerForTest();
   completeRun.mockResolvedValue();
   getCheckSetAvailabilityForRecord.mockResolvedValue({
     hasActive: true,
@@ -119,34 +139,42 @@ const SKIPPED_RESULT = (developerName) => ({
   evaluatorType: "Formula"
 });
 
-const makeDefinitions = (overrides = {}) => ({
-  displayTitle: "Account Health",
-  displayDescription: null,
-  triggerMode: "Manual",
-  revealMode: "AllAtOnce",
-  successDisplayMode: "Show",
-  skippedDisplayMode: "Hide",
-  stopOnFirstError: false,
-  totalAvailableCheckCount: 2,
-  checksOmittedByLimit: false,
-  checks: [
-    {
-      developerName: "Check_A",
-      label: "Check A",
-      description: "First check",
-      priority: 1,
-      dependsOnRuleDeveloperName: null
-    },
-    {
-      developerName: "Check_B",
-      label: "Check B",
-      description: "Second check",
-      priority: 2,
-      dependsOnRuleDeveloperName: null
-    }
-  ],
-  ...overrides
-});
+const makeDefinitions = (overrides = {}) => {
+  const definition = {
+    displayTitle: "Account Health",
+    displayDescription: null,
+    triggerMode: "Manual",
+    revealMode: "AllAtOnce",
+    successDisplayMode: "Show",
+    skippedDisplayMode: "Hide",
+    comparisonDisplay: "OnDemand",
+    stopOnFirstError: false,
+    totalAvailableCheckCount: 2,
+    checksOmittedByLimit: false,
+    checks: [
+      {
+        developerName: "Check_A",
+        label: "Check A",
+        description: "First check",
+        priority: 1,
+        dependsOnRuleDeveloperName: null
+      },
+      {
+        developerName: "Check_B",
+        label: "Check B",
+        description: "Second check",
+        priority: 2,
+        dependsOnRuleDeveloperName: null
+      }
+    ],
+    ...overrides
+  };
+  definition.checks = definition.checks.map((check) => ({
+    qualifiedApiName: check.developerName,
+    ...check
+  }));
+  return definition;
+};
 
 function createComponent() {
   const el = createElement("c-record-health-check", { is: RecordHealthCheck });
@@ -157,7 +185,10 @@ function createComponent() {
 
 function makeRunnerHost(checks = []) {
   return {
-    checks,
+    checks: checks.map((check) => ({
+      qualifiedApiName: check.developerName,
+      ...check
+    })),
     completedCheckCount: 0,
     runComplete: false,
     hasCompletedRunOnce: false,
@@ -165,11 +196,16 @@ function makeRunnerHost(checks = []) {
     showDiagnostics: false,
     checkSetName: "Account_Data_Quality",
     recordId: "001000000000001AAA",
+    _handleCompletionFailure: jest.fn(),
     _logRunDiagnostics: jest.fn()
   };
 }
 
-describe("c-record-health-check — design theme", () => {
+function makeRunner(host) {
+  return new HealthCheckRunner(host, { evaluateCheck, completeRun });
+}
+
+describe("c-record-health-check — adaptive design theme", () => {
   let element;
 
   afterEach(() => {
@@ -178,33 +214,11 @@ describe("c-record-health-check — design theme", () => {
     }
   });
 
-  it("defaults to the SLDS 1 visual treatment", () => {
+  it("uses one semantic theme without page configuration", () => {
     element = createComponent();
     document.body.appendChild(element);
 
-    expect(
-      element.shadowRoot.querySelector(".rhc-theme--slds1")
-    ).not.toBeNull();
-  });
-
-  it("supports the SLDS 2 visual treatment", () => {
-    element = createComponent();
-    element.designSystem = "SLDS 2";
-    document.body.appendChild(element);
-
-    expect(
-      element.shadowRoot.querySelector(".rhc-theme--slds2")
-    ).not.toBeNull();
-  });
-
-  it("falls back to SLDS 1 for an unsupported value", () => {
-    element = createComponent();
-    element.designSystem = "unsupported";
-    document.body.appendChild(element);
-
-    expect(
-      element.shadowRoot.querySelector(".rhc-theme--slds1")
-    ).not.toBeNull();
+    expect(element.shadowRoot.querySelector(".rhc-theme")).not.toBeNull();
   });
 });
 
@@ -305,7 +319,7 @@ describe("c-record-health-check — load and error states", () => {
 
     const banner = element.shadowRoot.querySelector(".rhc-error-banner");
     expect(banner).not.toBeNull();
-    expect(banner.textContent).toContain("plain error");
+    expect(banner.textContent).toContain("Please try again");
   });
 
   it("auto-runs checks when triggerMode is Automatic", async () => {
@@ -386,7 +400,29 @@ describe("c-record-health-check — load and error states", () => {
     ).not.toBeNull();
   });
 
-  it("treats an unrecognized revealMode as AllAtOnce", async () => {
+  it("shows a load error when a definition is missing its qualifiedApiName", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        checks: [
+          {
+            developerName: "Unqualified",
+            qualifiedApiName: "",
+            label: "Unqualified",
+            description: "",
+            priority: 1,
+            dependsOnRuleDeveloperName: null
+          }
+        ]
+      })
+    );
+    await appendAndLoad(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-error-banner")
+    ).not.toBeNull();
+  });
+
+  it("rejects an unrecognized revealMode as invalid configuration", async () => {
     const checks = [0, 1, 2].map((i) => ({
       developerName: `Check_${i}`,
       label: `Check ${i}`,
@@ -401,27 +437,24 @@ describe("c-record-health-check — load and error states", () => {
         checks
       })
     );
-    // Hold evaluations open so the rows stay mid-run.
-    evaluateCheck.mockImplementation(() => new Promise(() => {}));
     await appendAndLoad(element);
-
-    // AllAtOnce renders every row up front; OneAtATime would reveal only one.
-    expect(element.shadowRoot.querySelectorAll(".rhc-row").length).toBe(3);
+    expect(
+      element.shadowRoot.querySelector(".rhc-error-banner").textContent
+    ).toContain("review this Check Set in Setup");
+    expect(evaluateCheck).not.toHaveBeenCalled();
   });
 
-  it("falls back to a Manual Run affordance for an unrecognized triggerMode", async () => {
+  it("rejects an unrecognized triggerMode as invalid configuration", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({ triggerMode: "Whenever" })
     );
     await appendAndLoad(element);
 
-    // An unknown mode must not silently auto-run...
-    expect(evaluateCheck).not.toHaveBeenCalled();
-    // ...and must still expose a Run button so the checks remain runnable
-    // (rather than rendering neither auto-run nor a button).
     expect(
-      element.shadowRoot.querySelector(".rhc-action-button")
-    ).not.toBeNull();
+      element.shadowRoot.querySelector(".rhc-error-banner").textContent
+    ).toContain("review this Check Set in Setup");
+    expect(evaluateCheck).not.toHaveBeenCalled();
+    expect(element.shadowRoot.querySelector(".rhc-action-button")).toBeNull();
   });
 
   it("labels the setup-error icon as 'Setup required', not 'Error'", async () => {
@@ -523,6 +556,24 @@ describe("c-record-health-check — run orchestration", () => {
     element = createComponent();
   });
 
+  it("shows a safe banner when lifecycle completion fails", async () => {
+    getCheckDefinitions.mockResolvedValue(makeDefinitions());
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    completeRun.mockRejectedValueOnce({
+      body: {
+        message: JSON.stringify({
+          reasonCode: "RUN_COMPLETION_FAILED",
+          message: "Safe completion failure"
+        })
+      }
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const banner = element.shadowRoot.querySelector(".rhc-error-banner");
+    expect(banner.textContent).toContain("run could not be completed");
+  });
+
   afterEach(() => {
     if (element.isConnected) {
       document.body.removeChild(element);
@@ -544,7 +595,9 @@ describe("c-record-health-check — run orchestration", () => {
     expect(completeRun).toHaveBeenCalledWith(
       expect.objectContaining({ source: "USER_INITIATED" })
     );
-    expect(completeRun.mock.calls[0][0]).not.toHaveProperty("results");
+    expect(completeRun.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ resultsJson: expect.any(String) })
+    );
   });
 
   it("threads a correlation runId into both Apex calls", async () => {
@@ -583,7 +636,7 @@ describe("c-record-health-check — run orchestration", () => {
     );
   });
 
-  it("shows the debug detail message inline, with no click-to-expand", async () => {
+  it("clamps and expands troubleshooting detail with the shared control", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         triggerMode: "Automatic",
@@ -603,13 +656,23 @@ describe("c-record-health-check — run orchestration", () => {
     });
     await appendAndLoad(element);
 
-    // The technical detail is rendered directly — no <details>/<summary> wrapper
-    // the admin has to open.
+    // The detail stays inline rather than moving into a separate disclosure.
     expect(element.shadowRoot.querySelector("details")).toBeNull();
     const body = element.shadowRoot.querySelector(".rhc-debug-detail__body");
     expect(body).not.toBeNull();
     expect(body.textContent).toContain(
       "Formula could not generate the requested field."
+    );
+    const toggle = element.shadowRoot.querySelector(
+      '[aria-label="Expand troubleshooting detail"]'
+    );
+    expect(toggle).not.toBeNull();
+    toggle.click();
+    expect(body.classList).toContain("rhc-expandable__content--expanded");
+    expect(toggle.dataset.symbol).toBe("−");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.getAttribute("aria-label")).toBe(
+      "Collapse troubleshooting detail"
     );
   });
 
@@ -766,7 +829,7 @@ describe("c-record-health-check — run orchestration", () => {
     expect(stats[0].classList).toContain("rhc-stat--inactive");
     expect(stats[0].textContent).toContain("2 Inactive");
     expect(stats[0].dataset.tooltip).toBe(
-      "2 inactive rules omitted: Retired Owner Check, Legacy Phone Check"
+      "2 inactive Rules omitted: Retired Owner Check, Legacy Phone Check"
     );
     expect(stats[0].getAttribute("tabindex")).toBe("0");
   });
@@ -788,7 +851,7 @@ describe("c-record-health-check — run orchestration", () => {
 
     const pill = element.shadowRoot.querySelector(".rhc-stat--inactive");
     expect(pill.dataset.tooltip).toBe(
-      "3 inactive rules omitted: Retired Owner Check, +2 more"
+      "3 inactive Rules omitted: Retired Owner Check, +2 more"
     );
   });
 
@@ -821,8 +884,8 @@ describe("c-record-health-check — run orchestration", () => {
     );
     const dA = deferred();
     const dB = deferred();
-    evaluateCheck.mockImplementation(({ ruleDeveloperName }) => {
-      return ruleDeveloperName === "Check_A" ? dA.promise : dB.promise;
+    evaluateCheck.mockImplementation(({ ruleQualifiedApiName }) => {
+      return ruleQualifiedApiName === "Check_A" ? dA.promise : dB.promise;
     });
 
     await appendAndLoad(element);
@@ -960,11 +1023,11 @@ describe("c-record-health-check — success display modes", () => {
         skippedDisplayMode: "Hide"
       })
     );
-    evaluateCheck.mockImplementation(({ ruleDeveloperName }) =>
+    evaluateCheck.mockImplementation(({ ruleQualifiedApiName }) =>
       Promise.resolve(
-        ruleDeveloperName === "Check_A"
-          ? PASS_RESULT(ruleDeveloperName)
-          : SKIPPED_RESULT(ruleDeveloperName)
+        ruleQualifiedApiName === "Check_A"
+          ? PASS_RESULT(ruleQualifiedApiName)
+          : SKIPPED_RESULT(ruleQualifiedApiName)
       )
     );
     await appendAndLoad(element);
@@ -1047,7 +1110,7 @@ describe("c-record-health-check — skipped display modes", () => {
   });
 });
 
-describe("c-record-health-check — dependency gating", () => {
+describe("c-record-health-check — Prerequisite Rule enforcement", () => {
   let element;
 
   beforeEach(() => {
@@ -1061,7 +1124,7 @@ describe("c-record-health-check — dependency gating", () => {
     }
   });
 
-  it("skips dependent check with DEPENDENCY_NOT_IN_RUN when dep is absent from taskMap", async () => {
+  it("skips a Rule when its Prerequisite Rule is not in the Framework run", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         checks: [
@@ -1087,14 +1150,14 @@ describe("c-record-health-check — dependency gating", () => {
 
     await clickRun(element);
 
-    // Check_B has a dep not in this run — evaluateCheck only called for Check_A
+    // Check_B's Prerequisite Rule is absent, so only Check_A reaches Apex.
     expect(evaluateCheck).toHaveBeenCalledTimes(1);
     expect(evaluateCheck).toHaveBeenCalledWith(
-      expect.objectContaining({ ruleDeveloperName: "Check_A" })
+      expect.objectContaining({ ruleQualifiedApiName: "Check_A" })
     );
   });
 
-  it("skips dependent check when prerequisite does not PASS", async () => {
+  it("skips a Rule when its Prerequisite Rule does not PASS", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         checks: [
@@ -1123,11 +1186,11 @@ describe("c-record-health-check — dependency gating", () => {
 
     expect(evaluateCheck).toHaveBeenCalledTimes(1);
     expect(evaluateCheck).not.toHaveBeenCalledWith(
-      expect.objectContaining({ ruleDeveloperName: "Check_B" })
+      expect.objectContaining({ ruleQualifiedApiName: "Check_B" })
     );
   });
 
-  it("runs dependent check when prerequisite passes", async () => {
+  it("runs a Rule when its Prerequisite Rule passes", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         checks: [
@@ -1185,6 +1248,7 @@ describe("c-record-health-check — dependency gating", () => {
     await clickRun(element);
 
     expect(evaluateCheck).not.toHaveBeenCalled();
+    expect(completeRun).toHaveBeenCalledTimes(1);
     expect(element.shadowRoot.textContent).toContain(
       'Circular dependency with "Check_B".'
     );
@@ -1239,7 +1303,7 @@ describe("c-record-health-check — stopOnFirstError", () => {
 
     expect(evaluateCheck).toHaveBeenCalledTimes(1);
     expect(evaluateCheck).toHaveBeenCalledWith(
-      expect.objectContaining({ ruleDeveloperName: "Check_A" })
+      expect.objectContaining({ ruleQualifiedApiName: "Check_A" })
     );
     const btn = element.shadowRoot.querySelector(".rhc-action-button");
     expect(btn).not.toBeNull(); // re-run button visible = runComplete
@@ -1304,8 +1368,16 @@ describe("c-record-health-check — _parseAuraError", () => {
       element.shadowRoot.querySelector(".rhc-error-banner")
     ).not.toBeNull();
     expect(
+      parseAuraError({ body: { message: "Internal server error" } })
+    ).toEqual(
+      expect.objectContaining({
+        reasonCode: "LOAD_FAILED",
+        diagnosticCode: expect.anything()
+      })
+    );
+    expect(
       element.shadowRoot.querySelector(".rhc-error-banner").textContent
-    ).toContain("Internal server error");
+    ).toContain("Please try again");
   });
 
   it("uses a default message when error has no body", async () => {
@@ -1386,13 +1458,13 @@ describe("c-record-health-check — reactive recordId reload", () => {
     let active = 0;
     let peak = 0;
     const pendingA = [];
-    evaluateCheck.mockImplementation(({ recordId, ruleDeveloperName }) => {
+    evaluateCheck.mockImplementation(({ recordId, ruleQualifiedApiName }) => {
       active++;
       peak = Math.max(peak, active);
       const call = deferred();
       const settle = () => {
         active--;
-        call.resolve(PASS_RESULT(ruleDeveloperName));
+        call.resolve(PASS_RESULT(ruleQualifiedApiName));
       };
       if (recordId === RECORD_A) {
         // Hold A's calls open so they keep occupying slots during the swap.
@@ -1554,7 +1626,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     await flushPromises();
     await flushPromises();
 
-    expect(getCheckDefinitions.mock.calls[1][0].checkSetDeveloperName).toBe(
+    expect(getCheckDefinitions.mock.calls[1][0].checkSetQualifiedApiName).toBe(
       "Account_Advanced_Checks"
     );
     expect(element.shadowRoot.textContent).toContain("Second set");
@@ -1616,13 +1688,13 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     let active = 0;
     let peak = 0;
     const pending = [];
-    evaluateCheck.mockImplementation(({ ruleDeveloperName }) => {
+    evaluateCheck.mockImplementation(({ ruleQualifiedApiName }) => {
       active++;
       peak = Math.max(peak, active);
       const call = deferred();
       pending.push(() => {
         active--;
-        call.resolve(PASS_RESULT(ruleDeveloperName));
+        call.resolve(PASS_RESULT(ruleQualifiedApiName));
       });
       return call.promise;
     });
@@ -1643,6 +1715,46 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     }
 
     expect(evaluateCheck).toHaveBeenCalledTimes(12);
+    expect(peak).toBeLessThanOrEqual(5);
+  });
+
+  it("shares the five-request ceiling across component runners", async () => {
+    const checks = Array.from({ length: 4 }, (_, i) => ({
+      developerName: `Shared_${i}`,
+      label: `Shared ${i}`,
+      description: "",
+      priority: i,
+      dependsOnRuleDeveloperName: null
+    }));
+    const first = makeRunner(makeRunnerHost(checks));
+    const second = makeRunner(makeRunnerHost(checks));
+    let active = 0;
+    let peak = 0;
+    const pending = [];
+    evaluateCheck.mockImplementation(({ ruleQualifiedApiName }) => {
+      active++;
+      peak = Math.max(peak, active);
+      const call = deferred();
+      pending.push(() => {
+        active--;
+        call.resolve(PASS_RESULT(ruleQualifiedApiName));
+      });
+      return call.promise;
+    });
+
+    first.run();
+    second.run();
+    expect(evaluateCheck).toHaveBeenCalledTimes(5);
+    while (pending.length > 0 || evaluateCheck.mock.calls.length < 8) {
+      const batch = pending.splice(0, pending.length);
+      batch.forEach((resolve) => resolve());
+      // eslint-disable-next-line no-await-in-loop
+      await flushPromises();
+      // eslint-disable-next-line no-await-in-loop
+      await flushPromises();
+    }
+
+    expect(evaluateCheck).toHaveBeenCalledTimes(8);
     expect(peak).toBeLessThanOrEqual(5);
   });
 
@@ -1692,7 +1804,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     row.dispatchEvent(
       new MouseEvent("mouseover", { bubbles: true, relatedTarget: null })
     );
-    jest.advanceTimersByTime(599);
+    jest.advanceTimersByTime(999);
     expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
 
     jest.advanceTimersByTime(1);
@@ -1725,7 +1837,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     row.dispatchEvent(
       new FocusEvent("focusout", { bubbles: true, relatedTarget: null })
     );
-    jest.advanceTimersByTime(600);
+    jest.advanceTimersByTime(1000);
     expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
 
     jest.useRealTimers();
@@ -1753,8 +1865,8 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
         ]
       })
     );
-    evaluateCheck.mockImplementation(({ ruleDeveloperName }) =>
-      Promise.resolve(PASS_RESULT(ruleDeveloperName))
+    evaluateCheck.mockImplementation(({ ruleQualifiedApiName }) =>
+      Promise.resolve(PASS_RESULT(ruleQualifiedApiName))
     );
     await appendAndLoad(element);
     await clickRun(element);
@@ -1782,7 +1894,13 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       actualValue: '"Technology"',
       expectedValue: 'to equal "Technology"',
       actualValueDetail: 'Industry → "Technology"',
-      expectedValueDetail: 'Fixed value → "Technology"'
+      expectedValueDetail: 'Fixed value → "Technology"',
+      adminDetail: {
+        configurationJson:
+          '{"evaluationType":"QUERY","sourceQueryTemplate":"SELECT Id FROM Account WHERE Id = {!record.Id}"}',
+        resolutionJson:
+          '{"sourceQueryAfterMerge":"SELECT Id FROM Account WHERE Id = 001000000000001AAA"}'
+      }
     });
     await appendAndLoad(element);
     await clickRun(element);
@@ -1812,12 +1930,22 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
       "durationMs",
       "evaluatorType"
     ]);
-    expect(group).toHaveBeenCalledWith("[RHC] Source detail (1 check)");
-    expect(group).toHaveBeenCalledWith(
-      expect.stringContaining("Check A (Check_A)")
+    expect(group).toHaveBeenCalledWith("[RHC] Full check details (1)");
+    expect(log).toHaveBeenCalledWith(
+      "Rule configuration",
+      expect.objectContaining({ evaluationType: "QUERY" })
     );
-    expect(log).toHaveBeenCalledWith("Found", 'Industry → "Technology"');
-    expect(log).toHaveBeenCalledWith("Expected", 'Fixed value → "Technology"');
+    expect(log).toHaveBeenCalledWith(
+      "Resolved evaluation",
+      expect.objectContaining({
+        sourceQueryAfterMerge:
+          "SELECT Id FROM Account WHERE Id = 001000000000001AAA"
+      })
+    );
+    expect(log).toHaveBeenCalledWith(
+      "Copy as JSON",
+      expect.stringContaining("sourceQueryTemplate")
+    );
     expect(groupEnd).toHaveBeenCalled();
     group.mockRestore();
     log.mockRestore();
@@ -1825,7 +1953,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     groupEnd.mockRestore();
   });
 
-  it("does not log an empty diagnostics group when diagnostic details are absent", async () => {
+  it("logs every check even when optional diagnostic fields are absent", async () => {
     const group = jest.spyOn(console, "group").mockImplementation(() => {});
     const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const table = jest.spyOn(console, "table").mockImplementation(() => {});
@@ -1844,9 +1972,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     await flushPromises();
     await flushPromises();
 
-    expect(group).not.toHaveBeenCalledWith(
-      expect.stringContaining("Source detail")
-    );
+    expect(group).toHaveBeenCalledWith("[RHC] Full check details (1)");
     group.mockRestore();
     log.mockRestore();
     table.mockRestore();
@@ -2066,25 +2192,31 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     // renderedCallback measures a real overflow — but the toggle handler is
     // exercised directly here.
     const chip = element.shadowRoot.querySelector(
-      ".rhc-cmp__val--clampable[data-clampval]"
+      ".rhc-cmp__val--clampable[data-clampcontent]"
     );
     expect(chip).not.toBeNull();
-    const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
+    const toggle = chip
+      .closest("[data-expandable]")
+      .querySelector("[data-clamptoggle]");
     expect(toggle).not.toBeNull();
-    expect(toggle.textContent.trim()).toBe("+");
+    expect(toggle.dataset.symbol).toBe("+");
     expect(toggle.getAttribute("aria-label")).toBe("Expand value");
 
     toggle.click();
     await Promise.resolve();
-    expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(true);
-    expect(toggle.textContent.trim()).toBe("−");
+    expect(chip.classList.contains("rhc-expandable__content--expanded")).toBe(
+      true
+    );
+    expect(toggle.dataset.symbol).toBe("−");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(toggle.getAttribute("aria-label")).toBe("Collapse value");
 
     toggle.click();
     await Promise.resolve();
-    expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(false);
-    expect(toggle.textContent.trim()).toBe("+");
+    expect(chip.classList.contains("rhc-expandable__content--expanded")).toBe(
+      false
+    );
+    expect(toggle.dataset.symbol).toBe("+");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(toggle.getAttribute("aria-label")).toBe("Expand value");
   });
@@ -2101,8 +2233,9 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     await appendAndLoad(element);
     await clickRun(element);
 
-    const chip = element.shadowRoot.querySelector("[data-clampval]");
-    const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
+    const pair = element.shadowRoot.querySelector(".rhc-cmp__pair");
+    const chip = pair.querySelector("[data-clampcontent]");
+    const toggle = pair.querySelector("[data-clamptoggle]");
     Object.defineProperty(chip, "clientHeight", {
       configurable: true,
       value: 20
@@ -2119,10 +2252,12 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
         resizeCallback = callback;
         return 1;
       });
+    toggle.click();
     window.dispatchEvent(new CustomEvent("resize"));
     resizeCallback();
 
-    expect(toggle.hidden).toBe(false);
+    expect(toggle.hidden).toBe(true);
+    expect(chip.classList).toContain("rhc-expandable__content--expanded");
     animationFrame.mockRestore();
   });
 
@@ -2241,10 +2376,10 @@ describe("annotateCheck — comparison disclosure matrix", () => {
     expect(a.showCaret).toBe(false);
   });
 
-  it("falls back to OnDemand for an unrecognized mode", () => {
-    const a = annotateCheck(resolved(passWithValues), false, "Whatever", false);
-    expect(a.showInlineComparison).toBe(false);
-    expect(a.showCaret).toBe(true);
+  it("rejects an unrecognized comparison mode", () => {
+    expect(() =>
+      annotateCheck(resolved(passWithValues), false, "Whatever", false)
+    ).toThrow("Unsupported comparison display mode");
   });
 
   it("renders a value of 0 rather than treating it as missing", () => {
@@ -2593,6 +2728,61 @@ describe("buildSummaryStats — label pluralization", () => {
     );
     expect(stat.tooltip).toBe("3 Passed: A, B, C");
   });
+
+  it("sorts category summaries by label and leaves the non-category row unlabeled and last", () => {
+    const checks = [
+      {
+        ...resolved("Risk pass", "PASS", null),
+        category: "RISK",
+        categoryLabel: "Risk"
+      },
+      {
+        ...resolved("No category", "SKIPPED", null),
+        category: null,
+        categoryLabel: null
+      },
+      {
+        ...resolved("Completeness warning", "FAIL", "Warning"),
+        category: "COMPLETENESS",
+        categoryLabel: "Completeness"
+      },
+      {
+        ...resolved("Completeness pass", "PASS", null),
+        category: "COMPLETENESS",
+        categoryLabel: "Completeness"
+      }
+    ];
+
+    const groups = buildSummaryGroups(checks);
+
+    expect(groups.map((group) => group.label)).toEqual([
+      "Completeness",
+      "Risk",
+      null
+    ]);
+    expect(groups[2].assistiveLabel).toBe("Checks without a category");
+    expect(groups[2].cssClass).toContain("unlabeled");
+    expect(groups[0].stats.map((stat) => stat.label)).toEqual([
+      "1 Passed",
+      "1 Warning"
+    ]);
+    expect(groups[0].stats[0].tooltip).toContain("Completeness pass");
+  });
+
+  it("keeps the existing ungrouped summary when no resolved Rule has a category", () => {
+    const groups = buildSummaryGroups([
+      resolved("A", "PASS", null),
+      resolved("B", "FAIL", "Error")
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].key).toBe("all");
+    expect(groups[0].label).toBeNull();
+    expect(groups[0].stats.map((stat) => stat.label)).toEqual([
+      "1 Passed",
+      "1 Failed"
+    ]);
+  });
 });
 
 describe("splitMessageLines — newline handling", () => {
@@ -2779,6 +2969,78 @@ describe("c-record-health-check — multi-line messages", () => {
     expect(label).toContain("Out of balance. Contact Finance.");
     expect(label).not.toContain("\n");
   });
+
+  it("uses matching +/- controls for long messages and fix instructions", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ruleDeveloperName: "Check_A",
+      label: "Check_A",
+      status: "FAIL",
+      severity: "Error",
+      message: "A long user-facing message that remains fully available.",
+      fixInstructions: "Review every related record and correct its owner.",
+      priority: 1,
+      evaluatorType: "Formula"
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const cases = [
+      ["message", ".rhc-row__message"],
+      ["fix instructions", ".rhc-row__fix-instructions"]
+    ];
+    for (const [label, selector] of cases) {
+      const content = element.shadowRoot.querySelector(selector);
+      const toggle = element.shadowRoot.querySelector(
+        `[aria-label="Expand ${label}"]`
+      );
+      expect(content).not.toBeNull();
+      expect(toggle).not.toBeNull();
+      expect(toggle.dataset.symbol).toBe("+");
+
+      toggle.click();
+      expect(content.classList).toContain("rhc-expandable__content--expanded");
+      expect(toggle.dataset.symbol).toBe("−");
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(toggle.getAttribute("aria-label")).toBe(`Collapse ${label}`);
+
+      toggle.click();
+      expect(content.classList).not.toContain(
+        "rhc-expandable__content--expanded"
+      );
+      expect(toggle.dataset.symbol).toBe("+");
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    }
+  });
+
+  it("bounds the collapsed accessible name while retaining the complete message", async () => {
+    const longMessage = "Long message segment. ".repeat(100);
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ruleDeveloperName: "Check_A",
+      label: "Check_A",
+      status: "FAIL",
+      severity: "Error",
+      message: longMessage,
+      priority: 1,
+      evaluatorType: "Formula"
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-row__message").textContent
+    ).toBe(longMessage);
+    const accessibleName = element.shadowRoot
+      .querySelector("li[aria-label]")
+      .getAttribute("aria-label");
+    expect(accessibleName).toContain("Additional text available.");
+    expect(accessibleName.length).toBeLessThan(700);
+  });
 });
 
 describe("safeActionUrl — client-side scheme guard (HI-3)", () => {
@@ -2865,7 +3127,7 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
     const host = makeRunnerHost([
       { developerName: "A", dependsOnRuleDeveloperName: null }
     ]);
-    const runner = new HealthCheckRunner(host);
+    const runner = makeRunner(host);
     runner._runInProgress = true;
     const callCount = evaluateCheck.mock.calls.length;
 
@@ -2880,7 +3142,7 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
       developerName: "Prerequisite",
       dependsOnRuleDeveloperName: null
     };
-    const runner = new HealthCheckRunner(makeRunnerHost([prerequisite]));
+    const runner = makeRunner(makeRunnerHost([prerequisite]));
     const taskMap = {};
     runner._runToken = 1;
     runner._runOneCheck = jest.fn().mockResolvedValue();
@@ -2902,21 +3164,23 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
   it("launches a prerequisite that appears later in the run list", async () => {
     const dependency = {
       developerName: "Prerequisite",
+      qualifiedApiName: "Prerequisite",
       label: "Prerequisite",
       dependsOnRuleDeveloperName: null
     };
     const dependent = {
       developerName: "Dependent",
+      qualifiedApiName: "Dependent",
       label: "Dependent",
       dependsOnRuleDeveloperName: "Prerequisite"
     };
     const host = makeRunnerHost([dependent, dependency]);
-    const runner = new HealthCheckRunner(host);
+    const runner = makeRunner(host);
     evaluateCheck.mockClear();
     runner._runToken = 1;
     runner._runId = "run-1";
-    evaluateCheck.mockImplementation(({ ruleDeveloperName }) =>
-      Promise.resolve(PASS_RESULT(ruleDeveloperName))
+    evaluateCheck.mockImplementation(({ ruleQualifiedApiName }) =>
+      Promise.resolve(PASS_RESULT(ruleQualifiedApiName))
     );
     const taskMap = {};
     const runCheck = runner._makeRunCheck(
@@ -2930,27 +3194,31 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
 
     expect(evaluateCheck).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ ruleDeveloperName: "Prerequisite" })
+      expect.objectContaining({ ruleQualifiedApiName: "Prerequisite" })
     );
     expect(evaluateCheck).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ ruleDeveloperName: "Dependent" })
+      expect.objectContaining({ ruleQualifiedApiName: "Dependent" })
     );
   });
 
   it("rejects stale queued evaluation slots and releases an acquired stale slot", async () => {
-    const runner = new HealthCheckRunner(makeRunnerHost());
+    const runner = makeRunner(makeRunnerHost());
     runner._runToken = 2;
 
     await expect(runner._acquireEvaluationSlot(1)).resolves.toBe(false);
 
-    runner._activeEvaluations = 5;
+    const held = await Promise.all(
+      Array.from({ length: 5 }, () => runner._acquireEvaluationSlot(2))
+    );
     const queued = runner._acquireEvaluationSlot(2);
     runner._runToken = 3;
-    runner._releaseEvaluationSlot();
+    runner._releaseEvaluationSlot(held[0]);
 
     await expect(queued).resolves.toBe(false);
-    expect(runner._activeEvaluations).toBe(4);
+    held
+      .slice(1)
+      .forEach((scheduler) => runner._releaseEvaluationSlot(scheduler));
   });
 
   it("clears the running flag when a sequential launcher rejects", async () => {
@@ -2958,7 +3226,7 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
       { developerName: "A", dependsOnRuleDeveloperName: null }
     ]);
     host.stopOnFirstError = true;
-    const runner = new HealthCheckRunner(host);
+    const runner = makeRunner(host);
     runner._runChecksSequentially = jest
       .fn()
       .mockRejectedValue(new Error("unexpected launcher failure"));
@@ -2971,7 +3239,7 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
 
   it("clears an incomplete sequential run in the finally guard", async () => {
     const check = { developerName: "A", dependsOnRuleDeveloperName: null };
-    const runner = new HealthCheckRunner(makeRunnerHost([check]));
+    const runner = makeRunner(makeRunnerHost([check]));
     runner._runToken = 7;
     runner._runInProgress = true;
     runner._makeRunCheck = jest.fn(() => jest.fn().mockResolvedValue());
@@ -2979,5 +3247,423 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
     await runner._runChecksSequentially({ A: check }, new Set(), 7);
 
     expect(runner.isRunning).toBe(false);
+  });
+
+  it("returns immediately for stopped and stale checks", async () => {
+    evaluateCheck.mockClear();
+    const check = { developerName: "A" };
+    const runner = makeRunner(makeRunnerHost([check]));
+    runner._runToken = 2;
+    runner._stopped = true;
+
+    await runner._runOneCheck(check, {}, {}, jest.fn(), 2);
+    runner._stopped = false;
+    await runner._runOneCheck(check, {}, {}, jest.fn(), 1);
+
+    expect(evaluateCheck).not.toHaveBeenCalled();
+  });
+
+  it("abandons a dependent when its run becomes stale while awaiting the prerequisite", async () => {
+    evaluateCheck.mockClear();
+    const prerequisite = { developerName: "P" };
+    const dependent = {
+      developerName: "D",
+      dependsOnRuleDeveloperName: "P"
+    };
+    const gate = deferred();
+    const runner = makeRunner(makeRunnerHost([prerequisite, dependent]));
+    runner._runToken = 1;
+    const taskMap = { P: gate.promise };
+    const pending = runner._runOneCheck(
+      dependent,
+      taskMap,
+      { P: prerequisite, D: dependent },
+      jest.fn(),
+      1
+    );
+    runner._runToken = 2;
+    gate.resolve();
+
+    await pending;
+
+    expect(evaluateCheck).not.toHaveBeenCalled();
+  });
+
+  it("releases a slot acquired after the run becomes stale", async () => {
+    evaluateCheck.mockClear();
+    const check = { developerName: "A" };
+    const runner = makeRunner(makeRunnerHost([check]));
+    runner._runToken = 1;
+    const held = await Promise.all(
+      Array.from({ length: 5 }, () => runner._acquireEvaluationSlot(1))
+    );
+    const release = jest.spyOn(runner, "_releaseEvaluationSlot");
+
+    const pending = runner._runOneCheck(check, {}, {}, jest.fn(), 1);
+    runner._runToken = 2;
+    runner._releaseEvaluationSlot(held[0]);
+    await pending;
+
+    expect(release).toHaveBeenCalledTimes(1);
+    expect(evaluateCheck).not.toHaveBeenCalled();
+    held
+      .slice(1)
+      .forEach((scheduler) => runner._releaseEvaluationSlot(scheduler));
+  });
+
+  it("clears a concurrent run when a launcher rejects", async () => {
+    const check = { developerName: "A" };
+    const runner = makeRunner(makeRunnerHost([check]));
+    runner._makeRunCheck = jest.fn(() =>
+      jest.fn().mockRejectedValue(new Error("launcher failed"))
+    );
+
+    runner.run();
+    await flushPromises();
+
+    expect(runner.isRunning).toBe(false);
+  });
+
+  it("captures lifecycle completion failures without changing check results", async () => {
+    const host = makeRunnerHost([{ developerName: "A" }]);
+    const runner = makeRunner(host);
+    runner._runToken = 2;
+    runner._drain(1);
+    expect(host.runComplete).toBeFalsy();
+
+    runner._source = "USER_INITIATED";
+    runner._runId = "run-coverage";
+    runner._resultBuffer = { A: PASS_RESULT("A") };
+    completeRun.mockRejectedValueOnce(new Error("publication unavailable"));
+    runner._drain(2);
+    await flushPromises();
+
+    expect(host.runComplete).toBe(true);
+    expect(host._handleCompletionFailure).toHaveBeenCalled();
+  });
+});
+
+describe("coverage edge contracts", () => {
+  it("ignores unresolved checks when building summary statistics", () => {
+    expect(buildSummaryStats([{ label: "Pending", result: null }])).toEqual([]);
+  });
+
+  it("uses crypto.randomUUID when the runtime provides it", () => {
+    const originalCrypto = global.crypto;
+    Object.defineProperty(global, "crypto", {
+      configurable: true,
+      value: { randomUUID: () => "uuid-from-runtime" }
+    });
+    jest.isolateModules(() => {
+      const { newRunId } = require("../healthCheckModel");
+      expect(newRunId()).toBe("uuid-from-runtime");
+    });
+    Object.defineProperty(global, "crypto", {
+      configurable: true,
+      value: originalCrypto
+    });
+  });
+});
+
+describe("healthCheckModel — complete response contracts", () => {
+  const check = { developerName: "Rule_A", label: "Rule A", priority: 1 };
+
+  it("normalizes the public evaluation and display result shape", () => {
+    const result = normalizeResult(
+      {
+        evaluation: {
+          ruleQualifiedApiName: null,
+          recordId: "001000000000001AAA",
+          status: "FAIL",
+          severity: "Warning",
+          reasonCode: "VALUE_MISMATCH",
+          found: { storedValue: "stored found" },
+          expected: { storedValue: "stored expected" }
+        },
+        display: {
+          foundDisplayValue: null,
+          expectedDisplayValue: null,
+          renderedMessage: "Rendered",
+          renderedFix: "Fix",
+          actionLabel: "Open",
+          actionUrl: "/001",
+          adminDetail: { reasonCode: "DETAIL" }
+        }
+      },
+      check
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ruleDeveloperName: "Rule_A",
+        actualValue: "stored found",
+        expectedValue: "stored expected",
+        status: "FAIL"
+      })
+    );
+  });
+
+  it("prefers rendered Found and Expected values", () => {
+    const result = normalizeResult(
+      {
+        evaluation: {
+          ruleQualifiedApiName: "namespace__Rule_A",
+          status: "PASS",
+          found: null,
+          expected: null
+        },
+        display: {
+          foundDisplayValue: "rendered found",
+          expectedDisplayValue: "rendered expected"
+        }
+      },
+      check
+    );
+
+    expect(result.actualValue).toBe("rendered found");
+    expect(result.expectedValue).toBe("rendered expected");
+  });
+
+  it("uses null values when evaluation-only values are absent", () => {
+    const result = normalizeResult(
+      {
+        evaluation: {
+          ruleQualifiedApiName: "Rule_A",
+          status: "PASS",
+          found: null,
+          expected: null
+        }
+      },
+      check
+    );
+
+    expect(result.actualValue).toBeNull();
+    expect(result.expectedValue).toBeNull();
+  });
+
+  it("uses documented Aura defaults when parsed fields are absent", () => {
+    expect(parseAuraError({ body: { message: "{}" } })).toEqual({
+      reasonCode: "LOAD_FAILED",
+      message: "An error occurred loading health checks.",
+      diagnosticCode: expect.anything()
+    });
+  });
+
+  it("detects a cycle entered through a non-cycle Rule", () => {
+    const members = detectDependencyCycles([
+      { developerName: "Rule_Entry", dependsOnRuleDeveloperName: "Rule_A" },
+      { developerName: "Rule_A", dependsOnRuleDeveloperName: "Rule_B" },
+      { developerName: "Rule_B", dependsOnRuleDeveloperName: "Rule_A" }
+    ]);
+
+    expect([...members].sort()).toEqual(["Rule_A", "Rule_B"]);
+  });
+});
+
+describe("summary statistics — System Error labels", () => {
+  it("uses the singular System Error label", () => {
+    const stats = buildSummaryStats([
+      { label: "Rule A", result: { status: "ERROR" } }
+    ]);
+    expect(stats.find((stat) => stat.key === "systemError").label).toBe(
+      "1 System Error"
+    );
+  });
+});
+
+describe("healthCheckDiagnostics — complete view-model decisions", () => {
+  it.each([
+    ["CONFIG_NOT_FOUND", "choose a Check Set for this page"],
+    ["SETUP_REQUIRED", "choose a Check Set for this page"],
+    ["INACTIVE_CHECK_SETS_ONLY", "activate a Check Set for this object"],
+    ["NO_ACTIVE_CHECK_SETS", "set up a Check Set for this object"],
+    ["CONFIG_INACTIVE", "activate this Check Set"],
+    ["OBJECT_MISMATCH", "choose a Check Set for this object"],
+    ["NO_ACTIVE_CHECKS", "add an active Rule"],
+    ["NO_RECORD_CONTEXT", "place this on a record page"],
+    ["INVALID_CONFIG", "review this Check Set in Setup"]
+  ])("maps %s to administrator guidance", (reasonCode, expectedText) => {
+    expect(setupErrorHint(reasonCode)).toContain(expectedText);
+  });
+
+  it("returns no guidance for a non-setup reason", () => {
+    expect(setupErrorHint("QUERY_FAILED")).toBe("");
+  });
+
+  it("builds singular, plural, undisclosed, and hidden inactive states", () => {
+    expect(buildInactiveRuleStat(false, 1, ["Rule A"])).toBeNull();
+    expect(buildInactiveRuleStat(true, 0, [])).toBeNull();
+    expect(buildInactiveRuleStat(true, 1, ["Rule A"]).tooltip).toContain(
+      "1 inactive Rule omitted"
+    );
+    expect(buildInactiveRuleStat(true, 3, ["Rule A"]).tooltip).toContain(
+      "+2 more"
+    );
+    expect(buildInactiveRuleStat(true, 2, null).tooltip).toBeNull();
+  });
+
+  it("formats every terminal outcome and elapsed time", () => {
+    expect(
+      formatRunSummary([
+        { status: "PASS", durationMs: 1 },
+        { status: "FAIL", durationMs: 2 },
+        { status: "SKIPPED", durationMs: null },
+        { status: "UNABLE_TO_EVALUATE", durationMs: 3 },
+        { status: "ERROR", durationMs: 4 },
+        { status: "UNKNOWN", durationMs: null }
+      ])
+    ).toBe("1 Passed, 1 Failed, 1 Skipped, 1 Unable, 1 Error · 10ms total");
+    expect(formatRunSummary([])).toBe("0 checks");
+  });
+
+  it("parses diagnostic payloads without breaking the console report", () => {
+    expect(parseDiagnosticJson('{"query":"SELECT Id FROM Account"}')).toEqual({
+      query: "SELECT Id FROM Account"
+    });
+    expect(parseDiagnosticJson("not-json")).toEqual(
+      expect.objectContaining({
+        parseError: expect.any(String),
+        raw: "not-json"
+      })
+    );
+    expect(parseDiagnosticJson(null)).toEqual({});
+  });
+});
+
+describe("c-record-health-check — defensive UI permutations", () => {
+  let element;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    element = createComponent();
+  });
+
+  afterEach(() => {
+    if (element?.isConnected) document.body.removeChild(element);
+    jest.restoreAllMocks();
+  });
+
+  it("rejects a definition response without a Rule collection", async () => {
+    getCheckDefinitions.mockResolvedValue(null);
+    await appendAndLoad(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-error-banner")
+    ).not.toBeNull();
+  });
+
+  it("shows a retriable system error when Check Set availability lookup fails", async () => {
+    element.checkSetName = "";
+    getCheckSetAvailabilityForRecord.mockRejectedValue(new Error("offline"));
+    await appendAndLoad(element);
+
+    expect(parseAuraError(new Error("offline"))).toEqual(
+      expect.objectContaining({ diagnosticCode: expect.anything() })
+    );
+    expect(
+      element.shadowRoot.querySelector(".rhc-error-banner").textContent
+    ).toContain("Please try again");
+  });
+
+  it("discards a blank-Check-Set availability result after disconnect", async () => {
+    const availability = deferred();
+    element.checkSetName = "";
+    getCheckSetAvailabilityForRecord.mockReturnValue(availability.promise);
+    document.body.appendChild(element);
+    jest.runOnlyPendingTimers();
+    document.body.removeChild(element);
+    availability.resolve({ hasActive: false, hasInactive: false });
+    await flushPromises();
+
+    expect(element.isConnected).toBe(false);
+  });
+
+  it("handles tooltip child transitions, duplicate dwell, reduced motion, and non-anchors", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        successDisplayMode: "Show",
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: jest.fn().mockReturnValue({ matches: true })
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const row = element.shadowRoot.querySelector("li.rhc-tooltip-anchor");
+    const child = row.firstElementChild;
+    element.shadowRoot
+      .querySelector(".rhc-card")
+      .dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    row.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    row.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    jest.runOnlyPendingTimers();
+    expect(row.classList).toContain("rhc-tooltip-anchor--dwell");
+
+    row.classList.add("rhc-tooltip-anchor--flip-up");
+    row.dispatchEvent(
+      new MouseEvent("mouseout", { bubbles: true, relatedTarget: child })
+    );
+    expect(row.classList).not.toContain("rhc-tooltip-anchor--flip-up");
+    child.dispatchEvent(
+      new FocusEvent("focusout", { bubbles: true, relatedTarget: row })
+    );
+
+    element.shadowRoot
+      .querySelector(".rhc-card")
+      .dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+    const childTransition = new MouseEvent("mouseout", { bubbles: true });
+    Object.defineProperty(childTransition, "relatedTarget", { value: child });
+    row.classList.add("rhc-tooltip-anchor--flip-up");
+    row.dispatchEvent(childTransition);
+    expect(row.classList).toContain("rhc-tooltip-anchor--flip-up");
+    delete window.matchMedia;
+  });
+
+  it("cancels a pending resize and tooltip dwell when disconnected", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        successDisplayMode: "Show",
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    let frameCount = 0;
+    const animationFrame = jest
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        frameCount++;
+        if (frameCount === 1) callback();
+        return 42;
+      });
+    const cancelFrame = jest.spyOn(window, "cancelAnimationFrame");
+    await appendAndLoad(element);
+    await clickRun(element);
+    const row = element.shadowRoot.querySelector("li.rhc-tooltip-anchor");
+    row.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    window.dispatchEvent(new CustomEvent("resize"));
+    window.dispatchEvent(new CustomEvent("resize"));
+    document.body.removeChild(element);
+
+    expect(animationFrame).toHaveBeenCalledTimes(2);
+    expect(cancelFrame).toHaveBeenCalledWith(42);
+  });
+
+  it("hides a skipped resolved Rule in One at a Time mode", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        revealMode: "OneAtATime",
+        skippedDisplayMode: "Hide",
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue(SKIPPED_RESULT("Check_A"));
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(element.shadowRoot.querySelectorAll("li.rhc-row")).toHaveLength(0);
   });
 });

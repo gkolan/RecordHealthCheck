@@ -2,8 +2,12 @@
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>Record Health Check User</label>
     <description
-  >Least-privilege access to run Record Health Checks from the Lightning component. Grants Apex for the controller and public API, plus create/read on Set Run and Rule Result platform events. Does not grant diagnostics log access.</description>
+  >Run Record Health Checks from Lightning, Apex, or Flow. Includes the required entry-point classes and Set Run and Rule Result event access. Excludes diagnostic details.</description>
     <hasActivationRequired>false</hasActivationRequired>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Record_Health_Check_Run</name>
+    </customPermissions>
     <classAccesses>
         <apexClass>RecordHealthCheckController</apexClass>
         <enabled>true</enabled>
@@ -20,6 +24,26 @@
         <apexClass>RecordHealthCheckRunSetFlowAction</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckQueueable</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckBatch</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckScheduled</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <customMetadataTypeAccesses>
+        <enabled>true</enabled>
+        <name>Record_Health_Check_Rule__mdt</name>
+    </customMetadataTypeAccesses>
+    <customMetadataTypeAccesses>
+        <enabled>true</enabled>
+        <name>Record_Health_Check_Set__mdt</name>
+    </customMetadataTypeAccesses>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>

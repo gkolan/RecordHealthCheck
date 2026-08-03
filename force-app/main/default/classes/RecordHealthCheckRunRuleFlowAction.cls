@@ -3,81 +3,214 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** Flow action over RecordHealthCheck.runRule. */
+/** Bulk Flow adapter for qualified Rule requests. */
 public with sharing class RecordHealthCheckRunRuleFlowAction {
+  /** One Flow input for a qualified Rule evaluation. */
   public class Request {
     @InvocableVariable(
       required=true
-      label='Rule API Name'
-      description='API name of the Rule to run.'
+      label='Rule Qualified API Name'
+      description='QualifiedApiName of the Rule to run.'
     )
-    public String ruleDeveloperName;
+    public String ruleQualifiedApiName;
+
+    @InvocableVariable(required=true label='Record ID')
+    public Id recordId;
 
     @InvocableVariable(
       required=true
-      label='Record ID'
-      description='Record to evaluate.'
+      label='Event Publication'
+      description='Required: NONE, ACTIONABLE, or ALL.'
     )
-    public Id recordId;
+    public String eventPublication;
   }
 
+  /** One aligned Flow output for a Rule request. */
   public class Response {
+    @InvocableVariable(label='Success')
+    public Boolean isSuccess;
+    @InvocableVariable(label='Error Message')
+    public String errorMessage;
+    @InvocableVariable(label='Error Type')
+    public String errorType;
     @InvocableVariable(label='Contract Version')
     public String contractVersion;
     @InvocableVariable(label='Status')
     public String status;
     @InvocableVariable(label='Reason Code')
     public String reasonCode;
-    @InvocableVariable(
-      label='Result JSON'
-      description='Versioned structured Rule response for advanced Flow consumers.'
-    )
+    @InvocableVariable(label='Result JSON')
     public String resultJson;
   }
 
+  /**
+   * Runs each valid Rule request in bulk and returns an output at the same index.
+   *
+   * @param requests Flow requests to validate and evaluate.
+   * @return Aligned success or recoverable-error responses.
+   */
   @InvocableMethod(
     label='Run Record Health Check Rule'
-    description='Runs one Record Health Check Rule for each input record.'
+    description='Runs one qualified Record Health Check Rule for each input record.'
     category='Record Health Check'
   )
   public static List<Response> runRule(List<Request> requests) {
-    try {
-      if (requests == null)
-        return new List<Response>();
-      validateRequestCount(requests.size());
-      List<Response> responses = new List<Response>();
-      for (Request request : requests) {
-        RecordHealthCheckResult result = RecordHealthCheck.runRule(
-          request.ruleDeveloperName,
-          request.recordId,
-          null,
-          RecordHealthCheckLifecyclePublisher.SOURCE_FLOW
-        );
-        Response response = new Response();
-        response.contractVersion = result.contractVersion;
-        response.status = result.status;
-        response.reasonCode = result.reasonCode;
-        response.resultJson = JSON.serialize(result);
-        responses.add(response);
-      }
-      return responses;
-    } finally {
-      RecordHealthCheckLogger.flush();
+    if (requests == null) {
+      return new List<Response>();
     }
+    if (!RecordHealthCheckAccess.canRunChecks()) {
+      return errorResponses(
+        requests.size(),
+        'AUTHORIZATION',
+        'You do not have permission to run Record Health Checks.'
+      );
+    }
+    if (requests.size() > RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE) {
+      return errorResponses(
+        requests.size(),
+        'LIMIT',
+        countError(requests.size())
+      );
+    }
+    RecordHealthCheckFlowGroupExecutor.Plan plan = prepare(requests);
+    if (RecordHealthCheckFlowGroupExecutor.exceedsGroupLimit(plan)) {
+      return groupLimitResponses(requests.size(), plan.failuresByIndex);
+    }
+    RecordHealthCheckFlowGroupExecutor.execute(
+      plan,
+      RecordHealthCheckFlowGroupExecutor.SelectionKind.RULE
+    );
+    return buildResponses(requests, plan);
   }
 
-  private static void validateRequestCount(Integer count) {
-    if (count > RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL) {
-      throw new RecordHealthCheck.RecordHealthCheckRequestException(
-        'A request can include at most ' +
-          RecordHealthCheck.MAX_FLOW_RECORDS_PER_CALL +
-          ' records.'
+  private static RecordHealthCheckFlowGroupExecutor.Plan prepare(
+    List<Request> requests
+  ) {
+    RecordHealthCheckFlowGroupExecutor.Plan plan = new RecordHealthCheckFlowGroupExecutor.Plan();
+    for (Integer index = 0; index < requests.size(); index++) {
+      Request input = requests[index];
+      String normalizedIdentity = RecordHealthCheckFlowGroupExecutor.add(
+        plan,
+        index,
+        input?.ruleQualifiedApiName,
+        'Rule',
+        input?.recordId,
+        input?.eventPublication
+      );
+      if (normalizedIdentity != null) {
+        input.ruleQualifiedApiName = normalizedIdentity;
+      }
+    }
+    return plan;
+  }
+
+  private static List<Response> buildResponses(
+    List<Request> requests,
+    RecordHealthCheckFlowGroupExecutor.Plan plan
+  ) {
+    List<Response> outputs = new List<Response>();
+    Integer responseChars = RecordHealthCheckFlowSupport.initialPayloadChars();
+    for (Integer index = 0; index < requests.size(); index++) {
+      if (plan.failuresByIndex.containsKey(index)) {
+        RecordHealthCheckFlowGroupExecutor.Failure failure = plan.failuresByIndex.get(
+          index
+        );
+        outputs.add(errorResponse(failure.errorType, failure.errorMessage));
+        continue;
+      }
+      Request input = requests[index];
+      String key = RecordHealthCheckFlowGroupExecutor.key(
+        input.ruleQualifiedApiName,
+        input.eventPublication
+      );
+      RecordHealthCheckFlowGroupExecutor.Result grouped = plan.resultByGroup.get(
+        key
+      );
+      if (grouped.errorMessage != null) {
+        outputs.add(errorResponse('EXECUTION', grouped.errorMessage));
+        continue;
+      }
+      try {
+        List<RecordHealthCheckResultItem> items = grouped.itemsByRecord.get(
+          input.recordId
+        );
+        if (items == null || items.isEmpty()) {
+          throw new RecordHealthCheckFlowSupport.FlowSupportException(
+            'No aligned Rule result was returned.'
+          );
+        }
+        RecordHealthCheckResultItem item = items[0];
+        Response output = new Response();
+        output.isSuccess = true;
+        output.contractVersion = RecordHealthCheckFlowSupport.CONTRACT_VERSION;
+        output.status = item.evaluation.status;
+        output.reasonCode = item.evaluation.reasonCode;
+        String resultJson = JSON.serialize(item);
+        responseChars = RecordHealthCheckFlowSupport.consumePayloadBudget(
+          responseChars,
+          resultJson
+        );
+        output.resultJson = resultJson;
+        outputs.add(output);
+      } catch (RecordHealthCheckFlowSupport.PayloadBudgetException ex) {
+        outputs.add(errorResponse('LIMIT', ex.getMessage()));
+      } catch (Exception ex) {
+        outputs.add(
+          errorResponse('EXECUTION', 'No aligned Rule result was returned.')
+        );
+      }
+    }
+    return outputs;
+  }
+
+  private static String countError(Integer count) {
+    return 'MAX_RECORDS_PER_SCOPE_EXCEEDED: suppliedCount=' +
+      count +
+      ', ceiling=' +
+      RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE;
+  }
+
+  private static List<Response> groupLimitResponses(
+    Integer count,
+    Map<Integer, RecordHealthCheckFlowGroupExecutor.Failure> failuresByIndex
+  ) {
+    List<Response> outputs = new List<Response>();
+    for (Integer index = 0; index < count; index++) {
+      outputs.add(
+        failuresByIndex.containsKey(index)
+          ? errorResponse(
+              failuresByIndex.get(index).errorType,
+              failuresByIndex.get(index).errorMessage
+            )
+          : errorResponse(
+              'LIMIT',
+              'MAX_FLOW_GROUPS_EXCEEDED: ceiling=' +
+                RecordHealthCheckConstants.MAX_FLOW_GROUPS +
+                '.'
+            )
       );
     }
-    if (count > RecordHealthCheck.MAX_EVALUATIONS_PER_CALL) {
-      throw new RecordHealthCheck.RecordHealthCheckRequestException(
-        'This Flow request would run too many checks. Reduce the records and try again.'
-      );
+    return outputs;
+  }
+
+  private static List<Response> errorResponses(
+    Integer count,
+    String errorType,
+    String message
+  ) {
+    List<Response> outputs = new List<Response>();
+    for (Integer index = 0; index < count; index++) {
+      outputs.add(errorResponse(errorType, message));
     }
+    return outputs;
+  }
+
+  private static Response errorResponse(String errorType, String message) {
+    Response output = new Response();
+    output.contractVersion = RecordHealthCheckFlowSupport.CONTRACT_VERSION;
+    output.isSuccess = false;
+    output.errorType = errorType;
+    output.errorMessage = message;
+    return output;
   }
 }

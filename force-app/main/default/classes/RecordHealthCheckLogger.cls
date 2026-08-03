@@ -37,24 +37,20 @@ public with sharing class RecordHealthCheckLogger {
   // System.debug is ephemeral and usually off in production, so a check that
   // errors would otherwise leave no trace. ERROR lines are ALSO held as
   // Record_Health_Check_Log__e events and published once at the transaction
-  // boundary via flush() — the counterpart to Nebula's saveLog(). Core only
+  // boundary via flush() — the counterpart to Nebula's saveLog(). Framework only
   // publishes the versioned event; the extension package owns persistence, retention,
   // and reporting. Holding events (not per-line publish) keeps a 200-record bulk run
   // that errors on every record to one chunked publish, well under DML limits.
-  @TestVisible
   private static final String LOG_CONTRACT_VERSION = '1.0';
   private static final Integer PUBLISH_CHUNK_SIZE = 100;
   private static final Integer MESSAGE_MAX = 4000;
   private static final Integer STACK_MAX = 32000;
 
-  // Default ON: platform-event error capture must not require optional enablement (opt-out only).
   @TestVisible
-  private static Boolean publishErrorEvents = true;
+  private static RecordHealthCheckSettingsProvider settingsProvider = new RecordHealthCheckSettingsProvider();
   // Loop guard: a subscriber processing a log event sets this so its own ERROR
   // logging cannot republish onto the same bus.
-  @TestVisible
   private static Boolean inSubscriberContext = false;
-  @TestVisible
   private static Boolean debugEnabled = false;
   // Transaction-scoped buffer of ERROR events awaiting flush().
   private static final List<Record_Health_Check_Log__e> PENDING_EVENTS = new List<Record_Health_Check_Log__e>();
@@ -127,8 +123,9 @@ public with sharing class RecordHealthCheckLogger {
     Map<String, Object> fields,
     Exception ex
   ) {
-    if (lvl == Level.DEBUG && !debugEnabled)
+    if (lvl == Level.DEBUG && !debugEnabled) {
       return;
+    }
     String line = render(lvl, checkName, event, fields, ex);
 
     // The ONE place that decides where framework logs go. To switch to Nebula
@@ -170,7 +167,11 @@ public with sharing class RecordHealthCheckLogger {
     Map<String, Object> fields,
     Exception ex
   ) {
-    if (lvl != Level.ERROR || !publishErrorEvents || inSubscriberContext) {
+    if (
+      lvl != Level.ERROR ||
+      !isErrorEventPublicationEnabled() ||
+      inSubscriberContext
+    ) {
       return;
     }
     PENDING_EVENTS.add(
@@ -179,7 +180,7 @@ public with sharing class RecordHealthCheckLogger {
         EventId__c = newEventId(event),
         RunId__c = runId,
         OccurredAt__c = System.now(),
-        CoreVersion__c = RecordHealthCheckLifecyclePublisher.CORE_VERSION,
+        FrameworkVersion__c = RecordHealthCheckLifecyclePublisher.FRAMEWORK_VERSION,
         Level__c = lvl.name(),
         Code__c = sanitize(event, 120),
         CheckSetDeveloperName__c = checkSetDeveloperName,
@@ -192,6 +193,17 @@ public with sharing class RecordHealthCheckLogger {
           : sanitize(ex.getStackTraceString(), STACK_MAX),
         UserId__c = UserInfo.getUserId()
       )
+    );
+  }
+
+  /**
+   * Returns whether the current Check Set permits ERROR log-event publication.
+   * Missing or unresolved Check Set configuration remains enabled so failures
+   * that occur before valid configuration is available are still observable.
+   */
+  private Boolean isErrorEventPublicationEnabled() {
+    return settingsProvider.isErrorEventPublicationEnabled(
+      checkSetDeveloperName
     );
   }
 
@@ -219,7 +231,7 @@ public with sharing class RecordHealthCheckLogger {
   }
 
   private static String randomSuffix() {
-    return EncodingUtil.convertToHex(Crypto.generateAesKey(128)).left(8);
+    return String.valueOf(Crypto.getRandomInteger()).replace('-', '').left(8);
   }
 
   /**
@@ -290,14 +302,8 @@ public with sharing class RecordHealthCheckLogger {
 
   @TestVisible
   private static List<Record_Health_Check_Log__e> pendingEventsForTest() {
+    debugEnabled = true;
     return PENDING_EVENTS;
-  }
-
-  @TestVisible
-  private static void resetLogSinkForTest() {
-    PENDING_EVENTS.clear();
-    publishErrorEvents = true;
-    inSubscriberContext = false;
   }
 
   /**
@@ -355,10 +361,10 @@ public with sharing class RecordHealthCheckLogger {
     return line;
   }
 
-  @TestVisible
   private static String sanitize(String value, Integer maxLength) {
-    if (value == null)
+    if (value == null) {
       return null;
+    }
     String cleaned = value.replaceAll('[\\r\\n\\t]', ' ').trim();
     Integer effectiveMax = maxLength == null || maxLength < 1 ? 500 : maxLength;
     return cleaned.length() <= effectiveMax

@@ -1,0 +1,61 @@
+log_folder: code-analyzer/logs
+
+ignores:
+  files:
+    - "code-analyzer/**"
+    - "coverage/**"
+    - "reports/**"
+    - "releases/**"
+    - "test-results/**"
+    - "playwright-report/**"
+
+engines:
+  eslint:
+    eslint_config_file: eslint.config.js
+    disable_javascript_base_config: true
+    disable_lwc_base_config: true
+    disable_slds_base_config: true
+
+rules:
+  pmd:
+    # Subscriber-facing Apex in a managed package must be global. Public would
+    # make these contracts inaccessible outside the package namespace.
+    AvoidGlobalModifier:
+      disabled: true
+    # This name-only heuristic mistakes health-check fields beginning with
+    # "Pass" (formulas, display settings, and benchmark counts) for passwords.
+    # None of these fields stores authentication or secret material.
+    ProtectSensitiveData:
+      disabled: true
+    # The neutral audit remains visible in the release evidence. PMD cannot
+    # distinguish subscriber-facing contracts from internal/test helpers, so
+    # requiring this rule would encourage hundreds of low-value comments.
+    ApexDoc:
+      disabled: true
+    ApexUnitTestClassShouldHaveRunAs:
+      disabled: true
+    ApexUnitTestClassShouldHaveAsserts:
+      disabled: true
+    AvoidDebugStatements:
+      disabled: true
+    ExcessiveParameterList:
+      disabled: true
+    CyclomaticComplexity:
+      disabled: true
+    CognitiveComplexity:
+      disabled: true
+    NcssCount:
+      disabled: true
+    AvoidDeeplyNestedIfStmts:
+      disabled: true
+    ExcessivePublicCount:
+      disabled: true
+    AvoidBooleanMethodParameters:
+      disabled: true
+    TooManyFields:
+      disabled: true
+  cpd:
+    DetectCopyPasteForJavascript:
+      disabled: true
+    DetectCopyPasteForApex:
+      disabled: true

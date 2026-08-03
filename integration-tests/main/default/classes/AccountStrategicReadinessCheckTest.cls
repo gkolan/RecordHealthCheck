@@ -12,88 +12,103 @@
 private class AccountStrategicReadinessCheckTest {
   @IsTest
   static void bareAccountScoresZeroAndFails() {
-    Account account = new Account(Name = 'RHC Readiness Bare');
-    insert account;
-
-    RecordHealthCheckResult result = evaluate(account.Id, null);
-
-    System.assertEquals('FAIL', result.status);
-    System.assertEquals('0', result.actualValue);
-    System.assertEquals('80+', result.expectedValue);
-    // the Apex check captures structured value source for both sides so an
-    // entitled viewer can audit where the score came from.
-    System.assertNotEquals(null, result.actualValueSource);
-    System.assertEquals(
-      'Strategic readiness score',
-      result.actualValueSource.sourceLabel
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Readiness Bare' }
     );
-    System.assertEquals('0', result.actualValueSource.rawValueLabel);
-    System.assertNotEquals(null, result.expectedValueSource);
+    RecordHealthCheckTestDataFactory.createAccount(account);
+
+    RecordHealthCheckInternalResult result = evaluate(account.Id, null);
+
+    Assert.areEqual('FAIL', result.status);
+    Assert.areEqual('0', result.actualValue);
+    Assert.areEqual('80', result.expectedValue);
   }
 
   @IsTest
   static void singleCriterionPassesWhenThresholdIsLow() {
-    Account account = new Account(Name = 'RHC Readiness One Criterion');
-    insert account;
-    insert new Contact(LastName = 'Buyer', AccountId = account.Id);
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Readiness One Criterion' }
+    );
+    RecordHealthCheckTestDataFactory.createAccount(account);
+    RecordHealthCheckTestDataFactory.createContact(
+      new Map<String, Object>{
+        'LastName' => 'Buyer',
+        'AccountId' => account.Id
+      }
+    );
 
     // One criterion = 25 points; a threshold of 1 is comfortably met.
-    RecordHealthCheckResult result = evaluate(
+    RecordHealthCheckInternalResult result = evaluate(
       account.Id,
       new Map<String, Object>{ 'minScore' => 1 }
     );
 
-    System.assertEquals('PASS', result.status);
+    Assert.areEqual('PASS', result.status);
     // Values and value source are set on a PASS too so a
     // green row stays auditable through the disclosure.
-    System.assertEquals('25', result.actualValue);
-    System.assertNotEquals(null, result.actualValueSource);
-    System.assertEquals('25', result.actualValueSource.rawValueLabel);
+    Assert.areEqual('25', result.actualValue);
   }
 
   @IsTest
   static void allCriteriaMetReachesFullScoreAndPasses() {
-    Account account = new Account(
-      Name = 'RHC Readiness Full',
-      BillingStreet = '1 Market St',
-      BillingCity = 'San Francisco',
-      BillingCountry = 'USA'
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{
+        'Name' => 'RHC Readiness Full',
+        'BillingStreet' => '1 Market St',
+        'BillingCity' => 'San Francisco',
+        'BillingCountry' => 'USA'
+      }
     );
-    insert account;
+    RecordHealthCheckTestDataFactory.createAccount(account);
 
-    insert new Contact(LastName = 'Buyer', AccountId = account.Id);
-    insert new Opportunity(
-      AccountId = account.Id,
-      Name = 'Open pipeline',
-      StageName = 'Prospecting',
-      Amount = 50000,
-      CloseDate = Date.today().addMonths(1)
+    RecordHealthCheckTestDataFactory.createContact(
+      new Map<String, Object>{
+        'LastName' => 'Buyer',
+        'AccountId' => account.Id
+      }
     );
-    insert new Task(
-      WhatId = account.Id,
-      Subject = 'Recent QBR',
-      Status = 'Completed',
-      ActivityDate = Date.today()
+    RecordHealthCheckTestDataFactory.createOpportunity(
+      new Map<String, Object>{
+        'AccountId' => account.Id,
+        'Name' => 'Open pipeline',
+        'StageName' => 'Prospecting',
+        'Amount' => 50000,
+        'CloseDate' => Date.today().addMonths(1)
+      }
+    );
+    RecordHealthCheckTestDataFactory.createTask(
+      new Map<String, Object>{
+        'WhatId' => account.Id,
+        'Subject' => 'Recent QBR',
+        'Status' => 'Completed',
+        'ActivityDate' => Date.today()
+      }
     );
 
     // All four criteria met = 100, clearing the default threshold of 80.
-    RecordHealthCheckResult result = evaluate(account.Id, null);
+    RecordHealthCheckInternalResult result = evaluate(account.Id, null);
 
-    System.assertEquals('PASS', result.status);
-    System.assertEquals('100', result.actualValue);
-    System.assertEquals('80+', result.expectedValue);
-    System.assertNotEquals(null, result.actualValueSource);
+    Assert.areEqual('PASS', result.status);
+    Assert.areEqual('100', result.actualValue);
+    Assert.areEqual('80', result.expectedValue);
   }
 
   @IsTest
   static void invalidParametersFallBackToDefaults() {
-    Account account = new Account(Name = 'RHC Readiness Bad Params');
-    insert account;
-    insert new Contact(LastName = 'Buyer', AccountId = account.Id);
+    Account account = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Readiness Bad Params' }
+    );
+    RecordHealthCheckTestDataFactory.createAccount(account);
+    RecordHealthCheckTestDataFactory.createContact(
+      new Map<String, Object>{
+        'LastName' => 'Buyer',
+        'AccountId' => account.Id
+      }
+    );
 
     // Unparseable and out-of-range values fall back to defaults (minScore 80)
     // so a lone 25-point criterion still fails.
-    System.assertEquals(
+    Assert.areEqual(
       'FAIL',
       evaluate(
           account.Id,
@@ -106,14 +121,108 @@ private class AccountStrategicReadinessCheckTest {
     );
   }
 
-  private static RecordHealthCheckResult evaluate(
+  @IsTest
+  static void missingRecordAndEventCriterionCoverDefensivePaths() {
+    Account eventAccount = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Readiness Event' }
+    );
+    Account deletedAccount = RecordHealthCheckTestDataFactory.account(
+      new Map<String, Object>{ 'Name' => 'RHC Readiness Deleted' }
+    );
+    RecordHealthCheckTestDataFactory.createAccounts(
+      new List<Account>{ eventAccount, deletedAccount }
+    );
+    RecordHealthCheckTestDataFactory.createEvent(
+      new Map<String, Object>{
+        'WhatId' => eventAccount.Id,
+        'Subject' => 'Recent strategy session',
+        'StartDateTime' => System.now(),
+        'EndDateTime' => System.now().addHours(1)
+      }
+    );
+    Id deletedId = deletedAccount.Id;
+    delete deletedAccount;
+
+    Test.startTest();
+    RecordHealthCheckOutcome missing = new AccountStrategicReadinessCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          'Account',
+          new List<Id>{ deletedId },
+          new Map<String, Object>(),
+          'Strategic_Account_Is_Ready',
+          null,
+          null
+        )
+      )
+      .get(deletedId);
+    RecordHealthCheckOutcome eventOutcome = new AccountStrategicReadinessCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          'Account',
+          new List<Id>{ eventAccount.Id },
+          new Map<String, Object>{ 'minScore' => 1 },
+          'Strategic_Account_Is_Ready',
+          null,
+          null
+        )
+      )
+      .get(eventAccount.Id);
+    Integer defaultScore = AccountStrategicReadinessCheck.resolveInt(
+      null,
+      'minScore',
+      80,
+      1,
+      100
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      RecordHealthCheckStatus.UNABLE_TO_EVALUATE,
+      missing.status,
+      'A deleted Account must not leak as a failure.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckStatus.PASS,
+      eventOutcome.status,
+      'A recent Event should satisfy the activity criterion.'
+    );
+    Assert.areEqual(
+      80,
+      defaultScore,
+      'Null parameters should retain the configured default.'
+    );
+  }
+
+  /**
+   * The check is bulk, so a single-record assertion is a scope of one. Mapped
+   * back onto the internal result shape so the assertions stay readable.
+   */
+  private static RecordHealthCheckInternalResult evaluate(
     Id recordId,
     Map<String, Object> parameters
   ) {
-    RecordHealthCheckContext context = new RecordHealthCheckContext();
-    context.recordId = recordId;
-    context.objectApiName = 'Account';
-    context.parameters = parameters;
-    return new AccountStrategicReadinessCheck().evaluate(context);
+    RecordHealthCheckOutcome outcome = new AccountStrategicReadinessCheck()
+      .evaluate(
+        new RecordHealthCheckScope(
+          'Account',
+          new List<Id>{ recordId },
+          parameters,
+          'Strategic_Account_Is_Ready',
+          null,
+          null
+        )
+      )
+      .get(recordId);
+    RecordHealthCheckInternalResult result = new RecordHealthCheckInternalResult();
+    result.status = outcome.status;
+    result.reasonCode = outcome.reasonCode;
+    result.actualValue = outcome.found == null
+      ? null
+      : outcome.found.storedValue;
+    result.expectedValue = outcome.expected == null
+      ? null
+      : outcome.expected.storedValue;
+    return result;
   }
 }

@@ -8,12 +8,13 @@
   display: flex;
   align-items: flex-start;
   gap: 0.625rem;
-  padding: 0.875rem 1rem;
+  padding: 0.875rem var(--slds-g-spacing-4, 1rem);
   background: var(--slds-g-color-error-base-95, #fff8f8);
-  border: 1px solid var(--slds-g-color-error-base-80, #fccfcf);
+  border: var(--slds-g-sizing-border-1, 1px) solid
+    var(--slds-g-color-error-base-80, #fccfcf);
   border-left: 4px solid var(--slds-g-color-error-base-40, #ba0517);
   border-radius: 0.375rem;
-  margin: 0.75rem;
+  margin: var(--slds-g-spacing-3, 0.75rem);
 }
 
 .rhc-error-banner__body {
@@ -23,19 +24,19 @@
 }
 
 .rhc-error-banner__title {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
+  font-weight: var(--slds-g-font-weight-6, 600);
   color: var(--slds-g-color-error-base-30, #8f0311);
 }
 
 .rhc-error-banner__msg {
   /* SLDS body_regular (13px). */
-  font-size: 0.8125rem;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   color: var(--slds-g-color-neutral-base-40, #706e6b);
 }
 
 .rhc-error-banner__hint {
-  font-size: 0.8125rem;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   color: var(--slds-g-color-neutral-base-40, #706e6b);
   margin-top: 0.375rem;
   padding-top: 0.375rem;
@@ -44,8 +45,8 @@
 
 .rhc-pre-run-hint {
   margin: 0;
-  padding: 0.75rem 1rem;
-  font-size: 0.8125rem;
+  padding: var(--slds-g-spacing-3, 0.75rem) var(--slds-g-spacing-4, 1rem);
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   color: var(--slds-g-color-neutral-base-40, #706e6b);
   border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
 }
@@ -53,24 +54,16 @@
 .rhc-card {
   display: block;
   background: var(--rhc-theme-card-background);
-  /* A clearly visible border + soft elevation so the card reads as a
-     self-contained unit on ANY surface — including a white Lightning tab,
-     where the lightest border/shadow tokens would otherwise vanish and the
-     component would look borderless. */
-  border: 1px solid var(--rhc-theme-card-border);
+  border: var(--slds-g-sizing-border-1, 1px) solid var(--rhc-theme-card-border);
   /* Match standard Lightning cards (related lists, record panels). */
   border-radius: var(--rhc-theme-card-radius);
-  box-shadow: var(--rhc-theme-card-shadow);
   /* Let row/summary tooltips extend past the card edge; bottom rounding is applied
      on the last body child instead of clipping popovers. */
   overflow: visible;
 }
 
-/* Keep the SLDS 1 card shell, but let SLDS 2 sit flat on its container.
-   Important guards against theme stylesheet injection order in Lightning. */
-.rhc-theme--slds2 .rhc-card {
-  border: 0 !important;
-  box-shadow: none !important;
+.rhc-theme .rhc-card {
+  box-shadow: var(--rhc-theme-card-shadow);
 }
 
 .rhc-body > :last-child {
@@ -83,7 +76,7 @@
   flex-direction: column;
   gap: 0.375rem;
   min-width: 0;
-  padding: 0.875rem 1rem 0.875rem;
+  padding: 0.875rem var(--slds-g-spacing-4, 1rem) 0.875rem;
   background: var(--rhc-theme-header-background);
   border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
   border-top-left-radius: var(--rhc-theme-card-radius);
@@ -114,18 +107,18 @@
   display: block;
   /* SLDS text-heading_small (16px / bold) — matches the standard Lightning card
      title so the component title sits at the same level as native page cards. */
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--slds-g-font-scale-2, 1rem);
+  font-weight: var(--slds-g-font-weight-7, 700);
   color: var(--rhc-theme-text);
-  line-height: 1.25;
+  line-height: var(--slds-g-font-line-height-2, 1.25);
   margin: 0;
 }
 
 .rhc-header__desc {
   display: block;
   /* SLDS body_regular (13px) — the card's supporting body text. */
-  font-size: 0.8125rem;
-  font-weight: 400;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
+  font-weight: var(--slds-g-font-weight-4, 400);
   color: var(--rhc-theme-text-weak);
   line-height: 1.35;
   margin: 0;
@@ -141,7 +134,7 @@
 
 .rhc-check-pill {
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--slds-g-font-weight-6, 600);
   white-space: nowrap;
 }
 
@@ -153,7 +146,7 @@
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  min-width: 5rem;
+  min-width: var(--slds-g-sizing-12, 5rem);
   padding-left: 0.625rem;
   padding-right: 0.625rem;
   gap: 0.35rem;
@@ -168,8 +161,8 @@
 /* Reserves space for play ▶ or spinner so the label does not shift on click. */
 .rhc-action-button__glyph {
   flex: 0 0 0.75rem;
-  width: 0.75rem;
-  height: 0.75rem;
+  width: var(--slds-g-sizing-4, 0.75rem);
+  height: var(--slds-g-sizing-4, 0.75rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -214,10 +207,10 @@
   align-items: center;
   gap: 0.3rem;
   min-height: 1.375rem;
-  padding: 0.125rem 0.5rem;
+  padding: 0.125rem var(--slds-g-spacing-2, 0.5rem);
   border-radius: 999px;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--slds-g-font-weight-6, 600);
   letter-spacing: 0;
 }
 
@@ -264,8 +257,8 @@
 /* Shown when Passed/Skipped Hide leaves the list empty after a completed run. */
 .rhc-hidden-results {
   margin: 0;
-  padding: 0.75rem 1rem 0;
-  font-size: 0.8125rem;
+  padding: var(--slds-g-spacing-3, 0.75rem) var(--slds-g-spacing-4, 1rem) 0;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   line-height: 1.4;
   color: var(--slds-g-color-neutral-base-30, #514f4d);
 }
@@ -278,13 +271,39 @@
      arrow stays glued to the bubble if the padding ever changes. */
   --rhc-stats-bar-pad-y: 0.625rem;
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  padding: var(--rhc-stats-bar-pad-y) 1rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: var(--rhc-stats-bar-pad-y) var(--slds-g-spacing-4, 1rem);
   border-top: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
   /* Positioning context for summary-pill tooltips (bubble spans the bar). */
   position: relative;
+}
+
+.rhc-stats-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.rhc-stats-group__label {
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
+  font-size: var(--slds-g-font-scale-neg-1, 0.75rem);
+  font-weight: var(--slds-g-font-weight-7, 700);
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.rhc-stats-group__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.rhc-stats-group--unlabeled {
+  gap: 0;
 }
 
 /* Grid stack: pill label + nubbin host share one cell. The footer anchor stays
@@ -318,12 +337,12 @@
      against its bubble. */
   top: calc(100% + var(--rhc-stats-bar-pad-y) + 0.25rem);
   left: 50%;
-  width: 0.5rem;
-  height: 0.5rem;
+  width: var(--slds-g-sizing-3, 0.5rem);
+  height: var(--slds-g-sizing-3, 0.5rem);
   margin-left: -0.25rem;
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
-  border-top: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
-  border-left: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
+  border-top: 1px solid var(--slds-g-color-border-2, #aeacaa);
+  border-left: 1px solid var(--slds-g-color-border-2, #aeacaa);
   opacity: 0;
   pointer-events: none;
   transform: translateY(0.25rem) rotate(45deg);
@@ -331,7 +350,7 @@
     opacity 0.12s ease,
     transform 0.12s ease;
   transition-delay: 0s;
-  z-index: 101;
+  z-index: var(--rhc-layer-tooltip-nubbin);
 }
 
 /* Drive the nubbin from the anchor's own dwell/focus-visible state (it is a later
@@ -360,7 +379,7 @@
 }
 
 .rhc-list:not(:empty) {
-  padding-bottom: 0.25rem;
+  padding-bottom: var(--slds-g-spacing-1, 0.25rem);
 }
 
 /* ── Check row ─────────────────────────────────────────────────────────────── */
@@ -370,7 +389,7 @@
   gap: 0.75rem;
   margin: 0;
   /* Content sits to the right of the 3px status accent element. */
-  padding: 0.625rem 1rem 0.625rem calc(3px + 0.875rem);
+  padding: 0.625rem var(--slds-g-spacing-4, 1rem) 0.625rem calc(3px + 0.875rem);
   transition: background 0.1s ease;
   position: relative;
 }
@@ -383,7 +402,7 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 3px;
+  width: var(--slds-g-sizing-border-3, 3px);
   pointer-events: none;
 }
 
@@ -424,8 +443,8 @@
 /* ── Row icon ──────────────────────────────────────────────────────────────── */
 .rhc-row__icon {
   flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: var(--slds-g-sizing-6, 1.25rem);
+  height: var(--slds-g-sizing-6, 1.25rem);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,8 +452,8 @@
 }
 
 .rhc-dot--pending {
-  width: 8px;
-  height: 8px;
+  width: var(--slds-g-sizing-3, 8px);
+  height: var(--slds-g-sizing-3, 8px);
   border-radius: 50%;
   background: var(--slds-g-color-neutral-base-70, #c9c7c5);
 }
@@ -448,9 +467,9 @@
   height: 0.875rem;
   border-radius: 50%;
   flex-shrink: 0;
-  font-size: 0.625rem;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--slds-g-font-scale-neg-2, 0.625rem);
+  font-weight: var(--slds-g-font-weight-7, 700);
+  line-height: var(--slds-g-font-line-height-1, 1);
 }
 
 .rhc-status-icon--pass {
@@ -548,8 +567,8 @@
 .rhc-row__label {
   /* SLDS body_regular (13px) at semibold — the primary line of each row, one
      tier below the card title. */
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
+  font-weight: var(--slds-g-font-weight-6, 600);
   color: var(--slds-g-color-neutral-base-10, #181818);
   line-height: 1.3;
 }
@@ -562,9 +581,9 @@
 
 .rhc-row__message {
   /* SLDS body_regular (13px). */
-  font-size: 0.8125rem;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   line-height: 1.35;
-  margin-top: 0.25rem;
+  margin-top: var(--slds-g-spacing-1, 0.25rem);
   color: var(--slds-g-color-neutral-base-30, #3e3e3c);
 }
 
@@ -580,7 +599,47 @@
    spacing) carries no text, so reserve a fixed height instead of letting the
    empty block collapse to nothing. */
 .rhc-row__message-line--blank {
-  height: 0.5rem;
+  height: var(--slds-g-sizing-3, 0.5rem);
+}
+
+/* Shared disclosure frame for verbose user messages, remediation guidance,
+   diagnostics, and Found/Expected values. Each content type chooses its own
+   line limit while retaining the same compact +/- control. */
+.rhc-expandable {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.rhc-expandable__content {
+  box-sizing: border-box;
+  width: 100%;
+  padding-right: var(--slds-g-spacing-6, 2rem);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.rhc-expandable__content--message,
+.rhc-expandable__content--guidance,
+.rhc-expandable__content--diagnostic {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rhc-expandable__content--message,
+.rhc-expandable__content--guidance,
+.rhc-expandable__content--diagnostic {
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.rhc-expandable__content--expanded {
+  display: block;
+  -webkit-line-clamp: none;
+  line-clamp: none;
+  overflow: visible;
 }
 
 .rhc-row__message--error,
@@ -589,7 +648,7 @@
 }
 .rhc-row__message--warning {
   color: var(--slds-g-color-neutral-base-20, #2e2e2e);
-  font-weight: 400;
+  font-weight: var(--slds-g-font-weight-4, 400);
 }
 .rhc-row__message--info {
   color: var(--slds-g-color-neutral-base-30, #3e3e3c);
@@ -609,13 +668,13 @@
   align-items: flex-start;
   gap: 0.15rem;
   margin-top: 0.3rem;
-  font-size: 0.8125rem;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   line-height: 1.35;
 }
 
 .rhc-row__action-link {
   color: var(--slds-g-color-brand-base-50, #0b5cab);
-  font-weight: 600;
+  font-weight: var(--slds-g-font-weight-6, 600);
   text-decoration: none;
 }
 .rhc-row__action-link:hover,
@@ -633,9 +692,9 @@
 .rhc-row__divider {
   width: 100%;
   height: 0;
-  margin: 0.5rem 0 0.1rem;
+  margin: var(--slds-g-spacing-2, 0.5rem) 0 0.1rem;
   border: 0;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
 }
 
 /* ── Found / expected comparison ────────────────────────────────────────────── */
@@ -650,7 +709,7 @@
   gap: 0.25rem;
   margin-top: 0.3rem;
   /* SLDS body_regular (13px). */
-  font-size: 0.8125rem;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   line-height: 1.4;
 }
 
@@ -673,8 +732,8 @@
 
 /* Caption ("Found" / "Expected") — uppercase label aligned with the value text. */
 .rhc-cmp__key {
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
+  font-weight: var(--slds-g-font-weight-7, 700);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--slds-g-color-neutral-base-50, #706e6b);
@@ -694,29 +753,31 @@
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   line-height: 1.5;
   color: var(--slds-g-color-neutral-base-20, #2b2826);
-  background: var(--slds-g-color-neutral-base-100, #fff);
+  /* Follow the containing row surface in its idle, hover, and focus states.
+     Painting this box white caused a visible white-to-gray flash on hover. */
+  background: transparent;
   padding: 0.2rem 1.7rem 0.2rem 0.45rem;
   border-radius: 0.2rem;
   word-break: break-word;
 }
 
-/* Long values (a multi-clause formula, a wide list) clamp to two lines so one
-   verbose rule cannot dominate the card. The full text stays selectable/readable
-   behind the "..." toggle, which JS reveals only when the content actually
-   overflows this box. */
+/* Every expandable region uses the same four-line collapsed height. The full
+   value remains selectable/readable behind the +/- toggle, which JS reveals
+   only when the content actually overflows this box. */
 .rhc-cmp__val--clampable {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   overflow: hidden;
 }
 
 /* Toggled open: drop the clamp and let the chip grow to its natural height. */
-.rhc-cmp__val--expanded {
+.rhc-cmp__val--expanded,
+.rhc-cmp__val.rhc-expandable__content--expanded {
   display: block;
   -webkit-line-clamp: none;
   line-clamp: none;
@@ -727,20 +788,20 @@
 .rhc-cmp__toggle {
   position: absolute;
   top: 0.15rem;
-  right: 0.25rem;
+  right: var(--slds-g-spacing-1, 0.25rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: var(--slds-g-sizing-6, 1.25rem);
+  height: var(--slds-g-sizing-6, 1.25rem);
   padding: 0;
-  border: 1px solid transparent;
+  border: var(--slds-g-sizing-border-1, 1px) solid transparent;
   border-radius: 0.2rem;
   background: transparent;
   cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--slds-g-font-scale-neg-1, 0.75rem);
+  font-weight: var(--slds-g-font-weight-6, 600);
+  line-height: var(--slds-g-font-line-height-1, 1);
   color: var(--slds-g-color-brand-base-50, #0176d3);
 }
 
@@ -751,12 +812,16 @@
   content: "";
 }
 
+.rhc-cmp__toggle::after {
+  content: attr(data-symbol);
+}
+
 .rhc-cmp__toggle[hidden] {
   display: none;
 }
 
 .rhc-cmp__toggle:hover {
-  border-color: var(--slds-g-color-border-base-4, #939393);
+  border-color: var(--slds-g-color-border-2, #939393);
   background: var(--slds-g-color-neutral-base-90, #e5e5e5);
 }
 
@@ -816,7 +881,7 @@
   gap: 0.25rem;
   margin-top: 0.55rem;
   /* SLDS body_regular (13px). */
-  font-size: 0.8125rem;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
   line-height: 1.4;
 }
 
@@ -847,7 +912,7 @@
     opacity 0.12s ease,
     transform 0.12s ease;
   transition-delay: 0s;
-  z-index: 100;
+  z-index: var(--rhc-layer-tooltip);
 }
 
 /* No arrow: a light popover with a border can't carry a clean bordered arrow,
@@ -861,18 +926,19 @@
   top: calc(100% + 0.5rem);
   width: max-content;
   max-width: min(40rem, calc(100vw - 3rem));
-  padding: 0.625rem 0.75rem;
-  border-radius: 0.25rem;
+  padding: 0.625rem var(--slds-g-spacing-3, 0.75rem);
+  border-radius: var(--slds-g-radius-border-1, 0.25rem);
   /* Light gray surface (a step darker than the white cards) with a crisp border
      and elevation, so the tooltip stays light but is clearly its own layer
      rather than blending into the white content behind it. */
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
   color: var(--slds-g-color-neutral-base-10, #181818);
-  border: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
+  border: var(--slds-g-sizing-border-1, 1px) solid
+    var(--slds-g-color-border-2, #aeacaa);
   box-shadow: var(--slds-g-shadow-3, 0 2px 8px rgba(0, 0, 0, 0.2));
   /* SLDS body_regular (13px) — tooltip copy sits on the body tier. */
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--slds-g-font-scale-base, 0.8125rem);
+  font-weight: var(--slds-g-font-weight-5, 500);
   line-height: 1.4;
   white-space: normal;
   transform: var(--rhc-tooltip-transform);
@@ -902,8 +968,8 @@
 }
 
 .rhc-tooltip-anchor--footer::after {
-  left: 1rem;
-  right: 1rem;
+  left: var(--slds-g-spacing-4, 1rem);
+  right: var(--slds-g-spacing-4, 1rem);
   width: auto;
   max-width: none;
 }
@@ -922,7 +988,7 @@
    past the card's right edge and was clipped; this keeps it inside the card at
    any column width and lets the text wrap and grow downward. */
 .rhc-tooltip-anchor--row::after {
-  left: 1rem;
+  left: var(--slds-g-spacing-4, 1rem);
   right: auto;
   /* Size to the text (capped), left-aligned, rather than spanning the whole card.
      On a wide card the bubble no longer stretches edge-to-edge, so the right side
@@ -940,13 +1006,13 @@
 .rhc-tooltip-anchor--row::before {
   content: "";
   top: calc(100% + 0.25rem);
-  width: 0.5rem;
-  height: 0.5rem;
+  width: var(--slds-g-sizing-3, 0.5rem);
+  height: var(--slds-g-sizing-3, 0.5rem);
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
-  border-top: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
-  border-left: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
+  border-top: 1px solid var(--slds-g-color-border-2, #aeacaa);
+  border-left: 1px solid var(--slds-g-color-border-2, #aeacaa);
   transform: translateY(0.25rem) rotate(45deg);
-  z-index: 101;
+  z-index: var(--rhc-layer-tooltip-nubbin);
 }
 
 /* Match the bubble fade once the JS hover dwell fires so the arrow and bubble
@@ -987,8 +1053,8 @@
   bottom: calc(100% + 0.25rem);
   border-top: 0;
   border-left: 0;
-  border-bottom: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
-  border-right: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
+  border-bottom: 1px solid var(--slds-g-color-border-2, #aeacaa);
+  border-right: 1px solid var(--slds-g-color-border-2, #aeacaa);
 }
 
 /* The summary nubbin clears the bar's top padding when flipped up, mirroring the
@@ -998,8 +1064,8 @@
   bottom: calc(100% + var(--rhc-stats-bar-pad-y) + 0.25rem);
   border-top: 0;
   border-left: 0;
-  border-bottom: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
-  border-right: 1px solid var(--slds-g-color-border-base-3, #aeacaa);
+  border-bottom: 1px solid var(--slds-g-color-border-2, #aeacaa);
+  border-right: 1px solid var(--slds-g-color-border-2, #aeacaa);
 }
 
 @media (max-width: 30rem) {
@@ -1028,7 +1094,7 @@
 .rhc-debug-detail__label {
   display: block;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--slds-g-font-weight-6, 600);
   color: var(--slds-g-color-neutral-base-40, #706e6b);
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1036,10 +1102,11 @@
 
 .rhc-debug-detail__body {
   margin: 0.375rem 0 0;
-  padding: 0.5rem 0.75rem;
+  padding: var(--slds-g-spacing-2, 0.5rem) var(--slds-g-spacing-3, 0.75rem);
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
-  border: 1px solid var(--slds-g-color-border-base-1, #dddbda);
-  border-radius: 0.25rem;
+  border: var(--slds-g-sizing-border-1, 1px) solid
+    var(--slds-g-color-border-base-1, #dddbda);
+  border-radius: var(--slds-g-radius-border-1, 0.25rem);
   font-family: monospace;
   font-size: 0.6875rem;
   color: var(--slds-g-color-neutral-base-20, #3e3e3c);
@@ -1051,7 +1118,7 @@
 /* ── Diagnostics (showDiagnostics only) ───────────────────────────────────────── */
 .rhc-debug-meta {
   display: block;
-  margin-top: 0.25rem;
+  margin-top: var(--slds-g-spacing-1, 0.25rem);
   font-family: monospace;
   font-size: 0.6875rem;
   color: var(--slds-g-color-neutral-base-40, #706e6b);
@@ -1060,7 +1127,7 @@
 
 .rhc-debug-console-hint {
   margin: 0;
-  padding: 0.375rem 1rem 0.625rem;
+  padding: 0.375rem var(--slds-g-spacing-4, 1rem) 0.625rem;
   border-top: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
   font-size: 0.6875rem;
   color: var(--slds-g-color-neutral-base-40, #706e6b);

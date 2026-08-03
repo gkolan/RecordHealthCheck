@@ -8,7 +8,7 @@
  * Example implementation retained here only as an integration-test fixture.
  * {"minScore": 80, "activityDaysBack": 60}
  */
-public with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
+global with sharing class AccountStrategicReadinessCheck implements RecordHealthCheckRule {
   private static final Integer DEFAULT_MIN_SCORE = 80;
   private static final Integer DEFAULT_ACTIVITY_DAYS = 30;
   private static final Integer MIN_SCORE = 1;
@@ -17,97 +17,149 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
   private static final Integer MAX_ACTIVITY_DAYS = 3650;
   private static final Integer POINTS_PER_CRITERION = 25;
 
-  public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    if (scope == null || scope.recordIds == null || scope.recordIds.isEmpty()) {
+      return new Map<Id, RecordHealthCheckOutcome>();
+    }
+    Set<Id> recordIds = new Set<Id>(scope.recordIds);
     Integer minScore = resolveInt(
-      context.parameters,
+      scope.parameters,
       'minScore',
       DEFAULT_MIN_SCORE,
       MIN_SCORE,
       MAX_SCORE
     );
     Integer activityDays = resolveInt(
-      context.parameters,
+      scope.parameters,
       'activityDaysBack',
       DEFAULT_ACTIVITY_DAYS,
       MIN_ACTIVITY_DAYS,
       MAX_ACTIVITY_DAYS
     );
 
-    Account acct = [
-      SELECT BillingStreet, BillingCity, BillingCountry
-      FROM Account
-      WHERE Id = :context.recordId
-      WITH USER_MODE
-    ];
+    // Five queries for the whole scope, where the single-record version needed
+    // five per record. Each returns the SET of Accounts meeting one criterion,
+    // so an Account absent from a set simply scores nothing for it.
+    Map<Id, Account> accounts = loadAccounts(recordIds);
+    Set<Id> withContacts = accountsWithContacts(recordIds);
+    Set<Id> withPipeline = accountsWithOpenPipeline(recordIds);
+    Set<Id> withActivity = accountsWithRecentActivity(recordIds, activityDays);
 
-    Integer score = 0;
-    if (hasContacts(context.recordId)) {
-      score += POINTS_PER_CRITERION;
-    }
-    if (hasOpenPipeline(context.recordId)) {
-      score += POINTS_PER_CRITERION;
-    }
-    if (hasRecentActivity(context.recordId, activityDays)) {
-      score += POINTS_PER_CRITERION;
-    }
-    if (billingComplete(acct)) {
-      score += POINTS_PER_CRITERION;
-    }
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(minScore);
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
+    for (Id recordId : recordIds) {
+      Account acct = accounts.get(recordId);
+      if (acct == null) {
+        // Deleted between selection and execution, or invisible to this user.
+        // Never FAIL: failing a record the user cannot see would leak that it
+        // exists.
+        results.put(
+          recordId,
+          RecordHealthCheckOutcome.unableToEvaluate(
+            RecordHealthCheckReasonCodes.RECORD_NO_LONGER_AVAILABLE
+          )
+        );
+        continue;
+      }
 
-    RecordHealthCheckResult result = new RecordHealthCheckResult();
-    result.status = score >= minScore ? 'PASS' : 'FAIL';
-    // Set on pass and fail so an entitled viewer can audit a green row too
-    // . The disclosure keeps these off the default card.
-    result.actualValue = String.valueOf(score);
-    result.expectedValue = String.valueOf(minScore) + '+';
-    result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-      'Strategic readiness score',
-      String.valueOf(score),
-      'sum of met criteria'
-    );
-    result.expectedValueSource = new RecordHealthCheckValueSource.Detail(
-      'Minimum required score',
-      String.valueOf(minScore),
-      null
-    );
-    return result;
+      Integer score = 0;
+      if (withContacts.contains(recordId)) {
+        score += POINTS_PER_CRITERION;
+      }
+      if (withPipeline.contains(recordId)) {
+        score += POINTS_PER_CRITERION;
+      }
+      if (withActivity.contains(recordId)) {
+        score += POINTS_PER_CRITERION;
+      }
+      if (billingComplete(acct)) {
+        score += POINTS_PER_CRITERION;
+      }
+
+      results.put(
+        recordId,
+        (score >= minScore
+            ? RecordHealthCheckOutcome.pass('APEX_PASS')
+            : RecordHealthCheckOutcome.fail('APEX_FAIL'))
+          .withFound(RecordHealthCheckValue.ofCount(score))
+          .withComparison('GREATER_THAN_OR_EQUAL', expected)
+      );
+    }
+    return results;
   }
 
-  private static Boolean hasContacts(Id accountId) {
-    return [
-        SELECT COUNT()
-        FROM Contact
-        WHERE AccountId = :accountId
+  private static Map<Id, Account> loadAccounts(Set<Id> recordIds) {
+    return new Map<Id, Account>(
+      [
+        SELECT Id, BillingStreet, BillingCity, BillingCountry
+        FROM Account
+        WHERE Id IN :recordIds
         WITH USER_MODE
-      ] > 0;
+      ]
+    );
   }
 
-  private static Boolean hasOpenPipeline(Id accountId) {
-    AggregateResult ar = [
-      SELECT SUM(Amount) total
+  private static Set<Id> accountsWithContacts(Set<Id> recordIds) {
+    Set<Id> found = new Set<Id>();
+    for (AggregateResult row : [
+      SELECT AccountId accountId
+      FROM Contact
+      WHERE AccountId IN :recordIds
+      WITH USER_MODE
+      GROUP BY AccountId
+    ]) {
+      found.add((Id) row.get('accountId'));
+    }
+    return found;
+  }
+
+  private static Set<Id> accountsWithOpenPipeline(Set<Id> recordIds) {
+    Set<Id> found = new Set<Id>();
+    for (AggregateResult row : [
+      SELECT AccountId accountId, SUM(Amount) total
       FROM Opportunity
-      WHERE AccountId = :accountId AND IsClosed = FALSE
+      WHERE AccountId IN :recordIds AND IsClosed = FALSE
       WITH USER_MODE
-    ];
-    Decimal total = (Decimal) ar.get('total');
-    return total != null && total > 0;
+      GROUP BY AccountId
+    ]) {
+      Decimal total = (Decimal) row.get('total');
+      if (total != null && total > 0) {
+        found.add((Id) row.get('accountId'));
+      }
+    }
+    return found;
   }
 
-  private static Boolean hasRecentActivity(Id accountId, Integer daysBack) {
+  private static Set<Id> accountsWithRecentActivity(
+    Set<Id> recordIds,
+    Integer daysBack
+  ) {
     Date cutoff = Date.today().addDays(-daysBack);
-    Integer tasks = [
-      SELECT COUNT()
+    if (cutoff == null) {
+      return new Set<Id>();
+    }
+    Set<Id> found = new Set<Id>();
+    for (AggregateResult row : [
+      SELECT WhatId whatId
       FROM Task
-      WHERE WhatId = :accountId AND IsClosed = TRUE AND ActivityDate >= :cutoff
+      WHERE WhatId IN :recordIds AND IsClosed = TRUE AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
-    Integer events = [
-      SELECT COUNT()
+      GROUP BY WhatId
+    ]) {
+      found.add((Id) row.get('whatId'));
+    }
+    for (AggregateResult row : [
+      SELECT WhatId whatId
       FROM Event
-      WHERE WhatId = :accountId AND ActivityDate >= :cutoff
+      WHERE WhatId IN :recordIds AND ActivityDate >= :cutoff
       WITH USER_MODE
-    ];
-    return tasks + events > 0;
+      GROUP BY WhatId
+    ]) {
+      found.add((Id) row.get('whatId'));
+    }
+    return found;
   }
 
   private static Boolean billingComplete(Account acct) {
@@ -116,6 +168,7 @@ public with sharing class AccountStrategicReadinessCheck implements RecordHealth
       String.isNotBlank(acct.BillingCountry);
   }
 
+  @TestVisible
   private static Integer resolveInt(
     Map<String, Object> parameters,
     String key,

@@ -27,11 +27,19 @@ Merge tokens use a namespace and property:
 | Namespace | Where the value comes from: `record`, `rhcRule`, `rhcSet`, `rhcResult`, or `rhcRun` |
 | Property | Which field or metadata value to insert, such as `Name` or `checkTitle` |
 
-The syntax also supports optional fallback text after a pipe character:
+Raw record-field tokens also support quoted `format` and `fallback` attributes:
 
 ```text
-{!record.Name|Fallback text}
+{!record.Amount format="CURRENCY" fallback="Not available"}
 ```
+
+Format values are official, case-sensitive API names: `CURRENCY` is valid; `currency` and the
+Setup label `Currency` are not. Supported names are `AUTO`, `NUMBER`, `CURRENCY`, `PERCENT`,
+`RATIO_PERCENT`, `BOOLEAN`, `DATE`, `DATETIME`, `TEXT`, and `RAW`. `format` is allowed only on
+`record.*` tokens because those tokens retain a raw typed value. Result tokens already contain
+completed display text and cannot be formatted again. Attributes may appear in either order;
+attribute names are lower-case, values must be double-quoted, and duplicate or unknown attributes
+are configuration errors. Attribute values must use the quoted syntax shown above.
 
 Use a fallback when the value might be blank and empty wording would confuse the reader. A bare
 token is enough when no substitute is needed or the value is always present, such as
@@ -40,7 +48,7 @@ token is enough when no substitute is needed or the value is always present, suc
 For example:
 
 ```text
-Review {!record.Name|this record} before approval.
+Review {!record.Name fallback="this record"} before approval.
 ```
 
 | Live `Name` | Completed text |
@@ -76,7 +84,8 @@ Use Rule and Check Set tokens when the message should name the check or card:
 {!rhcSet.cardTitle}
 ```
 
-Unknown namespaces and properties are configuration errors. Legacy flat tokens such as `{!Id}` are rejected. <!-- legacy-token-ok -->
+Unknown namespaces and properties are configuration errors. Every token must include one of the
+documented namespaces; `{!Id}` is therefore rejected. <!-- rejected-token-fixture -->
 
 Blank tokens behave differently in display text (including Action Label), Action URLs, and SOQL. See
 [Fallbacks](#fallbacks).
@@ -116,16 +125,16 @@ Use a fallback when a blank value would produce unclear wording or an unsafe bin
 often blank, so a substitute helps:
 
 ```text
-{!record.Parent.Name|Independent account}
-{!record.Owner.Manager.Name|No manager assigned}
+{!record.Parent.Name fallback="Independent account"}
+{!record.Owner.Manager.Name fallback="No manager assigned"}
 ```
 
 In SOQL, use a typed fallback only when the bound field can be blank and a blank bind would be
 wrong:
 
 ```text
-{!record.AnnualRevenue|0}
-{!record.Industry|Technology}
+{!record.AnnualRevenue fallback="0"}
+{!record.Industry fallback="Technology"}
 ```
 
 When a Rule evaluates a record, `{!record.Id}` already has a value, so SOQL and Action URLs use
@@ -142,11 +151,11 @@ SELECT COUNT() FROM Contact WHERE AccountId = {!record.Id}
 Optional parent lookups can be blank, so a typed Id fallback is useful there:
 
 ```sql
-SELECT AnnualRevenue FROM Account WHERE Id = {!record.ParentId|001000000000000AAA}
+SELECT AnnualRevenue FROM Account WHERE Id = {!record.ParentId fallback="001000000000000AAA"}
 ```
 
-Fallback text is literal. It is not parsed as another merge token. Extra `|` characters after the
-first separator stay part of the fallback. Invalid number, date, date/time, time, or Boolean
+Fallback text is literal. It is not parsed as another merge token. A pipe inside the quoted
+fallback is ordinary text. Invalid number, date, date/time, time, or Boolean
 fallbacks in SOQL return `MISSING_BIND_VALUE` rather than running a misleading query.
 
 ## Tokens in SOQL
@@ -164,7 +173,7 @@ fallbacks in SOQL return `MISSING_BIND_VALUE` rather than running a misleading q
 
 | Reason code | Typical cause |
 | --- | --- |
-| `LEGACY_FLAT_TOKEN` | Flat `{!Id}`-style token rejected under namespaced syntax <!-- legacy-token-ok --> |
+| `TOKEN_NAMESPACE_REQUIRED` | Token such as `{!Id}` omits a required namespace <!-- rejected-token-fixture --> |
 | `UNSUPPORTED_TOKEN_NAMESPACE` | Namespace is not on the allowed list |
 | `MISSING_TOKEN_VALUE` | URL token resolved blank with no fallback |
 | `MISSING_BIND_VALUE` | SOQL fallback could not be converted to the field type |

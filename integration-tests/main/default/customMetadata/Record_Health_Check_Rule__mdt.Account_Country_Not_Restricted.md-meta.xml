@@ -64,7 +64,7 @@
         <field>UnableToEvaluateMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Could not screen billing country — confirm Restricted_Country__c exists. Contact your administrator.</value>
+    >Could not screen billing country: confirm Restricted_Country__c exists. Contact your administrator.</value>
     </values>
     <values>
         <field>ApplicabilityMode__c</field>

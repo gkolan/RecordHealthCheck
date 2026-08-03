@@ -19,7 +19,8 @@ function walk(directory) {
     const entryPath = path.join(directory, entry.name);
     if (
       entryPath === path.join(docsRoot, "slides") ||
-      entryPath === path.join(docsRoot, "audits")
+      entryPath === path.join(docsRoot, "audits") ||
+      entryPath === path.join(docsRoot, "development")
     )
       continue;
     if (entry.isDirectory()) walk(entryPath);
@@ -116,7 +117,7 @@ function classify(relative) {
     )
   )
     return "Evaluation reference";
-  if (/docs\/reference\/reference-apex-api\.md$/.test(relative))
+  if (/docs\/(?:api|platform-events)\//.test(relative))
     return "Integration reference";
   if (/docs\/installation\/01-how-it-works\.md$/.test(relative))
     return "Concept guide";
@@ -171,7 +172,7 @@ function structureMatches(type, markdown) {
       return hasAll(markdown, [
         /^## Choose your path$/m,
         /^## New installation sequence$/m,
-        /^## Upgrade sequence$/m,
+        /^## (?:Upgrade|Existing-installation) sequence$/m,
         /\| Your starting point \| Follow this path \| What you will accomplish \|/,
         /^## Next steps$/m
       ]);
@@ -233,7 +234,7 @@ function structureMatches(type, markdown) {
       ]);
     case "Integration reference":
       return hasAll(markdown, [
-        /quick start|quick examples|basic .* pattern|choose an integration|build your first/i,
+        /quick start|quick examples|basic .* pattern|choose an integration|choose an api|choose a platform event|subscribe|example/i,
         /access|running user|permission/i,
         /limit|bulk|transaction/i,
         /status|outcome|failure|fault|error/i,

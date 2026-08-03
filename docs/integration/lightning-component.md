@@ -9,7 +9,7 @@ publish lifecycle events.
 
 The **Record Health Check** Lightning Web Component supports both experiences. Automatic page-load
 evaluation is read-only and never publishes. An explicit **Run** or **Rerun** is a deliberate user
-action and can publish when the Check Set and Rules opt in.
+action and can publish when the Check Set and Rules enable publication.
 
 The component is available only on Lightning record pages. App and Home pages do not provide the
 `recordId` required for evaluation, so the component intentionally does not appear in their App
@@ -64,12 +64,17 @@ diagnostic values additionally require **Show Diagnostics** and the
 | User clicks Run | `USER_INITIATED` | Enabled Check Set | Enabled Rules |
 | User clicks Rerun | `USER_INITIATED` | Enabled Check Set | Enabled Rules |
 
-Custom Metadata switches remain off by default:
+Lifecycle Custom Metadata switches remain off by default:
 
-- `PublishRunEvent__c` enables one Set Run completion event for the Check Set.
-- `PublishResultEvent__c` enables a Rule Result event for that Rule.
+- `PublishUserRunEvent__c` enables one Set Run completion event for the Check Set.
+- `PublishUserResultEvent__c` enables a Rule Result event for that Rule.
 
-An automatic run never publishes even when both switches are enabled.
+Error Log events use a separate default-on Check Set setting. `PublishErrorLogEvent__c` publishes
+Framework `ERROR` diagnostics from automatic and deliberate runs; uncheck it to opt that Check Set
+out. This does not disable Salesforce debug-log output.
+
+An automatic run never publishes lifecycle events even when both lifecycle switches are enabled.
+It can still publish an Error Log event when the default-on error setting permits it.
 
 The block is intentional. Opening or refreshing a record page is passive navigation, not a request
 to notify downstream systems. If automatic runs published, ordinary browsing could consume Platform
@@ -140,19 +145,19 @@ the linked metadata references for exact field types, replay, retention, and sub
 
 ## Versioning and compatibility
 
-The component consumes the stable synchronous response contract `1.0`. Events created by explicit
-Run or Rerun use the independent lifecycle-event contract `1.0` and report Core `2.0.0`. No
-component run behavior is currently deprecated.
+The component reads the contract value included in the synchronous response. Events created by an
+explicit Run or Rerun carry their own independent contract value. No component run behavior is
+currently deprecated.
 
-The contract numbers identify response and event shapes for integrations; Core identifies the
-installed Framework release. Keeping them separate allows compatible Framework updates without
+The contract numbers identify response and event shapes for integrations; the Framework version
+identifies the installed release. Keeping them separate allows compatible updates without
 making the Lightning component or subscribers treat every product release as a breaking schema
 change.
 
 ## Related
 
 - [Platform events](lifecycle-events.md)
-- [Apex API](../reference/reference-apex-api.md)
+- [Apex API](../api/apex-api.md)
 - [Flow actions](flow-actions.md)
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
 - [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md)

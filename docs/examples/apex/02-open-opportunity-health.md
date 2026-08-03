@@ -32,7 +32,7 @@ A sales manager opens an Account before pipeline coaching.
 
 | Card value | Healthy | Unhealthy | No open Opportunities |
 | --- | --- | --- | --- |
-| **Status** | `PASS` | `FAIL` | `SKIP` |
+| **Status** | `PASS` | `FAIL` | `SKIPPED` |
 | **Found** | `0 unhealthy` | `<N> unhealthy` | Not applicable |
 | **Expected** | `0 unhealthy` | `0 unhealthy` | Not applicable |
 | **Message** | No failure message | Configured Critical message | Applicability explains the skip |
@@ -49,22 +49,23 @@ A sales manager opens an Account before pipeline coaching.
 
 | Input in Apex | Where it comes from |
 | --- | --- |
-| `context.recordId` | The Account being evaluated at run time |
-| `context.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
+| `scope.recordIds` | The Accounts being evaluated in this run |
+| `scope.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
 
 Record Health Check supplies the Account ID automatically; leave it out of the parameter JSON:
 
-- On a Lightning record page, `context.recordId` is the ID of the open record.
-- From Apex, it is the `recordId` passed to `RecordHealthCheck.runRule` or `RecordHealthCheck.runSet`.
-- From Flow, it is the value supplied to the action's **Record ID** input.
+- On a Lightning record page, the scope normally contains the open record.
+- Bulk Apex requests can place as many as 200 record IDs in one scope.
+- Flow supplies its **Record ID** input to the scope-building pipeline.
 
 Use the supplied ID as a SOQL bind variable:
 
 ```apex
-Id accountId = context.recordId;
+List<Id> accountIds = scope.recordIds;
 ```
 
-The complete class below binds `context.recordId` directly in its Opportunity query.
+The complete class below binds the full ID collection in one Opportunity query and returns one
+outcome for every requested Account.
 
 ## Step 1: Understand the parameters
 
@@ -82,9 +83,9 @@ After deploying the class:
 2. Create or edit the Rule record.
 3. Paste the object into **Apex Parameters (JSON)** (`ApexParametersJson__c`) on `Record_Health_Check_Rule__mdt`.
 
-Record Health Check parses the JSON and supplies it as `context.parameters`. The class accepts
+Record Health Check parses the JSON and supplies it as `scope.parameters`. The class accepts
 `staleDays` from `1` through `3650`; a missing or invalid value uses 30. See
-[Parameter parsing patterns](../../reference/reference-apex.md#4-apex-parameters-json-apexparametersjson__c)
+[Parameter parsing patterns](../../reference/reference-apex.md#scope)
 for validation and type-conversion guidance.
 
 ## Step 2: Create the Apex class
@@ -102,89 +103,118 @@ are true.
  */
 
 /**
- * Example RecordHealthCheckRule: flags open Opportunities that are simultaneously
- * stale, missing Next Step, and have a Close Date outside the current quarter. Administrators can change this through
+ * Example RecordHealthCheckRule that flags open Opportunities that are simultaneously
+ * stale, missing Next Step, and not closing this quarter. Tunable via
  * {"staleDays": 30}
  */
-public with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
-    private static final Integer DEFAULT_STALE_DAYS = 30;
-    private static final Integer MIN_STALE_DAYS = 1;
-    private static final Integer MAX_STALE_DAYS = 3650;
+global with sharing class AccountOpenOpportunityHealthCheck implements RecordHealthCheckRule {
+  private static final Integer DEFAULT_STALE_DAYS = 30;
+  private static final Integer MIN_STALE_DAYS = 1;
+  private static final Integer MAX_STALE_DAYS = 3650;
 
-    public RecordHealthCheckResult evaluate(RecordHealthCheckContext context) {
-        // Record Health Check supplies the Account ID. The administrator can
-        // change staleDays in Apex Parameters (JSON) without changing this class.
-        // Missing or invalid values use the documented 30-day default.
-        Integer staleDays = resolveStaleDays(context.parameters);
-        Date staleCutoff = Date.today().addDays(-staleDays);
-        Date quarterStart = getQuarterStart(Date.today());
-        Date quarterEnd = quarterStart.addMonths(3).addDays(-1);
+  global Map<Id, RecordHealthCheckOutcome> evaluate(
+    RecordHealthCheckScope scope
+  ) {
+    Integer staleDays = resolveStaleDays(scope.parameters);
+    Date staleCutoff = Date.today().addDays(-staleDays);
+    Date quarterStart = getQuarterStart(Date.today());
+    Date quarterEnd = quarterStart.addMonths(3).addDays(-1);
+    List<Id> recordIds = scope.recordIds;
 
-        // WITH USER_MODE respects the running user's object, field, and record
-        // access. The result never reveals an Opportunity the user cannot read.
-        List<Opportunity> openOpps = [
-            SELECT LastActivityDate, NextStep, CloseDate
-            FROM Opportunity
-            WHERE AccountId = :context.recordId AND IsClosed = FALSE
-            WITH USER_MODE
-        ];
+    // Seed every Account first. An Account with no open Opportunities returns
+    // no rows at all, and "nothing unhealthy" is a real pass rather than a
+    // record the check forgot to answer for.
+    Map<Id, Integer> unhealthyByAccount = new Map<Id, Integer>();
+    Map<Id, Integer> scannedByAccount = new Map<Id, Integer>();
+    for (Id recordId : recordIds) {
+      unhealthyByAccount.put(recordId, 0);
+      scannedByAccount.put(recordId, 0);
+    }
 
-        // An Opportunity is unhealthy only when all three problems occur on
-        // that same record. Problems spread across different records do not fail.
-        Integer unhealthyCount = 0;
-        for (Opportunity opp : openOpps) {
-            if (isUnhealthy(opp, staleCutoff, quarterStart, quarterEnd)) {
-                unhealthyCount++;
-            }
-        }
-
-        RecordHealthCheckResult result = new RecordHealthCheckResult();
-        result.status = unhealthyCount == 0 ? 'PASS' : 'FAIL';
-        // Return Found and Expected on pass and fail so users can see both the
-        // unhealthy count and how many visible open Opportunities were checked.
-        result.actualValue = unhealthyCount + ' unhealthy';
-        result.expectedValue = '0 unhealthy';
-        result.actualValueSource = new RecordHealthCheckValueSource.Detail(
-            'Unhealthy open opportunities',
-            String.valueOf(unhealthyCount),
-            openOpps.size() + ' open opportunit' + (openOpps.size() == 1 ? 'y' : 'ies') + ' scanned'
+    // One query for the whole scope. AccountId is selected so each row can be
+    // attributed back to the record it belongs to.
+    for (Opportunity opp : [
+      SELECT AccountId, LastActivityDate, NextStep, CloseDate
+      FROM Opportunity
+      WHERE AccountId IN :recordIds AND IsClosed = FALSE
+      WITH USER_MODE
+    ]) {
+      if (!scannedByAccount.containsKey(opp.AccountId)) {
+        continue;
+      }
+      scannedByAccount.put(
+        opp.AccountId,
+        scannedByAccount.get(opp.AccountId) + 1
+      );
+      if (isUnhealthy(opp, staleCutoff, quarterStart, quarterEnd)) {
+        unhealthyByAccount.put(
+          opp.AccountId,
+          unhealthyByAccount.get(opp.AccountId) + 1
         );
-        result.expectedValueSource = new RecordHealthCheckValueSource.Detail('Allowed unhealthy count', '0', null);
-        return result;
+      }
     }
 
-    @TestVisible
-    private static Boolean isUnhealthy(Opportunity opp, Date staleCutoff, Date quarterStart, Date quarterEnd) {
-        Boolean stale = opp.LastActivityDate == null || opp.LastActivityDate < staleCutoff;
-        Boolean missingNextStep = String.isBlank(opp.NextStep);
-        Boolean closeNotThisQuarter =
-            opp.CloseDate == null ||
-            opp.CloseDate < quarterStart ||
-            opp.CloseDate > quarterEnd;
-        return stale && missingNextStep && closeNotThisQuarter;
+    RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(0);
+    Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
+    for (Id recordId : recordIds) {
+      Integer unhealthyCount = unhealthyByAccount.get(recordId);
+      RecordHealthCheckOutcome outcome = unhealthyCount == 0
+        ? RecordHealthCheckOutcome.pass('APEX_PASS')
+        : RecordHealthCheckOutcome.fail('APEX_FAIL');
+      results.put(
+        recordId,
+        outcome
+          .withFound(RecordHealthCheckValue.ofCount(unhealthyCount))
+          .withComparison('EQUALS', expected)
+      );
     }
+    return results;
+  }
 
-    @TestVisible
-    private static Date getQuarterStart(Date reference) {
-        Integer month = reference.month();
-        Integer quarterMonth = ((Integer) Math.floor((month - 1) / 3.0) * 3) + 1;
-        return Date.newInstance(reference.year(), quarterMonth, 1);
-    }
+  @TestVisible
+  private static Boolean isUnhealthy(
+    Opportunity opp,
+    Date staleCutoff,
+    Date quarterStart,
+    Date quarterEnd
+  ) {
+    Boolean stale =
+      opp.LastActivityDate == null ||
+      opp.LastActivityDate < staleCutoff;
+    Boolean missingNextStep = String.isBlank(opp.NextStep);
+    Boolean closeNotThisQuarter =
+      opp.CloseDate == null ||
+      opp.CloseDate < quarterStart ||
+      opp.CloseDate > quarterEnd;
+    return stale && missingNextStep && closeNotThisQuarter;
+  }
 
-    private Integer resolveStaleDays(Map<String, Object> parameters) {
-        // Blank, nonnumeric, and out-of-range values use the safe default.
-        if (parameters == null)
-            return DEFAULT_STALE_DAYS;
-        Object raw = parameters.get('staleDays');
-        if (raw == null)
-            return DEFAULT_STALE_DAYS;
-        try {
-            Integer parsed = Integer.valueOf(String.valueOf(raw));
-            return parsed >= MIN_STALE_DAYS && parsed <= MAX_STALE_DAYS ? parsed : DEFAULT_STALE_DAYS;
-        } catch (Exception ex) {
-            return DEFAULT_STALE_DAYS;
-        }
+  @TestVisible
+  private static Date getQuarterStart(Date reference) {
+    Integer month = reference.month();
+    Integer quarterMonth = ((Integer) Math.floor((month - 1) / 3.0) * 3) + 1;
+    return Date.newInstance(reference.year(), quarterMonth, 1);
+  }
+
+  @TestVisible
+  private Integer resolveStaleDays(Map<String, Object> parameters) {
+    if (parameters == null) {
+      return DEFAULT_STALE_DAYS;
     }
+    Object raw = parameters.get('staleDays');
+    if (raw == null) {
+      return DEFAULT_STALE_DAYS;
+    }
+    try {
+      Integer parsed = Integer.valueOf(String.valueOf(raw));
+      return parsed >= MIN_STALE_DAYS &&
+        parsed <= MAX_STALE_DAYS
+        ? parsed
+        : DEFAULT_STALE_DAYS;
+    } catch (Exception ex) {
+      return DEFAULT_STALE_DAYS;
+    }
+  }
 }
 ```
 
@@ -192,37 +222,39 @@ public with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
 ## Context and result contract
 
-Record Health Check calls:
+Record Health Check calls the plugin once for a scope:
 
 ```apex
-RecordHealthCheckResult evaluate(RecordHealthCheckContext context)
+Map<Id, RecordHealthCheckOutcome> evaluate(RecordHealthCheckScope scope)
 ```
 
 The context contains:
 
-| Context field | Type | What it contains |
+| Scope field | Type | What it contains |
 | --- | --- | --- |
-| `recordId` | `Id` | Record being evaluated; use this value in SOQL |
-| `objectApiName` | `String` | API name of the evaluated object, such as `Account` |
-| `record` | `SObject` | Partial current record; only requested fields are loaded |
+| `recordIds` | `List<Id>` | Detached, deduplicated IDs to evaluate; use the collection in bulk SOQL |
+| `objectApiName` | `String` | API name shared by every ID in the scope, such as `Account` |
 | `parameters` | `Map<String, Object>` | Parsed **Apex Parameters (JSON)**; an empty map when JSON is blank |
 | `ruleDeveloperName` | `String` | Developer Name of the Rule being evaluated |
+| `checkSetDeveloperName` | `String` | Developer Name of the Check Set that supplied the Rule |
+| `runId` | `String` | Correlation identifier for the evaluation run |
 
-For a completed check, the class must return all three required values:
+The returned map must contain exactly one entry for every requested ID. Build each outcome with a
+status factory and typed values:
 
-| Result field | What the class must return |
+| Outcome field | What the class must return |
 | --- | --- |
-| `status` | `PASS` or `FAIL` |
-| `actualValue` | Nonblank **Found** value describing what the class observed |
-| `expectedValue` | Nonblank **Expected** value describing the passing requirement |
-| `message` | Optional; on `FAIL`, a nonblank class message replaces **Message When Failed** from the Rule |
-| `actualValueSource` / `expectedValueSource` | Optional diagnostic detail; never displayed as the card's Found or Expected value |
+| `status` | An outcome created by `pass`, `fail`, `unableToEvaluate`, or `skipped` |
+| `reasonCode` | A stable, nonblank code that explains the programmatic reason |
+| `found` | A typed `RecordHealthCheckValue` describing what the class observed |
+| `comparisonOperator` | The operator behind the decision, such as `EQUALS` |
+| `expected` | A typed `RecordHealthCheckValue` describing the passing requirement |
 
 For applicability, configure **Applies To** on the Rule so Record Health Check skips before Apex
-runs (rather than returning `SKIP` from the class). The framework supplies the label, severity,
-duration, and other card details. An invalid status, blank Found value, blank Expected value, or
+runs. The framework supplies identity, label, severity, messages, display values, and diagnostics.
+Missing or extra map keys, a null outcome, an invalid status, forbidden side effects, or an
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning `RecordHealthCheckResult`](../../reference/reference-apex.md#6-returning-recordhealthcheckresult).
+[Returning an outcome](../../reference/reference-apex.md#outcome).
 
 
 ## Step 3: Configure the Rule
@@ -249,7 +281,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | --- | --- | --- |
 | **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Checks whether any open Opportunity is stale, missing Next Step, and outside the current quarter at the same time. |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Critical |
-| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name\|this record}` has open opportunities that are simultaneously stale, missing a Next Step, and have a Close Date outside the current quarter. Update Next Step, activity, or Close Date on the unhealthy Opportunities. |
+| **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | `{!record.Name fallback="this record"}` has open opportunities that are simultaneously stale, missing a Next Step, and have a Close Date outside the current quarter. Update Next Step, activity, or Close Date on the unhealthy Opportunities. |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Unable to check open Opportunity health. Confirm the running user can read the Opportunities and fields used by this Rule. |
 | **Prerequisite Rule** | [`PrerequisiteRule__c`](../../metadata/fields-check-rule.md#prerequisite-rule-prerequisiterule__c) | Leave blank |
 | **Fix Message** | [`FixMessage__c`](../../metadata/fields-check-rule.md#fix-message-fixmessage__c) | Review the open Opportunities. For each unhealthy Opportunity, update Next Step, log current activity, or correct Close Date. |
@@ -257,7 +289,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | `/lightning/r/Account/{!record.Id}/related/Opportunities/view` |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `20` |
 | **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Checked |
-| **Publish Result Event** | [`PublishResultEvent__c`](../../metadata/fields-check-rule.md#publish-result-event-publishresultevent__c) | Unchecked |
+| **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 `staleDays` sets how old `LastActivityDate` must be before an Opportunity counts as stale.
 
@@ -283,7 +315,7 @@ Use these Check Set values:
 | **Found/Expected Display** | On demand |
 | **Stop after a system error** | Unchecked |
 | **Show Diagnostics** | Unchecked; enable temporarily only for authorized troubleshooting |
-| **Publish Run Event** | Unchecked |
+| **Publish User Run Event** | Unchecked |
 | **Active** | Checked |
 
 ## What the user sees
@@ -328,10 +360,13 @@ The class uses sharing and a user-mode Opportunity query so its result follows t
 Execute Anonymous alternative:
 
 ```apex
-RecordHealthCheckResult result = RecordHealthCheck.runRule(
-  'Open_Opportunities_Are_Healthy', '001XXXXXXXXXXXXXXX'
+RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
+  RecordHealthCheckRequest.forRule(
+    'Open_Opportunities_Are_Healthy',
+    '001XXXXXXXXXXXXXXX'
+  ).withResultMode(RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY)
 );
-System.debug(LoggingLevel.INFO, JSON.serializePretty(result));
+System.debug(LoggingLevel.INFO, JSON.serializePretty(response));
 ```
 
 ### Lightning record page

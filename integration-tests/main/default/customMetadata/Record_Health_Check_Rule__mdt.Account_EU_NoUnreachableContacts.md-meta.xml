@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Everyday reachability: COUNT contacts with both Phone and Email blank must be zero. Each contact needs at least one channel — use AllRowsPass IsNotBlank rules when both are required.</value>
+    >Everyday reachability: COUNT contacts with both Phone and Email blank must be zero. Each contact needs at least one channel: use AllRowsPass IsNotBlank rules when both are required.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

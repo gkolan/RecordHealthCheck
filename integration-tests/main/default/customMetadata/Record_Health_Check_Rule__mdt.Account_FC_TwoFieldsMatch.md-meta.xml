@@ -18,7 +18,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Two fields compared to each other using = in formula syntax. Demonstrates field equality (not ISBLANK). Applicability gate ensures ShippingCity is set before comparing — skips accounts with no shipping address at all.</value>
+    >Two fields compared to each other using = in formula syntax. Demonstrates field equality (not ISBLANK). Applicability gate ensures ShippingCity is set before comparing: skips accounts with no shipping address at all.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

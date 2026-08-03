@@ -2,7 +2,7 @@
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >Versioned, restricted diagnostics event for Record Health Check framework errors. Carries error metadata (message, exception type, stack trace) plus the record and check context needed to reproduce a failure, correlated by RunId. Publish Immediately (survives the rollback a failing check triggers), ERROR level by default. Persistence, retention, and reporting are owned by the Record Health Check extension package, not Core.</description>
+  >Versioned, restricted diagnostics event for Record Health Check framework errors. Carries error metadata (message, exception type, stack trace) plus the record and check context needed to reproduce a failure, correlated by RunId. Publish Immediately (survives the rollback a failing check triggers), ERROR level by default. Persistence, retention, and reporting are owned by the Record Health Check extension package, not Framework.</description>
     <eventType>HighVolume</eventType>
     <label>Record Health Check Log</label>
     <pluralLabel>Record Health Check Logs</pluralLabel>

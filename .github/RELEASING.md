@@ -1,118 +1,65 @@
-# Releasing a new version
+# Release Record Health Check
 
-This project ships as **source you deploy** (no installable package), and uses
-**manual tagged releases**. A "release" is a named, frozen snapshot of the repo
-(for example `v1.0.0`) that people can install or roll back to.
+Record Health Check ships primarily as the namespaced unlocked package `Record Health Check`.
+Source deployment is a development workflow and is not the supported subscriber installation path.
 
-This guide is written so you can follow it the first time without prior release
-experience. You only need the [GitHub CLI (`gh`)](https://cli.github.com) and
-`git`. Everything here runs from the project root.
+## Version model
 
-> First time publishing this repository to GitHub? Create a private or public repo,
-> push `main`, and enable Actions. See GitHub's
-> [creating a new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository)
-> guide. Come back here when you want to cut a versioned release.
+The product follows Semantic Versioning. `package.json` carries the product version and
+`sfdx-project.json` carries the Salesforce package version as `MAJOR.MINOR.PATCH.NEXT`.
+Each package build uses `MAJOR.MINOR.PATCH.BUILD`; later build numbers are immutable candidates for
+the same semantic release.
 
-## Versioning, in plain terms
+## Required evidence
 
-This project follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
+Before creating a release candidate:
 
-| Bump      | When                                                           | Example         |
-| --------- | -------------------------------------------------------------- | --------------- |
-| **PATCH** | Bug fixes only, no behavior change for existing configs        | `1.0.0 → 1.0.1` |
-| **MINOR** | New backward-compatible feature (new Check Method, new field)  | `1.0.0 → 1.1.0` |
-| **MAJOR** | A change that breaks existing Check Sets/Rules or the Apex API | `1.x → 2.0.0`   |
+1. Run every local gate, including docs, query shapes, permissions, formatting, lint, and Jest.
+2. Run Code Analyzer and resolve every unsuppressed release finding.
+3. Deploy the production manifest into a clean scratch org and run all local Apex tests.
+4. Run the query-verdict parity comparison and the checked-in scope measurement harness.
+5. Create the package version without example Custom Metadata records.
+6. Install it into a clean subscriber org, assign the admin permission set, and smoke-test Apex,
+   Flow, LWC, permissions, and lifecycle events.
+7. Upgrade an org containing the previous released package and repeat the smoke tests.
 
-The current version lives in [`package.json`](../package.json) (`"version"`).
+Never discard deploy, test, package, or install output. Archive JSON results with the release.
 
-## Step 1: Make sure `main` is green
-
-Releases are cut from `main`. Confirm everything passes locally first:
+## Create a package candidate
 
 ```bash
-git checkout main
-git pull
-npm ci
-npm run prettier:verify
-npm run lint
-npm test                    # LWC Jest unit tests
-npm run test:unit:coverage  # coverage thresholds enforced
+sf package version create \
+  --package "Record Health Check" \
+  --installation-key-bypass \
+  --code-coverage \
+  --wait 120 \
+  --target-dev-hub gkSfdcDevHub
 ```
 
-If you changed Apex since the last release, also run a validation deploy with
-tests against a clean scratch org (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+Record the resulting `04t` ID and add its alias to `sfdx-project.json`. Do not promote it until the
+clean-install and upgrade gates pass.
 
-## Step 2: Decide the new version number
-
-Use the table above. For the very first release this is **`v1.0.0`**. Below,
-replace `X.Y.Z` with your chosen number (no leading `v` for `package.json`).
-
-## Step 3: Update the version and changelog
-
-1. Bump the version in `package.json`:
-
-   ```bash
-   npm version X.Y.Z --no-git-tag-version
-   ```
-
-   (`--no-git-tag-version` just edits the file; you will tag manually in Step 5
-   so the changelog commit and the tag stay together.)
-
-2. In [`CHANGELOG.md`](../CHANGELOG.md), rename the **`## Unreleased`** heading to
-   **`## [X.Y.Z] - YYYY-MM-DD`** and add a fresh empty `## Unreleased` section
-   above it for future work. Keep the compare links at the bottom of the file in
-   sync with the new version.
-
-## Step 4: Commit the release prep
+## Promote and publish
 
 ```bash
-git add package.json CHANGELOG.md
-git commit -m "Release vX.Y.Z"
-git push
+sf package version promote \
+  --package "Record Health Check@2.0.0-1" \
+  --target-dev-hub gkSfdcDevHub
 ```
 
-## Step 5: Tag and publish the GitHub Release
+Then update `CHANGELOG.md`, commit the exact source used to create the package, create the matching
+semantic-version tag, and create the GitHub release. Publish the promoted subscriber package ID in
+the install guide and release notes.
 
-The `gh` CLI creates the tag and the release page in one command, pulling the
-notes straight from your changelog section:
+## Samples
 
-```bash
-gh release create vX.Y.Z \
-  --title "vX.Y.Z" \
-  --notes "See CHANGELOG.md for details." \
-  --target main
-```
+Example Check Sets and Rules are optional learning assets, not Core defaults. Deliver them through
+the documented sample installer or source package after Core is installed. Never make a Core
+package candidate depend on example records being packaged.
 
-Or, to write richer notes interactively, omit `--notes` and `gh` opens an editor.
+## Rollback
 
-> Prefer the website? Go to **Releases → Draft a new release → Choose a tag →**
-> type `vX.Y.Z` → **Create new tag on publish**, paste your changelog notes, and
-> click **Publish release**.
-
-## Step 6: Verify the installable artifacts
-
-1. On the repo's **Releases** page, confirm `vX.Y.Z` is listed and the notes look right.
-2. Test the tagged Deploy URL in a sandbox by appending the tag as `ref`:
-   ```
-   https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=vX.Y.Z
-   ```
-   The README's default button installs `main`; this URL pins the exact release.
-
-## Step 7: Announce
-
-Point people at the release page:
-`https://github.com/gkolan/RecordHealthCheck/releases/tag/vX.Y.Z`.
-Non-technical teammates keep using the one-click Deploy button in the
-[README](../README.md), which always installs the latest `main`.
-
-## Rolling back
-
-A release is just a tag, so rollback is "install the previous tag":
-
-```
-https://githubsfdeploy.herokuapp.com/?owner=gkolan&repo=RecordHealthCheck&ref=vPREVIOUS
-```
-
-Because the component is **advisory** (it never blocks saves or writes records),
-deploying an older version is low-risk: it changes how checks are evaluated and
-displayed, not your data.
+Salesforce package versions are immutable. Roll forward with a corrected package version when a
+schema or installed metadata change cannot be safely reversed. For an application-only regression,
+install the previously supported version only when Salesforce package ancestry and upgrade rules
+permit it. Document data or configuration remediation separately.

@@ -20,7 +20,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Applies To = SOQL runs the count query in Applies When Count Query Matches, then tests it with Count Must Be = GreaterThan. The formula runs only when the account has more contacts than Count Value (0) — that is, at least one.</value>
+    >Applies To = SOQL runs the count query in Applies When Count Query Matches, then tests it with Count Must Be = GreaterThan. The formula runs only when the account has more contacts than Count Value (0): that is, at least one.</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

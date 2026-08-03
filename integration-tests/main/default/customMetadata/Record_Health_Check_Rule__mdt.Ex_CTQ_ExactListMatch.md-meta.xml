@@ -76,7 +76,7 @@
         <field>FailureMessage__c</field>
         <value
       xsi:type="xsd:string"
-    >Contact cities do not exactly match the parent account — extra or missing values on one side.</value>
+    >Contact cities do not exactly match the parent account: extra or missing values on one side.</value>
     </values>
     <values>
         <field>SourceQueryField__c</field>

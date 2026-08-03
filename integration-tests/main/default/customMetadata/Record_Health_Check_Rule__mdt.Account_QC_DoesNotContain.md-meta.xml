@@ -18,7 +18,7 @@
         <field>CheckDescription__c</field>
         <value
       xsi:type="xsd:string"
-    >Comparison Operator = DoesNotContain: the field must not contain the given text. The mirror image of Website Uses HTTPS above — this one flags an insecure http:// prefix rather than checking for https. If Query Field Value Is Empty = MissingMeansNoMatch,</value>
+    >Comparison Operator = DoesNotContain: the field must not contain the given text. The mirror image of Website Uses HTTPS above: this one flags an insecure http:// prefix rather than checking for https. If Query Field Value Is Empty = MissingMeansNoMatch,</value>
     </values>
     <values>
         <field>EvaluationType__c</field>

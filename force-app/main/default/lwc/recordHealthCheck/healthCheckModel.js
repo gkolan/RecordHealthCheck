@@ -34,7 +34,34 @@ export function normalizeResult(result, check) {
       "The server returned an invalid result. Contact your administrator."
     );
   }
-  if (!VALID_RESULT_STATUSES.has(result.status)) {
+  const normalized = result.evaluation
+    ? {
+        ruleDeveloperName:
+          result.evaluation.ruleQualifiedApiName || check.developerName,
+        recordId: result.evaluation.recordId,
+        status: result.evaluation.status,
+        severity: result.evaluation.severity,
+        reasonCode: result.evaluation.reasonCode,
+        actualValue:
+          result.display?.foundDisplayValue ??
+          result.evaluation.found?.storedValue ??
+          null,
+        expectedValue:
+          result.display?.expectedDisplayValue ??
+          result.evaluation.expected?.storedValue ??
+          null,
+        actualDisplayFormat: result.display?.foundDisplayFormat,
+        expectedDisplayFormat: result.display?.expectedDisplayFormat,
+        actualCurrencyIsoCode: result.display?.foundCurrencyIsoCode,
+        expectedCurrencyIsoCode: result.display?.expectedCurrencyIsoCode,
+        message: result.display?.renderedMessage,
+        fixInstructions: result.display?.renderedFix,
+        actionLabel: result.display?.actionLabel,
+        actionUrl: result.display?.actionUrl,
+        adminDetail: result.display?.adminDetail
+      }
+    : result;
+  if (!VALID_RESULT_STATUSES.has(normalized.status)) {
     return synthesizeResult(
       check,
       "ERROR",
@@ -42,7 +69,7 @@ export function normalizeResult(result, check) {
       "The server returned an unsupported result status. Contact your administrator."
     );
   }
-  return result;
+  return normalized;
 }
 
 /** Developer names that participate in a RequiresCheck dependency cycle. */
@@ -78,19 +105,29 @@ export function detectDependencyCycles(checks) {
 
 /** Parse Aura error body; defaults to LOAD_FAILED when reason code is absent. */
 export function parseAuraError(err) {
+  const diagnosticCode =
+    err?.body?.errorCode || err?.errorId || err?.status || newRunId();
+  if (err?.reasonCode) {
+    return {
+      reasonCode: err.reasonCode,
+      message: err.message || "An error occurred loading health checks.",
+      diagnosticCode
+    };
+  }
   try {
     const body = err.body && err.body.message ? err.body.message : "";
     const parsed = JSON.parse(body);
     return {
       reasonCode: parsed.reasonCode || "LOAD_FAILED",
-      message: parsed.message || "An error occurred loading health checks."
+      message: parsed.message || "An error occurred loading health checks.",
+      diagnosticCode: parsed.diagnosticCode || diagnosticCode
     };
   } catch {
     return {
       reasonCode: "LOAD_FAILED",
       message:
-        (err.body && err.body.message) ||
-        "An error occurred loading health checks."
+        "An unexpected error occurred loading health checks. Please try again.",
+      diagnosticCode
     };
   }
 }
