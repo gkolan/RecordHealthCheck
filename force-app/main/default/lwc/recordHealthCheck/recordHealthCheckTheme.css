@@ -35,5 +35,8 @@
     --slds-g-color-on-surface-2,
     var(--slds-g-color-neutral-base-40, #706e6b)
   );
+  /* Component-local overlay scale: the nubbin sits one layer above its bubble. */
+  --rhc-layer-tooltip: 100;
+  --rhc-layer-tooltip-nubbin: 101;
   font-family: var(--slds-g-font-family, "Salesforce Sans", Arial, sans-serif);
 }

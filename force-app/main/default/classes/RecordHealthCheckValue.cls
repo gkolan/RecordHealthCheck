@@ -30,16 +30,26 @@
  * one place rather than at each call site.
  */
 global class RecordHealthCheckValue {
+  /** String value discriminator. */
   global static final String TYPE_STRING = 'STRING';
+  /** Boolean value discriminator. */
   global static final String TYPE_BOOLEAN = 'BOOLEAN';
+  /** Decimal value discriminator. */
   global static final String TYPE_NUMBER = 'NUMBER';
+  /** Date value discriminator. */
   global static final String TYPE_DATE = 'DATE';
+  /** Datetime value discriminator. */
   global static final String TYPE_DATETIME = 'DATETIME';
+  /** Salesforce ID value discriminator. */
   global static final String TYPE_ID = 'ID';
+  /** Integer count value discriminator. */
   global static final String TYPE_COUNT = 'COUNT';
+  /** Ordered list value discriminator. */
   global static final String TYPE_LIST = 'LIST';
 
+  /** Stable type discriminator. */
   global String dataType { get; private set; }
+  /** Canonical serialized scalar value. */
   global String storedValue { get; private set; }
 
   private List<String> storedValuesInternal;
@@ -58,10 +68,12 @@ global class RecordHealthCheckValue {
     this.storedValue = storedValue;
   }
 
+  /** Creates a typed String value. */
   global static RecordHealthCheckValue ofString(String value) {
     return new RecordHealthCheckValue(TYPE_STRING, value);
   }
 
+  /** Creates a typed Boolean value. */
   global static RecordHealthCheckValue ofBoolean(Boolean value) {
     return new RecordHealthCheckValue(
       TYPE_BOOLEAN,
@@ -81,6 +93,7 @@ global class RecordHealthCheckValue {
     );
   }
 
+  /** Creates a typed Date value. */
   global static RecordHealthCheckValue ofDate(Date value) {
     return new RecordHealthCheckValue(
       TYPE_DATE,
@@ -104,6 +117,7 @@ global class RecordHealthCheckValue {
     );
   }
 
+  /** Creates a typed Count value. */
   global static RecordHealthCheckValue ofCount(Integer value) {
     if (value != null && value < 0) {
       throw new RecordHealthCheckValueException(
@@ -128,10 +142,12 @@ global class RecordHealthCheckValue {
     return result;
   }
 
+  /** @return Whether this value contains an ordered list. */
   global Boolean isList() {
     return TYPE_LIST.equals(dataType);
   }
 
+  /** Invalid typed-value construction or conversion. */
   global class RecordHealthCheckValueException extends Exception {
   }
 }

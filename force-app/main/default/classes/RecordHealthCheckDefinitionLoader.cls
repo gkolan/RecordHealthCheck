@@ -150,6 +150,7 @@ public with sharing class RecordHealthCheckDefinitionLoader {
     }
 
     response.checks = new List<RecordHealthCheckDefinition>();
+    Map<String, String> categoryLabels = categoryLabelsByValue();
 
     for (Record_Health_Check_Rule__mdt rule : rulesForRun) {
       RecordHealthCheckDefinition def = new RecordHealthCheckDefinition();
@@ -157,6 +158,10 @@ public with sharing class RecordHealthCheckDefinitionLoader {
       def.developerName = rule.DeveloperName;
       def.label = rule.CheckTitle__c;
       def.description = rule.CheckDescription__c;
+      def.category = rule.Category__c;
+      def.categoryLabel = String.isBlank(rule.Category__c)
+        ? null
+        : categoryLabels.get(rule.Category__c);
       def.priority = rule.EvaluationOrder__c;
       def.dependsOnRuleDeveloperName = String.isNotBlank(
           rule.PrerequisiteRule__c
@@ -167,6 +172,17 @@ public with sharing class RecordHealthCheckDefinitionLoader {
     }
 
     return response;
+  }
+
+  private static Map<String, String> categoryLabelsByValue() {
+    Map<String, String> labels = new Map<String, String>();
+    for (
+      Schema.PicklistEntry entry : Record_Health_Check_Rule__mdt.Category__c.getDescribe()
+        .getPicklistValues()
+    ) {
+      labels.put(entry.getValue(), entry.getLabel());
+    }
+    return labels;
   }
 
   public static void logCheckLimitExceeded(

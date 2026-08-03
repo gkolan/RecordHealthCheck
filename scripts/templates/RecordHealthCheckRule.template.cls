@@ -4,9 +4,13 @@ global with sharing class ExampleBulkRule implements RecordHealthCheckRule {
     RecordHealthCheckScope scope
   ) {
     Map<Id, RecordHealthCheckOutcome> outcomes = new Map<Id, RecordHealthCheckOutcome>();
+    if (scope == null || scope.recordIds == null || scope.recordIds.isEmpty()) {
+      return outcomes;
+    }
+    Set<Id> recordIds = new Set<Id>(scope.recordIds);
 
     // Seed every requested ID so zero related rows still produce an outcome.
-    for (Id recordId : scope.recordIds) {
+    for (Id recordId : recordIds) {
       outcomes.put(recordId, unable('NOT_EVALUATED'));
     }
 
@@ -15,7 +19,7 @@ global with sharing class ExampleBulkRule implements RecordHealthCheckRule {
     for (AggregateResult row : [
       SELECT AccountId parentId, COUNT(Id) total
       FROM Contact
-      WHERE AccountId IN :scope.recordIds
+      WHERE AccountId IN :recordIds
       WITH USER_MODE
       GROUP BY AccountId
     ]) {
@@ -25,7 +29,7 @@ global with sharing class ExampleBulkRule implements RecordHealthCheckRule {
       );
     }
 
-    for (Id recordId : scope.recordIds) {
+    for (Id recordId : recordIds) {
       try {
         Integer total = countsByRecordId.containsKey(recordId)
           ? countsByRecordId.get(recordId)

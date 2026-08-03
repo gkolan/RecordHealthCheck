@@ -6,8 +6,20 @@
     <hasActivationRequired>false</hasActivationRequired>
     <customPermissions>
         <enabled>true</enabled>
+        <name>Record_Health_Check_Run</name>
+    </customPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
         <name>Record_Health_Check_View_Diagnostics</name>
     </customPermissions>
+    <customMetadataTypeAccesses>
+        <enabled>true</enabled>
+        <name>Record_Health_Check_Rule__mdt</name>
+    </customMetadataTypeAccesses>
+    <customMetadataTypeAccesses>
+        <enabled>true</enabled>
+        <name>Record_Health_Check_Set__mdt</name>
+    </customMetadataTypeAccesses>
     <classAccesses>
         <apexClass>RecordHealthCheckController</apexClass>
         <enabled>true</enabled>
@@ -30,6 +42,18 @@
     </classAccesses>
     <classAccesses>
         <apexClass>RecordHealthCheckRunSetFlowAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckQueueable</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckBatch</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RecordHealthCheckScheduled</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <objectPermissions>

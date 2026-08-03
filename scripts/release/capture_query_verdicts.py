@@ -12,14 +12,21 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = ROOT / "scripts/release/generated/bulk-query-shape-inventory.json"
 DEFAULT_OUTPUT = ROOT / "scripts/release/generated/query-verdict-baseline.json"
+FIXTURE_SCRIPT = ROOT / "integration-tests/scripts/query_verdict_fixture.apex"
+RULE_LAUNCHERS = tuple(
+    ROOT / f"integration-tests/scripts/exhaustive_smoke_rules_{offset}.apex"
+    for offset in (0, 50, 100, 150)
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -36,7 +43,74 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="Fail when the captured normalized verdicts differ from this baseline",
     )
+    parser.add_argument(
+        "--refresh-results",
+        action="store_true",
+        help="Recreate the deterministic fixture and rerun every Rule before capture",
+    )
     return parser.parse_args()
+
+
+def run_sf(command: list[str]) -> dict[str, object]:
+    environment = os.environ.copy()
+    environment["SF_DISABLE_LOG_FILE"] = "true"
+    completed = subprocess.run(
+        ["sf", *command, "--json"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+    if completed.returncode != 0:
+        sys.stderr.write(completed.stderr)
+        sys.stderr.write(completed.stdout)
+        raise SystemExit(completed.returncode)
+    response = json.loads(completed.stdout)
+    if response.get("status") != 0:
+        raise SystemExit(json.dumps(response, indent=2))
+    return response
+
+
+def wait_for_rule_jobs(target_org: str, started_at: str) -> None:
+    soql = (
+        "SELECT Id, Status, NumberOfErrors, ExtendedStatus FROM AsyncApexJob "
+        "WHERE ApexClass.Name = 'RecordHealthCheckExhaustiveSmoke' "
+        f"AND CreatedDate >= {started_at} ORDER BY CreatedDate"
+    )
+    deadline = time.monotonic() + 600
+    while True:
+        response = run_sf(
+            ["data", "query", "--target-org", target_org, "--query", soql]
+        )
+        records = response["result"]["records"]
+        active = [
+            record
+            for record in records
+            if record["Status"] in {"Holding", "Queued", "Preparing", "Processing"}
+        ]
+        failed = [
+            record
+            for record in records
+            if record["Status"] not in {"Completed", "Holding", "Queued", "Preparing", "Processing"}
+            or record["NumberOfErrors"]
+        ]
+        if failed:
+            raise SystemExit("Exhaustive-smoke Queueable failed: " + json.dumps(failed))
+        if records and not active:
+            return
+        if time.monotonic() >= deadline:
+            raise SystemExit("Timed out waiting for exhaustive-smoke Queueables")
+        time.sleep(2)
+
+
+def refresh_smoke_results(target_org: str) -> None:
+    run_sf(
+        ["apex", "run", "--file", str(FIXTURE_SCRIPT), "--target-org", target_org]
+    )
+    for launcher in RULE_LAUNCHERS:
+        started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        run_sf(["apex", "run", "--file", str(launcher), "--target-org", target_org])
+        wait_for_rule_jobs(target_org, started_at)
 
 
 def query_smoke_results(target_org: str, namespace: str) -> list[dict[str, object]]:
@@ -55,24 +129,14 @@ def query_smoke_results(target_org: str, namespace: str) -> list[dict[str, objec
         f"WHERE {event_field} LIKE 'RULE:%' ORDER BY {event_field}"
     )
     command = [
-        "sf",
         "data",
         "query",
         "--target-org",
         target_org,
         "--query",
         soql,
-        "--json",
     ]
-    completed = subprocess.run(command, check=False, capture_output=True, text=True)
-    if completed.returncode != 0:
-        sys.stderr.write(completed.stderr)
-        sys.stderr.write(completed.stdout)
-        raise SystemExit(completed.returncode)
-
-    response = json.loads(completed.stdout)
-    if response.get("status") != 0:
-        raise SystemExit(json.dumps(response, indent=2))
+    response = run_sf(command)
     return response["result"]["records"]
 
 
@@ -86,6 +150,8 @@ def normalized_result(payload: dict[str, object]) -> dict[str, object]:
 
 def main() -> int:
     args = parse_args()
+    if args.refresh_results:
+        refresh_smoke_results(args.target_org)
     comparison_baseline = (
         json.loads(args.compare_to.read_text())
         if args.compare_to is not None

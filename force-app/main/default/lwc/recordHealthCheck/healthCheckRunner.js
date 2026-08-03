@@ -12,6 +12,59 @@ import {
 
 const MAX_CONCURRENT_EVALUATIONS = 5;
 
+// Lightning pages can host this component more than once. A runner-local limit
+// lets every instance open five requests, so three components can create fifteen
+// simultaneous Apex transactions. Keep one scheduler per loaded module/page so
+// all instances share the same conservative browser-to-Apex budget.
+let pageScheduler = { active: 0, queue: [] };
+
+function acquirePageEvaluationSlot(isCurrent) {
+  const scheduler = pageScheduler;
+  return new Promise((resolve) => {
+    if (!isCurrent()) {
+      resolve(false);
+      return;
+    }
+    if (scheduler.active < MAX_CONCURRENT_EVALUATIONS) {
+      scheduler.active++;
+      resolve(scheduler);
+      return;
+    }
+    scheduler.queue.push({ isCurrent, resolve });
+  });
+}
+
+function tryAcquirePageEvaluationSlot(isCurrent) {
+  if (!isCurrent()) return false;
+  if (pageScheduler.active >= MAX_CONCURRENT_EVALUATIONS) return null;
+  pageScheduler.active++;
+  return pageScheduler;
+}
+
+function releasePageEvaluationSlot(scheduler) {
+  scheduler.active = Math.max(0, scheduler.active - 1);
+  while (
+    scheduler.queue.length > 0 &&
+    scheduler.active < MAX_CONCURRENT_EVALUATIONS
+  ) {
+    const next = scheduler.queue.shift();
+    if (!next.isCurrent()) {
+      next.resolve(false);
+      continue;
+    }
+    scheduler.active++;
+    next.resolve(scheduler);
+    break;
+  }
+}
+
+// Jest intentionally leaves some mocked Apex promises unresolved to verify stale
+// result handling. Give each test an isolated scheduler generation without
+// changing production behavior or releasing a real browser request early.
+export function resetPageEvaluationSchedulerForTest() {
+  pageScheduler = { active: 0, queue: [] };
+}
+
 /**
  * Run lifecycle: dependency gating, concurrency-capped evaluation, progressive reveal.
  */
@@ -21,9 +74,6 @@ export class HealthCheckRunner {
   _runInProgress = false;
   _runToken = 0;
   _runId = null;
-  /** In-flight Apex calls across run tokens; not zeroed on invalidate. */
-  _activeEvaluations = 0;
-  _evaluationQueue = [];
 
   constructor(host, services) {
     this.host = host;
@@ -55,7 +105,6 @@ export class HealthCheckRunner {
     this._runInProgress = false;
     this._stopped = false;
     this._resultBuffer = {};
-    this._resetEvaluationPool();
   }
 
   run(reuseRunId = false, source = "USER_INITIATED") {
@@ -78,7 +127,6 @@ export class HealthCheckRunner {
     this._resultBuffer = {};
     this._stopped = false;
     this._source = source;
-    this._resetEvaluationPool();
 
     // Reset all rows to PENDING and clear previous results
     this.host.checks = this.host.checks.map((c) => ({
@@ -232,15 +280,16 @@ export class HealthCheckRunner {
     // Set row to LOADING
     this._setCheckUiState(check.developerName, "LOADING");
 
-    if (this._activeEvaluations >= MAX_CONCURRENT_EVALUATIONS) {
-      const acquired = await this._acquireEvaluationSlot(token);
-      if (!acquired) return;
-      if (token !== this._runToken) {
-        this._releaseEvaluationSlot();
-        return;
-      }
-    } else {
-      this._activeEvaluations++;
+    let acquiredScheduler = tryAcquirePageEvaluationSlot(
+      () => token === this._runToken
+    );
+    if (acquiredScheduler === null) {
+      acquiredScheduler = await this._acquireEvaluationSlot(token);
+    }
+    if (!acquiredScheduler) return;
+    if (token !== this._runToken) {
+      this._releaseEvaluationSlot(acquiredScheduler);
+      return;
     }
 
     let result;
@@ -260,7 +309,7 @@ export class HealthCheckRunner {
         "The check could not be reached. Please try again."
       );
     } finally {
-      this._releaseEvaluationSlot();
+      this._releaseEvaluationSlot(acquiredScheduler);
     }
 
     // Discard result if a newer run has started since this call was fired
@@ -319,7 +368,7 @@ export class HealthCheckRunner {
     const allResolved = this.host.checks.every(
       (c) => this._resultBuffer[c.developerName] !== undefined
     );
-    if (allResolved) {
+    if (allResolved && !this.host.runComplete) {
       this.host.runComplete = true;
       this.host.hasCompletedRunOnce = true;
       this._runInProgress = false;
@@ -341,39 +390,11 @@ export class HealthCheckRunner {
   }
 
   _acquireEvaluationSlot(token) {
-    return new Promise((resolve) => {
-      if (token !== this._runToken) {
-        resolve(false);
-      } else {
-        this._evaluationQueue.push({ token, resolve });
-      }
-    });
+    return acquirePageEvaluationSlot(() => token === this._runToken);
   }
 
-  _releaseEvaluationSlot() {
-    // Slot frees when any in-flight request settles, including from a prior run.
-    this._activeEvaluations = Math.max(0, this._activeEvaluations - 1);
-    while (
-      this._evaluationQueue.length > 0 &&
-      this._activeEvaluations < MAX_CONCURRENT_EVALUATIONS
-    ) {
-      const next = this._evaluationQueue.shift();
-      if (next.token !== this._runToken) {
-        next.resolve(false);
-        continue;
-      }
-      this._activeEvaluations++;
-      next.resolve(true);
-      break;
-    }
-  }
-
-  _resetEvaluationPool() {
-    // Leave _activeEvaluations alone; abandoned runs decrement on settle.
-    for (const pending of this._evaluationQueue) {
-      pending.resolve(false);
-    }
-    this._evaluationQueue = [];
+  _releaseEvaluationSlot(scheduler) {
+    releasePageEvaluationSlot(scheduler);
   }
 
   _setCheckUiState(developerName, uiState) {

@@ -6,6 +6,10 @@ public with sharing class RecordHealthCheckScopePipeline {
   private RecordHealthCheckConfigService configService = new RecordHealthCheckConfigService();
   private RecordHealthCheckScopePlanner scopePlanner = new RecordHealthCheckScopePlanner();
   private RecordHealthCheckScopeResultSupport resultSupport = new RecordHealthCheckScopeResultSupport();
+  @TestVisible
+  private Boolean planningFailureOverride = false;
+  @TestVisible
+  private static String evaluatorFailureOverride;
 
   /**
    * @param request Immutable qualified selection, record IDs, and options.
@@ -50,11 +54,12 @@ public with sharing class RecordHealthCheckScopePipeline {
       return response;
     }
 
-    Map<Id, SObject> recordsById = loadRecords(
+    RecordLoadPlan recordLoad = loadRecords(
       context.objectApiName,
       recordIds,
       context.rules
     );
+    Map<Id, SObject> recordsById = recordLoad.recordsById;
     Map<String, RecordHealthCheckResultItem> itemsByIdentity = new Map<String, RecordHealthCheckResultItem>();
     for (Record_Health_Check_Rule__mdt rule : context.rules) {
       evaluateRule(
@@ -62,6 +67,7 @@ public with sharing class RecordHealthCheckScopePipeline {
         context,
         recordIds,
         recordsById,
+        recordLoad.inaccessibleRuleNames.contains(rule.QualifiedApiName),
         request.options.resultMode,
         response.runId,
         itemsByIdentity
@@ -101,17 +107,30 @@ public with sharing class RecordHealthCheckScopePipeline {
     return response;
   }
 
-  private Map<Id, SObject> loadRecords(
+  private RecordLoadPlan loadRecords(
     String objectApiName,
     List<Id> recordIds,
     List<Record_Health_Check_Rule__mdt> rules
   ) {
     Set<String> fields = new Set<String>{ 'Id' };
+    RecordLoadPlan result = new RecordLoadPlan();
     RecordHealthCheckFieldPlanner fieldPlanner = new RecordHealthCheckFieldPlanner();
     Schema.SObjectType objectType = recordIds[0].getSObjectType();
     for (Record_Health_Check_Rule__mdt rule : rules) {
       try {
-        fields.addAll(fieldPlanner.collectRecordFields(rule, objectType));
+        if (planningFailureOverride) {
+          throw new RecordHealthCheckTemplateService.TemplateException(
+            'Synthetic planning failure.'
+          );
+        }
+        RecordHealthCheckFieldPlanner.FieldPlan fieldPlan = fieldPlanner.planRecordFields(
+          rule,
+          objectType
+        );
+        fields.addAll(fieldPlan.selectedFields);
+        if (!fieldPlan.inaccessibleFields.isEmpty()) {
+          result.inaccessibleRuleNames.add(rule.QualifiedApiName);
+        }
       } catch (RecordHealthCheckTemplateService.TemplateException ex) {
         // Runtime validation turns this Rule into INVALID_CONFIG. Planning must
         // skip its fields so one malformed admin template cannot abort the
@@ -129,7 +148,17 @@ public with sharing class RecordHealthCheckScopePipeline {
       ' WHERE Id IN :recordIds WITH USER_MODE';
     // code-analyzer-suppress-next-line ApexSOQLInjection: object and field identifiers are resolved from Schema describe metadata, recordIds is a bind variable, and the query runs WITH USER_MODE.
     List<SObject> records = Database.query(query);
-    return new Map<Id, SObject>(records);
+    result.recordsById.putAll(new Map<Id, SObject>(records));
+    return result;
+  }
+
+  @TestVisible
+  private void loadRecordsForTest(
+    String objectApiName,
+    List<Id> recordIds,
+    List<Record_Health_Check_Rule__mdt> rules
+  ) {
+    loadRecords(objectApiName, recordIds, rules);
   }
 
   @TestVisible
@@ -138,6 +167,7 @@ public with sharing class RecordHealthCheckScopePipeline {
     SelectionContext context,
     List<Id> recordIds,
     Map<Id, SObject> recordsById,
+    Boolean fieldAccessDenied,
     RecordHealthCheckResultMode resultMode,
     String runId,
     Map<String, RecordHealthCheckResultItem> itemsByIdentity
@@ -158,12 +188,25 @@ public with sharing class RecordHealthCheckScopePipeline {
         );
       }
     }
+    if (invalidConfiguration == null && fieldAccessDenied) {
+      for (Id recordId : recordIds) {
+        internalByRecordId.put(
+          recordId,
+          recordsById.containsKey(recordId)
+            ? resultSupport.unavailableResult(
+                rule,
+                RecordHealthCheckReasonCodes.FIELD_NOT_ACCESSIBLE
+              )
+            : resultSupport.unavailableResult(rule, 'RECORD_NOT_VISIBLE')
+        );
+      }
+    }
     Map<Id, RecordHealthCheckInternalResult> applicabilityByRecordId = invalidConfiguration ==
-      null
+      null && !fieldAccessDenied
       ? resultSupport.applicabilityResults(rule, recordIds, recordsById)
       : new Map<Id, RecordHealthCheckInternalResult>();
     for (Id recordId : recordIds) {
-      if (invalidConfiguration != null) {
+      if (invalidConfiguration != null || fieldAccessDenied) {
         continue;
       }
       SObject record = recordsById.get(recordId);
@@ -195,6 +238,18 @@ public with sharing class RecordHealthCheckScopePipeline {
 
     if (!applicableIds.isEmpty()) {
       try {
+        if (evaluatorFailureOverride == 'SIDE_EFFECT') {
+          RecordHealthCheckPluginDispatch.SideEffectException sideEffect = new RecordHealthCheckPluginDispatch.SideEffectException(
+            'Synthetic plugin side effect.'
+          );
+          sideEffect.reasonCode = RecordHealthCheckReasonCodes.PLUGIN_SIDE_EFFECT_DETECTED;
+          sideEffect.effect = 'DML';
+          sideEffect.reversible = true;
+          throw sideEffect;
+        }
+        if (evaluatorFailureOverride == 'EVALUATOR') {
+          throw new SyntheticEvaluatorException('Synthetic evaluator failure.');
+        }
         internalByRecordId.putAll(
           evaluatorRegistry.evaluateScope(
             rule,
@@ -271,5 +326,13 @@ public with sharing class RecordHealthCheckScopePipeline {
   }
 
   public class ScopePipelineException extends Exception {
+  }
+
+  private class SyntheticEvaluatorException extends Exception {
+  }
+
+  private class RecordLoadPlan {
+    private Map<Id, SObject> recordsById = new Map<Id, SObject>();
+    private Set<String> inaccessibleRuleNames = new Set<String>();
   }
 }

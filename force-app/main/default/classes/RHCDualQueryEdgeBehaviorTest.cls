@@ -328,6 +328,49 @@ private class RHCDualQueryEdgeBehaviorTest {
     );
   }
 
+  @IsTest
+  static void scopeEvaluatorMapsBlankAndUnexpectedCachedQueryFailures() {
+    Account accountRecord = [SELECT Id, Name FROM Account LIMIT 1];
+
+    Record_Health_Check_Rule__mdt blankRule = validDualRule(
+      'Blank_Scope_Query'
+    );
+    blankRule.SourceQuery__c = ' ';
+    blankRule.ComparisonQuery__c = ' ';
+    RecordHealthCheckCompareQueriesEvaluator blankEvaluator = new RecordHealthCheckCompareQueriesEvaluator();
+    blankEvaluator.scopeRowsByBoundSoql = new Map<String, List<SObject>>();
+    blankEvaluator.scopeZeroCountSoql = new Set<String>();
+    blankEvaluator.scopeExecutionActive = true;
+
+    RecordHealthCheckInternalResult blankResult = blankEvaluator.evaluate(
+      blankRule,
+      accountRecord.Id,
+      accountRecord
+    );
+    Assert.areEqual('UNABLE_TO_EVALUATE', blankResult.status);
+    Assert.areEqual('INVALID_SOQL_TEMPLATE', blankResult.reasonCode);
+
+    Record_Health_Check_Rule__mdt cachedRule = validDualRule(
+      'Unexpected_Cached_Query'
+    );
+    String boundQuery = new RecordHealthCheckSoqlEvaluator()
+      .bindTokens(cachedRule.SourceQuery__c, accountRecord);
+    RecordHealthCheckCompareQueriesEvaluator cachedEvaluator = new RecordHealthCheckCompareQueriesEvaluator();
+    cachedEvaluator.scopeRowsByBoundSoql = new Map<String, List<SObject>>{
+      boundQuery => null
+    };
+    cachedEvaluator.scopeZeroCountSoql = new Set<String>();
+    cachedEvaluator.scopeExecutionActive = true;
+
+    RecordHealthCheckInternalResult cachedResult = cachedEvaluator.evaluate(
+      cachedRule,
+      accountRecord.Id,
+      accountRecord
+    );
+    Assert.areEqual('ERROR', cachedResult.status);
+    Assert.areEqual('APEX_EVALUATOR_ERROR', cachedResult.reasonCode);
+  }
+
   private static Record_Health_Check_Rule__mdt dualRule(String developerName) {
     return baseRule(developerName, 'COMPARE_TWO_QUERIES');
   }

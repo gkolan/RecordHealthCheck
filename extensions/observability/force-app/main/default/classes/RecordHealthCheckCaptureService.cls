@@ -2,6 +2,7 @@
  * Evaluates Record Health Check requests and persists actionable observations.
  */
 public with sharing class RecordHealthCheckCaptureService {
+  public static final String CONTRACT_VERSION = '2.0';
   public static final String SOURCE_APEX = 'APEX';
   public static final String SOURCE_FLOW = 'FLOW';
   public static final String SOURCE_QUEUEABLE = 'QUEUEABLE';
@@ -83,7 +84,7 @@ public with sharing class RecordHealthCheckCaptureService {
       Started_At__c = System.now(),
       Completed_At__c = System.now(),
       System_Error_Count__c = 1,
-      Contract_Version__c = '2.0'
+      Contract_Version__c = CONTRACT_VERSION
     );
     Database.UpsertResult runResult = Database.upsert(
       runRecord,
@@ -112,7 +113,7 @@ public with sharing class RecordHealthCheckCaptureService {
             ? null
             : failure.getStackTraceString(),
           Contains_Restricted_Detail__c = true,
-          Contract_Version__c = '2.0'
+          Contract_Version__c = CONTRACT_VERSION
         )
       }
     );
@@ -249,7 +250,7 @@ public with sharing class RecordHealthCheckCaptureService {
       Requested_By_User_Id__c = UserInfo.getUserId(),
       Started_At__c = System.now(),
       Record_Count__c = recordCount,
-      Contract_Version__c = '2.0'
+      Contract_Version__c = CONTRACT_VERSION
     );
     Database.UpsertResult result = Database.upsert(
       runRecord,
@@ -313,7 +314,7 @@ public with sharing class RecordHealthCheckCaptureService {
           Contains_Restricted_Detail__c = display != null &&
             display.adminDetail != null &&
             display.adminDetail.containsRestrictedDetail,
-          Contract_Version__c = '2.0',
+          Contract_Version__c = CONTRACT_VERSION,
           Raw_Payload__c = JSON.serialize(item)
         )
       );
@@ -351,7 +352,7 @@ public with sharing class RecordHealthCheckCaptureService {
           Exception_Type__c = ex.getTypeName(),
           Stack_Trace__c = ex.getStackTraceString(),
           Contains_Restricted_Detail__c = true,
-          Contract_Version__c = '2.0'
+          Contract_Version__c = CONTRACT_VERSION
         )
       }
     );

@@ -160,6 +160,72 @@ private with sharing class RecordHealthCheckScopePlannerTest {
   }
 
   @IsTest
+  static void transactionBudgetRejectsExcessiveQueries() {
+    List<Record_Health_Check_Rule__mdt> rules = new List<Record_Health_Check_Rule__mdt>();
+    for (Integer index = 0; index < Limits.getLimitQueries(); index++) {
+      rules.add(
+        RecordHealthCheckTestDataFactory.rule(
+          new Map<String, Object>{ 'EvaluationType__c' => 'QUERY' }
+        )
+      );
+    }
+
+    Test.startTest();
+    try {
+      new RecordHealthCheckScopePlanner()
+        .enforceTransactionBudget(
+          rules,
+          1,
+          RecordHealthCheckEventPublication.NONE
+        );
+      Assert.fail(
+        'A transaction plan beyond the query limit must be rejected.'
+      );
+    } catch (RecordHealthCheckScopePipeline.ScopePipelineException error) {
+      Assert.isTrue(
+        error.getMessage().contains('TRANSACTION_BUDGET_EXCEEDED'),
+        'The rejection must use the stable transaction-budget reason.'
+      );
+      Assert.isTrue(
+        error.getMessage().contains('queriesRequired='),
+        'The rejection must report required query capacity.'
+      );
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void transactionBudgetRejectsProjectedHeap() {
+    Integer oversizedRecordCount = (Limits.getLimitHeapSize() / 768) + 1;
+    List<Record_Health_Check_Rule__mdt> rules = new List<Record_Health_Check_Rule__mdt>{
+      RecordHealthCheckTestDataFactory.rule(new Map<String, Object>())
+    };
+
+    Test.startTest();
+    try {
+      new RecordHealthCheckScopePlanner()
+        .enforceTransactionBudget(
+          rules,
+          oversizedRecordCount,
+          RecordHealthCheckEventPublication.NONE
+        );
+      Assert.fail(
+        'A projected response beyond remaining heap must be rejected.'
+      );
+    } catch (RecordHealthCheckScopePipeline.ScopePipelineException error) {
+      Assert.isTrue(
+        error.getMessage().contains('HEAP_BUDGET_EXCEEDED'),
+        'The rejection must use the stable heap-budget reason.'
+      );
+      Assert.isTrue(
+        error.getMessage().contains('projected='),
+        'The rejection must report projected heap use.'
+      );
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
   static void activeScopeIgnoresNullRecordIdentity() {
     RecordHealthCheckScopePipeline.SelectionContext context = new RecordHealthCheckScopePipeline.SelectionContext();
     context.checkSetActive = true;
@@ -181,6 +247,47 @@ private with sharing class RecordHealthCheckScopePlannerTest {
       dmlBefore,
       Limits.getDmlStatements(),
       'Scope validation must remain read-only.'
+    );
+  }
+
+  @IsTest
+  static void scopePreservesIndexedRecordIdentityOrder() {
+    Id first = RecordHealthCheckTestDataFactory.syntheticId(
+      Account.SObjectType,
+      1
+    );
+    Id second = RecordHealthCheckTestDataFactory.syntheticId(
+      Account.SObjectType,
+      2
+    );
+
+    Test.startTest();
+    RecordHealthCheckScope scope = new RecordHealthCheckScope(
+      'Account',
+      new List<Id>{ first, second, first },
+      new Map<String, Object>(),
+      'Synthetic.Rule',
+      'Synthetic.Set',
+      'scope-order-test'
+    );
+    Id firstAtIndex = scope.recordIdAt(0);
+    Id secondAtIndex = scope.recordIdAt(1);
+    Test.stopTest();
+
+    Assert.areEqual(
+      first,
+      firstAtIndex,
+      'The first unique identity must retain its index.'
+    );
+    Assert.areEqual(
+      second,
+      secondAtIndex,
+      'The second unique identity must retain its index.'
+    );
+    Assert.areEqual(
+      2,
+      scope.size(),
+      'Duplicate identities must be removed once.'
     );
   }
 

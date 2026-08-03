@@ -188,6 +188,29 @@ private class RecordHealthCheckPluginDispatchTest {
   }
 
   @IsTest
+  static void sequentialPluginConstructionDoesNotExhaustSavepoints() {
+    Type pluginType = Type.forName('AccountHasRecentActivityCheck');
+    Integer constructed = 0;
+
+    Test.startTest();
+    for (Integer i = 0; i < 10; i++) {
+      RecordHealthCheckRule plugin = RecordHealthCheckPluginDispatch.instantiate(
+        pluginType
+      );
+      if (plugin != null) {
+        constructed++;
+      }
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      10,
+      constructed,
+      'Released constructor fences must allow more than five sequential plugins.'
+    );
+  }
+
+  @IsTest
   static void mutatingRuleIsStoppedAndTheChangeIsRolledBack() {
     List<Account> accounts = makeAccounts(1);
     Id accountId = accounts[0].Id;
@@ -297,6 +320,31 @@ private class RecordHealthCheckPluginDispatchTest {
       25,
       outcomes.size(),
       'The fence must not fire on a check that behaves.'
+    );
+  }
+
+  @IsTest
+  static void sequentialPluginRunsDoNotExhaustSavepoints() {
+    List<Account> accounts = makeAccounts(1);
+    RecordHealthCheckScope scope = scopeFor(accounts);
+    Integer completed = 0;
+
+    Test.startTest();
+    for (Integer i = 0; i < 10; i++) {
+      Map<Id, RecordHealthCheckOutcome> outcomes = RecordHealthCheckPluginDispatch.run(
+        new WellBehavedRule(),
+        scope
+      );
+      if (outcomes.size() == 1) {
+        completed++;
+      }
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      10,
+      completed,
+      'Released evaluation fences must allow more than five sequential plugins.'
     );
   }
 

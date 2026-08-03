@@ -66,6 +66,7 @@ public with sharing class RecordHealthCheckBulkQuerySupport {
 
     Correlation correlation = findCorrelation(soqlTemplate);
     result.strategy = classify(soqlTemplate);
+    Boolean limitsEachRecord = hasLimitOne(soqlTemplate);
     if (result.strategy == UNCLASSIFIED) {
       throw new RecordHealthCheckEvaluatorException(
         'UNSUPPORTED_BULK_QUERY_SHAPE',
@@ -123,6 +124,9 @@ public with sharing class RecordHealthCheckBulkQuerySupport {
         correlation.endIndex,
         correlation.fieldPath + ' IN :rhcScopeValues'
       );
+      if (limitsEachRecord && result.strategy != ORDERED_PICK_AGGREGATE) {
+        scopeSoql = removeLimitOne(scopeSoql);
+      }
 
       if (result.strategy == ORDERED_PICK_AGGREGATE) {
         scopeSoql = RecordHealthCheckBulkQueryRewriter.rewriteOrderedPickAggregate(
@@ -223,7 +227,10 @@ public with sharing class RecordHealthCheckBulkQuerySupport {
         );
         if (matching != null) {
           for (Id recordId : matching) {
-            result.rowsByRecordId.get(recordId).add(row);
+            List<SObject> perRecord = result.rowsByRecordId.get(recordId);
+            if (!limitsEachRecord || perRecord.isEmpty()) {
+              perRecord.add(row);
+            }
           }
         }
       } else {
@@ -231,7 +238,8 @@ public with sharing class RecordHealthCheckBulkQuerySupport {
         if (result.rowsByRecordId.containsKey(recordId)) {
           List<SObject> perRecord = result.rowsByRecordId.get(recordId);
           if (
-            result.strategy != ORDERED_PICK_IN_MEMORY || perRecord.isEmpty()
+            (result.strategy != ORDERED_PICK_IN_MEMORY && !limitsEachRecord) ||
+            perRecord.isEmpty()
           ) {
             perRecord.add(row);
           }
@@ -277,13 +285,18 @@ public with sharing class RecordHealthCheckBulkQuerySupport {
       correlation.tokenPath == 'Id' &&
       correlation.fieldPath.equalsIgnoreCase('Id')
     ) {
-      return SELF;
+      return !hasLimit || Integer.valueOf(limitMatcher.group(1)) == 1
+        ? SELF
+        : UNCLASSIFIED;
+    }
+    // LIMIT 1 is removed from the rewritten scope query and applied while rows
+    // are attributed to each record. Larger bare limits have no supported
+    // per-record reduction contract and must remain rejected.
+    if (hasLimit && Integer.valueOf(limitMatcher.group(1)) != 1) {
+      return UNCLASSIFIED;
     }
     if (correlation.tokenPath != 'Id') {
       return INDIRECT_REFERENCE;
-    }
-    if (hasLimit && Integer.valueOf(limitMatcher.group(1)) != 1) {
-      return UNCLASSIFIED;
     }
     return correlation.fieldPath.contains('.') ? CHILD_PATH : CHILD_DIRECT;
   }
@@ -350,6 +363,11 @@ public with sharing class RecordHealthCheckBulkQuerySupport {
 
   private static String removeLimitOne(String soql) {
     return soql.replaceFirst('(?i)\\s+LIMIT\\s+1\\b', '');
+  }
+
+  private static Boolean hasLimitOne(String soql) {
+    Matcher matcher = LIMIT_PATTERN.matcher(soql);
+    return matcher.find() && Integer.valueOf(matcher.group(1)) == 1;
   }
 
   private static String firstGroup(

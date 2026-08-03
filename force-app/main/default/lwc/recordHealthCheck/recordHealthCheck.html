@@ -137,12 +137,25 @@
                     </template>
                   </div>
                   <template if:true={check.showMessage}>
-                    <span class={check.messageClass}>
-                      <template for:each={check.messageLines} for:item="line">
-                        <span key={line.key} class={line.lineClass}
-                          >{line.text}</span
-                        >
-                      </template>
+                    <span class="rhc-expandable" data-expandable>
+                      <span class={check.messageClass} data-clampcontent>
+                        <template for:each={check.messageLines} for:item="line">
+                          <span key={line.key} class={line.lineClass}
+                            >{line.text}</span
+                          >
+                        </template>
+                      </span>
+                      <button
+                        class="rhc-cmp__toggle"
+                        type="button"
+                        data-clamptoggle
+                        data-expand-label="message"
+                        data-symbol="+"
+                        hidden
+                        aria-expanded="false"
+                        aria-label="Expand message"
+                        onclick={handleToggleContent}
+                      ></button>
                     </span>
                   </template>
                   <template if:true={check.showActionBlock}>
@@ -157,9 +170,24 @@
                         >
                       </template>
                       <template if:true={check.showFixInstructions}>
-                        <p class="rhc-row__fix-instructions">
-                          {check.fixInstructions}
-                        </p>
+                        <span class="rhc-expandable" data-expandable>
+                          <span
+                            class="rhc-row__fix-instructions rhc-expandable__content rhc-expandable__content--guidance"
+                            data-clampcontent
+                            >{check.fixInstructions}</span
+                          >
+                          <button
+                            class="rhc-cmp__toggle"
+                            type="button"
+                            data-clamptoggle
+                            data-expand-label="fix instructions"
+                            data-symbol="+"
+                            hidden
+                            aria-expanded="false"
+                            aria-label="Expand fix instructions"
+                            onclick={handleToggleContent}
+                          ></button>
+                        </span>
                       </template>
                     </div>
                   </template>
@@ -172,26 +200,30 @@
                         for:each={check.inlineComparisonValues}
                         for:item="comparison"
                       >
-                        <span key={comparison.key} class="rhc-cmp__pair">
+                        <span
+                          key={comparison.key}
+                          class="rhc-cmp__pair"
+                          data-expandable
+                        >
                           <span class="rhc-cmp__main">
                             <span class="rhc-cmp__key">{comparison.label}</span>
                             <span class="rhc-cmp__value-wrap">
                               <span
                                 class="rhc-cmp__val rhc-cmp__val--clampable"
-                                data-clampval
+                                data-clampcontent
                                 >{comparison.value}</span
                               >
                               <button
                                 class="rhc-cmp__toggle"
                                 type="button"
                                 data-clamptoggle
+                                data-expand-label="value"
+                                data-symbol="+"
                                 hidden
                                 aria-expanded="false"
                                 aria-label="Expand value"
-                                onclick={handleToggleValue}
-                              >
-                                +
-                              </button>
+                                onclick={handleToggleContent}
+                              ></button>
                             </span>
                           </span>
                         </span>
@@ -204,26 +236,30 @@
                         for:each={check.expandedComparisonValues}
                         for:item="comparison"
                       >
-                        <span key={comparison.key} class="rhc-cmp__pair">
+                        <span
+                          key={comparison.key}
+                          class="rhc-cmp__pair"
+                          data-expandable
+                        >
                           <span class="rhc-cmp__main">
                             <span class="rhc-cmp__key">{comparison.label}</span>
                             <span class="rhc-cmp__value-wrap">
                               <span
                                 class="rhc-cmp__val rhc-cmp__val--clampable"
-                                data-clampval
+                                data-clampcontent
                                 >{comparison.value}</span
                               >
                               <button
                                 class="rhc-cmp__toggle"
                                 type="button"
                                 data-clamptoggle
+                                data-expand-label="value"
+                                data-symbol="+"
                                 hidden
                                 aria-expanded="false"
                                 aria-label="Expand value"
-                                onclick={handleToggleValue}
-                              >
-                                +
-                              </button>
+                                onclick={handleToggleContent}
+                              ></button>
                             </span>
                           </span>
                         </span>
@@ -239,9 +275,25 @@
                         >Troubleshooting detail</span
                       >
                       <!-- Keep the value flush-left: whitespace inside pre is rendered. -->
-                      <pre class="rhc-debug-detail__body">
+                      <span class="rhc-expandable" data-expandable>
+                        <pre
+                          class="rhc-debug-detail__body rhc-expandable__content rhc-expandable__content--diagnostic"
+                          data-clampcontent
+                        >
 {check.adminDetailMessage}</pre
-                      >
+                        >
+                        <button
+                          class="rhc-cmp__toggle"
+                          type="button"
+                          data-clamptoggle
+                          data-expand-label="troubleshooting detail"
+                          data-symbol="+"
+                          hidden
+                          aria-expanded="false"
+                          aria-label="Expand troubleshooting detail"
+                          onclick={handleToggleContent}
+                        ></button>
+                      </span>
                     </div>
                   </template>
                 </div>
@@ -257,20 +309,37 @@
 
           <template if:true={showSummaryStats}>
             <div class="rhc-stats-bar">
-              <template for:each={summaryStats} for:item="stat">
-                <span key={stat.key} class="rhc-summary-pill">
-                  <span
-                    class={stat.cssClass}
-                    data-tooltip={stat.tooltip}
-                    tabindex={stat.tabIndex}
-                  >
-                    <span class={stat.iconClass} aria-hidden="true"></span>
-                    {stat.label}
-                  </span>
-                  <span class="rhc-stat__nubbin-host" aria-hidden="true">
-                    <span class="rhc-stat__nubbin"></span>
-                  </span>
-                </span>
+              <template for:each={summaryGroups} for:item="group">
+                <div key={group.key} class={group.cssClass}>
+                  <template if:true={group.label}>
+                    <div class="rhc-stats-group__label">{group.label}</div>
+                  </template>
+                  <template if:true={group.assistiveLabel}>
+                    <span class="slds-assistive-text"
+                      >{group.assistiveLabel}</span
+                    >
+                  </template>
+                  <div class="rhc-stats-group__pills">
+                    <template for:each={group.stats} for:item="stat">
+                      <span key={stat.key} class="rhc-summary-pill">
+                        <span
+                          class={stat.cssClass}
+                          data-tooltip={stat.tooltip}
+                          tabindex={stat.tabIndex}
+                        >
+                          <span
+                            class={stat.iconClass}
+                            aria-hidden="true"
+                          ></span>
+                          {stat.label}
+                        </span>
+                        <span class="rhc-stat__nubbin-host" aria-hidden="true">
+                          <span class="rhc-stat__nubbin"></span>
+                        </span>
+                      </span>
+                    </template>
+                  </div>
+                </div>
               </template>
             </div>
           </template>

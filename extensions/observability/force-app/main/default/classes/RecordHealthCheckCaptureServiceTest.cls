@@ -55,6 +55,52 @@ private class RecordHealthCheckCaptureServiceTest {
   }
 
   @IsTest
+  static void flowActionBulkifiesRowsForTheSameCheckSet() {
+    List<Account> accounts = new List<Account>{
+      RHCObservabilityTestDataFactory.incompleteAccount(
+        'Observability Flow Bulk A'
+      ),
+      RHCObservabilityTestDataFactory.incompleteAccount(
+        'Observability Flow Bulk B'
+      )
+    };
+    List<RecordHealthCheckCaptureFlowAction.Request> inputs = new List<RecordHealthCheckCaptureFlowAction.Request>();
+    for (Account accountRecord : accounts) {
+      RecordHealthCheckCaptureFlowAction.Request input = new RecordHealthCheckCaptureFlowAction.Request();
+      input.checkSetQualifiedApiName = CHECK_SET;
+      input.recordId = accountRecord.Id;
+      inputs.add(input);
+    }
+
+    Test.startTest();
+    List<RecordHealthCheckCaptureFlowAction.Response> outputs = RecordHealthCheckCaptureFlowAction.runAndCapture(
+      inputs
+    );
+    Test.stopTest();
+
+    Assert.areEqual(2, outputs.size());
+    Assert.isTrue(outputs[0].isSuccess);
+    Assert.isTrue(outputs[1].isSuccess);
+    Assert.areEqual(
+      outputs[0].runId,
+      outputs[1].runId,
+      'Compatible Flow rows must share one bulk framework run.'
+    );
+    Assert.areEqual(2, runById(outputs[0].runId).Record_Count__c);
+    for (Integer index = 0; index < outputs.size(); index++) {
+      RecordHealthCheckResponse rowResult = (RecordHealthCheckResponse) JSON.deserialize(
+        outputs[index].resultJson,
+        RecordHealthCheckResponse.class
+      );
+      Assert.areEqual(
+        new List<Id>{ accounts[index].Id },
+        rowResult.recordIds,
+        'Each Flow response must contain only its requested record.'
+      );
+    }
+  }
+
+  @IsTest
   static void queueableCapturesSourceAndJob() {
     Account accountRecord = RHCObservabilityTestDataFactory.incompleteAccount(
       'Observability Queueable'
@@ -140,7 +186,7 @@ private class RecordHealthCheckCaptureServiceTest {
       accountRecord.Id
     );
     Record_Health_Check_Set_Run__e setEvent = new Record_Health_Check_Set_Run__e(
-      ContractVersion__c = '2.0',
+      ContractVersion__c = RecordHealthCheckCaptureService.CONTRACT_VERSION,
       EventId__c = 'set-event-1',
       RunId__c = runId,
       CheckSetQualifiedApiName__c = CHECK_SET,
@@ -188,7 +234,7 @@ private class RecordHealthCheckCaptureServiceTest {
   static void enabledCoreErrorEventCapturesRestrictedDetail() {
     String runId = 'rhc-queueable-log-test';
     Record_Health_Check_Log__e logEvent = new Record_Health_Check_Log__e(
-      ContractVersion__c = '2.0',
+      ContractVersion__c = RecordHealthCheckCaptureService.CONTRACT_VERSION,
       EventId__c = 'log-event-1',
       RunId__c = runId,
       Level__c = 'ERROR',

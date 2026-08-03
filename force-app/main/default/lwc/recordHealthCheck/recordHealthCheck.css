@@ -271,13 +271,39 @@
      arrow stays glued to the bubble if the padding ever changes. */
   --rhc-stats-bar-pad-y: 0.625rem;
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.375rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
   padding: var(--rhc-stats-bar-pad-y) var(--slds-g-spacing-4, 1rem);
   border-top: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
   /* Positioning context for summary-pill tooltips (bubble spans the bar). */
   position: relative;
+}
+
+.rhc-stats-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.rhc-stats-group__label {
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
+  font-size: var(--slds-g-font-scale-neg-1, 0.75rem);
+  font-weight: var(--slds-g-font-weight-7, 700);
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.rhc-stats-group__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.rhc-stats-group--unlabeled {
+  gap: 0;
 }
 
 /* Grid stack: pill label + nubbin host share one cell. The footer anchor stays
@@ -324,7 +350,7 @@
     opacity 0.12s ease,
     transform 0.12s ease;
   transition-delay: 0s;
-  z-index: 101;
+  z-index: var(--rhc-layer-tooltip-nubbin);
 }
 
 /* Drive the nubbin from the anchor's own dwell/focus-visible state (it is a later
@@ -576,6 +602,46 @@
   height: var(--slds-g-sizing-3, 0.5rem);
 }
 
+/* Shared disclosure frame for verbose user messages, remediation guidance,
+   diagnostics, and Found/Expected values. Each content type chooses its own
+   line limit while retaining the same compact +/- control. */
+.rhc-expandable {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.rhc-expandable__content {
+  box-sizing: border-box;
+  width: 100%;
+  padding-right: var(--slds-g-spacing-6, 2rem);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.rhc-expandable__content--message,
+.rhc-expandable__content--guidance,
+.rhc-expandable__content--diagnostic {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rhc-expandable__content--message,
+.rhc-expandable__content--guidance,
+.rhc-expandable__content--diagnostic {
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.rhc-expandable__content--expanded {
+  display: block;
+  -webkit-line-clamp: none;
+  line-clamp: none;
+  overflow: visible;
+}
+
 .rhc-row__message--error,
 .rhc-row__message--system-error {
   color: var(--slds-g-color-error-base-30, #8f0311);
@@ -690,26 +756,28 @@
   font-size: var(--slds-g-font-scale-base, 0.8125rem);
   line-height: 1.5;
   color: var(--slds-g-color-neutral-base-20, #2b2826);
-  background: var(--slds-g-color-neutral-base-100, #fff);
+  /* Follow the containing row surface in its idle, hover, and focus states.
+     Painting this box white caused a visible white-to-gray flash on hover. */
+  background: transparent;
   padding: 0.2rem 1.7rem 0.2rem 0.45rem;
   border-radius: 0.2rem;
   word-break: break-word;
 }
 
-/* Long values (a multi-clause formula, a wide list) clamp to two lines so one
-   verbose rule cannot dominate the card. The full text stays selectable/readable
-   behind the "..." toggle, which JS reveals only when the content actually
-   overflows this box. */
+/* Every expandable region uses the same four-line collapsed height. The full
+   value remains selectable/readable behind the +/- toggle, which JS reveals
+   only when the content actually overflows this box. */
 .rhc-cmp__val--clampable {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   overflow: hidden;
 }
 
 /* Toggled open: drop the clamp and let the chip grow to its natural height. */
-.rhc-cmp__val--expanded {
+.rhc-cmp__val--expanded,
+.rhc-cmp__val.rhc-expandable__content--expanded {
   display: block;
   -webkit-line-clamp: none;
   line-clamp: none;
@@ -742,6 +810,10 @@
   position: absolute;
   inset: -0.25rem;
   content: "";
+}
+
+.rhc-cmp__toggle::after {
+  content: attr(data-symbol);
 }
 
 .rhc-cmp__toggle[hidden] {
@@ -840,7 +912,7 @@
     opacity 0.12s ease,
     transform 0.12s ease;
   transition-delay: 0s;
-  z-index: 100;
+  z-index: var(--rhc-layer-tooltip);
 }
 
 /* No arrow: a light popover with a border can't carry a clean bordered arrow,
@@ -940,7 +1012,7 @@
   border-top: 1px solid var(--slds-g-color-border-2, #aeacaa);
   border-left: 1px solid var(--slds-g-color-border-2, #aeacaa);
   transform: translateY(0.25rem) rotate(45deg);
-  z-index: 101;
+  z-index: var(--rhc-layer-tooltip-nubbin);
 }
 
 /* Match the bubble fade once the JS hover dwell fires so the arrow and bubble

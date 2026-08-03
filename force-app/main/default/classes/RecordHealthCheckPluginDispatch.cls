@@ -75,8 +75,10 @@ public with sharing class RecordHealthCheckPluginDispatch {
       );
       if (violation != null) {
         Database.rollback(before);
+        Database.releaseSavepoint(before);
         throw violation;
       }
+      Database.releaseSavepoint(before);
     }
     if (constructionFailure != null) {
       throw constructionFailure;
@@ -107,9 +109,8 @@ public with sharing class RecordHealthCheckPluginDispatch {
     // ours to perform rather than something we hope the stack allows.
     //
     // Deliberately one per invocation rather than one shared across the
-    // transaction, even though a savepoint costs a DML statement and a 25-Rule
-    // Check Set therefore spends 25 of them on insurance against code that must
-    // not use DML at all.
+    // transaction. Each boundary releases its savepoint as soon as the plugin
+    // returns, so sequential Rules do not accumulate active savepoints.
     //
     // A shared savepoint was tried and is wrong: rolling back to the first
     // savepoint of the transaction undoes everything since, not just the
@@ -149,10 +150,12 @@ public with sharing class RecordHealthCheckPluginDispatch {
         // email has already left and the rollback cannot reach it, which is why
         // the exception carries `reversible` rather than claiming success.
         Database.rollback(before);
+        Database.releaseSavepoint(before);
         // Deliberately thrown from `finally`: it replaces any in-flight
         // exception, which is exactly the precedence the contract requires.
         throw violation;
       }
+      Database.releaseSavepoint(before);
     }
 
     if (pluginFailure != null) {

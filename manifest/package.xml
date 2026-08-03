@@ -138,6 +138,7 @@
         <members>RecordHealthCheckApexAdapterTest</members>
         <members>RecordHealthCheckConstructorFailureRule</members>
         <members>RecordHealthCheckApexEvaluator</members>
+        <members>RecordHealthCheckApexPluginResolver</members>
         <members>RecordHealthCheckApexScopeTest</members>
         <members>RecordHealthCheckBatch</members>
         <members>RHCEvaluatorEdgeBehaviorTest</members>
@@ -193,6 +194,7 @@
         <members>RecordHealthCheckFormulaDisplay</members>
         <members>RecordHealthCheckFormulaSyntax</members>
         <members>RecordHealthCheckFlowSupport</members>
+        <members>RecordHealthCheckFlowGroupExecutor</members>
         <members>RecordHealthCheckLifecyclePublisher</members>
         <members>RecordHealthCheckLogger</members>
         <members>RecordHealthCheckMergeContext</members>
@@ -237,6 +239,8 @@
         <members>RecordHealthCheckScopePlannerTest</members>
         <members>RecordHealthCheckScopeDisplayTest</members>
         <members>RecordHealthCheckSelection</members>
+        <members>RecordHealthCheckQualifiedIdentity</members>
+        <members>RecordHealthCheckAsyncSupport</members>
         <members>RecordHealthCheckScope</members>
         <members>RecordHealthCheckScheduled</members>
         <members>RecordHealthCheckStatus</members>
@@ -266,6 +270,8 @@
         <members>RecordHealthCheckTokenRegistry</members>
         <members>RecordHealthCheckValueResolver</members>
         <members>RecordHealthCheckApiTest</members>
+        <members>RecordHealthCheckAutomationAsyncTest</members>
+        <members>RecordHealthCheckAutomationFlowTest</members>
         <members>RHCConfigRuleValidationTest</members>
         <members>RecordHealthCheckConfigServiceTest</members>
         <members>RecordHealthCheckConfigValidationTest</members>
@@ -281,11 +287,13 @@
         <members>RecordHealthCheckEvaluatorBehaviorTest</members>
         <members>RHCSoqlEvaluatorBehaviorTest</members>
         <members>RHCDualQueryBehaviorTest</members>
+        <members>RHCBulkQueryLimitTest</members>
         <members>RecordHealthCheckLifecyclePublisherTest</members>
         <members>RecordHealthCheckLoggerTest</members>
         <members>RHCMetadataValidatorSmokeTest</members>
         <members>RecordHealthCheckMetadataValidatorTest</members>
         <members>RecordHealthCheckSecurityAndOpsTest</members>
+        <members>RHCScopePipelineFailureTest</members>
         <members>RecordHealthCheckSetPicklistTest</members>
         <members>RecordHealthCheckValueSourceTest</members>
         <members>RecordHealthCheckSoqlTemplateTest</members>
@@ -301,6 +309,7 @@
         <name>LightningComponentBundle</name>
     </types>
     <types>
+        <members>Record_Health_Check_Run</members>
         <members>Record_Health_Check_View_Diagnostics</members>
         <name>CustomPermission</name>
     </types>

@@ -100,6 +100,16 @@ function joinForSpeech(lines) {
   }, "");
 }
 
+// Keep a collapsed row's accessible name useful even when metadata contains a
+// full playbook. The complete text remains in the DOM beside its labelled
+// expansion control and is available after the user opens the region.
+function previewForSpeech(value, limit = 500) {
+  const text = value == null ? "" : String(value);
+  return text.length > limit
+    ? `${text.slice(0, limit).trimEnd()}… Additional text available.`
+    : text;
+}
+
 /**
  * Classifies a resolved check into one of the OUTCOME_STYLES keys. Returns null
  * for rows that are still pending/loading or have no result yet.
@@ -152,7 +162,8 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
   const statusLabel = style ? style.label : "";
   let statusIconClass = "rhc-status-icon ";
   let rowClass = "rhc-row";
-  let messageClass = "rhc-row__message";
+  let messageClass =
+    "rhc-row__message rhc-expandable__content rhc-expandable__content--message";
   let rowAccentClass = "";
 
   if (style) {
@@ -255,8 +266,10 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
   const caretClass = detailExpanded ? "rhc-caret rhc-caret--open" : "rhc-caret";
 
   const accessibleMessage = showMessage
-    ? joinForSpeech(
-        messageLines.filter((line) => !line.isBlank).map((line) => line.text)
+    ? previewForSpeech(
+        joinForSpeech(
+          messageLines.filter((line) => !line.isBlank).map((line) => line.text)
+        )
       )
     : null;
 
@@ -269,7 +282,7 @@ export function annotateCheck(c, showDiagnostics, comparisonMode, isExpanded) {
     isLoading ? "Evaluating" : isPending ? "Pending" : statusLabel,
     c.description,
     accessibleMessage,
-    fixInstructions,
+    previewForSpeech(fixInstructions),
     actionLabel ? `Link: ${actionLabel}` : null,
     comparisonAudible && actualValue != null ? `Found ${actualValue}` : null,
     comparisonAudible && expectedValue != null
@@ -384,4 +397,65 @@ export function buildSummaryStats(checks, tooltipKeys = new Set()) {
       };
     }
   );
+}
+
+/** Build alphabetized category summary rows, leaving uncategorized checks unlabeled and last. */
+export function buildSummaryGroups(checks, tooltipKeys = new Set()) {
+  const resolved = checks.filter((check) => check.result);
+  const hasCategories = resolved.some((check) => check.category);
+  if (!hasCategories) {
+    const stats = buildSummaryStats(resolved, tooltipKeys);
+    return stats.length
+      ? [
+          {
+            key: "all",
+            label: null,
+            assistiveLabel: null,
+            cssClass: "rhc-stats-group rhc-stats-group--unlabeled",
+            stats
+          }
+        ]
+      : [];
+  }
+
+  const byCategory = new Map();
+  const uncategorized = [];
+  for (const check of resolved) {
+    if (!check.category) {
+      uncategorized.push(check);
+      continue;
+    }
+    const key = check.category;
+    if (!byCategory.has(key)) {
+      byCategory.set(key, {
+        key,
+        label: check.categoryLabel || key,
+        checks: []
+      });
+    }
+    byCategory.get(key).checks.push(check);
+  }
+
+  const allTooltipKeys = new Set(SUMMARY_ROWS.map((row) => row.key));
+  const groups = [...byCategory.values()]
+    .sort((left, right) =>
+      left.label.localeCompare(right.label, undefined, { sensitivity: "base" })
+    )
+    .map((group) => ({
+      key: `category-${group.key}`,
+      label: group.label,
+      assistiveLabel: null,
+      cssClass: "rhc-stats-group rhc-stats-group--labeled",
+      stats: buildSummaryStats(group.checks, allTooltipKeys)
+    }));
+  if (uncategorized.length) {
+    groups.push({
+      key: "uncategorized",
+      label: null,
+      assistiveLabel: "Checks without a category",
+      cssClass: "rhc-stats-group rhc-stats-group--unlabeled",
+      stats: buildSummaryStats(uncategorized, allTooltipKeys)
+    });
+  }
+  return groups;
 }

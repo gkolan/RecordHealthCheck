@@ -277,5 +277,24 @@ private class RHCDisplayCurrencyResolutionTest {
       RecordHealthCheckDisplayCurrencyResolver.corporateCurrencyLoaded,
       'The attempted corporate-currency lookup is cached even when unavailable.'
     );
+
+    RecordHealthCheckDisplayCurrencyResolver.corporateCurrencyLoaded = false;
+    RecordHealthCheckTestDataFactory.createAccount('Corporate currency row');
+    AggregateResult corporateCurrency = [
+      SELECT MIN(Name) IsoCode
+      FROM Account
+    ];
+    RecordHealthCheckDisplayCurrencyResolver.corporateCurrencyRowsOverride = new List<SObject>{
+      corporateCurrency
+    };
+    try {
+      Assert.areEqual(
+        String.valueOf(corporateCurrency.get('IsoCode')),
+        RecordHealthCheckDisplayCurrencyResolver.corporateCurrency(),
+        'A visible corporate-currency row must be cached and returned.'
+      );
+    } finally {
+      RecordHealthCheckDisplayCurrencyResolver.corporateCurrencyRowsOverride = null;
+    }
   }
 }

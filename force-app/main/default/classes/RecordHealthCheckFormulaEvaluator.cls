@@ -66,7 +66,10 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       // FLS / accessibility check on fields referenced in the formula
       // FormulaEval will surface an exception if a field is inaccessible;
       // we catch that below and map it to FIELD_NOT_ACCESSIBLE.
-      Object evalResult = evaluateFormula(rule.PassConditionFormula__c, record);
+      Boolean evalResult = (Boolean) evaluateFormula(
+        rule.PassConditionFormula__c,
+        record
+      );
       result = applyEvaluationResult(rule, record, result, evalResult);
     } catch (Exception ex) {
       result = applyEvaluationException(rule, result, ex);
@@ -100,7 +103,7 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
     Record_Health_Check_Rule__mdt rule,
     SObject record,
     RecordHealthCheckInternalResult result,
-    Object evalResult
+    Boolean evalResult
   ) {
     if (evalResult == null) {
       // Null from FormulaEval means the formula could not resolve — typically
@@ -111,8 +114,8 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
       result.reasonCode = 'INVALID_FORMULA';
       result.message = safeCannotEvaluateMessage(rule);
       result.detailMessage = 'Formula returned null. The formula may reference a null relationship or an inaccessible field.';
-    } else if (evalResult instanceof Boolean) {
-      Boolean passed = (Boolean) evalResult;
+    } else {
+      Boolean passed = evalResult;
       // Set Found / Expected for display. By default a Formula check has no
       // separable record value vs operand — the condition lives inside the
       // expression — so we echo the formula as the pass/fail condition under a
@@ -139,11 +142,6 @@ public with sharing class RecordHealthCheckFormulaEvaluator {
           true
         );
       }
-    } else {
-      result.status = RecordHealthCheckStatus.UNABLE_TO_EVALUATE;
-      result.reasonCode = 'INVALID_FORMULA';
-      result.message = safeCannotEvaluateMessage(rule);
-      result.detailMessage = 'Formula returned a non-Boolean value.';
     }
     return result;
   }

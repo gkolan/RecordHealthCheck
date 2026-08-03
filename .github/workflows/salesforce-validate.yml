@@ -70,17 +70,20 @@ jobs:
         run: npm run check:query-verdicts -- --target-org rhc-ci --namespace rhc
       - name: Run metadata validator
         run: sf apex run --target-org rhc-ci --file scripts/apex/validateMetadata.apex
-      # Run static analysis last. The checked-in profile explains the few generic
-      # heuristics that do not fit this package; every enabled finding fails CI.
-      - name: Run final Salesforce Code Analyzer gate
+      # Run static analysis last. The blocking release-policy profile documents
+      # package-specific rule decisions; every enabled finding fails CI. The
+      # separate neutral audit runs every rule as advisory debt evidence.
+      - name: Enforce Code Analyzer output locations
+        run: npm run check:code-analyzer-output-paths
+      - name: Run blocking Code Analyzer release-policy gate
         run: |
           mkdir -p code-analyzer/logs
           sf code-analyzer run --workspace force-app --workspace integration-tests --workspace extensions/observability/force-app --rule-selector Recommended --include-fixes --output-file code-analyzer/release-profile.json --output-file code-analyzer/release-profile.html --severity-threshold 5
-      - name: Run neutral advisory architecture audit
+      - name: Run all-rules neutral advisory debt audit
         if: always()
         continue-on-error: true
         run: |
-          sf code-analyzer run --workspace force-app --workspace integration-tests --workspace extensions/observability/force-app --config-file code-analyzer-neutral.yml --rule-selector Recommended --include-fixes --output-file code-analyzer/neutral-audit.json --output-file code-analyzer/neutral-audit.html
+          sf code-analyzer run --workspace force-app --workspace integration-tests --workspace extensions/observability/force-app --config-file code-analyzer-neutral.yml --rule-selector all --include-fixes --output-file code-analyzer/neutral-audit.json --output-file code-analyzer/neutral-audit.html
       - name: Upload Code Analyzer evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -13,6 +13,13 @@ Id jobId = RecordHealthCheckBatch.run(
 );
 ```
 
+`run` requires `Record_Health_Check_Run`, a nonblank qualified Check Set identity, and 1–2,000
+distinct non-null record IDs. Null IDs and duplicates are removed before the population limit is
+checked. The packaged adapter uses execute scopes of 100, safely below the 200-record engine
+ceiling, and rechecks authorization in `start` and every `execute` transaction. Rejected input
+creates no Batch job. The public constructor enforces the same authorization and population
+contract as `run`, so direct construction cannot reserve Batch capacity with invalid state.
+
 Create a custom query-backed Batch only when record discovery must also happen asynchronously.
 Each
 `execute` scope is a separate transaction, so each scope must independently satisfy Record Health
@@ -86,6 +93,14 @@ Id jobId = Database.executeBatch(
 One failed scope does not erase successful earlier scopes. Retried work can produce the same
 business outcomes again, so use a stable uniqueness key when persisting results or handling
 events. Correlate each scope with the Batch job ID and a scope-specific value.
+
+Batch Apex has no Queueable-style duplicate signature. An automation caller that can retry must
+persist its own idempotency key before calling `run`, or reconcile an existing `AsyncApexJob`
+before resubmission. Do not blindly retry on timeout: duplicate Batch jobs consume org capacity
+and can repeat lifecycle events even though health evaluation itself is read-only.
+
+An uncaught scope failure is logged with stable reason `BATCH_SCOPE_FAILED`, flushed through the
+configured error-event channel, and rethrown so the platform job remains visibly failed.
 
 Do not create a per-record fallback when a Rule cannot evaluate in bulk. Resolve unsupported
 shapes in memory or return the documented unable status.

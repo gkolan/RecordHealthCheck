@@ -7,6 +7,7 @@
 private class RecordHealthCheckControllerTest {
   @TestSetup
   static void setup() {
+    RecordHealthCheckTestDataFactory.assignRunPermissionToCurrentUser();
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 
@@ -142,6 +143,109 @@ private class RecordHealthCheckControllerTest {
       );
     }
     Test.stopTest();
+  }
+
+  @IsTest
+  static void completeRunRejectsBlankResultsPayload() {
+    Test.startTest();
+    try {
+      RecordHealthCheckController.completeRun(
+        'Any_Set',
+        'blank-completion',
+        RecordHealthCheckLifecyclePublisher.SOURCE_USER_INITIATED,
+        UserInfo.getUserId(),
+        ' '
+      );
+      Assert.fail('A blank completion payload must be rejected.');
+    } catch (AuraHandledException error) {
+      Assert.isTrue(
+        error.getMessage().contains('RUN_COMPLETION_FAILED'),
+        'The public boundary must return the stable completion error.'
+      );
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void evaluateCheckRejectsUnknownExecutionSource() {
+    Test.startTest();
+    RecordHealthCheckResultItem result = RecordHealthCheckController.evaluateCheck(
+      'Any_Set',
+      'Any_Rule',
+      UserInfo.getUserId(),
+      'invalid-source',
+      'ATTACKER_CONTROLLED_SOURCE'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      RecordHealthCheckStatus.ERROR,
+      result.evaluation.status,
+      'An unknown source must fail at the controller boundary.'
+    );
+    Assert.areEqual(
+      'APEX_EVALUATOR_ERROR',
+      result.evaluation.reasonCode,
+      'The source rejection must not leak internal details.'
+    );
+  }
+
+  @IsTest
+  static void completionResponseNormalizesNullCollections() {
+    Test.startTest();
+    RecordHealthCheckResponse response = RecordHealthCheckController.completionResponse(
+      'null-completion',
+      UserInfo.getUserId(),
+      null,
+      null
+    );
+    Test.stopTest();
+
+    Assert.isTrue(
+      response.results.isEmpty(),
+      'Null client results must produce an empty envelope.'
+    );
+    Assert.areEqual(
+      0,
+      response.summary.passed,
+      'Null collections must not inflate passed results.'
+    );
+    Assert.areEqual(
+      0,
+      response.summary.failed,
+      'Null collections must not inflate failed results.'
+    );
+  }
+
+  @IsTest
+  static void completionResponseRejectsDuplicateRuleResults() {
+    Account accountRecord = RecordHealthCheckTestDataFactory.getHealthyAccount();
+    RecordHealthCheckEvaluationResult evaluation = new RecordHealthCheckEvaluationResult();
+    evaluation.recordId = accountRecord.Id;
+    evaluation.ruleQualifiedApiName = 'rhc__Rule_A';
+    evaluation.status = RecordHealthCheckStatus.FAIL;
+    RecordHealthCheckResultItem item = new RecordHealthCheckResultItem();
+    item.evaluation = evaluation;
+
+    Test.startTest();
+    RecordHealthCheckResponse response = RecordHealthCheckController.completionResponse(
+      'dedupe-run',
+      accountRecord.Id,
+      new Set<String>{ 'rhc__Rule_A' },
+      new List<RecordHealthCheckResultItem>{ item, item }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      1,
+      response.results.size(),
+      'One configured Rule may contribute only one completion result.'
+    );
+    Assert.areEqual(
+      1,
+      response.summary.failed,
+      'Duplicate client results must not inflate lifecycle summaries.'
+    );
   }
 
   @IsTest

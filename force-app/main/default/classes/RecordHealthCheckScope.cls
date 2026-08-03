@@ -20,9 +20,13 @@
  * one record. Not a different API, path, or standard.
  */
 global class RecordHealthCheckScope {
+  /** Object shared by every requested record ID. */
   global String objectApiName { get; private set; }
+  /** Qualified Rule identity. */
   global String ruleDeveloperName { get; private set; }
+  /** Qualified parent Check Set identity. */
   global String checkSetDeveloperName { get; private set; }
+  /** Correlation identifier for this evaluation. */
   global String runId { get; private set; }
 
   private List<Id> recordIdsInternal;
@@ -42,6 +46,7 @@ global class RecordHealthCheckScope {
     }
   }
 
+  /** @return Number of requested records. */
   global Integer size() {
     return recordIdsInternal.size();
   }
@@ -152,6 +157,7 @@ global class RecordHealthCheckScope {
     );
   }
 
+  /** Invalid immutable-scope construction or access. */
   global class RecordHealthCheckScopeException extends Exception {
   }
 }

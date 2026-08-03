@@ -13,6 +13,10 @@ public class RecordHealthCheckDefinition {
   @AuraEnabled
   public String description;
   @AuraEnabled
+  public String category;
+  @AuraEnabled
+  public String categoryLabel;
+  @AuraEnabled
   public Decimal priority;
   @AuraEnabled
   public String dependsOnRuleDeveloperName; // null when no dependency

@@ -19,6 +19,11 @@ Use a `global with sharing` class for a plugin that must work from the managed p
 Run its SOQL with user access. The Framework validates returned keys, statuses, reason
 codes, and side effects, but the plugin remains responsible for its own data access.
 
+Plugin deployment is a trusted-code action. The Framework cannot sandbox or observe privileged
+reads performed by opaque subscriber Apex: `with sharing` covers record sharing, while the plugin
+must still enforce object and field access and use user-mode queries. The side-effect fence is not
+a read-security boundary, and passing the contract harness is not proof that every query is safe.
+
 ## Scope
 
 `RecordHealthCheckScope` provides:

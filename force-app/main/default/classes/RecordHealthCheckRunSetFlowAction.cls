@@ -66,6 +66,13 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
     if (requests == null) {
       return new List<Response>();
     }
+    if (!RecordHealthCheckAccess.canRunChecks()) {
+      return errorResponses(
+        requests.size(),
+        'AUTHORIZATION',
+        'You do not have permission to run Record Health Checks.'
+      );
+    }
     if (requests.size() > RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE) {
       return errorResponses(
         requests.size(),
@@ -73,76 +80,73 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
         countError(requests.size())
       );
     }
-    Map<String, List<Id>> idsByGroup = new Map<String, List<Id>>();
-    Map<String, RecordHealthCheckResponse> resultsByGroup = new Map<String, RecordHealthCheckResponse>();
-    Map<String, Map<Id, List<RecordHealthCheckResultItem>>> itemsByRecordByGroup = new Map<String, Map<Id, List<RecordHealthCheckResultItem>>>();
-    Map<Integer, Response> errorsByIndex = new Map<Integer, Response>();
-    for (Integer index = 0; index < requests.size(); index++) {
-      Request input = requests[index];
-      try {
-        validateInput(input);
-      } catch (FlowRequestException ex) {
-        errorsByIndex.put(index, errorResponse('VALIDATION', ex.getMessage()));
-        continue;
-      }
-      String key = groupKey(
-        input.checkSetQualifiedApiName,
-        input.eventPublication
-      );
-      if (!idsByGroup.containsKey(key)) {
-        idsByGroup.put(key, new List<Id>());
-      }
-      idsByGroup.get(key).add(input.recordId);
+    RecordHealthCheckFlowGroupExecutor.Plan plan = prepare(requests);
+    if (RecordHealthCheckFlowGroupExecutor.exceedsGroupLimit(plan)) {
+      return groupLimitResponses(requests.size(), plan.failuresByIndex);
     }
-    Map<String, String> groupErrors = new Map<String, String>();
-    for (String key : idsByGroup.keySet()) {
-      try {
-        List<Object> parts = (List<Object>) JSON.deserializeUntyped(key);
-        RecordHealthCheckResponse groupedResponse = RecordHealthCheck.evaluate(
-          RecordHealthCheckRequest.forCheckSet(
-              (String) parts[0],
-              idsByGroup.get(key)
-            )
-            .withExecutionOrigin(RecordHealthCheckExecutionOrigin.FLOW)
-            .withEventPublication(
-              RecordHealthCheckFlowSupport.publication((String) parts[1])
-            )
-        );
-        resultsByGroup.put(key, groupedResponse);
-        itemsByRecordByGroup.put(
-          key,
-          RecordHealthCheckFlowSupport.itemsByRecord(groupedResponse)
-        );
-      } catch (Exception ex) {
-        groupErrors.put(key, 'The Check Set request could not be evaluated.');
-      }
-    }
+    RecordHealthCheckFlowGroupExecutor.execute(
+      plan,
+      RecordHealthCheckFlowGroupExecutor.SelectionKind.CHECK_SET
+    );
+    return buildResponses(requests, plan);
+  }
 
-    List<Response> outputs = new List<Response>();
+  private static RecordHealthCheckFlowGroupExecutor.Plan prepare(
+    List<Request> requests
+  ) {
+    RecordHealthCheckFlowGroupExecutor.Plan plan = new RecordHealthCheckFlowGroupExecutor.Plan();
     for (Integer index = 0; index < requests.size(); index++) {
-      if (errorsByIndex.containsKey(index)) {
-        outputs.add(errorsByIndex.get(index));
+      Request input = requests[index];
+      String normalizedIdentity = RecordHealthCheckFlowGroupExecutor.add(
+        plan,
+        index,
+        input?.checkSetQualifiedApiName,
+        'Check Set',
+        input?.recordId,
+        input?.eventPublication
+      );
+      if (normalizedIdentity != null) {
+        input.checkSetQualifiedApiName = normalizedIdentity;
+      }
+    }
+    return plan;
+  }
+
+  private static List<Response> buildResponses(
+    List<Request> requests,
+    RecordHealthCheckFlowGroupExecutor.Plan plan
+  ) {
+    List<Response> outputs = new List<Response>();
+    Integer responseChars = RecordHealthCheckFlowSupport.initialPayloadChars();
+    for (Integer index = 0; index < requests.size(); index++) {
+      if (plan.failuresByIndex.containsKey(index)) {
+        RecordHealthCheckFlowGroupExecutor.Failure failure = plan.failuresByIndex.get(
+          index
+        );
+        outputs.add(errorResponse(failure.errorType, failure.errorMessage));
         continue;
       }
       Request input = requests[index];
-      String key = groupKey(
+      String key = RecordHealthCheckFlowGroupExecutor.key(
         input.checkSetQualifiedApiName,
         input.eventPublication
       );
-      if (groupErrors.containsKey(key)) {
-        outputs.add(errorResponse('EXECUTION', groupErrors.get(key)));
+      RecordHealthCheckFlowGroupExecutor.Result grouped = plan.resultByGroup.get(
+        key
+      );
+      if (grouped.errorMessage != null) {
+        outputs.add(errorResponse('EXECUTION', grouped.errorMessage));
         continue;
       }
       try {
-        RecordHealthCheckResponse groupedResponse = resultsByGroup.get(key);
         RecordHealthCheckResponse individual = responseForRecord(
-          groupedResponse,
+          grouped.response,
           input.recordId,
-          itemsByRecordByGroup.get(key)
+          grouped.itemsByRecord
         );
         Response output = new Response();
         output.isSuccess = true;
-        output.contractVersion = '2.0';
+        output.contractVersion = RecordHealthCheckFlowSupport.CONTRACT_VERSION;
         output.status = RecordHealthCheckFlowSupport.overallStatus(
           individual.summary
         );
@@ -151,8 +155,15 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
         output.skippedCount = individual.summary.skipped;
         output.unableCount = individual.summary.unable;
         output.systemErrorCount = individual.summary.systemError;
-        output.resultJson = JSON.serialize(individual);
+        String resultJson = JSON.serialize(individual);
+        responseChars = RecordHealthCheckFlowSupport.consumePayloadBudget(
+          responseChars,
+          resultJson
+        );
+        output.resultJson = resultJson;
         outputs.add(output);
+      } catch (RecordHealthCheckFlowSupport.PayloadBudgetException ex) {
+        outputs.add(errorResponse('LIMIT', ex.getMessage()));
       } catch (Exception ex) {
         // prettier-ignore
         outputs.add(errorResponse('EXECUTION', 'No aligned Check Set result was returned.'));
@@ -183,20 +194,34 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
     return result;
   }
 
-  private static String groupKey(String name, String mode) {
-    return JSON.serialize(
-      new List<String>{
-        name,
-        RecordHealthCheckFlowSupport.normalizedPublication(mode)
-      }
-    );
-  }
-
   private static String countError(Integer count) {
     return 'MAX_RECORDS_PER_SCOPE_EXCEEDED: suppliedCount=' +
       count +
       ', ceiling=' +
       RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE;
+  }
+
+  private static List<Response> groupLimitResponses(
+    Integer count,
+    Map<Integer, RecordHealthCheckFlowGroupExecutor.Failure> failuresByIndex
+  ) {
+    List<Response> outputs = new List<Response>();
+    for (Integer index = 0; index < count; index++) {
+      outputs.add(
+        failuresByIndex.containsKey(index)
+          ? errorResponse(
+              failuresByIndex.get(index).errorType,
+              failuresByIndex.get(index).errorMessage
+            )
+          : errorResponse(
+              'LIMIT',
+              'MAX_FLOW_GROUPS_EXCEEDED: ceiling=' +
+                RecordHealthCheckConstants.MAX_FLOW_GROUPS +
+                '.'
+            )
+      );
+    }
+    return outputs;
   }
 
   private static List<Response> errorResponses(
@@ -213,29 +238,10 @@ public with sharing class RecordHealthCheckRunSetFlowAction {
 
   private static Response errorResponse(String errorType, String message) {
     Response output = new Response();
-    output.contractVersion = '2.0';
+    output.contractVersion = RecordHealthCheckFlowSupport.CONTRACT_VERSION;
     output.isSuccess = false;
     output.errorType = errorType;
     output.errorMessage = message;
     return output;
-  }
-
-  private static void validateInput(Request input) {
-    if (
-      input == null ||
-      String.isBlank(input.checkSetQualifiedApiName) ||
-      input.recordId == null
-    ) {
-      throw new FlowRequestException(
-        'A Check Set Qualified API Name and Record ID are required.'
-      );
-    }
-    RecordHealthCheckFlowSupport.publication(
-      RecordHealthCheckFlowSupport.normalizedPublication(input.eventPublication)
-    );
-  }
-
-  /** Internal validation exception converted to a recoverable Flow response. */
-  public class FlowRequestException extends Exception {
   }
 }

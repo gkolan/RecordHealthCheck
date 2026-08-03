@@ -42,29 +42,63 @@ public with sharing class RecordHealthCheckCaptureFlowAction {
     if (requests == null) {
       return outputs;
     }
-    for (Request request : requests) {
-      Response output = new Response();
+
+    Map<String, Set<Id>> recordIdsByCheckSet = new Map<String, Set<Id>>();
+    Map<String, List<Integer>> outputIndexesByCheckSet = new Map<String, List<Integer>>();
+    for (Integer index = 0; index < requests.size(); index++) {
+      Request request = requests[index];
+      outputs.add(new Response());
+      if (
+        request == null ||
+        String.isBlank(request.checkSetQualifiedApiName) ||
+        request.recordId == null
+      ) {
+        outputs[index].isSuccess = false;
+        outputs[index].errorType = 'INVALID_REQUEST';
+        outputs[index]
+          .errorMessage = 'Check Set Qualified API Name and Record ID are required.';
+        continue;
+      }
+      String checkSetName = request.checkSetQualifiedApiName.trim();
+      if (!recordIdsByCheckSet.containsKey(checkSetName)) {
+        recordIdsByCheckSet.put(checkSetName, new Set<Id>());
+        outputIndexesByCheckSet.put(checkSetName, new List<Integer>());
+      }
+      recordIdsByCheckSet.get(checkSetName).add(request.recordId);
+      outputIndexesByCheckSet.get(checkSetName).add(index);
+    }
+
+    for (String checkSetName : recordIdsByCheckSet.keySet()) {
       try {
         RecordHealthCheckResponse result = RecordHealthCheckCaptureService.runCheckSet(
-          request.checkSetQualifiedApiName,
-          new List<Id>{ request.recordId },
+          checkSetName,
+          new List<Id>(recordIdsByCheckSet.get(checkSetName)),
           RecordHealthCheckCaptureService.SOURCE_FLOW,
           null
         );
-        output.runId = result.runId;
-        output.status = overallStatus(result.summary);
-        output.failedCount = result.summary.failed;
-        output.unableCount = result.summary.unable;
-        output.systemErrorCount = result.summary.systemError;
-        output.resultJson = JSON.serialize(result);
-        output.isSuccess = true;
+        for (Integer outputIndex : outputIndexesByCheckSet.get(checkSetName)) {
+          RecordHealthCheckResponse recordResult = responseForRecord(
+            result,
+            requests[outputIndex].recordId
+          );
+          Response output = outputs[outputIndex];
+          output.runId = result.runId;
+          output.status = overallStatus(recordResult.summary);
+          output.failedCount = recordResult.summary.failed;
+          output.unableCount = recordResult.summary.unable;
+          output.systemErrorCount = recordResult.summary.systemError;
+          output.resultJson = JSON.serialize(recordResult);
+          output.isSuccess = true;
+        }
         successfulRunIds.add(result.runId);
       } catch (Exception ex) {
-        output.isSuccess = false;
-        output.errorMessage = ex.getMessage();
-        output.errorType = ex.getTypeName();
+        for (Integer outputIndex : outputIndexesByCheckSet.get(checkSetName)) {
+          Response output = outputs[outputIndex];
+          output.isSuccess = false;
+          output.errorMessage = ex.getMessage();
+          output.errorType = ex.getTypeName();
+        }
       }
-      outputs.add(output);
     }
     Map<String, Id> recordIdByRunId = new Map<String, Id>();
     if (!successfulRunIds.isEmpty()) {
@@ -86,6 +120,28 @@ public with sharing class RecordHealthCheckCaptureFlowAction {
       }
     }
     return outputs;
+  }
+
+  private static RecordHealthCheckResponse responseForRecord(
+    RecordHealthCheckResponse source,
+    Id recordId
+  ) {
+    RecordHealthCheckResponse result = new RecordHealthCheckResponse();
+    result.runId = source.runId;
+    result.recordIds.add(recordId);
+    Set<String> ruleNames = new Set<String>();
+    for (RecordHealthCheckResultItem item : source.results) {
+      if (item?.evaluation?.recordId != recordId) {
+        continue;
+      }
+      result.results.add(item);
+      result.summary.add(item.evaluation.status);
+      if (String.isNotBlank(item.evaluation.ruleQualifiedApiName)) {
+        ruleNames.add(item.evaluation.ruleQualifiedApiName);
+      }
+    }
+    result.ruleQualifiedApiNames.addAll(ruleNames);
+    return result;
   }
 
   private static String overallStatus(RecordHealthCheckRunSummary summary) {

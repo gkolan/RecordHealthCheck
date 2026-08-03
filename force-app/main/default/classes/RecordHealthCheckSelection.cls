@@ -2,7 +2,9 @@
  * Immutable XOR selection of one qualified Check Set or one qualified Rule.
  */
 global class RecordHealthCheckSelection {
+  /** Selected qualified Check Set identity, or null for Rule selection. */
   global String checkSetQualifiedApiName { get; private set; }
+  /** Selected qualified Rule identity, or null for Check Set selection. */
   global String ruleQualifiedApiName { get; private set; }
 
   private RecordHealthCheckSelection(
@@ -20,8 +22,10 @@ global class RecordHealthCheckSelection {
   global static RecordHealthCheckSelection forCheckSet(
     String qualifiedApiName
   ) {
-    requireIdentity(qualifiedApiName, 'Check Set');
-    return new RecordHealthCheckSelection(qualifiedApiName.trim(), null);
+    return new RecordHealthCheckSelection(
+      normalizedIdentity(qualifiedApiName, 'Check Set'),
+      null
+    );
   }
 
   /**
@@ -29,18 +33,27 @@ global class RecordHealthCheckSelection {
    * @return A Rule selection.
    */
   global static RecordHealthCheckSelection forRule(String qualifiedApiName) {
-    requireIdentity(qualifiedApiName, 'Rule');
-    return new RecordHealthCheckSelection(null, qualifiedApiName.trim());
+    return new RecordHealthCheckSelection(
+      null,
+      normalizedIdentity(qualifiedApiName, 'Rule')
+    );
   }
 
-  private static void requireIdentity(String qualifiedApiName, String label) {
-    if (String.isBlank(qualifiedApiName)) {
-      throw new RecordHealthCheckSelectionException(
-        label + ' QualifiedApiName is required.'
+  private static String normalizedIdentity(
+    String qualifiedApiName,
+    String label
+  ) {
+    try {
+      return RecordHealthCheckQualifiedIdentity.normalize(
+        qualifiedApiName,
+        label
       );
+    } catch (IllegalArgumentException error) {
+      throw new RecordHealthCheckSelectionException(error.getMessage());
     }
   }
 
+  /** Invalid immutable-selection construction. */
   global class RecordHealthCheckSelectionException extends Exception {
   }
 }

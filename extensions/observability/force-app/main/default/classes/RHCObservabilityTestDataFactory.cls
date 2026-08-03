@@ -12,7 +12,7 @@ public class RHCObservabilityTestDataFactory {
     Id recordId
   ) {
     return new Record_Health_Check_Rule_Result__e(
-      ContractVersion__c = '2.0',
+      ContractVersion__c = RecordHealthCheckCaptureService.CONTRACT_VERSION,
       EventId__c = eventId,
       RunId__c = runId,
       CheckSetQualifiedApiName__c = 'Example_Account_Profile_Readiness',

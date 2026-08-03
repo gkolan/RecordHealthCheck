@@ -39,9 +39,8 @@
       "queryFields": [
         "SourceQuery__c"
       ],
-      "reasonCode": "DEPENDENCY_NOT_IN_RUN",
       "rule": "Account_Adv_ContactHasEmail",
-      "status": "SKIPPED"
+      "status": "FAIL"
     },
     {
       "queryFields": [

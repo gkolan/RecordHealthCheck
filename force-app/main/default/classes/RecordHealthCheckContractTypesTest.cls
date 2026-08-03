@@ -9,7 +9,7 @@ private with sharing class RecordHealthCheckContractTypesTest {
       'rhc__Example_Set'
     );
     RecordHealthCheckSelection ruleSelection = RecordHealthCheckSelection.forRule(
-      'Subscriber_Rule'
+      '  Subscriber_Rule  '
     );
 
     Assert.areEqual(
@@ -24,7 +24,7 @@ private with sharing class RecordHealthCheckContractTypesTest {
     Assert.areEqual(
       'Subscriber_Rule',
       ruleSelection.ruleQualifiedApiName,
-      'The Rule factory should preserve a subscriber QualifiedApiName.'
+      'The Rule factory should canonicalize a subscriber QualifiedApiName.'
     );
     Assert.isNull(
       ruleSelection.checkSetQualifiedApiName,
@@ -43,6 +43,31 @@ private with sharing class RecordHealthCheckContractTypesTest {
         'The exception should identify the missing qualified identity.'
       );
     }
+  }
+
+  @IsTest
+  static void selectionFactoryRejectsOverlongIdentity() {
+    try {
+      RecordHealthCheckSelection.forCheckSet(overlongIdentity());
+      Assert.fail('An overlong Check Set identity should be rejected.');
+    } catch (RecordHealthCheckSelection.RecordHealthCheckSelectionException error) {
+      Assert.isTrue(
+        error.getMessage().contains('must not exceed 255 characters'),
+        'The exception should identify the qualified-identity length cap.'
+      );
+    }
+  }
+
+  private static String overlongIdentity() {
+    String value = '';
+    for (
+      Integer index = 0;
+      index <= RecordHealthCheckConstants.MAX_QUALIFIED_API_NAME_LENGTH;
+      index++
+    ) {
+      value += 'x';
+    }
+    return value;
   }
 
   @IsTest

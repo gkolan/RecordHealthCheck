@@ -23,6 +23,7 @@ public with sharing class RecordHealthCheckController {
   public static RecordHealthCheckSetAvailability getCheckSetAvailabilityForRecord(
     Id recordId
   ) {
+    requireRunAccess();
     if (recordId == null) {
       return new RecordHealthCheckSetAvailability();
     }
@@ -71,6 +72,7 @@ public with sharing class RecordHealthCheckController {
     Id recordId,
     String runId
   ) {
+    requireRunAccess();
     // Normalize at the controller boundary (the engine also normalizes in evaluate).
     checkSetQualifiedApiName = RecordHealthCheckLogger.normalizeIdentifier(
       checkSetQualifiedApiName,
@@ -149,6 +151,7 @@ public with sharing class RecordHealthCheckController {
     String runId,
     String source
   ) {
+    requireRunAccess();
     checkSetQualifiedApiName = RecordHealthCheckLogger.normalizeIdentifier(
       checkSetQualifiedApiName,
       80
@@ -175,8 +178,11 @@ public with sharing class RecordHealthCheckController {
         .withRunId(runId);
       RecordHealthCheckResponse response = RecordHealthCheck.evaluate(request);
       return response.results[0];
+    } catch (RecordHealthCheckPluginDispatch.SideEffectException ex) {
+      throw ex;
     } catch (Exception ex) {
-      // Engine promises never to throw, but guard the boundary regardless
+      // Recoverable boundary failures become a stable item. Fatal plugin side
+      // effects are rethrown above so their transaction cannot be committed.
       RecordHealthCheckLogger.log(
         RecordHealthCheckLogger.Level.ERROR,
         runId,
@@ -221,6 +227,7 @@ public with sharing class RecordHealthCheckController {
     Id recordId,
     String resultsJson
   ) {
+    requireRunAccess();
     try {
       String effectiveSource = normalizeLwcSource(source);
       String effectiveCheckSetName = RecordHealthCheckLogger.normalizeIdentifier(
@@ -255,25 +262,12 @@ public with sharing class RecordHealthCheckController {
         resultsJson,
         List<RecordHealthCheckResultItem>.class
       );
-      RecordHealthCheckResponse response = new RecordHealthCheckResponse();
-      response.runId = effectiveRunId;
-      response.recordIds.add(recordId);
-      Set<String> ruleNames = new Set<String>();
-      for (RecordHealthCheckResultItem item : completedItems) {
-        if (
-          item == null ||
-          item.evaluation == null ||
-          item.evaluation.recordId != recordId ||
-          String.isBlank(item.evaluation.ruleQualifiedApiName) ||
-          !allowedRuleNames.contains(item.evaluation.ruleQualifiedApiName)
-        ) {
-          continue;
-        }
-        response.results.add(item);
-        response.summary.add(item.evaluation.status);
-        ruleNames.add(item.evaluation.ruleQualifiedApiName);
-      }
-      response.ruleQualifiedApiNames.addAll(ruleNames);
+      RecordHealthCheckResponse response = completionResponse(
+        effectiveRunId,
+        recordId,
+        allowedRuleNames,
+        completedItems
+      );
       RecordHealthCheckLifecyclePublisher.publishInteractiveResponse(
         response,
         effectiveCheckSetName,
@@ -296,6 +290,56 @@ public with sharing class RecordHealthCheckController {
       );
     } finally {
       RecordHealthCheckLogger.flush();
+    }
+  }
+
+  @TestVisible
+  private static RecordHealthCheckResponse completionResponse(
+    String runId,
+    Id recordId,
+    Set<String> allowedRuleNames,
+    List<RecordHealthCheckResultItem> completedItems
+  ) {
+    RecordHealthCheckResponse response = new RecordHealthCheckResponse();
+    response.runId = runId;
+    response.recordIds.add(recordId);
+    Set<String> acceptedRuleNames = new Set<String>();
+    List<RecordHealthCheckResultItem> candidateItems = completedItems;
+    if (candidateItems == null) {
+      candidateItems = new List<RecordHealthCheckResultItem>();
+    }
+    Set<String> configuredRuleNames = allowedRuleNames;
+    if (configuredRuleNames == null) {
+      configuredRuleNames = new Set<String>();
+    }
+    for (RecordHealthCheckResultItem item : candidateItems) {
+      String ruleName = item?.evaluation?.ruleQualifiedApiName;
+      if (
+        item?.evaluation == null ||
+        item.evaluation.recordId != recordId ||
+        String.isBlank(ruleName) ||
+        !configuredRuleNames.contains(ruleName) ||
+        acceptedRuleNames.contains(ruleName)
+      ) {
+        continue;
+      }
+      acceptedRuleNames.add(ruleName);
+      response.results.add(item);
+      response.summary.add(item.evaluation.status);
+    }
+    response.ruleQualifiedApiNames.addAll(acceptedRuleNames);
+    return response;
+  }
+
+  /** Validates the browser execution source without silently changing its meaning. */
+  private static void requireRunAccess() {
+    try {
+      RecordHealthCheckAccess.requireCanRunChecks();
+    } catch (RecordHealthCheckAccess.AuthorizationException error) {
+      throw buildAuraException(
+        'NOT_AUTHORIZED',
+        'You do not have permission to run Record Health Checks.'
+      );
     }
   }
 

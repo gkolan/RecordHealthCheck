@@ -184,6 +184,11 @@ public class RecordHealthCheckTemplateService {
   }
 
   private static String formatValue(Object raw) {
+    // Apex reports a boxed Date as instanceof Datetime, so Date must be
+    // handled first to avoid rendering date-only merge fields as GMT instants.
+    if (raw instanceof Date) {
+      return ((Date) raw).format();
+    }
     if (raw instanceof Datetime) {
       return ((Datetime) raw).formatGmt('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
     }

@@ -1,12 +1,12 @@
 List<Account> targets = [
   SELECT Id
   FROM Account
-  WHERE Name = 'Acme Corporation'
-  LIMIT 1
+  WHERE Name = 'RHC Query Verdict Fixture'
 ];
-if (targets.isEmpty()) {
-  targets.add(new Account(Name = 'Acme Corporation'));
-  insert targets;
+if (targets.size() != 1) {
+  throw new IllegalArgumentException(
+    'Run integration-tests/scripts/query_verdict_fixture.apex before the exhaustive smoke launchers.'
+  );
 }
 Account target = targets[0];
 List<Id> jobs = RecordHealthCheckExhaustiveSmoke.startRules(target.Id, 100);

@@ -11,7 +11,7 @@ import getCheckSetAvailabilityForRecord from "@salesforce/apex/RecordHealthCheck
 import evaluateCheck from "@salesforce/apex/RecordHealthCheckController.evaluateCheck";
 import completeRun from "@salesforce/apex/RecordHealthCheckController.completeRun";
 import { parseAuraError } from "./healthCheckModel";
-import { annotateCheck, buildSummaryStats } from "./healthCheckPresentation";
+import { annotateCheck, buildSummaryGroups } from "./healthCheckPresentation";
 import { HealthCheckRunner } from "./healthCheckRunner";
 import {
   buildInactiveRuleStat,
@@ -35,7 +35,7 @@ const RHC_DIAG_TABLE_COLUMNS = [
 
 // Pointer hover waits before the tooltip fades in so quick row scans do not flash
 // popovers. Keyboard focus keeps a shorter CSS dwell (see recordHealthCheck.css).
-const TOOLTIP_HOVER_DWELL_MS = 600;
+const TOOLTIP_HOVER_DWELL_MS = 1000;
 const ESTIMATED_TOOLTIP_HEIGHT = 180;
 
 const SETUP_ERROR_CODES = new Set([
@@ -131,7 +131,7 @@ export default class RecordHealthCheck extends LightningElement {
   // the component owns lifecycle, definition loading, display, and diagnostics.
   _runner = new HealthCheckRunner(this, { evaluateCheck, completeRun });
   _loadToken = 0;
-  _initialLoadTimer;
+  _initialLoadFrame;
   _tooltipListenersBound = false;
   _tooltipDwellTimers = new WeakMap();
   _pendingTooltipAnchors = new Set();
@@ -147,11 +147,14 @@ export default class RecordHealthCheck extends LightningElement {
   connectedCallback() {
     this._connected = true;
     window.addEventListener("resize", this._handleViewportResize);
-    // Defer one macrotask so the record page frame finishes its initial render
-    // before we fire Apex calls. Without this, Automatic mode sends up to 25
-    // concurrent requests while the page is still mounting other components.
+    // Yield the first frame to the Lightning page before loading definitions.
+    // Automatic evaluation therefore cannot compete with the page's initial
+    // component mount and first meaningful paint.
     // eslint-disable-next-line @lwc/lwc/no-async-operation
-    this._initialLoadTimer = setTimeout(() => this._loadDefinitions(), 0);
+    this._initialLoadFrame = requestAnimationFrame(() => {
+      this._initialLoadFrame = null;
+      this._loadDefinitions();
+    });
   }
 
   disconnectedCallback() {
@@ -162,9 +165,9 @@ export default class RecordHealthCheck extends LightningElement {
       this._resizeFrame = null;
     }
     this._loadToken++;
-    if (this._initialLoadTimer) {
-      clearTimeout(this._initialLoadTimer);
-      this._initialLoadTimer = null;
+    if (this._initialLoadFrame) {
+      cancelAnimationFrame(this._initialLoadFrame);
+      this._initialLoadFrame = null;
     }
     // Bump the run token and clear the concurrency pool so any in-flight
     // evaluation resolves to a discarded result instead of changing a dead component.
@@ -192,9 +195,9 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   renderedCallback() {
-    // Content grows as checks resolve, so re-measure clamped value chips on every
-    // render to reveal a "..." toggle only on those that overflow two lines.
-    this._measureClampedValues();
+    // Content grows as checks resolve, so re-measure every clampable region and
+    // reveal its +/- toggle only when the rendered text actually overflows.
+    this._measureClampedContent();
     if (this._tooltipListenersBound) {
       return;
     }
@@ -339,9 +342,9 @@ export default class RecordHealthCheck extends LightningElement {
     const loadToken = ++this._loadToken;
     const requestedCheckSetName = this.checkSetName;
     const requestedRecordId = this.recordId;
-    if (this._initialLoadTimer) {
-      clearTimeout(this._initialLoadTimer);
-      this._initialLoadTimer = null;
+    if (this._initialLoadFrame) {
+      cancelAnimationFrame(this._initialLoadFrame);
+      this._initialLoadFrame = null;
     }
     // Invalidate any run still in flight from a previously-viewed record. This
     // method is the entry point for both the first load AND the in-place record
@@ -464,6 +467,8 @@ export default class RecordHealthCheck extends LightningElement {
         qualifiedApiName: def.qualifiedApiName,
         label: def.label,
         description: def.description,
+        category: def.category || null,
+        categoryLabel: def.categoryLabel || null,
         priority: def.priority,
         dependsOnRuleDeveloperName: def.dependsOnRuleDeveloperName || null,
         uiState: "PENDING",
@@ -678,29 +683,26 @@ export default class RecordHealthCheck extends LightningElement {
     };
   }
 
-  // Value chips clamp to two lines by default (see .rhc-cmp__val--clampable). A
-  // long formula or list therefore needs a quiet "..." affordance; we only
-  // want it on chips that actually overflow, which is only knowable after
-  // layout. Scan the rendered chips and reveal the sibling toggle on the ones
-  // whose full content is taller than the clamped box. Skip already-expanded
-  // chips so a re-render (another check resolving) does not hide their toggle.
-  _measureClampedValues() {
-    const chips = this.template.querySelectorAll("[data-clampval]");
-    for (const chip of chips) {
-      const pair = chip.closest(".rhc-cmp__pair");
+  // Found/Expected values, user messages, fix guidance, and diagnostic detail
+  // share one four-line disclosure interaction. This layout pass decides only
+  // whether the control is necessary.
+  _measureClampedContent() {
+    const regions = this.template.querySelectorAll("[data-clampcontent]");
+    for (const content of regions) {
+      const container = content.closest("[data-expandable]");
       /* istanbul ignore next -- guards DOM detachment between query and measurement */
-      if (!pair) {
+      if (!container) {
         continue;
       }
-      const toggle = pair.querySelector("[data-clamptoggle]");
+      const toggle = container.querySelector("[data-clamptoggle]");
       /* istanbul ignore next -- template invariant during normal rendering */
       if (!toggle) {
         continue;
       }
-      if (chip.classList.contains("rhc-cmp__val--expanded")) {
+      if (content.classList.contains("rhc-expandable__content--expanded")) {
         continue;
       }
-      const overflowing = chip.scrollHeight - chip.clientHeight > 1;
+      const overflowing = content.scrollHeight - content.clientHeight > 1;
       toggle.hidden = !overflowing;
     }
   }
@@ -715,32 +717,33 @@ export default class RecordHealthCheck extends LightningElement {
     // eslint-disable-next-line @lwc/lwc/no-async-operation
     this._resizeFrame = requestAnimationFrame(() => {
       this._resizeFrame = null;
-      this._measureClampedValues();
+      this._measureClampedContent();
     });
   };
 
-  // Expand or re-clamp a single value chip in place. Imperative because the
-  // clamp/expand state is purely presentational and per-chip — threading it
-  // through the annotateCheck pipeline would need a stable key per chip for no
-  // functional gain.
-  handleToggleValue(event) {
+  // Expand or re-clamp one content region in place. Imperative state is kept
+  // local to the rendered region, matching the established value-chip behavior.
+  handleToggleContent(event) {
     const toggle = event.currentTarget;
-    const pair = toggle.closest(".rhc-cmp__pair");
+    const container = toggle.closest("[data-expandable]");
     /* istanbul ignore next -- click target can detach during rerender */
-    if (!pair) {
+    if (!container) {
       return;
     }
-    const chip = pair.querySelector("[data-clampval]");
+    const content = container.querySelector("[data-clampcontent]");
     /* istanbul ignore next -- template invariant during normal rendering */
-    if (!chip) {
+    if (!content) {
       return;
     }
-    const expanded = chip.classList.toggle("rhc-cmp__val--expanded");
-    toggle.textContent = expanded ? "−" : "+";
+    const expanded = content.classList.toggle(
+      "rhc-expandable__content--expanded"
+    );
+    const label = toggle.dataset.expandLabel || "content";
+    toggle.dataset.symbol = expanded ? "−" : "+";
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
     toggle.setAttribute(
       "aria-label",
-      expanded ? "Collapse value" : "Expand value"
+      `${expanded ? "Collapse" : "Expand"} ${label}`
     );
   }
 
@@ -790,7 +793,7 @@ export default class RecordHealthCheck extends LightningElement {
   }
 
   get showSummaryStats() {
-    return this.runComplete && this.summaryStats.length > 0;
+    return this.runComplete && this.summaryGroups.length > 0;
   }
 
   /**
@@ -861,7 +864,7 @@ export default class RecordHealthCheck extends LightningElement {
     this._runner.run(false, "USER_INITIATED");
   }
 
-  get summaryStats() {
+  get summaryGroups() {
     const tooltipKeys = this._summaryTooltipKeys();
     const tooltipSignature = tooltipKeys.join("|");
     const inactiveStat = this._inactiveRuleStat();
@@ -876,10 +879,30 @@ export default class RecordHealthCheck extends LightningElement {
       this._summaryStatsSource = this.checks;
       this._summaryStatsTooltipSignature = tooltipSignature;
       this._inactiveStatSignature = inactiveSignature;
-      const stats = buildSummaryStats(this.checks, new Set(tooltipKeys));
-      this._summaryStatsCache = inactiveStat ? [inactiveStat, ...stats] : stats;
+      const groups = buildSummaryGroups(this.checks, new Set(tooltipKeys));
+      if (inactiveStat) {
+        const uncategorized = groups.find(
+          (group) => group.key === "uncategorized" || group.key === "all"
+        );
+        if (uncategorized) {
+          uncategorized.stats = [inactiveStat, ...uncategorized.stats];
+        } else {
+          groups.push({
+            key: "uncategorized",
+            label: null,
+            assistiveLabel: "Checks without a category",
+            cssClass: "rhc-stats-group rhc-stats-group--unlabeled",
+            stats: [inactiveStat]
+          });
+        }
+      }
+      this._summaryStatsCache = groups;
     }
     return this._summaryStatsCache;
+  }
+
+  get summaryStats() {
+    return this.summaryGroups.flatMap((group) => group.stats);
   }
 
   /**

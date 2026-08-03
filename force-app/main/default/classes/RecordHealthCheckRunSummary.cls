@@ -1,14 +1,19 @@
 /** Counts terminal statuses across one response. */
 global class RecordHealthCheckRunSummary {
   @AuraEnabled
+  /** Number of passing results. */
   global Integer passed = 0;
   @AuraEnabled
+  /** Number of business-failure results. */
   global Integer failed = 0;
   @AuraEnabled
+  /** Number of skipped results. */
   global Integer skipped = 0;
   @AuraEnabled
+  /** Number of unable-to-evaluate results. */
   global Integer unable = 0;
   @AuraEnabled
+  /** Number of framework-error results. */
   global Integer systemError = 0;
 
   /** @param status Terminal Record Health Check status to count. */

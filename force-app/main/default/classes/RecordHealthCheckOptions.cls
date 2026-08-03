@@ -2,12 +2,16 @@
  * Immutable execution options with safe programmatic defaults.
  */
 global class RecordHealthCheckOptions {
+  /** Requested response-content mode. */
   global RecordHealthCheckResultMode resultMode { get; private set; }
+  /** Requested lifecycle-event publication policy. */
   global RecordHealthCheckEventPublication eventPublication {
     get;
     private set;
   }
+  /** Optional normalized caller correlation identifier. */
   global String runId { get; private set; }
+  /** Caller context attributed to execution telemetry. */
   global RecordHealthCheckExecutionOrigin executionOrigin { get; private set; }
 
   private RecordHealthCheckOptions(
@@ -103,6 +107,7 @@ global class RecordHealthCheckOptions {
     );
   }
 
+  /** Invalid immutable-option construction. */
   global class RecordHealthCheckOptionsException extends Exception {
   }
 }

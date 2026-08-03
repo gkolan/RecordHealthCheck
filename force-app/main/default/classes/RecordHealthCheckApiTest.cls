@@ -7,6 +7,7 @@
 private class RecordHealthCheckApiTest {
   @TestSetup
   static void setup() {
+    RecordHealthCheckTestDataFactory.assignRunPermissionToCurrentUser();
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 

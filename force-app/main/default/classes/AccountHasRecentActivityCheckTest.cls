@@ -288,6 +288,6 @@ private class AccountHasRecentActivityCheckTest {
     Test.stopTest();
 
     Assert.areEqual(0, outcomes.size());
-    Assert.areEqual(2, used, 'Queries are bound to the scope, not skipped.');
+    Assert.areEqual(0, used, 'An empty scope must not issue activity queries.');
   }
 }

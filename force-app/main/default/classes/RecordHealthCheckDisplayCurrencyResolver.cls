@@ -6,6 +6,8 @@ public with sharing class RecordHealthCheckDisplayCurrencyResolver {
   private static String corporateCurrencyCode;
   @TestVisible
   private static Boolean multiCurrency;
+  @TestVisible
+  private static List<SObject> corporateCurrencyRowsOverride;
 
   /** Returns a row's currency, or corporate currency for an aggregate. */
   public static String currencyIsoCodeFrom(SObject row) {
@@ -93,10 +95,12 @@ public with sharing class RecordHealthCheckDisplayCurrencyResolver {
       return null;
     }
     try {
-      List<SObject> corporate = Database.query(
-        'SELECT IsoCode FROM CurrencyType WHERE IsCorporate = TRUE LIMIT 1',
-        AccessLevel.USER_MODE
-      );
+      List<SObject> corporate = corporateCurrencyRowsOverride != null
+        ? corporateCurrencyRowsOverride
+        : Database.query(
+            'SELECT IsoCode FROM CurrencyType WHERE IsCorporate = TRUE LIMIT 1',
+            AccessLevel.USER_MODE
+          );
       if (!corporate.isEmpty()) {
         corporateCurrencyCode = String.valueOf(corporate[0].get('IsoCode'));
       }

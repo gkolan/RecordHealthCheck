@@ -396,7 +396,9 @@ For longer per-class descriptions, see [Reference: Apex classes](reference-apex-
 | `RecordHealthCheck` | Public `evaluate(request)` entry point |
 | `RecordHealthCheckRunRuleFlowAction` and `RecordHealthCheckRunSetFlowAction` | Packaged Flow actions |
 | `RecordHealthCheckQueueable`, `RecordHealthCheckBatch`, and `RecordHealthCheckScheduled` | Packaged asynchronous and scheduled adapters over the public request contract |
+| `RecordHealthCheckAsyncSupport` | Shared asynchronous input validation and request construction |
 | `RecordHealthCheckFlowSupport` | Shared Flow normalization, aligned-result lookup, and summary status logic |
+| `RecordHealthCheckFlowGroupExecutor` | Shared normalized grouping and grouped evaluation for both Flow actions |
 | `RecordHealthCheckController` | Lightning card: availability, definitions, `evaluateCheck`, `completeRun` |
 | `RecordHealthCheckScopePipeline` | Qualified selection, scope planning, ordered evaluation, and response assembly |
 | `RecordHealthCheckEvaluatorRegistry` | Type-to-adapter dispatch through one scope-level evaluator contract |
@@ -424,6 +426,7 @@ For longer per-class descriptions, see [Reference: Apex classes](reference-apex-
 | `RecordHealthCheckCompareQueriesEvaluator` | Two-query checks |
 | `RecordHealthCheckQueryEvaluatorSupport` | Shared query execution and empty-result handling |
 | `RecordHealthCheckApexEvaluator` | Custom Apex evaluator dispatch |
+| `RecordHealthCheckApexPluginResolver` | Plugin type, instance, contract, and parameter resolution |
 | `RecordHealthCheckComparisonEngine` | Operators, equality, expected-value wording, and list previews |
 | `RecordHealthCheckDisplayFormat` | Typed display values, picklist labels, locale formatting, and per-side or per-row currency |
 | `RecordHealthCheckSoqlTemplate` | SOQL safety checks, row limit, and `WITH USER_MODE` injection |
@@ -456,7 +459,7 @@ For longer per-class descriptions, see [Reference: Apex classes](reference-apex-
 | `RecordHealthCheckEvaluationResult` and `RecordHealthCheckResultDisplay` | Separate machine evaluation data from optional human rendering |
 | `RecordHealthCheckResultItem` | Evaluation data plus optional display content |
 | `RecordHealthCheckInternalResult` | Package-only evaluator handoff used before the public result split |
-| `RecordHealthCheckSelection`, `RecordHealthCheckOptions`, `RecordHealthCheckExecutionOrigin`, and `RecordHealthCheckRequest` | Qualified immutable request construction, execution options, and caller attribution |
+| `RecordHealthCheckSelection`, `RecordHealthCheckQualifiedIdentity`, `RecordHealthCheckOptions`, `RecordHealthCheckExecutionOrigin`, and `RecordHealthCheckRequest` | Validated qualified identities, immutable request construction, execution options, and caller attribution |
 | `RecordHealthCheckResponse` and `RecordHealthCheckRunSummary` | Shared response envelope and terminal status totals |
 | `RecordHealthCheckScopePipeline` | Resolves qualified selections and evaluates one ordered record scope |
 | `RecordHealthCheckRuleContractTest` and `RecordHealthCheckRuleContractTestData` | Behavioral plugin evidence across multiple scope sizes and an optional controlled permission fixture |

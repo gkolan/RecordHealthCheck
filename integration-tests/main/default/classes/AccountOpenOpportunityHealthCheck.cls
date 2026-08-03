@@ -16,18 +16,21 @@ global with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
   global Map<Id, RecordHealthCheckOutcome> evaluate(
     RecordHealthCheckScope scope
   ) {
+    if (scope == null || scope.recordIds == null || scope.recordIds.isEmpty()) {
+      return new Map<Id, RecordHealthCheckOutcome>();
+    }
     Integer staleDays = resolveStaleDays(scope.parameters);
     Date staleCutoff = Date.today().addDays(-staleDays);
     Date quarterStart = getQuarterStart(Date.today());
     Date quarterEnd = quarterStart.addMonths(3).addDays(-1);
-    List<Id> recordIds = scope.recordIds;
+    Set<Id> queryRecordIds = new Set<Id>(scope.recordIds);
 
     // Seed every Account first. An Account with no open Opportunities returns
     // no rows at all, and "nothing unhealthy" is a real pass rather than a
     // record the check forgot to answer for.
     Map<Id, Integer> unhealthyByAccount = new Map<Id, Integer>();
     Map<Id, Integer> scannedByAccount = new Map<Id, Integer>();
-    for (Id recordId : recordIds) {
+    for (Id recordId : queryRecordIds) {
       unhealthyByAccount.put(recordId, 0);
       scannedByAccount.put(recordId, 0);
     }
@@ -37,7 +40,7 @@ global with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
     for (Opportunity opp : [
       SELECT AccountId, LastActivityDate, NextStep, CloseDate
       FROM Opportunity
-      WHERE AccountId IN :recordIds AND IsClosed = FALSE
+      WHERE AccountId IN :queryRecordIds AND IsClosed = FALSE
       WITH USER_MODE
     ]) {
       if (!scannedByAccount.containsKey(opp.AccountId)) {
@@ -57,7 +60,7 @@ global with sharing class AccountOpenOpportunityHealthCheck implements RecordHea
 
     RecordHealthCheckValue expected = RecordHealthCheckValue.ofCount(0);
     Map<Id, RecordHealthCheckOutcome> results = new Map<Id, RecordHealthCheckOutcome>();
-    for (Id recordId : recordIds) {
+    for (Id recordId : queryRecordIds) {
       Integer unhealthyCount = unhealthyByAccount.get(recordId);
       RecordHealthCheckOutcome outcome = unhealthyCount == 0
         ? RecordHealthCheckOutcome.pass('APEX_PASS')

@@ -74,6 +74,11 @@ public class RecordHealthCheckTestDataFactory {
     }
   }
 
+  /** Assigns the packaged runner entitlement to the current test user. */
+  public static void assignRunPermissionToCurrentUser() {
+    assignPermissionSet(currentUser(), 'Record_Health_Check_User');
+  }
+
   /** Creates a uniquely named inactive user for permission and ownership tests. */
   public static User createInactiveUser(String firstName, String lastName) {
     return RecordHealthCheckPersonaTestDataFactory.createInactiveUser(
@@ -95,7 +100,10 @@ public class RecordHealthCheckTestDataFactory {
     Map<String, Object> fields
   ) {
     SObject result = objectType.newSObject();
-    for (String fieldName : fields?.keySet() ?? new Set<String>()) {
+    Set<String> fieldNames = fields == null
+      ? new Set<String>()
+      : fields.keySet();
+    for (String fieldName : fieldNames) {
       result.put(fieldName, fields.get(fieldName));
     }
     return result;

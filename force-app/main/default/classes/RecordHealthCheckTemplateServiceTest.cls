@@ -48,6 +48,33 @@ private class RecordHealthCheckTemplateServiceTest {
   }
 
   @IsTest
+  static void formatsDateRecordFieldsWithoutAddingATimeComponent() {
+    Date createdDate = Date.newInstance(2026, 1, 15);
+    Opportunity record = RecordHealthCheckTestDataFactory.opportunity(
+      new Map<String, Object>{
+        'Name' => 'Dated opportunity',
+        'StageName' => 'Prospecting',
+        'CloseDate' => createdDate
+      }
+    );
+    RecordHealthCheckMergeContext context = new RecordHealthCheckMergeContext()
+      .withRecord(record);
+
+    Test.startTest();
+    String rendered = RecordHealthCheckTemplateService.resolveDisplay(
+      '{!record.CloseDate}',
+      context
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      createdDate.format(),
+      rendered,
+      'Date-only record tokens must use locale date formatting without midnight.'
+    );
+  }
+
+  @IsTest
   static void resolvesExplicitFallbacksForBlankValuesAndNullRelationships() {
     Account record = RecordHealthCheckTestDataFactory.account(
       new Map<String, Object>{ 'Name' => '   ', 'NumberOfEmployees' => 0 }

@@ -42,6 +42,7 @@ global abstract class RecordHealthCheckStatus {
     ERROR
   };
 
+  /** @return Whether the status requires caller attention. */
   global static Boolean isActionable(String status) {
     return status != null && ACTIONABLE.contains(status);
   }

@@ -2,11 +2,14 @@
  * Immutable selection and record scope for one Record Health Check evaluation.
  */
 global class RecordHealthCheckRequest {
+  /** Qualified Rule or Check Set selection. */
   global RecordHealthCheckSelection selection { get; private set; }
+  /** Immutable execution options. */
   global RecordHealthCheckOptions options { get; private set; }
 
   private List<Id> recordIdsInternal;
 
+  /** Detached record scope supplied by the caller. */
   global List<Id> recordIds {
     get {
       return new List<Id>(recordIdsInternal);
@@ -26,6 +29,7 @@ global class RecordHealthCheckRequest {
     this.options = options;
   }
 
+  /** Creates a single-record Check Set request. */
   global static RecordHealthCheckRequest forCheckSet(
     String qualifiedApiName,
     Id recordId
@@ -33,6 +37,7 @@ global class RecordHealthCheckRequest {
     return forCheckSet(qualifiedApiName, new List<Id>{ recordId });
   }
 
+  /** Creates a multi-record Check Set request. */
   global static RecordHealthCheckRequest forCheckSet(
     String qualifiedApiName,
     List<Id> recordIds
@@ -44,6 +49,7 @@ global class RecordHealthCheckRequest {
     );
   }
 
+  /** Creates a single-record Rule request. */
   global static RecordHealthCheckRequest forRule(
     String qualifiedApiName,
     Id recordId
@@ -51,6 +57,7 @@ global class RecordHealthCheckRequest {
     return forRule(qualifiedApiName, new List<Id>{ recordId });
   }
 
+  /** Creates a multi-record Rule request. */
   global static RecordHealthCheckRequest forRule(
     String qualifiedApiName,
     List<Id> recordIds
@@ -62,18 +69,21 @@ global class RecordHealthCheckRequest {
     );
   }
 
+  /** Returns a copy with the requested response-content mode. */
   global RecordHealthCheckRequest withResultMode(
     RecordHealthCheckResultMode value
   ) {
     return copyWith(options.withResultMode(value));
   }
 
+  /** Returns a copy with the requested event-publication policy. */
   global RecordHealthCheckRequest withEventPublication(
     RecordHealthCheckEventPublication value
   ) {
     return copyWith(options.withEventPublication(value));
   }
 
+  /** Returns a copy with a normalized caller correlation identifier. */
   global RecordHealthCheckRequest withRunId(String value) {
     return copyWith(options.withRunId(value));
   }
@@ -92,6 +102,7 @@ global class RecordHealthCheckRequest {
     return new RecordHealthCheckRequest(selection, recordIdsInternal, value);
   }
 
+  /** Invalid immutable-request construction. */
   global class RecordHealthCheckRequestException extends Exception {
   }
 }

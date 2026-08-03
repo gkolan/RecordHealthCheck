@@ -23,6 +23,21 @@ public with sharing class RecordHealthCheckConstants {
   /** Hard request-input cap. Formula planning and measured resource budgets may require a smaller scope. */
   public static final Integer MAX_RECORDS_PER_SCOPE = 200;
 
+  /** Maximum explicit record population accepted by packaged Batch and Scheduled adapters. */
+  public static final Integer MAX_ASYNC_RECORDS = 2000;
+
+  /** Maximum distinct Rule or Check Set evaluations one Flow transaction may request. */
+  public static final Integer MAX_FLOW_GROUPS = 10;
+
+  /** Maximum aggregate serialized result characters returned by one Flow action invocation. */
+  public static final Integer MAX_FLOW_RESPONSE_CHARS = 2000000;
+
+  /** Maximum accepted Custom Metadata QualifiedApiName length. */
+  public static final Integer MAX_QUALIFIED_API_NAME_LENGTH = 255;
+
+  /** Salesforce maximum length accepted for a scheduled Apex job name. */
+  public static final Integer MAX_SCHEDULE_NAME_LENGTH = 80;
+
   /** Maximum rows any single check query may return before it is rejected. */
   public static final Integer FRAMEWORK_MAX_ROWS = 2000;
 

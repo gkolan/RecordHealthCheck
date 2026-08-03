@@ -20,7 +20,10 @@ global with sharing class AccountStrategicReadinessCheck implements RecordHealth
   global Map<Id, RecordHealthCheckOutcome> evaluate(
     RecordHealthCheckScope scope
   ) {
-    List<Id> recordIds = scope.recordIds;
+    if (scope == null || scope.recordIds == null || scope.recordIds.isEmpty()) {
+      return new Map<Id, RecordHealthCheckOutcome>();
+    }
+    Set<Id> recordIds = new Set<Id>(scope.recordIds);
     Integer minScore = resolveInt(
       scope.parameters,
       'minScore',
@@ -87,7 +90,7 @@ global with sharing class AccountStrategicReadinessCheck implements RecordHealth
     return results;
   }
 
-  private static Map<Id, Account> loadAccounts(List<Id> recordIds) {
+  private static Map<Id, Account> loadAccounts(Set<Id> recordIds) {
     return new Map<Id, Account>(
       [
         SELECT Id, BillingStreet, BillingCity, BillingCountry
@@ -98,7 +101,7 @@ global with sharing class AccountStrategicReadinessCheck implements RecordHealth
     );
   }
 
-  private static Set<Id> accountsWithContacts(List<Id> recordIds) {
+  private static Set<Id> accountsWithContacts(Set<Id> recordIds) {
     Set<Id> found = new Set<Id>();
     for (AggregateResult row : [
       SELECT AccountId accountId
@@ -112,7 +115,7 @@ global with sharing class AccountStrategicReadinessCheck implements RecordHealth
     return found;
   }
 
-  private static Set<Id> accountsWithOpenPipeline(List<Id> recordIds) {
+  private static Set<Id> accountsWithOpenPipeline(Set<Id> recordIds) {
     Set<Id> found = new Set<Id>();
     for (AggregateResult row : [
       SELECT AccountId accountId, SUM(Amount) total
@@ -130,10 +133,13 @@ global with sharing class AccountStrategicReadinessCheck implements RecordHealth
   }
 
   private static Set<Id> accountsWithRecentActivity(
-    List<Id> recordIds,
+    Set<Id> recordIds,
     Integer daysBack
   ) {
     Date cutoff = Date.today().addDays(-daysBack);
+    if (cutoff == null) {
+      return new Set<Id>();
+    }
     Set<Id> found = new Set<Id>();
     for (AggregateResult row : [
       SELECT WhatId whatId

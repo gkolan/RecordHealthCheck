@@ -68,7 +68,9 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L5 | `RecordHealthCheckQueueable` | Packaged asynchronous adapter for one bounded Check Set scope |
 | L5 | `RecordHealthCheckBatch` | Packaged adapter that splits an explicit ID population into safe transactions |
 | L5 | `RecordHealthCheckScheduled` | Lightweight scheduler that launches `RecordHealthCheckBatch` |
+| L5 | `RecordHealthCheckAsyncSupport` | Shared validation and request construction for asynchronous adapters |
 | L5 | `RecordHealthCheckFlowSupport` | Shared Flow input normalization, result alignment, and summary status logic |
+| L5 | `RecordHealthCheckFlowGroupExecutor` | Shared normalized grouping and engine execution for both Flow actions |
 | L5 | [`RecordHealthCheckLifecyclePublisher`](#recordhealthchecklifecyclepublisher) | Optional Set Run and Rule Result platform events |
 | L5 | [`RecordHealthCheckRunContext`](#recordhealthcheckruncontext) | Run id, source, and timing for one evaluation |
 | L5 | [`RecordHealthCheckSetPicklist`](#recordhealthchecksetpicklist) | App Builder dynamic picklist for Check Set Developer Name |
@@ -95,6 +97,7 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L3 | [`RecordHealthCheckApexEvaluator`](#recordhealthcheckapexevaluator) | Loads and runs a `RecordHealthCheckRule` plugin |
 | L3 | [`RecordHealthCheckQueryEvaluatorSupport`](#recordhealthcheckqueryevaluatorsupport) | Shared query execution and empty-result handling |
 | L3 | `RecordHealthCheckApexResultFinalizer` | Finalizes plugin outcomes without mixing result shaping into dispatch |
+| L3 | `RecordHealthCheckApexPluginResolver` | Resolves validated plugin instances and bounded parameter objects |
 | L3 | `RecordHealthCheckCompareQuerySupport` | Owns compare-query row reduction and side-specific handling |
 | L3 | `RecordHealthCheckFormulaDisplay` | Shapes formula evaluator Found and Expected display values |
 | L3 | `RecordHealthCheckFormulaSyntax` | Parses and validates formula-specific syntax |
@@ -154,6 +157,7 @@ readability, but all three live at **L2** in the architecture layer diagram.
 | L1 | `RecordHealthCheckResultItem` | Evaluation data plus optional display content |
 | Internal | `RecordHealthCheckInternalResult` | Package-only evaluator handoff used before the public result split |
 | L1 | `RecordHealthCheckSelection` | Qualified Rule or Check Set selection with XOR construction |
+| L1 | `RecordHealthCheckQualifiedIdentity` | Shared trim and length validation for qualified metadata identities |
 | L1 | `RecordHealthCheckOptions` | Result, publication, and run correlation options |
 | L1 | `RecordHealthCheckExecutionOrigin` | Typed caller attribution for lifecycle events |
 | L1 | `RecordHealthCheckRequest` | Qualified selection and detached record scope |

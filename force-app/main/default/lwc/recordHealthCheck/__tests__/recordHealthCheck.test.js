@@ -7,11 +7,15 @@ import { createElement } from "lwc";
 import RecordHealthCheck from "c/recordHealthCheck";
 import {
   annotateCheck,
+  buildSummaryGroups,
   buildSummaryStats,
   splitMessageLines,
   safeActionUrl
 } from "../healthCheckPresentation";
-import { HealthCheckRunner } from "../healthCheckRunner";
+import {
+  HealthCheckRunner,
+  resetPageEvaluationSchedulerForTest
+} from "../healthCheckRunner";
 import {
   detectDependencyCycles,
   normalizeResult,
@@ -83,6 +87,7 @@ async function clickRun(element) {
 
 beforeEach(() => {
   jest.useFakeTimers();
+  resetPageEvaluationSchedulerForTest();
   completeRun.mockResolvedValue();
   getCheckSetAvailabilityForRecord.mockResolvedValue({
     hasActive: true,
@@ -631,7 +636,7 @@ describe("c-record-health-check — run orchestration", () => {
     );
   });
 
-  it("shows the debug detail message inline, with no click-to-expand", async () => {
+  it("clamps and expands troubleshooting detail with the shared control", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
         triggerMode: "Automatic",
@@ -651,13 +656,23 @@ describe("c-record-health-check — run orchestration", () => {
     });
     await appendAndLoad(element);
 
-    // The technical detail is rendered directly — no <details>/<summary> wrapper
-    // the admin has to open.
+    // The detail stays inline rather than moving into a separate disclosure.
     expect(element.shadowRoot.querySelector("details")).toBeNull();
     const body = element.shadowRoot.querySelector(".rhc-debug-detail__body");
     expect(body).not.toBeNull();
     expect(body.textContent).toContain(
       "Formula could not generate the requested field."
+    );
+    const toggle = element.shadowRoot.querySelector(
+      '[aria-label="Expand troubleshooting detail"]'
+    );
+    expect(toggle).not.toBeNull();
+    toggle.click();
+    expect(body.classList).toContain("rhc-expandable__content--expanded");
+    expect(toggle.dataset.symbol).toBe("−");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.getAttribute("aria-label")).toBe(
+      "Collapse troubleshooting detail"
     );
   });
 
@@ -1233,6 +1248,7 @@ describe("c-record-health-check — Prerequisite Rule enforcement", () => {
     await clickRun(element);
 
     expect(evaluateCheck).not.toHaveBeenCalled();
+    expect(completeRun).toHaveBeenCalledTimes(1);
     expect(element.shadowRoot.textContent).toContain(
       'Circular dependency with "Check_B".'
     );
@@ -1702,6 +1718,46 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     expect(peak).toBeLessThanOrEqual(5);
   });
 
+  it("shares the five-request ceiling across component runners", async () => {
+    const checks = Array.from({ length: 4 }, (_, i) => ({
+      developerName: `Shared_${i}`,
+      label: `Shared ${i}`,
+      description: "",
+      priority: i,
+      dependsOnRuleDeveloperName: null
+    }));
+    const first = makeRunner(makeRunnerHost(checks));
+    const second = makeRunner(makeRunnerHost(checks));
+    let active = 0;
+    let peak = 0;
+    const pending = [];
+    evaluateCheck.mockImplementation(({ ruleQualifiedApiName }) => {
+      active++;
+      peak = Math.max(peak, active);
+      const call = deferred();
+      pending.push(() => {
+        active--;
+        call.resolve(PASS_RESULT(ruleQualifiedApiName));
+      });
+      return call.promise;
+    });
+
+    first.run();
+    second.run();
+    expect(evaluateCheck).toHaveBeenCalledTimes(5);
+    while (pending.length > 0 || evaluateCheck.mock.calls.length < 8) {
+      const batch = pending.splice(0, pending.length);
+      batch.forEach((resolve) => resolve());
+      // eslint-disable-next-line no-await-in-loop
+      await flushPromises();
+      // eslint-disable-next-line no-await-in-loop
+      await flushPromises();
+    }
+
+    expect(evaluateCheck).toHaveBeenCalledTimes(8);
+    expect(peak).toBeLessThanOrEqual(5);
+  });
+
   it("renders semantic heading, tooltip descriptions, focusable rows, and status text", async () => {
     getCheckDefinitions.mockResolvedValue(
       makeDefinitions({
@@ -1748,7 +1804,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     row.dispatchEvent(
       new MouseEvent("mouseover", { bubbles: true, relatedTarget: null })
     );
-    jest.advanceTimersByTime(599);
+    jest.advanceTimersByTime(999);
     expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
 
     jest.advanceTimersByTime(1);
@@ -1781,7 +1837,7 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     row.dispatchEvent(
       new FocusEvent("focusout", { bubbles: true, relatedTarget: null })
     );
-    jest.advanceTimersByTime(600);
+    jest.advanceTimersByTime(1000);
     expect(row.classList.contains("rhc-tooltip-anchor--dwell")).toBe(false);
 
     jest.useRealTimers();
@@ -2136,25 +2192,31 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     // renderedCallback measures a real overflow — but the toggle handler is
     // exercised directly here.
     const chip = element.shadowRoot.querySelector(
-      ".rhc-cmp__val--clampable[data-clampval]"
+      ".rhc-cmp__val--clampable[data-clampcontent]"
     );
     expect(chip).not.toBeNull();
-    const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
+    const toggle = chip
+      .closest("[data-expandable]")
+      .querySelector("[data-clamptoggle]");
     expect(toggle).not.toBeNull();
-    expect(toggle.textContent.trim()).toBe("+");
+    expect(toggle.dataset.symbol).toBe("+");
     expect(toggle.getAttribute("aria-label")).toBe("Expand value");
 
     toggle.click();
     await Promise.resolve();
-    expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(true);
-    expect(toggle.textContent.trim()).toBe("−");
+    expect(chip.classList.contains("rhc-expandable__content--expanded")).toBe(
+      true
+    );
+    expect(toggle.dataset.symbol).toBe("−");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(toggle.getAttribute("aria-label")).toBe("Collapse value");
 
     toggle.click();
     await Promise.resolve();
-    expect(chip.classList.contains("rhc-cmp__val--expanded")).toBe(false);
-    expect(toggle.textContent.trim()).toBe("+");
+    expect(chip.classList.contains("rhc-expandable__content--expanded")).toBe(
+      false
+    );
+    expect(toggle.dataset.symbol).toBe("+");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(toggle.getAttribute("aria-label")).toBe("Expand value");
   });
@@ -2171,8 +2233,9 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     await appendAndLoad(element);
     await clickRun(element);
 
-    const chip = element.shadowRoot.querySelector("[data-clampval]");
-    const toggle = element.shadowRoot.querySelector("[data-clamptoggle]");
+    const pair = element.shadowRoot.querySelector(".rhc-cmp__pair");
+    const chip = pair.querySelector("[data-clampcontent]");
+    const toggle = pair.querySelector("[data-clamptoggle]");
     Object.defineProperty(chip, "clientHeight", {
       configurable: true,
       value: 20
@@ -2194,7 +2257,7 @@ describe("c-record-health-check — FAIL styling and accessibility", () => {
     resizeCallback();
 
     expect(toggle.hidden).toBe(true);
-    expect(chip.classList).toContain("rhc-cmp__val--expanded");
+    expect(chip.classList).toContain("rhc-expandable__content--expanded");
     animationFrame.mockRestore();
   });
 
@@ -2665,6 +2728,61 @@ describe("buildSummaryStats — label pluralization", () => {
     );
     expect(stat.tooltip).toBe("3 Passed: A, B, C");
   });
+
+  it("sorts category summaries by label and leaves the non-category row unlabeled and last", () => {
+    const checks = [
+      {
+        ...resolved("Risk pass", "PASS", null),
+        category: "RISK",
+        categoryLabel: "Risk"
+      },
+      {
+        ...resolved("No category", "SKIPPED", null),
+        category: null,
+        categoryLabel: null
+      },
+      {
+        ...resolved("Completeness warning", "FAIL", "Warning"),
+        category: "COMPLETENESS",
+        categoryLabel: "Completeness"
+      },
+      {
+        ...resolved("Completeness pass", "PASS", null),
+        category: "COMPLETENESS",
+        categoryLabel: "Completeness"
+      }
+    ];
+
+    const groups = buildSummaryGroups(checks);
+
+    expect(groups.map((group) => group.label)).toEqual([
+      "Completeness",
+      "Risk",
+      null
+    ]);
+    expect(groups[2].assistiveLabel).toBe("Checks without a category");
+    expect(groups[2].cssClass).toContain("unlabeled");
+    expect(groups[0].stats.map((stat) => stat.label)).toEqual([
+      "1 Passed",
+      "1 Warning"
+    ]);
+    expect(groups[0].stats[0].tooltip).toContain("Completeness pass");
+  });
+
+  it("keeps the existing ungrouped summary when no resolved Rule has a category", () => {
+    const groups = buildSummaryGroups([
+      resolved("A", "PASS", null),
+      resolved("B", "FAIL", "Error")
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].key).toBe("all");
+    expect(groups[0].label).toBeNull();
+    expect(groups[0].stats.map((stat) => stat.label)).toEqual([
+      "1 Passed",
+      "1 Failed"
+    ]);
+  });
 });
 
 describe("splitMessageLines — newline handling", () => {
@@ -2851,6 +2969,78 @@ describe("c-record-health-check — multi-line messages", () => {
     expect(label).toContain("Out of balance. Contact Finance.");
     expect(label).not.toContain("\n");
   });
+
+  it("uses matching +/- controls for long messages and fix instructions", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ruleDeveloperName: "Check_A",
+      label: "Check_A",
+      status: "FAIL",
+      severity: "Error",
+      message: "A long user-facing message that remains fully available.",
+      fixInstructions: "Review every related record and correct its owner.",
+      priority: 1,
+      evaluatorType: "Formula"
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    const cases = [
+      ["message", ".rhc-row__message"],
+      ["fix instructions", ".rhc-row__fix-instructions"]
+    ];
+    for (const [label, selector] of cases) {
+      const content = element.shadowRoot.querySelector(selector);
+      const toggle = element.shadowRoot.querySelector(
+        `[aria-label="Expand ${label}"]`
+      );
+      expect(content).not.toBeNull();
+      expect(toggle).not.toBeNull();
+      expect(toggle.dataset.symbol).toBe("+");
+
+      toggle.click();
+      expect(content.classList).toContain("rhc-expandable__content--expanded");
+      expect(toggle.dataset.symbol).toBe("−");
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(toggle.getAttribute("aria-label")).toBe(`Collapse ${label}`);
+
+      toggle.click();
+      expect(content.classList).not.toContain(
+        "rhc-expandable__content--expanded"
+      );
+      expect(toggle.dataset.symbol).toBe("+");
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    }
+  });
+
+  it("bounds the collapsed accessible name while retaining the complete message", async () => {
+    const longMessage = "Long message segment. ".repeat(100);
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({ checks: [makeDefinitions().checks[0]] })
+    );
+    evaluateCheck.mockResolvedValue({
+      ruleDeveloperName: "Check_A",
+      label: "Check_A",
+      status: "FAIL",
+      severity: "Error",
+      message: longMessage,
+      priority: 1,
+      evaluatorType: "Formula"
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+
+    expect(
+      element.shadowRoot.querySelector(".rhc-row__message").textContent
+    ).toBe(longMessage);
+    const accessibleName = element.shadowRoot
+      .querySelector("li[aria-label]")
+      .getAttribute("aria-label");
+    expect(accessibleName).toContain("Additional text available.");
+    expect(accessibleName.length).toBeLessThan(700);
+  });
 });
 
 describe("safeActionUrl — client-side scheme guard (HI-3)", () => {
@@ -3018,13 +3208,17 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
 
     await expect(runner._acquireEvaluationSlot(1)).resolves.toBe(false);
 
-    runner._activeEvaluations = 5;
+    const held = await Promise.all(
+      Array.from({ length: 5 }, () => runner._acquireEvaluationSlot(2))
+    );
     const queued = runner._acquireEvaluationSlot(2);
     runner._runToken = 3;
-    runner._releaseEvaluationSlot();
+    runner._releaseEvaluationSlot(held[0]);
 
     await expect(queued).resolves.toBe(false);
-    expect(runner._activeEvaluations).toBe(4);
+    held
+      .slice(1)
+      .forEach((scheduler) => runner._releaseEvaluationSlot(scheduler));
   });
 
   it("clears the running flag when a sequential launcher rejects", async () => {
@@ -3100,18 +3294,21 @@ describe("HealthCheckRunner — defensive orchestration branches", () => {
     const check = { developerName: "A" };
     const runner = makeRunner(makeRunnerHost([check]));
     runner._runToken = 1;
-    runner._activeEvaluations = 5;
-    runner._acquireEvaluationSlot = jest.fn(async () => {
-      runner._runToken = 2;
-      runner._activeEvaluations++;
-      return true;
-    });
+    const held = await Promise.all(
+      Array.from({ length: 5 }, () => runner._acquireEvaluationSlot(1))
+    );
     const release = jest.spyOn(runner, "_releaseEvaluationSlot");
 
-    await runner._runOneCheck(check, {}, {}, jest.fn(), 1);
+    const pending = runner._runOneCheck(check, {}, {}, jest.fn(), 1);
+    runner._runToken = 2;
+    runner._releaseEvaluationSlot(held[0]);
+    await pending;
 
     expect(release).toHaveBeenCalledTimes(1);
     expect(evaluateCheck).not.toHaveBeenCalled();
+    held
+      .slice(1)
+      .forEach((scheduler) => runner._releaseEvaluationSlot(scheduler));
   });
 
   it("clears a concurrent run when a launcher rejects", async () => {
@@ -3414,6 +3611,15 @@ describe("c-record-health-check — defensive UI permutations", () => {
     child.dispatchEvent(
       new FocusEvent("focusout", { bubbles: true, relatedTarget: row })
     );
+
+    element.shadowRoot
+      .querySelector(".rhc-card")
+      .dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+    const childTransition = new MouseEvent("mouseout", { bubbles: true });
+    Object.defineProperty(childTransition, "relatedTarget", { value: child });
+    row.classList.add("rhc-tooltip-anchor--flip-up");
+    row.dispatchEvent(childTransition);
+    expect(row.classList).toContain("rhc-tooltip-anchor--flip-up");
     delete window.matchMedia;
   });
 
@@ -3425,9 +3631,14 @@ describe("c-record-health-check — defensive UI permutations", () => {
       })
     );
     evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    let frameCount = 0;
     const animationFrame = jest
       .spyOn(window, "requestAnimationFrame")
-      .mockImplementation(() => 42);
+      .mockImplementation((callback) => {
+        frameCount++;
+        if (frameCount === 1) callback();
+        return 42;
+      });
     const cancelFrame = jest.spyOn(window, "cancelAnimationFrame");
     await appendAndLoad(element);
     await clickRun(element);
@@ -3437,7 +3648,7 @@ describe("c-record-health-check — defensive UI permutations", () => {
     window.dispatchEvent(new CustomEvent("resize"));
     document.body.removeChild(element);
 
-    expect(animationFrame).toHaveBeenCalledTimes(1);
+    expect(animationFrame).toHaveBeenCalledTimes(2);
     expect(cancelFrame).toHaveBeenCalledWith(42);
   });
 

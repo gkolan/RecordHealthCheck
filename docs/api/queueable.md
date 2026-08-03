@@ -75,6 +75,19 @@ Id jobId = System.enqueueJob(
 
 ## Failure handling
 
+`enqueue` requires the `Record_Health_Check_Run` custom permission, a nonblank qualified Check Set
+identity, and 1–200 distinct non-null record IDs. Null IDs and duplicates are removed before the
+limit is checked. Invalid or unauthorized input is rejected before an `AsyncApexJob` is created,
+and authorization is checked again when the job executes. The public constructor applies the same
+checks, so calling `System.enqueueJob` directly cannot bypass the submission boundary.
+
+Equivalent pending requests use a platform `QueueableDuplicateSignature` derived from the
+normalized Check Set, publication contract, and record IDs. A concurrent/retried duplicate throws
+`DuplicateMessageException` instead of consuming another Queueable slot. Record order, nulls, and
+duplicate IDs do not change the signature. Callers should treat that exception as an accepted
+in-flight request, then reconcile using their stored job/run correlation rather than retrying in a
+tight loop.
+
 An `ERROR` result is data returned by the Framework. An uncaught exception fails the Queueable job.
 The Finalizer observes that second channel even when the Queueable transaction rolls back. Store
 the Queueable job ID with the Framework `runId` when operational staff must correlate an
@@ -83,8 +96,9 @@ the Queueable job ID with the Framework `runId` when operational staff must corr
 Queueable Apex does not increase the per-request Record Health Check limits. Split work before
 enqueueing or use Batch Apex when the population requires multiple scopes.
 
-The Queueable runs with the effective access of the user who enqueued it. Review object, record,
-field, Apex class, and Custom Metadata access for that user.
+The Queueable runs with the effective access of the user who enqueued it. Assign the packaged User
+or Admin permission set for the adapter class, run permission, and framework Custom Metadata
+access; separately grant the business-object access required by the selected Rules.
 
 ## Test the Queueable
 

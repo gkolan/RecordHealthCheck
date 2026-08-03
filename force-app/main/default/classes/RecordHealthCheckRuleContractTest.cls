@@ -10,6 +10,7 @@ global abstract class RecordHealthCheckRuleContractTest {
     200
   };
   private static final Integer QUERY_GROWTH_TOLERANCE = 2;
+  private static final Integer SAVEPOINT_LIFECYCLE_DML_STATEMENTS = 2;
 
   /** Returns a new plugin instance for each measured scope. */
   global abstract RecordHealthCheckRule newRule();
@@ -54,9 +55,9 @@ global abstract class RecordHealthCheckRuleContractTest {
         'The plugin must return exactly one outcome for every requested Id.'
       );
       System.Assert.areEqual(
-        1,
+        SAVEPOINT_LIFECYCLE_DML_STATEMENTS,
         Limits.getDmlStatements() - dmlBefore,
-        'Only the dispatcher savepoint may consume a DML statement.'
+        'Only the dispatcher savepoint creation and release may consume DML statements.'
       );
       System.Assert.areEqual(
         0,

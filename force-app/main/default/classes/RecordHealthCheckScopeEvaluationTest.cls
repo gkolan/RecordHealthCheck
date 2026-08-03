@@ -5,6 +5,10 @@
 private with sharing class RecordHealthCheckScopeEvaluationTest {
   private static final String PHONE_RULE = 'Example_Profile_Phone_Available';
 
+  @TestSetup
+  static void setupRunPermission() {
+    RecordHealthCheckTestDataFactory.assignRunPermissionToCurrentUser();
+  }
   @IsTest
   static void unmigratedEvaluatorProducesAlignedUnableResult() {
     Account accountRecord = RecordHealthCheckTestDataFactory.createAccount(
@@ -35,12 +39,12 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
       context,
       new List<Id>{ accountRecord.Id },
       new Map<Id, SObject>{ accountRecord.Id => accountRecord },
+      false,
       RecordHealthCheckResultMode.EVALUATION,
       'unmigrated-run',
       items
     );
     Test.stopTest();
-
     Assert.areEqual(
       1,
       items.size(),
@@ -97,7 +101,6 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
     RecordHealthCheckResponse response = RecordHealthCheck.evaluate(request);
     Integer queryDelta = Limits.getQueries() - beforeQueries;
     Test.stopTest();
-
     Assert.areEqual(
       3,
       queryDelta,
@@ -156,7 +159,6 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
     RecordHealthCheckResponse response = RecordHealthCheck.evaluate(request);
     Integer queryDelta = Limits.getQueries() - beforeQueries;
     Test.stopTest();
-
     Assert.areEqual(
       4,
       queryDelta,
@@ -206,6 +208,7 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
         context,
         new List<Id>{ account.Id },
         new Map<Id, SObject>{ account.Id => account },
+        false,
         RecordHealthCheckResultMode.EVALUATION,
         'run',
         items
@@ -251,6 +254,7 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
         context,
         new List<Id>{ deletedAccount.Id },
         new Map<Id, SObject>(),
+        false,
         RecordHealthCheckResultMode.EVALUATION,
         'run',
         items
@@ -290,6 +294,7 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
         context,
         new List<Id>{ first.Id, second.Id },
         new Map<Id, SObject>{ first.Id => first, second.Id => second },
+        false,
         RecordHealthCheckResultMode.EVALUATION,
         'run-invalid',
         items
@@ -330,6 +335,7 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
         evaluationContext(),
         new List<Id>{ account.Id },
         new Map<Id, SObject>{ account.Id => account },
+        false,
         RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY,
         'run-braces',
         items
@@ -369,6 +375,7 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
         evaluationContext(),
         new List<Id>{ account.Id },
         new Map<Id, SObject>{ account.Id => account },
+        false,
         RecordHealthCheckResultMode.EVALUATION,
         'unsupported-bulk',
         items
@@ -409,6 +416,7 @@ private with sharing class RecordHealthCheckScopeEvaluationTest {
         evaluationContext(),
         new List<Id>{ account.Id },
         new Map<Id, SObject>{ account.Id => account },
+        false,
         RecordHealthCheckResultMode.EVALUATION_WITH_DISPLAY,
         'run-compare-braces',
         items

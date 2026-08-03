@@ -3,6 +3,11 @@ log_folder: code-analyzer/logs
 ignores:
   files:
     - "code-analyzer/**"
+    - "coverage/**"
+    - "reports/**"
+    - "releases/**"
+    - "test-results/**"
+    - "playwright-report/**"
 
 engines:
   eslint:

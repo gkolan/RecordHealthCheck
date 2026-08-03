@@ -3,6 +3,7 @@
 private with sharing class RecordHealthCheckAdversarialBoundaryTest {
   @TestSetup
   static void setupRecords() {
+    RecordHealthCheckTestDataFactory.assignRunPermissionToCurrentUser();
     RecordHealthCheckTestDataFactory.createTestRecords();
   }
 

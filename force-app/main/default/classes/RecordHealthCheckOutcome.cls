@@ -20,10 +20,15 @@
  * the display layer that the result contract deliberately separates.
  */
 global class RecordHealthCheckOutcome {
+  /** Plugin verdict status. */
   global String status { get; private set; }
+  /** Stable plugin-authored reason code. */
   global String reasonCode { get; private set; }
+  /** Typed value observed by the plugin. */
   global RecordHealthCheckValue found { get; private set; }
+  /** Operator relating Found to Expected. */
   global String comparisonOperator { get; private set; }
+  /** Typed target value. */
   global RecordHealthCheckValue expected { get; private set; }
 
   private RecordHealthCheckOutcome(String status, String reasonCode) {
@@ -31,6 +36,7 @@ global class RecordHealthCheckOutcome {
     this.reasonCode = reasonCode;
   }
 
+  /** @return A successful plugin outcome. */
   global static RecordHealthCheckOutcome pass(String reasonCode) {
     return new RecordHealthCheckOutcome(
       RecordHealthCheckStatus.PASS,
@@ -38,6 +44,7 @@ global class RecordHealthCheckOutcome {
     );
   }
 
+  /** @return A business-failure plugin outcome. */
   global static RecordHealthCheckOutcome fail(String reasonCode) {
     return new RecordHealthCheckOutcome(
       RecordHealthCheckStatus.FAIL,
@@ -57,6 +64,7 @@ global class RecordHealthCheckOutcome {
     );
   }
 
+  /** @return A deliberately skipped plugin outcome. */
   global static RecordHealthCheckOutcome skipped(String reasonCode) {
     return new RecordHealthCheckOutcome(
       RecordHealthCheckStatus.SKIPPED,

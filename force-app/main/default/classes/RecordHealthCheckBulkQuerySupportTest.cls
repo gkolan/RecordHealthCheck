@@ -364,6 +364,27 @@ private with sharing class RecordHealthCheckBulkQuerySupportTest {
   }
 
   @IsTest
+  static void blankTemplateFailsBeforeScopeQueryExecution() {
+    Account account = RecordHealthCheckTestDataFactory.createAccount(
+      'Blank bulk template'
+    );
+    Map<Id, SObject> records = accountRecords(new Set<Id>{ account.Id }, 'Id');
+
+    Test.startTest();
+    try {
+      RecordHealthCheckBulkQuerySupport.execute(' ', records, 10);
+      Assert.fail('A blank scope-wide query template must be rejected.');
+    } catch (RecordHealthCheckEvaluatorException error) {
+      Assert.areEqual(
+        'UNSUPPORTED_BULK_QUERY_SHAPE',
+        error.reasonCode,
+        'Blank templates must use the stable bulk-shape reason.'
+      );
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
   static void unresolvedTokenAfterRewriteIsRejectedBeforeQueryExecution() {
     Account account = RecordHealthCheckTestDataFactory.createAccount(
       'Unresolved projection token'
@@ -438,6 +459,27 @@ private with sharing class RecordHealthCheckBulkQuerySupportTest {
         'SELECT Id FROM Contact WHERE AccountId = {!record.Id} LIMIT 2'
       ),
       'A correlated non-ordered LIMIT greater than one is unsupported.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckBulkQuerySupport.CHILD_DIRECT,
+      RecordHealthCheckBulkQuerySupport.classify(
+        'SELECT Id FROM Contact WHERE AccountId = {!record.Id} LIMIT 1'
+      ),
+      'A child LIMIT one is reduced independently for every parent.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckBulkQuerySupport.UNCLASSIFIED,
+      RecordHealthCheckBulkQuerySupport.classify(
+        'SELECT Id FROM User WHERE Id = {!record.OwnerId} LIMIT 50'
+      ),
+      'An indirect LIMIT would apply once to the whole scope, not per record.'
+    );
+    Assert.areEqual(
+      RecordHealthCheckBulkQuerySupport.INDIRECT_REFERENCE,
+      RecordHealthCheckBulkQuerySupport.classify(
+        'SELECT Id FROM User WHERE Id = {!record.OwnerId} LIMIT 1'
+      ),
+      'An indirect LIMIT one is reduced independently for every record.'
     );
   }
 

@@ -34,6 +34,11 @@ Plugin authors should override `permissionFixture()` only when the test data cre
 visibility difference. A test that merely changes the running user is not permission
 evidence.
 
+Treat every plugin author and reviewer as a trusted-code role. Static source verification rejects
+global `without sharing` implementations and requires explicit `with sharing`, but no runtime
+counter can prove that an opaque plugin avoided system-mode object or field reads. Review every
+query for user-mode CRUD/FLS enforcement before deployment.
+
 ## Start from the templates
 
 Copy these two files and replace the example names and data factory:

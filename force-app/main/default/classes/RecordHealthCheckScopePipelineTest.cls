@@ -5,6 +5,11 @@
 private with sharing class RecordHealthCheckScopePipelineTest {
   private static final String PHONE_RULE = 'Example_Profile_Phone_Available';
 
+  @TestSetup
+  static void setupRunPermission() {
+    RecordHealthCheckTestDataFactory.assignRunPermissionToCurrentUser();
+  }
+
   @IsTest
   static void qualifiedRuleEvaluatesDeduplicatedScopeInInputOrder() {
     if (!RecordHealthCheckTestDataFactory.hasIntegrationFixtures()) {

@@ -22,11 +22,27 @@ public with sharing class RecordHealthCheckFieldPlanner {
 
   @TestVisible
   private Map<String, String> calculatedFormulaOverrideByField;
+  private Set<String> inaccessibleFieldsBeingPlanned;
 
   public Set<String> collectRecordFields(
     Record_Health_Check_Rule__mdt rule,
     Schema.SObjectType objectType
   ) {
+    return planRecordFields(rule, objectType).selectedFields;
+  }
+
+  /**
+   * Plans the selectable and inaccessible record fields for one Rule.
+   *
+   * @param rule Rule whose runtime surfaces may reference record fields.
+   * @param objectType Root record type selected by the owning Check Set.
+   * @return Per-Rule field plan used to isolate FLS failures.
+   */
+  public FieldPlan planRecordFields(
+    Record_Health_Check_Rule__mdt rule,
+    Schema.SObjectType objectType
+  ) {
+    inaccessibleFieldsBeingPlanned = new Set<String>();
     Set<String> fields = new Set<String>{ 'Id' };
 
     // Token syntax and registry membership were validated when the rule loaded;
@@ -82,7 +98,11 @@ public with sharing class RecordHealthCheckFieldPlanner {
         : new Set<String>()
     );
 
-    return fields;
+    FieldPlan result = new FieldPlan();
+    result.selectedFields.addAll(fields);
+    result.inaccessibleFields.addAll(inaccessibleFieldsBeingPlanned);
+    inaccessibleFieldsBeingPlanned = null;
+    return result;
   }
 
   private Boolean shouldSelectCurrencyField(
@@ -292,6 +312,12 @@ public with sharing class RecordHealthCheckFieldPlanner {
     FieldPathDescribe info = describeFieldPath(objectType, fieldPath);
     if (info != null && info.describe != null && info.describe.isAccessible()) {
       fields.add(fieldPath);
+    } else if (
+      info != null &&
+      info.describe != null &&
+      inaccessibleFieldsBeingPlanned != null
+    ) {
+      inaccessibleFieldsBeingPlanned.add(fieldPath);
     }
   }
 
@@ -415,5 +441,11 @@ public with sharing class RecordHealthCheckFieldPlanner {
     private String visitKey;
     private Schema.SObjectType ownerType;
     private String relationshipPrefix;
+  }
+
+  /** Per-Rule field requirements separated by the running user's access. */
+  public class FieldPlan {
+    public Set<String> selectedFields = new Set<String>();
+    public Set<String> inaccessibleFields = new Set<String>();
   }
 }

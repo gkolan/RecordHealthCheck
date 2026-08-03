@@ -10,15 +10,21 @@ global with sharing class RecordHealthCheckQueueable implements Queueable, Final
     List<Id> recordIds,
     RecordHealthCheckEventPublication publication
   ) {
-    this.checkSetQualifiedApiName = checkSetQualifiedApiName;
-    this.recordIds = recordIds == null
-      ? new List<Id>()
-      : new List<Id>(recordIds);
+    RecordHealthCheckAccess.requireCanRunChecks();
+    RecordHealthCheckAsyncSupport.RequestState state = RecordHealthCheckAsyncSupport.requestState(
+      checkSetQualifiedApiName,
+      recordIds,
+      RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE,
+      'Queueable record scope'
+    );
+    this.checkSetQualifiedApiName = state.checkSetQualifiedApiName;
+    this.recordIds = state.recordIds;
     this.publication = publication ?? RecordHealthCheckEventPublication.NONE;
   }
 
   /** Executes the immutable request in the queueable transaction. */
   global void execute(QueueableContext context) {
+    RecordHealthCheckAccess.requireCanRunChecks();
     System.attachFinalizer(this);
     if (recordIds.isEmpty()) {
       return;
@@ -67,12 +73,73 @@ global with sharing class RecordHealthCheckQueueable implements Queueable, Final
     List<Id> recordIds,
     RecordHealthCheckEventPublication publication
   ) {
-    return System.enqueueJob(
-      new RecordHealthCheckQueueable(
-        checkSetQualifiedApiName,
-        recordIds,
-        publication
-      )
+    RecordHealthCheckAccess.requireCanRunChecks();
+    validateScope(checkSetQualifiedApiName, recordIds);
+    String normalizedIdentity = RecordHealthCheckQualifiedIdentity.normalize(
+      checkSetQualifiedApiName,
+      'Check Set'
     );
+    RecordHealthCheckQueueable request = new RecordHealthCheckQueueable(
+      normalizedIdentity,
+      recordIds,
+      publication
+    );
+    AsyncOptions options = new AsyncOptions();
+    options.DuplicateSignature = duplicateSignature(
+      normalizedIdentity,
+      recordIds,
+      publication
+    );
+    return System.enqueueJob(request, options);
+  }
+
+  @TestVisible
+  private static void validateScope(
+    String checkSetQualifiedApiName,
+    List<Id> recordIds
+  ) {
+    RecordHealthCheckAsyncSupport.requestState(
+      checkSetQualifiedApiName,
+      recordIds,
+      RecordHealthCheckConstants.MAX_RECORDS_PER_SCOPE,
+      'Queueable record scope'
+    );
+  }
+
+  private static QueueableDuplicateSignature duplicateSignature(
+    String checkSetQualifiedApiName,
+    List<Id> recordIds,
+    RecordHealthCheckEventPublication publication
+  ) {
+    List<Id> normalizedIds = RecordHealthCheckAsyncSupport.normalizeIds(
+      recordIds
+    );
+    normalizedIds.sort();
+    String canonicalRequest =
+      String.valueOf(checkSetQualifiedApiName).trim().toLowerCase() +
+      '|' +
+      publicationToken(publication) +
+      '|' +
+      String.join(normalizedIds, ',');
+    String digest = EncodingUtil.convertToHex(
+        Crypto.generateDigest('SHA-256', Blob.valueOf(canonicalRequest))
+      )
+      .substring(0, 24);
+    return new System.QueueableDuplicateSignature.Builder()
+      .addString('RHCQ')
+      .addString(digest)
+      .build();
+  }
+
+  private static String publicationToken(
+    RecordHealthCheckEventPublication publication
+  ) {
+    if (publication == RecordHealthCheckEventPublication.ACTIONABLE) {
+      return 'ACTIONABLE';
+    }
+    if (publication == RecordHealthCheckEventPublication.ALL) {
+      return 'ALL';
+    }
+    return 'NONE';
   }
 }

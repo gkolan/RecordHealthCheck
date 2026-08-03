@@ -11,30 +11,47 @@ const expected = {
   Record_Health_Check_Admin: {
     classes: [
       "RecordHealthCheck",
+      "RecordHealthCheckBatch",
       "RecordHealthCheckController",
       "RecordHealthCheckMetadataValidator",
       "RecordHealthCheckRunRuleFlowAction",
       "RecordHealthCheckRunSetFlowAction",
+      "RecordHealthCheckQueueable",
+      "RecordHealthCheckScheduled",
       "RecordHealthCheckSetPicklist"
     ],
     objects: [
       "Record_Health_Check_Rule_Result__e",
       "Record_Health_Check_Set_Run__e"
     ],
-    customPermissions: ["Record_Health_Check_View_Diagnostics"]
+    customPermissions: [
+      "Record_Health_Check_Run",
+      "Record_Health_Check_View_Diagnostics"
+    ],
+    customMetadataTypes: [
+      "Record_Health_Check_Rule__mdt",
+      "Record_Health_Check_Set__mdt"
+    ]
   },
   Record_Health_Check_User: {
     classes: [
       "RecordHealthCheck",
+      "RecordHealthCheckBatch",
       "RecordHealthCheckController",
       "RecordHealthCheckRunRuleFlowAction",
-      "RecordHealthCheckRunSetFlowAction"
+      "RecordHealthCheckRunSetFlowAction",
+      "RecordHealthCheckQueueable",
+      "RecordHealthCheckScheduled"
     ],
     objects: [
       "Record_Health_Check_Rule_Result__e",
       "Record_Health_Check_Set_Run__e"
     ],
-    customPermissions: []
+    customPermissions: ["Record_Health_Check_Run"],
+    customMetadataTypes: [
+      "Record_Health_Check_Rule__mdt",
+      "Record_Health_Check_Set__mdt"
+    ]
   }
 };
 
@@ -42,6 +59,13 @@ const values = (xml, tag) =>
   [...xml.matchAll(new RegExp(`<${tag}>([^<]+)<\\/${tag}>`, "g"))].map(
     (match) => match[1].trim()
   );
+const blockValues = (xml, block, tag) =>
+  [...xml.matchAll(new RegExp(`<${block}>([\\s\\S]*?)<\\/${block}>`, "g"))]
+    .map(
+      (match) => match[1].match(new RegExp(`<${tag}>([^<]+)<\\/${tag}>`))?.[1]
+    )
+    .filter(Boolean)
+    .map((value) => value.trim());
 const sorted = (items) => [...items].sort();
 const same = (left, right) =>
   JSON.stringify(sorted(left)) === JSON.stringify(sorted(right));
@@ -68,13 +92,20 @@ for (const [name, contract] of Object.entries(expected)) {
 
   const actualClasses = values(xml, "apexClass");
   const actualObjects = values(xml, "object");
-  const actualCustomPermissions = values(xml, "name");
+  const actualCustomPermissions = blockValues(xml, "customPermissions", "name");
+  const actualCustomMetadataTypes = blockValues(
+    xml,
+    "customMetadataTypeAccesses",
+    "name"
+  );
   if (!same(actualClasses, contract.classes))
     errors.push(`${name} Apex class access is out of date.`);
   if (!same(actualObjects, contract.objects))
     errors.push(`${name} object access is out of date.`);
   if (!same(actualCustomPermissions, contract.customPermissions))
     errors.push(`${name} custom permission access is out of date.`);
+  if (!same(actualCustomMetadataTypes, contract.customMetadataTypes))
+    errors.push(`${name} custom metadata access is out of date.`);
 
   for (const apexClass of actualClasses) {
     if (!fs.existsSync(path.join(DEFAULT, "classes", `${apexClass}.cls`)))

@@ -1,6 +1,51 @@
 /** Shared normalization and result-alignment behavior for Flow actions. */
 public with sharing class RecordHealthCheckFlowSupport {
+  /** Version of the public Flow response contract. */
+  public static final String CONTRACT_VERSION = '2.0';
+  @TestVisible
+  private static Map<Id, List<RecordHealthCheckResultItem>> itemsByRecordOverride;
+  @TestVisible
+  private static Boolean nullItemsByRecordOverride = false;
+  @TestVisible
+  private static Integer payloadBudgetStartOverride;
+
   public class FlowSupportException extends Exception {
+  }
+
+  /** Aggregate Flow response payload exceeded its safe transaction budget. */
+  public class PayloadBudgetException extends Exception {
+  }
+
+  /**
+   * Accounts for one serialized Flow result without allowing aggregate output to
+   * consume the synchronous transaction heap.
+   *
+   * @param consumedChars Characters already accepted for this invocation.
+   * @param payload Candidate serialized result.
+   * @return New aggregate character count.
+   * @throws FlowSupportException when the aggregate response budget is exceeded.
+   */
+  public static Integer consumePayloadBudget(
+    Integer consumedChars,
+    String payload
+  ) {
+    Integer current = consumedChars;
+    if (current == null) {
+      current = 0;
+    }
+    Integer candidateLength = payload == null ? 0 : payload.length();
+    if (
+      current < 0 ||
+      candidateLength >
+      RecordHealthCheckConstants.MAX_FLOW_RESPONSE_CHARS - current
+    ) {
+      throw new PayloadBudgetException(
+        'FLOW_RESPONSE_BUDGET_EXCEEDED: ceiling=' +
+          RecordHealthCheckConstants.MAX_FLOW_RESPONSE_CHARS +
+          '.'
+      );
+    }
+    return current + candidateLength;
   }
 
   /** Finds the aligned response item for one record. */
@@ -22,6 +67,12 @@ public with sharing class RecordHealthCheckFlowSupport {
   public static Map<Id, List<RecordHealthCheckResultItem>> itemsByRecord(
     RecordHealthCheckResponse response
   ) {
+    if (nullItemsByRecordOverride) {
+      return null;
+    }
+    if (itemsByRecordOverride != null) {
+      return itemsByRecordOverride;
+    }
     Map<Id, List<RecordHealthCheckResultItem>> indexed = new Map<Id, List<RecordHealthCheckResultItem>>();
     if (response == null) {
       return indexed;
@@ -37,6 +88,11 @@ public with sharing class RecordHealthCheckFlowSupport {
       indexed.get(recordId).add(item);
     }
     return indexed;
+  }
+
+  /** Returns the initial aggregate payload count for one Flow invocation. */
+  public static Integer initialPayloadChars() {
+    return payloadBudgetStartOverride == null ? 0 : payloadBudgetStartOverride;
   }
 
   /** Normalizes a required Flow publication string. */
