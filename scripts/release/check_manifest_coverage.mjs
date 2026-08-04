@@ -22,14 +22,17 @@ for (const block of manifest.matchAll(/<types>([\s\S]*?)<\/types>/g)) {
   );
 }
 
-const files = (directory, suffix) =>
-  fs
-    .readdirSync(path.join(SOURCE, directory), {
+const files = (directory, suffix) => {
+  const dir = path.join(SOURCE, directory);
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir, {
       recursive: true,
       withFileTypes: true
     })
     .filter((entry) => entry.isFile() && entry.name.endsWith(suffix))
     .map((entry) => path.join(entry.parentPath, entry.name));
+};
 
 const inventory = new Map([
   [

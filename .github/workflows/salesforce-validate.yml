@@ -96,5 +96,11 @@ jobs:
             code-analyzer/neutral-audit.html
             code-analyzer/logs/
           retention-days: 90
-      - if: always()
-        run: sf org delete scratch --target-org rhc-ci --no-prompt
+      - name: Delete scratch org
+        if: always()
+        run: |
+          if command -v sf >/dev/null 2>&1; then
+            sf org delete scratch --target-org rhc-ci --no-prompt
+          else
+            echo "sf CLI was never installed; skipping scratch org cleanup"
+          fi

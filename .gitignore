@@ -63,6 +63,7 @@ $RECYCLE.BIN/
 # Internal / local-only files — kept on your machine, never published.
 # Remove an entry below if you decide you DO want it in the public repo.
 /docs/development/*
+!/docs/development/configuration-identity-and-package-boundary-standard.md
 /spec/
 /specs/
 /releases/
