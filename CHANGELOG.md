@@ -72,9 +72,10 @@ For installation and verification, start with
 - Install documentation states the namespaced unlocked package as the supported subscriber path,
   with source deploy reserved for contribution and scratch-org workflows.
 - Configuration identity guidance lives under
-  [Reference: Configuration identity](docs/reference/product/configuration-identity.md).
-
-### Prior history
+  [Configuration identity](docs/reference/product/configuration-identity.md).
+- Technical references are grouped under `docs/reference/{product,evaluation,contracts,apex}/`
+  instead of a flat `reference-*.md` list. Old GitHub blob URLs to the previous filenames will not
+  redirect.
 
 Earlier package builds under `2.0.0-*` candidates are listed in `sfdx-project.json` package
 aliases. Dated section history starts with this release notes format.
