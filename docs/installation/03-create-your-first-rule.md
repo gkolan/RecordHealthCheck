@@ -92,7 +92,7 @@ Use an Account you can safely edit.
 
 | Test | What to do | Expected result |
 | --- | --- | --- |
-| Failing record | Clear Billing City, save the Account, and select **Run** | **Needs attention** with the failure and fix messages |
+| Failing record | Clear Billing City, save the Account, and select **Run** | **Warning** (Fail) with the failure and fix messages |
 | Passing record | Add Billing City, save, and select **Rerun** | **Pass** |
 
 The card does not rerun automatically after a record edit. Select **Rerun** or refresh the page.

@@ -39,8 +39,8 @@ record data from issues.
 
 1. **Fork** the repo and **clone** your fork:
    ```bash
-   git clone https://github.com/<your-username>/recordHealthCheck.git
-   cd RecordHealthCheck
+   git clone https://github.com/<your-username>/record-health-check.git
+   cd record-health-check
    npm ci
    ```
 2. **Create a focused branch** (one change per branch):
@@ -87,6 +87,28 @@ feedback by pushing more commits to the same branch.
 
 See [`docs/reference/framework/architecture.md`](../docs/reference/framework/architecture.md)
 for the published Framework architecture and to find where things live.
+
+## Configuration identity and package boundary
+
+When changing Demo `Example_` Check Sets/Rules or any public identity boundary:
+
+1. Change the record in `force-app/main/default/customMetadata`.
+2. Copy the same record into `integration-tests/main/default/customMetadata` (identical XML).
+3. Keep Check Set `CardTitle__c` values prefixed with `Demo:`.
+4. Update `manifest/package.xml` CustomMetadata members when members are listed explicitly.
+5. Deploy `force-app` alone to a clean org before broader fixture deployment.
+6. Run `npm run check:configuration-identity` and `npm run check:package-boundary`.
+
+Every public input must accept the exact Custom Metadata `QualifiedApiName` Salesforce returns. Do
+not guess namespaces or retry alternate name forms. See
+[Configuration identity](../docs/reference/framework/configuration-identity.md).
+
+## Apex test-seam policy
+
+`@TestVisible` and `Test.isRunningTest()` are temporary design debt. Do not add seams without
+updating the architecture baseline. The full policy lives in
+[Contributor policy: Apex test seams](../docs/reference/apex/test-seams.md). Run
+`npm run check:apex-architecture` before opening a PR that touches Apex.
 
 ## Integration-test fixtures
 

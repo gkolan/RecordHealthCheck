@@ -151,4 +151,5 @@ recycle-bin/
 docs/_config.yml
 docs/index.html
 docs/_layouts/
+docs/_site/
 docs/assets/css/style.css

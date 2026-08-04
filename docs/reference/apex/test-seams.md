@@ -1,4 +1,8 @@
-# Apex test-seam and architecture policy
+# Contributor policy: Apex test seams and architecture gates
+
+> [!NOTE]
+> On this page, follow the contributor policy for `@TestVisible`, `Test.isRunningTest()`, and the
+> Apex architecture release gate. This is not a Framework outcome or Evaluation Type reference.
 
 This project treats `@TestVisible` and `Test.isRunningTest()` as temporary design debt, not as a
 testing strategy. Production behavior is tested through public contracts or the collaborator that
@@ -46,6 +50,6 @@ so every inline-suppressed finding remains visible in the advisory evidence.
 
 ## Related
 
+- [Contributing](../../../.github/CONTRIBUTING.md)
 - [Architecture](../framework/architecture.md)
 - [Apex class reference](README.md)
-- [Development documentation](../../README.md)

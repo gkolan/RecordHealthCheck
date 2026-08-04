@@ -11,7 +11,7 @@ card. Fail rows show **Failed**, **Warning**, or **Info** by severity. When a re
 the card explains what was **Found** and **Expected**, and provides fix instructions with an optional
 read-only **Fix it** link.
 
-Administrators define **Check Sets** and **Rules** in Custom Metadata. The framework evaluates them at read time, so one card can review the current record, related records, aggregate results, and data that existed before the Rules were created, all without writing to the record.
+**Check Sets** and **Rules** are defined in Custom Metadata. The framework evaluates them at read time, so one card can review the current record, related records, aggregate results, and data that existed before the Rules were created, all without writing to the record.
 
 > [!NOTE]
 > Record Health Check provides advisory guidance; it never blocks a save. When Salesforce must
@@ -74,9 +74,9 @@ Administrators define **Check Sets** and **Rules** in Custom Metadata. The frame
 | A Check Set card on the Lightning record page                       | Guidance appears where people already work, not in a separate report or dashboard                                                                |
 | Pass, Fail, Skipped, Unable to Check, or System Error for each Rule | Outcomes stay honest: not applicable and "could not evaluate" are not forced into pass/fail; Fail rows show Failed, Warning, or Info by severity |
 | Severity, Found, and Expected on issues                             | Failures show what was observed versus what the Rule required                                                                                    |
-| Fix instructions and an optional **Fix it** link                    | Remediation stays in-product and read-only; the Framework never writes the record                                                                |
+| Fix instructions and an optional **Fix it** link                    | Remediation stays on the card and is read-only; the Framework never writes the record                                                            |
 
-### For administrators
+### Configuration
 
 | What you configure                      | Why it helps                                                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |

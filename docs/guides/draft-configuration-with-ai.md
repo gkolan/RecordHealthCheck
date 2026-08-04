@@ -3,6 +3,13 @@
 > [!NOTE]
 > On this page, give an AI assistant enough Framework and Salesforce context to draft reviewable Check Set and Rule configuration without inventing fields, values, or unsupported behavior.
 
+> [!IMPORTANT]
+> **This is not a Setup walkthrough.** Paste [§2 System prompt](#2-system-prompt-copy-into-a-gemini-gem-or-custom-gpt) into your assistant, review the tables it returns, then enter approved values in Salesforce using
+> [Create your first Rule](../installation/03-create-your-first-rule.md) or the
+> [Check Set](../metadata/fields-check-set.md) / [Rule](../metadata/fields-check-rule.md) field
+> references. For human configuration teaching, start with
+> [Configure Check Sets and Rules](configure-check-sets-and-rules.md).
+
 This file is the single source for AI assistants translating business requirements into correct Custom Metadata configuration. Paste the output tables into Setup; see [Create your first Rule: Step 2](../installation/03-create-your-first-rule.md#step-2-create-the-rule). For every field explained, see [Configure Check Sets and Rules](configure-check-sets-and-rules.md). For exact field behavior, use the [Check Set fields](../metadata/fields-check-set.md) and [Rule fields](../metadata/fields-check-rule.md) references. Write explanations in direct, plain language and define Salesforce terms when a reader may not know them.
 
 ## 1. What this Framework does

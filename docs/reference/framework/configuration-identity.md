@@ -80,50 +80,9 @@ Do not add unlabeled business-policy records to the Framework package. Keep `All
 unfiltered. The `Examples (Example_)` list views may filter by the `Example_` DeveloperName prefix
 for Setup browsing.
 
-## Change procedure
-
-When adding or changing Demo starter metadata:
-
-1. Change the record in `force-app/main/default/customMetadata`.
-2. Copy the same record into `integration-tests/main/default/customMetadata`.
-3. Keep filenames and XML content identical between the two locations.
-4. Keep Check Set `CardTitle__c` values prefixed with `Demo:`.
-5. Update `manifest/package.xml` CustomMetadata members.
-6. Confirm only the intended Demo Example_ records exist under `force-app` Custom Metadata.
-7. Deploy `force-app` alone to a clean org and run package tests.
-8. Deploy `integration-tests` separately when exercising the broader fixture suite.
-9. Test subscriber-owned, `rhc`-owned, and other-package identities when lookup behavior changes.
-
-## Review checklist
-
-Before accepting a change, answer yes to every question:
-
-1. Does every public input say **Qualified API Name**?
-2. Does each caller pass the exact value Salesforce returned?
-3. Is namespace guessing absent from Apex and JavaScript?
-4. Does a missing qualified identity fail closed with a useful error?
-5. Are Framework Check Set card titles for Demo sets prefixed with `Demo:`?
-6. Are force-app and integration-tests Demo Example_ records identical?
-7. Do manifests, documentation, setup scripts, and tests describe the same boundary?
-8. Did a Framework-only deployment pass before broader fixture deployment?
-9. Did the integration suite pass after fixture deployment?
-
-Run `npm run check:configuration-identity` and `npm run check:package-boundary` for the repository
-guards.
-
-## Lessons retained
-
-- A valid Apex parameter rename can still break Lightning when the JavaScript object key no longer
-  matches the Apex argument. Test the serialized boundary, not only each side.
-- `QualifiedApiName` is discovered from Salesforce; it is not a string-formatting convention.
-- A convenience retry hides configuration mistakes and creates namespace-specific behavior. Reject
-  ambiguity.
-- Unlabeled example records in the main package silently turn sample policy into installed customer
-  policy. Prefix Demo card titles and keep DeveloperNames under `Example_`.
-- Moving files is incomplete until list views, manifests, demo scripts, generated inventories,
-  tests, and public documentation agree with the new boundary.
-- Automated documentation scores do not establish editorial quality. Human review and executable
-  release gates answer different questions; keep both.
+Contributors changing Demo metadata or identity code: follow
+[Contributing: Configuration identity](../../../.github/CONTRIBUTING.md#configuration-identity-and-package-boundary)
+and run `npm run check:configuration-identity` plus `npm run check:package-boundary`.
 
 ## Related
 
@@ -132,3 +91,4 @@ guards.
 - [Integration overview](../../integration/README.md)
 - [Flow actions](../../integration/flow-actions.md)
 - [Glossary](../glossary.md)
+- [Contributing](../../../.github/CONTRIBUTING.md)

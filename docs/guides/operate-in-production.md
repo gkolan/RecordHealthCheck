@@ -101,7 +101,7 @@ on the health check:
       unexpected deletion, blank value, or inactive record.
 
 This checklist is the day-2 companion to the one-time deployment verification in
-[Revalidate an installation: Step 4](../installation/04-upgrading.md#step-4-verify-configuration-and-access).
+[Revalidate an installation: Verification](../installation/04-upgrading.md#verification).
 Run it on a schedule, not only during a release window.
 
 ## Related

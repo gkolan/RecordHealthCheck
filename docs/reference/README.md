@@ -6,10 +6,12 @@
 
 Use these references when you need exact Framework behavior rather than a task walkthrough. For a
 guided configuration path, begin with the [documentation home](../README.md) or
-[examples library](../examples/README.md).
+the [examples library](../examples/README.md).
 
-**Writing an Apex Rule?** Use [Apex Rule contract](evaluation/apex-rule-contract.md).
-**Maintaining the Framework?** Use the [Apex class reference](apex/README.md).
+**Looking up Setup fields?** Use [Metadata reference](../metadata/README.md), not this folder.
+
+**Writing an Apex Rule plugin?** Use [Apex Rule contract](evaluation/apex-rule-contract.md).
+**Maintaining Framework Apex classes?** Use the [Apex class reference](apex/README.md).
 
 ## Choose a technical reference
 
@@ -50,7 +52,7 @@ outcomes, limits, security behavior, or failure paths.
 | Flow and asynchronous Apex examples | [API examples](../api/README.md) |
 | Flow and Apex Platform Event subscribers | [Platform Event subscriptions](../platform-events/README.md) |
 | Plugin verification harness | [Plugin verification](apex/plugin-verification.md) |
-| Test-seam policy | [Test seams](apex/test-seams.md) |
+| Test-seam / architecture policy (contributors) | [Contributor policy: Apex test seams](apex/test-seams.md) |
 | Folder map for framework, evaluation, contracts, and Apex | See the four directories under `docs/reference/`. Writing a Rule plugin uses `evaluation/apex-rule-contract.md`; maintaining Framework classes uses `apex/` |
 
 ## Related

@@ -51,25 +51,18 @@ A Salesforce administrator opens a record whose approval has stopped moving.
 
 ## What Record Health Check passes to Apex
 
-| Input in Apex | Where it comes from |
-| --- | --- |
-| `scope.recordIds` | The records being evaluated in this run |
-| `scope.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
-
-Record Health Check supplies the evaluated record ID automatically; leave it out of the parameter
-JSON:
-
-- On a Lightning record page, the scope normally contains the open record.
-- Bulk Apex requests can place as many as 200 record IDs in one scope.
-- Flow supplies its **Record ID** input to the scope-building pipeline.
-
-This example uses dynamic SOQL because the Advanced Approvals package is optional. It still binds
-the supplied record ID instead of joining it into the query text:
+Shared scope inputs are documented once in the
+[Apex examples README](README.md#what-record-health-check-passes-to-apex). This Rule receives the
+evaluated record Ids and package-specific object/field names in JSON.
 
 ```apex
 List<Id> targetRecordIds = scope.recordIds;
 ```
 
+This example uses dynamic SOQL because the Advanced Approvals package is optional. It still binds
+the supplied record Id instead of joining it into the query text.
+
+## Step 1:
 ## Step 1: Understand the parameters
 
 This Rule uses one JSON object with the package-specific object and field names:
@@ -453,7 +446,7 @@ Use these Check Set values:
 | **Check Set** | `Account_Apex_Readiness` |
 | **Object** | `Account` |
 | **Card Title** | `Account Readiness` |
-| **Card Subtitle** | Add one short sentence explaining what the card reviews. |
+| **Card Subtitle** | Confirm pending approval assignees are still active users. |
 | **When Checks Run** | Run on request |
 | **Reveal Mode** | One by one |
 | **Passed Checks** | Show each check |

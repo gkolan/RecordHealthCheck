@@ -101,7 +101,7 @@ Use these Check Set values:
 | **Check Set** | `Account_Record_Alignment` |
 | **Object** | `Account` |
 | **Card Title** | `Account Record Alignment` |
-| **Card Subtitle** | Add one short sentence explaining what the card reviews. |
+| **Card Subtitle** | Confirm open Opportunity owners are on the Account Team. |
 | **When Checks Run** | Run on request |
 | **Reveal Mode** | One by one |
 | **Passed Checks** | Show each check |

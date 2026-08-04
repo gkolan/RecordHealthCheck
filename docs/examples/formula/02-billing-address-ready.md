@@ -88,7 +88,7 @@ Use these Check Set values:
 | **Check Set** | `Account_Data_Quality` |
 | **Object** | `Account` |
 | **Card Title** | `Account Data Quality` |
-| **Card Subtitle** | Add one short sentence explaining what the card reviews. |
+| **Card Subtitle** | Confirm billing address fields are complete for fulfillment. |
 | **When Checks Run** | Run on request |
 | **Reveal Mode** | One by one |
 | **Passed Checks** | Show each check |

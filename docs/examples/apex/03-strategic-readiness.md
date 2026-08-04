@@ -90,18 +90,9 @@ Before activation, choose the policy that matches your process:
 
 ## What Record Health Check passes to Apex
 
-| Input in Apex | Where it comes from |
-| --- | --- |
-| `scope.recordIds` | The Accounts being evaluated in this run |
-| `scope.parameters` | **Apex Parameters (JSON)** (`ApexParametersJson__c`) on the `Record_Health_Check_Rule__mdt` record |
-
-Record Health Check supplies the Account ID automatically; leave it out of the parameter JSON:
-
-- On a Lightning record page, the scope normally contains the open record.
-- Bulk Apex requests can place as many as 200 record IDs in one scope.
-- Flow supplies its **Record ID** input to the scope-building pipeline.
-
-Use the supplied ID as a SOQL bind variable:
+Shared scope inputs are documented once in the
+[Apex examples README](README.md#what-record-health-check-passes-to-apex). This Rule receives Account
+Ids plus scoring parameters (`minScore`, activity window, and related weights).
 
 ```apex
 List<Id> accountIds = scope.recordIds;
@@ -110,6 +101,7 @@ List<Id> accountIds = scope.recordIds;
 The complete class below queries Accounts, Contacts, Opportunities, Tasks, and Events once per
 scope and then assembles one score for every requested Account.
 
+## Step 1:
 ## Step 1: Understand the parameters
 
 Use Rule parameters to change the passing score and activity window without editing the class:
@@ -431,7 +423,7 @@ Use these Check Set values:
 | **Check Set** | `Account_Apex_Readiness` |
 | **Object** | `Account` |
 | **Card Title** | `Account Readiness` |
-| **Card Subtitle** | Add one short sentence explaining what the card reviews. |
+| **Card Subtitle** | Confirm the Account meets the weighted strategic readiness score. |
 | **When Checks Run** | Run on request |
 | **Reveal Mode** | One by one |
 | **Passed Checks** | Show each check |

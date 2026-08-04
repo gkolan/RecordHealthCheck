@@ -92,28 +92,27 @@ shared summary counts and JSON response.
 **Role:** Optional Set Run and Rule Result platform events.
 **Type:** Service class · `public with sharing`
 
-Publishes only for deliberate, publishable sources (`APEX_API`, `FLOW`, `USER_INITIATED`,
-`SCHEDULED`, `BATCH`). Honors Check Set `PublishUserRunEvent__c` and Rule `PublishUserResultEvent__c`.
-Publishes in batches of 100, never fails the health-check run when publish fails, and blocks
-publication in subscriber context to prevent loops.
+Publishes deliberate-run lifecycle events. Shipped callers attribute `APEX_API`, `FLOW`,
+`USER_INITIATED`, `SCHEDULED`, `BATCH`, `QUEUEABLE`, `FUTURE`, or `AGENT` on `Source__c`.
+`RUN_ON_LOAD` is never published (Lightning keeps page-load publication off). Honors Check Set
+`PublishUserRunEvent__c` and Rule `PublishUserResultEvent__c`. Publishes in batches of 100, never
+fails the health-check run when publish fails, and blocks publication in subscriber context to
+prevent loops.
 
 **Key members:**
 
 | Member | Purpose |
 | --- | --- |
-| `CONTRACT_VERSION`, `FRAMEWORK_VERSION`, `SOURCE_*`, `PUBLISH_CHUNK_SIZE` | Event contract, Framework version, publishable-source values, and the 100-row publish batch size |
-| `publishCompletedSet(...)` | Publish the Set Run event after a deliberate run |
-| `publishRuleResults(...)` | Publish per-Rule Result events for Rules that enable publication |
-| `isRunPublicationEnabled(...)` | Whether the Check Set's `PublishUserRunEvent__c` allows publication |
-| `canPublish(...)` | Whether the source is publishable and the call isn't inside subscriber context |
+| `CONTRACT_VERSION`, `FRAMEWORK_VERSION`, `SOURCE_*`, `PUBLISH_CHUNK_SIZE` | Event contract, Framework version, source attribution values, and the 100-row publish batch size |
+| `publishResponse(...)` | Publish Rule and optional Set events for a deliberate programmatic run |
+| `publishInteractiveResponse(...)` | Publish filtered outcomes for an explicit Lightning Run / Rerun |
+| `isRunPublicationEnabled(...)` | Whether the Check Set's `PublishUserRunEvent__c` allows Set publication |
+| `enterSubscriberContext()` | Prevent nested republication from event subscribers |
 
 **Notable behavior:**
-- **Gotcha:** `newEventId` builds a unique key from the run id, a suffix (`SET` or the Rule
- Developer Name), and 8 hex characters from a freshly generated AES key - truncating the run id to
- 50 characters and the suffix to 20 so a caller-supplied run id can never exceed the platform
- event's `EventId__c` field. `canPublish` checks both `PUBLISHABLE_SOURCES` and a
- `subscriberContextOverride` flag so a subscriber reacting to one of these events cannot trigger
- republication and loop.
+- **Gotcha:** `newEventId` builds a unique key from the run id and a suffix so a caller-supplied run
+  id cannot exceed the platform event's `EventId__c` field. Subscriber context keeps a subscriber
+  reacting to one of these events from publishing again and looping.
 
 **See also:** [Lifecycle events](../../integration/lifecycle-events.md)
 

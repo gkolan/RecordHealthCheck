@@ -26,7 +26,7 @@ records.
 | L2 Merge-token classes | [Merge-token classes](merge-token-classes.md) |
 | L1 Results, definitions, and plugins | [Results and plugins](results-and-plugins.md) |
 | Plugin verification harness | [Plugin verification](plugin-verification.md) |
-| Test-seam policy | [Test seams](test-seams.md) |
+| Test-seam / architecture policy (contributors) | [Contributor policy: Apex test seams](test-seams.md) |
 
 ## How to use this guide
 
@@ -86,13 +86,13 @@ readability, but all three live at **L2** in the architecture layer diagram.
 
 | Level | Class | One-line purpose |
 | --- | --- | --- |
-| L4 | `RecordHealthCheckScopePipeline` | Resolves a selection and evaluates the complete ordered record scope |
-| L4 | `RecordHealthCheckEvaluatorRegistry` | Maps Evaluation Type values to a common scope evaluator contract |
+| L4 | [`RecordHealthCheckScopePipeline`](scope-orchestration.md#recordhealthcheckscopepipeline) | Resolves a selection and evaluates the complete ordered record scope |
+| L4 | [`RecordHealthCheckEvaluatorRegistry`](scope-orchestration.md#recordhealthcheckevaluatorregistry) | Maps Evaluation Type values to a common scope evaluator contract |
 | L4 | [`RecordHealthCheckFieldPlanner`](scope-orchestration.md#recordhealthcheckfieldplanner) | Safe record-field planning for scope evaluation |
-| L4 | `RecordHealthCheckBulkQuerySupport` | Executes supported query templates once for a complete scope |
-| L4 | `RecordHealthCheckBulkQueryRewriter` | Rewrites validated query templates for scope-wide execution |
-| L4 | `RecordHealthCheckScopePlanner` | Resolves selections, applicability, prerequisites, and request budgets |
-| L4 | `RecordHealthCheckScopeResultSupport` | Converts internal outcomes, diagnostics, display text, and safe URLs |
+| L4 | [`RecordHealthCheckBulkQuerySupport`](scope-orchestration.md#recordhealthcheckbulkquerysupport) | Executes supported query templates once for a complete scope |
+| L4 | [`RecordHealthCheckBulkQueryRewriter`](scope-orchestration.md#recordhealthcheckbulkqueryrewriter) | Rewrites validated query templates for scope-wide execution |
+| L4 | [`RecordHealthCheckScopePlanner`](scope-orchestration.md#recordhealthcheckscopeplanner) | Resolves selections, applicability, prerequisites, and request budgets |
+| L4 | [`RecordHealthCheckScopeResultSupport`](scope-orchestration.md#recordhealthcheckscoperesultsupport) | Converts internal outcomes, diagnostics, display text, and safe URLs |
 
 ### L3 - Evaluators
 

@@ -42,7 +42,10 @@ publication contract and security profile.
 | [Field limits](../reference/contracts/field-limits.md) | Salesforce storage limits and Framework completed-text limits |
 | [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md) | Mental model, walkthroughs, troubleshooting, go-live checklist |
 
-For merge tokens, applicability, and evaluator behavior, see the [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md) and the Evaluation Type references in the [examples library](../examples/README.md).
+For merge tokens, applicability, and evaluator behavior, see
+[Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md) and the Evaluation Type
+references under [Technical references](../reference/README.md#choose-an-evaluation-type-reference).
+Practical Rule patterns remain in the [examples library](../examples/README.md).
 
 ## Related
 

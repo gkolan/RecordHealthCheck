@@ -10,6 +10,11 @@ test the result.
 You do not need to read every page. Choose the row that is closest to what you want to check, copy
 the example, and adapt its fields and messages for your organization.
 
+> [!TIP]
+> **Not installed yet?** Finish [Install and verify](../installation/02-install-and-verify.md) first,
+> then return here. Prefer the shipped Demo Check Sets for a first sandbox proof, then adapt an
+> example for your org.
+
 ## Choose the right Evaluation Type
 
 Start with where the information for your check is stored.
