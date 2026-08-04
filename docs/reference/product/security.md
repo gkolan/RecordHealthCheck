@@ -52,7 +52,7 @@ exception or an unintended system-mode read.
 
 Rule scope is also enforced structurally: a caller can only evaluate a Rule through its own Check
 Set, and cannot evaluate a Rule whose Check Set is inactive or targets a different object. See
-[Architecture: The configuration model](reference-architecture.md#4-the-configuration-model).
+[Architecture: The configuration model](architecture.md#4-the-configuration-model).
 
 ## Plugin side-effect bans
 
@@ -77,7 +77,7 @@ The side-effect fence is not a read-security boundary. A plugin must still use `
 `WITH USER_MODE` queries on its own; the Framework validates returned keys, statuses, and side
 effects, but the plugin author remains responsible for its own data access. Review every plugin
 query for CRUD/FLS enforcement before deployment, and use the multi-size contract harness and
-permission fixture described in [Verify an Apex Rule plugin](reference-apex-plugin-verification.md)
+permission fixture described in [Verify an Apex Rule plugin](../apex/plugin-verification.md)
 to gather evidence rather than assuming it.
 
 ## Permission Sets: User vs Admin
@@ -120,7 +120,7 @@ Salesforce access information to someone who is not allowed to see it.
 
 An authorized troubleshooter with **Show Diagnostics** enabled and the diagnostics permission still
 sees the specific code on `adminDetail.reasonCode`, so a real investigation is never blocked. See
-[Reason Codes: Access and permissions](reference-reason-codes.md#access-and-permissions) for the
+[Reason Codes: Access and permissions](../contracts/reason-codes.md#access-and-permissions) for the
 full remapping table.
 
 ## What is and isn't persisted
@@ -140,7 +140,7 @@ Framework-owned results table.
 | Check Set and Rule configuration | Yes, as Custom Metadata, which deploys like any other metadata and consumes no record storage |
 
 If a business process needs a history of readiness over time, subscribe to lifecycle events and
-write your own storage. See [Architecture: Out of scope](reference-architecture.md#16-out-of-scope).
+write your own storage. See [Architecture: Out of scope](architecture.md#16-out-of-scope).
 
 ## What an event body carries
 
@@ -159,7 +159,7 @@ error message, exception type, and stack trace for a Framework `ERROR`, publishe
 survives the rollback that a failing check can trigger. Grant access to this event only to the
 subscriber or integration that needs to investigate errors, separately from the User and Admin
 Permission Sets, which do not grant it. See
-[Lifecycle events: Diagnostics events are a separate channel](../integration/lifecycle-events.md#diagnostics-events-are-a-separate-channel).
+[Lifecycle events: Diagnostics events are a separate channel](../../integration/lifecycle-events.md#diagnostics-events-are-a-separate-channel).
 
 Treat every subscriber grant as a data-access decision: Set Run and Rule Result events are safe for
 a broad audience because they carry no message text or user identity, while Log events need the
@@ -186,7 +186,7 @@ twice: once in Apex before the response leaves the server, and again in the Ligh
 same-org or `https://` destination. Opening the link does not perform DML; a user can still edit or
 create a record on the destination page and choose to save it there.
 
-See [Configure action links](../guides/configure-action-links.md) for the complete URL pattern
+See [Configure action links](../../guides/configure-action-links.md) for the complete URL pattern
 library and review checklist.
 
 ## Merge tokens
@@ -204,7 +204,7 @@ properties are configuration errors, not silent no-ops.
 | Field readability | The running user must be able to read every field a token names, or the Rule returns `UNABLE_TO_EVALUATE` |
 
 Because SOQL tokens are typed and escaped rather than concatenated as text, a merge token cannot be
-used to inject arbitrary SOQL. See [Reference: Merge tokens](reference-merge-tokens.md) for the full
+used to inject arbitrary SOQL. See [Reference: Merge tokens](../contracts/merge-tokens.md) for the full
 namespace, fallback, and surface contract.
 
 ## Error messages at public boundaries
@@ -216,17 +216,17 @@ above.
 
 ## Reporting a vulnerability
 
-Record Health Check's security policy lives in [`.github/SECURITY.md`](../../.github/SECURITY.md).
+Record Health Check's security policy lives in [`.github/SECURITY.md`](../../../.github/SECURITY.md).
 Report a suspected vulnerability privately through GitHub Security Advisories, not a public issue.
 Diagnostic detail reaching an unauthorized user is treated as a security issue in its own right, not
 only a bug.
 
 ## Related
 
-- [Architecture: Security model](reference-architecture.md#9-security-model)
-- [Reason Codes](reference-reason-codes.md)
-- [Lifecycle events](../integration/lifecycle-events.md)
-- [Verify an Apex Rule plugin](reference-apex-plugin-verification.md)
-- [Configure action links](../guides/configure-action-links.md)
-- [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md)
-- [Security policy](../../.github/SECURITY.md)
+- [Architecture: Security model](architecture.md#9-security-model)
+- [Reason Codes](../contracts/reason-codes.md)
+- [Lifecycle events](../../integration/lifecycle-events.md)
+- [Verify an Apex Rule plugin](../apex/plugin-verification.md)
+- [Configure action links](../../guides/configure-action-links.md)
+- [Troubleshoot with Show Diagnostics](../../guides/troubleshoot-with-show-diagnostics.md)
+- [Security policy](../../../.github/SECURITY.md)

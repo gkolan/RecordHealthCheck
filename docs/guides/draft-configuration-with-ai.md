@@ -199,7 +199,7 @@ Apex example.
 
 ### 4.5 Class sketch (Apex only)
 
-When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex reference](../reference/reference-apex.md) for full patterns.
+When `EvaluationType__c` = `APEX`, add a section after the Rule table. See [Apex reference](../reference/evaluation/apex-rule-contract.md) for full patterns.
 
 | Item | What to include |
 | ---- | --------------- |
@@ -283,14 +283,14 @@ List operators for `COMPARE_AS_LISTS`: `LISTS_OVERLAP`, `LISTS_CONTAIN_ALL`, `LI
 
 ### 5.4 Apex (`EvaluationType__c` = `APEX`)
 
-Full walkthroughs: [Apex examples](../examples/README.md#apex-examples) · [Recent Account activity](../examples/apex/01-recent-activity.md) · [Apex reference](../reference/reference-apex.md)
+Full walkthroughs: [Apex examples](../examples/README.md#apex-examples) · [Recent Account activity](../examples/apex/01-recent-activity.md) · [Apex reference](../reference/evaluation/apex-rule-contract.md)
 
 | API field | Required | Notes |
 | --- | --- | --- |
 | `ApexClass__c` | Yes | Class implementing `RecordHealthCheckRule`: deploy before activating Rule |
 | `ApexParametersJson__c` | No | JSON **object** (not array), e.g. `{"daysBack": 90}`, `{"minDigits": 10}`, `{"staleDays": 30}` |
 
-**Apex interface summary:** Full patterns: [Apex reference](../reference/reference-apex.md).
+**Apex interface summary:** Full patterns: [Apex reference](../reference/evaluation/apex-rule-contract.md).
 
 ```apex
 global with sharing class AccountExampleCheck
@@ -629,7 +629,7 @@ select a distinct pattern, then output configuration the reader can create in Sa
 - [Configure Check Sets and Rules](configure-check-sets-and-rules.md): every Setup field explained
 - [Configuration guide: what it can check](configure-check-sets-and-rules.md#2-what-it-can-check): when to use which Evaluation Type
 - [Examples README](https://github.com/gkolan/RecordHealthCheck/blob/main/docs/examples/README.md): pattern matrix, merge tokens, and copy-paste examples by type
-- [Reason Codes](../reference/reference-reason-codes.md): stable Framework outcomes and investigation guidance
+- [Reason Codes](../reference/contracts/reason-codes.md): stable Framework outcomes and investigation guidance
 - [Create your first Rule](../installation/03-create-your-first-rule.md): install and first Rule
 
 ## 16. Gemini gem checklist
@@ -647,5 +647,5 @@ When building a Gemini gem for this project:
 
 - [Configure Check Sets and Rules](configure-check-sets-and-rules.md)
 - [Metadata reference](../metadata/README.md)
-- [Apex reference](../reference/reference-apex.md)
-- [Reason Codes](../reference/reference-reason-codes.md)
+- [Apex reference](../reference/evaluation/apex-rule-contract.md)
+- [Reason Codes](../reference/contracts/reason-codes.md)

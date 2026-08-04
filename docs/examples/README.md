@@ -40,10 +40,10 @@ available settings, operators, limits, or result behavior.
 
 | Evaluation Type | Start with | Detailed reference |
 | --- | --- | --- |
-| [Verify with a formula](formula/README.md) | [Seller research readiness](formula/01-account-research-ready.md) | [Formula reference](../reference/reference-formula.md) |
-| [Verify with a query](query/README.md) | [Customer handoff](query/01-customer-contact.md) | [Query reference](../reference/reference-query.md) |
-| [Compare two queries](compare-two-queries/README.md) | [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) | [Compare two queries reference](../reference/reference-compare-two-queries.md) |
-| [Verify with Apex](apex/README.md) | [Recent Account activity](apex/01-recent-activity.md) | [Apex reference](../reference/reference-apex.md) |
+| [Verify with a formula](formula/README.md) | [Seller research readiness](formula/01-account-research-ready.md) | [Formula reference](../reference/evaluation/formula.md) |
+| [Verify with a query](query/README.md) | [Customer handoff](query/01-customer-contact.md) | [Query reference](../reference/evaluation/query.md) |
+| [Compare two queries](compare-two-queries/README.md) | [Opportunity Contact Role coverage](compare-two-queries/01-opportunity-contact-role-coverage.md) | [Compare two queries reference](../reference/evaluation/compare-two-queries.md) |
+| [Verify with Apex](apex/README.md) | [Recent Account activity](apex/01-recent-activity.md) | [Apex reference](../reference/evaluation/apex-rule-contract.md) |
 
 ## Formula examples
 

@@ -135,4 +135,4 @@ not change the finalized Rule status.
 - [Check Set Run Platform Event](event-set-run.md)
 - [Log Platform Event](event-log.md)
 - [Rule fields](fields-check-rule.md): **Publish User Result Event**
-- [Reason Codes](../reference/reference-reason-codes.md)
+- [Reason Codes](../reference/contracts/reason-codes.md)

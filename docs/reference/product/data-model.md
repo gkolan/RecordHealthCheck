@@ -4,7 +4,7 @@
 > On this page, see how Check Set, Rule, and the three Platform Events relate to each other, and
 > understand that a Rule result is a runtime value, not a row in a health-history database.
 
-Use this page alongside the [Metadata field references](../metadata/README.md) when you need the
+Use this page alongside the [Metadata field references](../../metadata/README.md) when you need the
 shape of the data model rather than the meaning of one field.
 
 ## Entity relationship diagram
@@ -92,20 +92,20 @@ Nothing in this data model stores a Rule result. A run produces:
 There is no `Record_Health_Check_Result__c` object, no history related list, and no built-in trend
 report. If your business process needs a queryable history of readiness over time, subscribe to
 `Record_Health_Check_Set_Run__e` and/or `Record_Health_Check_Rule_Result__e` and write your own
-storage object. See [Architecture: Out of scope](reference-architecture.md#16-out-of-scope) and
-[Platform Event subscriptions](../platform-events/README.md).
+storage object. See [Architecture: Out of scope](architecture.md#16-out-of-scope) and
+[Platform Event subscriptions](../../platform-events/README.md).
 
 ## Why prerequisite is a name, not a formal foreign key
 
 `PrerequisiteRule__c` stores a Developer Name rather than a Custom Metadata relationship field,
 because the engine needs to detect a cycle (`CIRCULAR_DEPENDENCY`) and a Rule ordered after the Rule
 that requires it (`DEPENDENCY_NOT_IN_RUN`) at runtime, inside a single already-loaded Check Set. See
-[Reason Codes: Applicability and prerequisites](reference-reason-codes.md#applicability-and-prerequisites).
+[Reason Codes: Applicability and prerequisites](../contracts/reason-codes.md#applicability-and-prerequisites).
 
 ## Related
 
-- [Check Set fields](../metadata/fields-check-set.md)
-- [Rule fields](../metadata/fields-check-rule.md)
-- [Metadata reference](../metadata/README.md)
-- [Lifecycle events](../integration/lifecycle-events.md)
-- [Architecture](reference-architecture.md)
+- [Check Set fields](../../metadata/fields-check-set.md)
+- [Rule fields](../../metadata/fields-check-rule.md)
+- [Metadata reference](../../metadata/README.md)
+- [Lifecycle events](../../integration/lifecycle-events.md)
+- [Architecture](architecture.md)

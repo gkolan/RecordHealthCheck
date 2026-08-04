@@ -5,7 +5,7 @@
 >
 > **Setup reference**
 >
-> Use the [Query reference](../../reference/reference-query.md) for the complete setup fields and behavior.
+> Use the [Query reference](../../reference/evaluation/query.md) for the complete setup fields and behavior.
 
 > [!IMPORTANT]
 > This configuration is illustrative teaching metadata. It is not installed by the Framework package.

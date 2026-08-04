@@ -23,7 +23,7 @@ Administrators define **Check Sets** and **Rules** in Custom Metadata. The frame
 [Examples](docs/examples/README.md) ·
 [Try the demo](docs/installation/05-create-rhc-scratch-org.md) ·
 [Support](SUPPORT.md) ·
-[Security](docs/reference/reference-security.md) ·
+[Security](docs/reference/product/security.md) ·
 [Changelog](CHANGELOG.md)
 
 > [!IMPORTANT]

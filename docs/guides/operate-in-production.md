@@ -40,7 +40,7 @@ like a temporary elevated-access grant:
 4. Periodically audit which Check Sets currently have **Show Diagnostics** checked; a forgotten
    Check Set left in diagnostics mode has no time-based expiration.
 
-See [Security and data access: The diagnostics Custom Permission](../reference/reference-security.md#the-diagnostics-custom-permission)
+See [Security and data access: The diagnostics Custom Permission](../reference/product/security.md#the-diagnostics-custom-permission)
 for why both the Check Set setting and the Custom Permission must be true together, and
 [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md) for a full
 investigation workflow.
@@ -108,7 +108,7 @@ Run it on a schedule, not only during a release window.
 
 - [Revalidate an installation](../installation/04-upgrading.md)
 - [Lifecycle events](../integration/lifecycle-events.md)
-- [Security and data access](../reference/reference-security.md)
+- [Security and data access](../reference/product/security.md)
 - [Troubleshoot with Show Diagnostics](troubleshoot-with-show-diagnostics.md)
 - [Platform Event subscriptions](../platform-events/README.md)
 - [Uninstall and rollback](../installation/06-uninstall-and-rollback.md)

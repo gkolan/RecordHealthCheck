@@ -123,7 +123,7 @@ Severity applies **only** to `FAIL` results.
 
 Use Formula when the result is expressible with Salesforce formula syntax on the current record or
 its parent relationships. Start with [Seller research readiness](../examples/formula/01-account-research-ready.md); use the
-[Formula reference](../reference/reference-formula.md) for the complete contract.
+[Formula reference](../reference/evaluation/formula.md) for the complete contract.
 
 | Formula result | Rule status |
 | --- | --- |
@@ -207,7 +207,7 @@ for example Currency, Percent, or Ratio as Percent.
 A format that cannot apply to a value returns the value with its original spelling. Display format
 never changes Pass, Fail, Skipped, Unable to Evaluate, or System Error.
 
-Primary contract: [Display value format](../reference/reference-display-value-format.md). Field
+Primary contract: [Display value format](../reference/contracts/display-value-format.md). Field
 catalog: [Display: Value Format](../metadata/fields-check-rule.md#display-value-format-displayvalueformat__c).
 
 ### Which Evaluation Type compares what?
@@ -224,7 +224,7 @@ To have the Framework compare two sides with a **Comparison Operator**, instead 
 ## 7. Verify with a query Rules
 
 Use **Verify with a query** when one SOQL result is the primary value. Start with the
-[Customer handoff](../examples/query/01-customer-contact.md); use the [Query reference](../reference/reference-query.md)
+[Customer handoff](../examples/query/01-customer-contact.md); use the [Query reference](../reference/evaluation/query.md)
 for result modes and edge cases.
 
 ### At least one Contact
@@ -266,7 +266,7 @@ An alias is required except for bare `COUNT()`.
 
 Use when both sides come from SOQL. Start with the
 [Opportunity Contact Role coverage](../examples/compare-two-queries/01-opportunity-contact-role-coverage.md); use the
-[Compare two queries reference](../reference/reference-compare-two-queries.md) for the complete
+[Compare two queries reference](../reference/evaluation/compare-two-queries.md) for the complete
 contract.
 
 | Result shape | How To Read Query Results | Comparison operators | Matching behavior |
@@ -286,7 +286,7 @@ contract.
 ## 9. Apex rules
 
 Use Apex when metadata cannot express the Rule safely. See the
-[Apex reference](../reference/reference-apex.md), [Recent Account activity](../examples/apex/01-recent-activity.md),
+[Apex reference](../reference/evaluation/apex-rule-contract.md), [Recent Account activity](../examples/apex/01-recent-activity.md),
 and [Apex examples](../examples/README.md#apex-examples).
 
 The documented Apex class names are examples. Create, test, and deploy your own class before
@@ -317,7 +317,7 @@ Set **Prerequisite Rule** to the prerequisite `DeveloperName`. Use sparingly for
 
 Merge tokens let one Rule speak about the record, its configuration, and its result without hard-coding those
 values. Use the namespace and property exactly as shown. For the complete namespace, surface,
-fallback, and limit contract, see the [Merge-token reference](../reference/reference-merge-tokens.md).
+fallback, and limit contract, see the [Merge-token reference](../reference/contracts/merge-tokens.md).
 
 The fallback is optional. A token without one inserts the resolved value when populated and inserts blank text when
 the value is null, empty, or whitespace-only:
@@ -494,7 +494,7 @@ Contact Finance to reconcile.
 | Expected a lifecycle event but none arrived | Publishing is off, the run was automatic page load, or the transaction rolled back | Enable **Publish User Run Event** or **Publish User Result Event**; use explicit Run/Rerun, Apex, or Flow; confirm the transaction committed; see [Platform events](../integration/lifecycle-events.md). |
 | Expected an Error Log event but none arrived | The Check Set opted out, subscriber context suppressed a feedback loop, or publication failed | Check **Publish Error Log Event**, subscriber logs, and platform-event allocations; Salesforce debug logging remains independent. |
 
-For Reason Codes, see [Reason Codes](../reference/reference-reason-codes.md).
+For Reason Codes, see [Reason Codes](../reference/contracts/reason-codes.md).
 
 Pre-deployment metadata audit:
 
@@ -517,7 +517,7 @@ Before activating a Check Set:
 - [ ] Longer panels use Category consistently for authoring (UI grouping not implemented yet), or leave it blank to group checks as Uncategorized.
 - [ ] Any Fix Message or Action URL are advisory/read-only. They can guide users on failed checks, but Record Health Check does not update records.
 - [ ] **Found/Expected Display** matches the amount of Found/Expected detail users need (`ON_DEMAND` for audit-friendly panels, `FAILURES_ONLY` for compact pass checks).
-- [ ] **Display: Value Format** is Auto unless a comparison Rule needs an explicit Number, Currency, Percent, Ratio as Percent, Checkbox, Date, Date/Time, Text, or Raw format ([Display value format](../reference/reference-display-value-format.md)).
+- [ ] **Display: Value Format** is Auto unless a comparison Rule needs an explicit Number, Currency, Percent, Ratio as Percent, Checkbox, Date, Date/Time, Text, or Raw format ([Display value format](../reference/contracts/display-value-format.md)).
 - [ ] Verify with a query and Compare two queries Rules have required query fields and **How To Read Query Results** set appropriately.
 - [ ] `NoRowsResult__c` is set for `ANY_ROW_PASSES` / `ALL_ROWS_PASS` / `COMPARE_AS_LISTS` Rules.
 - [ ] Apex Rules reference deployed `RecordHealthCheckRule` implementations.
@@ -593,4 +593,4 @@ Name LIKE '{!record.Name fallback="this record"}%'
 
 - [Create your first Rule](../installation/03-create-your-first-rule.md): first install and first Rule
 - [Examples library](../examples/README.md): practical patterns by Evaluation Type
-- [Architecture](../reference/reference-architecture.md): published Framework architecture and source ownership
+- [Architecture](../reference/product/architecture.md): published Framework architecture and source ownership

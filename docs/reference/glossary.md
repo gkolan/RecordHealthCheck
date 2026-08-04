@@ -26,16 +26,16 @@ The mechanism a Rule uses to reach an answer. Set with `EvaluationType__c`.
 
 | Evaluation Type | Input | Reference |
 | --- | --- | --- |
-| Formula | Fields on the current record or a reachable parent record | [Reference: Formula](reference-formula.md) |
-| Query | One administrator-authored SOQL query over related records | [Reference: Query](reference-query.md) |
-| Compare Two Queries | Two independent SOQL queries compared to each other | [Reference: Compare two queries](reference-compare-two-queries.md) |
-| Apex | A class implementing `RecordHealthCheckRule` | [Reference: Apex](reference-apex.md) |
+| Formula | Fields on the current record or a reachable parent record | [Reference: Formula](evaluation/formula.md) |
+| Query | One administrator-authored SOQL query over related records | [Reference: Query](evaluation/query.md) |
+| Compare Two Queries | Two independent SOQL queries compared to each other | [Reference: Compare two queries](evaluation/compare-two-queries.md) |
+| Apex | A class implementing `RecordHealthCheckRule` | [Reference: Apex](evaluation/apex-rule-contract.md) |
 
 ## Reason Code
 
 A stable, additive `UPPER_SNAKE_CASE` string that explains why a Rule did not produce a normal
 `PASS` or `FAIL`, or why a card could not load. Automation should branch on Reason Codes, never on
-administrator-authored display text. See [Reason Codes](reference-reason-codes.md).
+administrator-authored display text. See [Reason Codes](contracts/reason-codes.md).
 
 ## QualifiedApiName
 
@@ -44,14 +44,14 @@ external boundary: the Apex API, Flow actions, the Lightning component, and even
 a package namespace prefix (for example `rhc__Account_Readiness`) only when the record is owned by a
 package; a subscriber-owned record has no prefix. Callers must pass the exact value Salesforce
 returns rather than constructing or guessing it. See
-[Configuration identity](reference-configuration-identity.md).
+[Configuration identity](product/configuration-identity.md).
 
 ## Found / Expected
 
 The two values a comparison-based Rule reports. **Found** is what the Rule observed on the record,
 related data, or query result. **Expected** is what the Rule required for a pass. Both are typed
 values that get formatted for display without changing the comparison itself. See
-[Display value format](reference-display-value-format.md).
+[Display value format](contracts/display-value-format.md).
 
 ## Severity
 
@@ -71,7 +71,7 @@ titles prefixed `Demo:`) as teaching starters for Account, Contact, and Opportun
 configuration** is the Check Sets and Rules an org creates to enforce its own business policy.
 Review or deactivate Demo Check Sets before production use rather than building on top of them; use
 different Developer Names and titles for org policy. See
-[Configuration identity: Keep Demo starter configuration explicit](reference-configuration-identity.md#keep-demo-starter-configuration-explicit).
+[Configuration identity: Keep Demo starter configuration explicit](product/configuration-identity.md#keep-demo-starter-configuration-explicit).
 
 ## Status vocabulary
 
@@ -93,19 +93,19 @@ A Check Set's overall result is the strongest status among its Rules, in this or
 A namespaced placeholder such as `{!record.Name}` or `{!rhcResult.foundValue}` in a message,
 Action Label, Action URL, or SOQL template. Record Health Check replaces it with a live value at
 evaluation time. Add a quoted `fallback` when the value might be blank, for example
-`{!record.Name fallback="this record"}`. See [Reference: Merge tokens](reference-merge-tokens.md).
+`{!record.Name fallback="this record"}`. See [Reference: Merge tokens](contracts/merge-tokens.md).
 
 ## Show Diagnostics
 
 A Check Set-level setting (`ShowDiagnostics__c`) that, combined with the
 `Record_Health_Check_View_Diagnostics` Custom Permission on the running user, reveals authorized
 troubleshooting detail on the card and in the browser console. Neither condition alone is enough.
-See [Security and data access](reference-security.md#the-diagnostics-custom-permission) and
+See [Security and data access](product/security.md#the-diagnostics-custom-permission) and
 [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md).
 
 ## Related
 
-- [Reference: Architecture](reference-architecture.md)
-- [Reason Codes](reference-reason-codes.md)
+- [Reference: Architecture](product/architecture.md)
+- [Reason Codes](contracts/reason-codes.md)
 - [Metadata reference](../metadata/README.md)
 - [How Record Health Check works](../installation/01-how-it-works.md)

@@ -29,11 +29,11 @@ schema, and carefully handled product dependencies, but it also requires secure 
 Apex test coverage.
 
 For the plugin interface, context, parameters, result contract, security, and deployment checklist,
-use [Reference: Apex](../../reference/reference-apex.md).
+use [Reference: Apex](../../reference/evaluation/apex-rule-contract.md).
 
 ## Related
 
 - [All practical examples](../README.md)
-- [Reference: Apex](../../reference/reference-apex.md)
+- [Reference: Apex](../../reference/evaluation/apex-rule-contract.md)
 - [Apex API](../../api/apex-api.md)
 - [Rule fields](../../metadata/fields-check-rule.md)

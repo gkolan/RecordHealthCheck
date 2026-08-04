@@ -5,7 +5,7 @@
 >
 > **Setup reference**
 >
-> Use the [Apex reference](../../reference/reference-apex.md) for the complete setup fields and behavior.
+> Use the [Apex reference](../../reference/evaluation/apex-rule-contract.md) for the complete setup fields and behavior.
 
 > [!IMPORTANT]
 > The supporting Apex class for this example lives under `integration-tests/`. It does not install
@@ -130,7 +130,7 @@ After deploying the class:
 Record Health Check parses the JSON and supplies both named values in `scope.parameters`.
 `minScore` accepts `1`–`100`, and `activityDaysBack` accepts `1`–`3650`; missing or invalid values
 use 80 and 30. See
-[Parameter parsing patterns](../../reference/reference-apex.md#scope)
+[Parameter parsing patterns](../../reference/evaluation/apex-rule-contract.md#scope)
 for validation and type-conversion guidance.
 
 ## Implementation summary
@@ -378,7 +378,7 @@ For applicability, configure **Applies To** on the Rule so Record Health Check s
 runs. The framework supplies identity, label, severity, messages, display values, and diagnostics.
 Missing or extra map keys, a null outcome, an invalid status, forbidden side effects, or an
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning an outcome](../../reference/reference-apex.md#outcome).
+[Returning an outcome](../../reference/evaluation/apex-rule-contract.md#outcome).
 
 
 ## Step 3: Configure the Rule

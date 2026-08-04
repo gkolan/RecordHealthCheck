@@ -106,7 +106,7 @@ function classify(relative) {
   if (/docs\/examples\/[^/]+\/\d[^/]+\.md$/.test(relative))
     return "Worked example";
   if (
-    /docs\/reference\/reference-(?:formula|query|compare-two-queries|apex)\.md$/.test(
+    /docs\/reference\/evaluation\/(?:formula|query|compare-two-queries|apex-rule-contract)\.md$/.test(
       relative
     )
   )

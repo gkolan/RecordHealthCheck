@@ -5,7 +5,7 @@
 >
 > **Setup reference**
 >
-> Use the [Apex reference](../../reference/reference-apex.md) for the complete setup fields and behavior.
+> Use the [Apex reference](../../reference/evaluation/apex-rule-contract.md) for the complete setup fields and behavior.
 
 ## Scenario
 
@@ -91,7 +91,7 @@ After deploying the class:
 Record Health Check parses the JSON automatically and passes it to the class as
 `scope.parameters`, a map of parameter names to values. The class uses 30 days only when `daysBack`
 is absent. A supplied null, nonnumeric, or out-of-range value returns `INVALID_CONFIG`; the configured Rule explicitly uses 90 days. See
-[Parameter parsing patterns](../../reference/reference-apex.md#scope)
+[Parameter parsing patterns](../../reference/evaluation/apex-rule-contract.md#scope)
 for validation and type-conversion guidance.
 
 ## Step 2: Create the Apex class
@@ -294,7 +294,7 @@ For applicability, configure **Applies To** on the Rule so Record Health Check s
 runs. The framework supplies identity, label, severity, messages, display values, and diagnostics.
 Missing or extra map keys, a null outcome, an invalid status, forbidden side effects, or an
 unhandled exception produces `APEX_EVALUATOR_ERROR`, not a pass. See
-[Returning an outcome](../../reference/reference-apex.md#outcome).
+[Returning an outcome](../../reference/evaluation/apex-rule-contract.md#outcome).
 
 
 ## Step 3: Configure the Rule

@@ -22,7 +22,7 @@ These are standard features of Enterprise, Unlimited, Performance, and Developer
 project has not independently verified behavior on every edition and API-access configuration; if
 your org's edition restricts Custom Metadata Types, Platform Events, or Apex, confirm those
 platform features are available before installing. See
-[Reference: Compatibility](../reference/reference-compatibility.md).
+[Reference: Compatibility](../reference/product/compatibility.md).
 
 ## Can I combine it with Validation Rules?
 
@@ -39,7 +39,7 @@ source deploy (`manifest/package.xml` or `--source-dir force-app`) for developme
 work, and the demo scratch org. Package-owned metadata carries the `rhc__` prefix on its
 `QualifiedApiName`; source-deployed metadata in a subscriber org does not. See
 [Install and verify](../installation/02-install-and-verify.md) and
-[Configuration identity](../reference/reference-configuration-identity.md).
+[Configuration identity](../reference/product/configuration-identity.md).
 
 ## Are lifecycle events on by default?
 
@@ -55,7 +55,7 @@ page-load runs never publish, regardless of these settings. See
 The running user's own access, always. Every query against a business record runs
 `WITH USER_MODE`, so a user only sees results based on records and fields they can already read in
 Salesforce. Record Health Check never elevates privilege and never runs a query as
-`WITH SYSTEM_MODE`. See [Security and data access](../reference/reference-security.md).
+`WITH SYSTEM_MODE`. See [Security and data access](../reference/product/security.md).
 
 ## What are the Demo Check Sets, and should I use them in production?
 
@@ -72,7 +72,7 @@ own Developer Names and titles for org policy. Additional teaching packs may liv
 by** the package (including the four Demo Check Sets) return a `QualifiedApiName` prefixed
 `rhc__`. Custom Metadata your org creates does not carry that prefix. Every Apex, Flow, Lightning,
 and event boundary requires the exact `QualifiedApiName` Salesforce returns; never construct it by
-guessing whether the prefix applies. See [Configuration identity](../reference/reference-configuration-identity.md).
+guessing whether the prefix applies. See [Configuration identity](../reference/product/configuration-identity.md).
 
 ## Does a Rule failure ever cause data loss or a rollback?
 
@@ -80,7 +80,7 @@ No. A `FAIL`, `SKIPPED`, `UNABLE_TO_EVALUATE`, or `ERROR` result is just a retur
 exception involving a rollback is a custom Apex plugin that attempts DML, a callout, email, an
 event publication, or asynchronous work: the Framework detects that as a prohibited side effect and
 rolls it back before it can commit, then reports a Framework contract fault rather than letting it
-through. See [Security and data access: Plugin side-effect bans](../reference/reference-security.md#plugin-side-effect-bans).
+through. See [Security and data access: Plugin side-effect bans](../reference/product/security.md#plugin-side-effect-bans).
 
 ## Where do I go next?
 
@@ -96,6 +96,6 @@ through. See [Security and data access: Plugin side-effect bans](../reference/re
 
 - [Documentation home](../README.md)
 - [Compare Record Health Check to native Salesforce tools](compare-to-native-salesforce.md)
-- [Security and data access](../reference/reference-security.md)
-- [Reference: Compatibility](../reference/reference-compatibility.md)
+- [Security and data access](../reference/product/security.md)
+- [Reference: Compatibility](../reference/product/compatibility.md)
 - [Support](../../SUPPORT.md)

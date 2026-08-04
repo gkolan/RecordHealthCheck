@@ -55,7 +55,7 @@ interfaces and product-generation terminology.
 For installation and verification, start with
 [Install and verify](docs/installation/02-install-and-verify.md). For the public contracts, use the
 [Apex API](docs/api/apex-api.md), [Flow actions](docs/integration/flow-actions.md), and
-[Apex Rule plugin reference](docs/reference/reference-apex.md).
+[Apex Rule plugin reference](docs/reference/evaluation/apex-rule-contract.md).
 
 ## [2.0.0] - 2026-08-04
 
@@ -72,7 +72,7 @@ For installation and verification, start with
 - Install documentation states the namespaced unlocked package as the supported subscriber path,
   with source deploy reserved for contribution and scratch-org workflows.
 - Configuration identity guidance lives under
-  [Reference: Configuration identity](docs/reference/reference-configuration-identity.md).
+  [Reference: Configuration identity](docs/reference/product/configuration-identity.md).
 
 ### Prior history
 

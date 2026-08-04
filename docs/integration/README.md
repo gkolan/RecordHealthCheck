@@ -173,5 +173,5 @@ automation on those fields rather than administrator-authored message text.
 - [Lightning component](lightning-component.md)
 - [Platform Event subscriptions](../platform-events/README.md)
 - [Lifecycle event behavior](lifecycle-events.md)
-- [Reason Codes](../reference/reference-reason-codes.md)
+- [Reason Codes](../reference/contracts/reason-codes.md)
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)

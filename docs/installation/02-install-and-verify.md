@@ -21,7 +21,7 @@ permission to edit Lightning record pages.
 >
 > Package-owned Custom Metadata and Apex use the `rhc` namespace. Always pass the exact
 > `QualifiedApiName` Salesforce returns (see
-> [Configuration identity](../reference/reference-configuration-identity.md)).
+> [Configuration identity](../reference/product/configuration-identity.md)).
 
 > [!NOTE]
 > **Already installed?** Use [Revalidate an installation](04-upgrading.md) to protect configuration,
@@ -159,4 +159,4 @@ If the card does not appear or a Rule will not evaluate, see
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): configure every field
 - [How It Works](01-how-it-works.md): learn the result terms and codes
 - [Uninstall and rollback](06-uninstall-and-rollback.md): remove the card, subscribers, and package when needed
-- [Security and data access](../reference/reference-security.md): review the trust model before production
+- [Security and data access](../reference/product/security.md): review the trust model before production

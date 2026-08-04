@@ -121,4 +121,4 @@ or successful subscriber processing, and subscriber failure never changes the co
 - [Rule Result Platform Event](event-rule-result.md)
 - [Log Platform Event](event-log.md)
 - [Check Set fields](fields-check-set.md): **Publish User Run Event**
-- [Reason Codes](../reference/reference-reason-codes.md)
+- [Reason Codes](../reference/contracts/reason-codes.md)

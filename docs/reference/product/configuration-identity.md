@@ -127,8 +127,8 @@ guards.
 
 ## Related
 
-- [Install and verify](../installation/02-install-and-verify.md)
-- [Security and data access](reference-security.md)
-- [Integration overview](../integration/README.md)
-- [Flow actions](../integration/flow-actions.md)
-- [Glossary](glossary.md)
+- [Install and verify](../../installation/02-install-and-verify.md)
+- [Security and data access](security.md)
+- [Integration overview](../../integration/README.md)
+- [Flow actions](../../integration/flow-actions.md)
+- [Glossary](../glossary.md)

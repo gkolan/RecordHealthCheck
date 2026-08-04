@@ -32,7 +32,7 @@ that depends on data outside the record being saved, belongs to Record Health Ch
 | Where the result appears | An error banner blocking save | A duplicate warning or block on save | An error banner (before-save) or the record after a triggered Flow runs | A Lightning record-page card, or a typed Apex/Flow response |
 | Configuration model | Formula in Setup | Matching Rule + Duplicate Rule in Setup | Flow Builder | Custom Metadata (Check Set + Rule), deployable and version-controlled |
 | Failure severity | Binary: blocks or does not | Binary or warn, per Duplicate Rule | Binary: blocks or does not (before-save); Flow can vary downstream handling | Three severities on `FAIL` (Failed, Warning, Info), plus distinct Skipped, Unable to Check, and System Error outcomes |
-| Stable machine-readable outcome for automation | No, only pass/block | No, only match/no-match | Depends on Flow design | Yes: status and Reason Code, versioned independently of display text. See [Reason Codes](../reference/reference-reason-codes.md) |
+| Stable machine-readable outcome for automation | No, only pass/block | No, only match/no-match | Depends on Flow design | Yes: status and Reason Code, versioned independently of display text. See [Reason Codes](../reference/contracts/reason-codes.md) |
 
 ## When to use which
 
@@ -54,7 +54,7 @@ malformed condition blocks every save that matches it, org-wide, immediately. Re
 advisory boundary is what makes richer administrator-authored logic (arbitrary SOQL, cross-object
 aggregates, custom Apex) tolerable: a misconfigured Rule becomes a documented status on one card
 (`UNABLE_TO_EVALUATE` or `ERROR` with a Reason Code), not a block on every save in the org. See
-[Architecture: Position in the platform](../reference/reference-architecture.md#1-position-in-the-platform)
+[Architecture: Position in the platform](../reference/product/architecture.md#1-position-in-the-platform)
 for the full comparison.
 
 ## They are not mutually exclusive
@@ -72,8 +72,8 @@ conflict, because a Rule result never changes what Salesforce allows to be saved
 
 ## Related
 
-- [Architecture: Position in the platform](../reference/reference-architecture.md#1-position-in-the-platform)
+- [Architecture: Position in the platform](../reference/product/architecture.md#1-position-in-the-platform)
 - [How Record Health Check works](../installation/01-how-it-works.md)
-- [Reason Codes](../reference/reference-reason-codes.md)
+- [Reason Codes](../reference/contracts/reason-codes.md)
 - [FAQ](faq.md)
 - [Configure Check Sets and Rules](configure-check-sets-and-rules.md)

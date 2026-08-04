@@ -5,7 +5,7 @@
 >
 > **Setup reference**
 >
-> Use the [Formula reference](../../reference/reference-formula.md) for the complete setup fields and behavior.
+> Use the [Formula reference](../../reference/evaluation/formula.md) for the complete setup fields and behavior.
 
 ## Scenario
 

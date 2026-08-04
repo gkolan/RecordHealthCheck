@@ -19,7 +19,7 @@ Framework-owned wording ships as Salesforce Custom Labels, which Translation Wor
 without touching a Rule's logic. Administrator-authored fields are ordinary Custom Metadata text
 fields; Salesforce does not translate their content for you, and a Rule has only one
 `FailureMessage__c` value regardless of who is reading it. See
-[Display value format: Locale](reference-display-value-format.md#locale) for the boundary between
+[Display value format: Locale](../contracts/display-value-format.md#locale) for the boundary between
 these two categories in the rendering pipeline.
 
 ## What is locale-aware automatically
@@ -38,7 +38,7 @@ a Rule evaluates, not the author's locale and not a fixed org default.
 Two users viewing the same Rule result at the same moment can see different formatted text for
 Found and Expected while the underlying value and the Pass/Fail outcome stay identical. That is
 expected: formatting is a presentation concern layered on top of a comparison that already
-finished. See [Display value format](reference-display-value-format.md) for every formatting rule.
+finished. See [Display value format](../contracts/display-value-format.md) for every formatting rule.
 
 ## Comparisons always use API values, never labels
 
@@ -70,14 +70,14 @@ Merge tokens insert live Salesforce values into a message; they do not translate
 template text. `{!record.Name}` resolves to whatever the field holds regardless of language, and a
 result token such as `{!rhcResult.foundValue}` already contains the display-formatted (and
 therefore locale-aware) text produced by the rules in
-[Display value format](reference-display-value-format.md). Add a quoted `fallback` when a token
+[Display value format](../contracts/display-value-format.md). Add a quoted `fallback` when a token
 might be blank in some languages' data, for example
 `{!record.Name fallback="this record"}`, so the completed sentence still reads correctly. See
-[Reference: Merge tokens](reference-merge-tokens.md) for the complete token contract.
+[Reference: Merge tokens](../contracts/merge-tokens.md) for the complete token contract.
 
 ## Related
 
-- [Display value format](reference-display-value-format.md)
-- [Reference: Merge tokens](reference-merge-tokens.md)
-- [Reference: Compatibility](reference-compatibility.md)
-- [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md)
+- [Display value format](../contracts/display-value-format.md)
+- [Reference: Merge tokens](../contracts/merge-tokens.md)
+- [Reference: Compatibility](compatibility.md)
+- [Configure Check Sets and Rules](../../guides/configure-check-sets-and-rules.md)

@@ -5,7 +5,7 @@ testing strategy. Production behavior is tested through public contracts or the 
 owns the behavior whenever possible.
 
 The machine-readable baseline is
-[`scripts/release/generated/apex-architecture-baseline.json`](../../scripts/release/generated/apex-architecture-baseline.json).
+[`scripts/release/generated/apex-architecture-baseline.json`](../../../scripts/release/generated/apex-architecture-baseline.json).
 `npm run check:apex-architecture` fails when a change:
 
 - adds `@TestVisible` to an unapproved file or increases an approved file's count;
@@ -46,6 +46,6 @@ so every inline-suppressed finding remains visible in the advisory evidence.
 
 ## Related
 
-- [Architecture](reference-architecture.md)
-- [Apex class reference](reference-apex-classes.md)
-- [Development documentation](../README.md)
+- [Architecture](../product/architecture.md)
+- [Apex class reference](README.md)
+- [Development documentation](../../README.md)

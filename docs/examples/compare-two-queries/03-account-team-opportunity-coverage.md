@@ -5,7 +5,7 @@
 >
 > **Setup reference**
 >
-> Use the [Compare-two-queries reference](../../reference/reference-compare-two-queries.md) for the complete setup fields and behavior.
+> Use the [Compare-two-queries reference](../../reference/evaluation/compare-two-queries.md) for the complete setup fields and behavior.
 
 > [!IMPORTANT]
 > This configuration is illustrative teaching metadata. It is not installed by the Framework package.

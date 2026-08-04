@@ -170,8 +170,8 @@ These often appear on the card chrome rather than a single Rule row:
 
 ## Related
 
-- [Apex API](../api/apex-api.md)
-- [Flow actions](../integration/flow-actions.md)
-- [Lifecycle events](../integration/lifecycle-events.md)
-- [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md)
-- [Architecture](reference-architecture.md)
+- [Apex API](../../api/apex-api.md)
+- [Flow actions](../../integration/flow-actions.md)
+- [Lifecycle events](../../integration/lifecycle-events.md)
+- [Troubleshoot with Show Diagnostics](../../guides/troubleshoot-with-show-diagnostics.md)
+- [Architecture](../product/architecture.md)
