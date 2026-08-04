@@ -41,12 +41,6 @@ const plainLanguageAvoidList = [
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
-    if (
-      entryPath === path.join(docsRoot, "slides") ||
-      entryPath === path.join(docsRoot, "audits") ||
-      entryPath === path.join(docsRoot, "development")
-    )
-      continue;
     if (entry.isDirectory()) walk(entryPath);
     else if (entry.name.endsWith(".md")) markdownFiles.push(entryPath);
   }
@@ -138,7 +132,6 @@ for (const file of projectMarkdownFiles) {
   }
   const isPlainLanguageSource =
     file.startsWith(`${docsRoot}${path.sep}`) &&
-    file !== path.join(docsRoot, "development/documentation-standard.md") &&
     !file.startsWith(path.join(docsRoot, "metadata") + path.sep);
   if (isPlainLanguageSource) {
     for (const avoided of plainLanguageAvoidList) {

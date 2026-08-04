@@ -1,6 +1,6 @@
 # Record Health Check
 
-[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE) [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Apex coverage: 99.41%](https://img.shields.io/badge/Apex%20coverage-99.41%25-brightgreen)](docs/development/code-coverage-statistics.md) [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json) [![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
+[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE) [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Apex coverage: 99.41%](https://img.shields.io/badge/Apex%20coverage-99.41%25-brightgreen)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json) [![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
 
 > **Make informed decisions before taking action on Salesforce data.**
 
@@ -21,7 +21,15 @@ Administrators define **Check Sets** and **Rules** in Custom Metadata. The frame
 [How it works](docs/installation/01-how-it-works.md) ·
 [Install](docs/installation/02-install-and-verify.md) ·
 [Examples](docs/examples/README.md) ·
-[Try the demo](docs/installation/05-create-rhc-scratch-org.md)
+[Try the demo](docs/installation/05-create-rhc-scratch-org.md) ·
+[Support](SUPPORT.md) ·
+[Security](docs/reference/reference-security.md) ·
+[Changelog](CHANGELOG.md)
+
+> [!IMPORTANT]
+> **Supported install:** the namespaced unlocked package **Record Health Check** (`rhc`).
+> Source deploy from this repository is for contributors and scratch-org demos. See
+> [Install and verify](docs/installation/02-install-and-verify.md).
 
 ## Demo
 
@@ -90,7 +98,7 @@ Start with [How it works](docs/installation/01-how-it-works.md), [Install](docs/
 ## Contributing
 
 Planning to contribute? See [Contributing](.github/CONTRIBUTING.md) for local checks, testing requirements,
-and pull request guidance.
+and pull request guidance. For questions and bug reports, see [Support](SUPPORT.md).
 
 ## License
 

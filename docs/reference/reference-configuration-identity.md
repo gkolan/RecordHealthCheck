@@ -1,4 +1,4 @@
-# Configuration identity and package boundary standard
+# Reference: Configuration identity and package boundary
 
 > [!NOTE]
 > On this page, preserve one exact Custom Metadata identity contract and keep shipped Demo
@@ -6,6 +6,21 @@
 
 Apply this standard whenever code, Flow, Lightning, events, tests, examples, or documentation
 identifies a Check Set or Rule.
+
+## What ships where
+
+| Surface | What it contains | Who installs it |
+| --- | --- | --- |
+| Framework unlocked package (`rhc`) | Engine, Lightning card, Permission Sets, Custom Metadata Types, public Apex/Flow APIs, four Demo `Example_…` Check Sets | Subscribers (supported path) |
+| This repository `force-app` | Same Framework metadata used to build the package | Contributors and scratch-org demos |
+| `integration-tests/` | Fixture mirror of Demo CMDT plus CI-only helpers | CI and local verification only (not subscriber installs) |
+| [RecordHealthCheck-Examples](https://github.com/gkolan/RecordHealthCheck-Examples) | Additional teaching packs beyond the four Demo Check Sets | Optional learning orgs |
+
+Demo Check Set `CardTitle__c` values start with `Demo:` so Lightning App Builder and the card make
+starter status obvious. Subscriber policy should use different Developer Names and titles.
+
+The package namespace is `rhc`. Metadata **owned by** the package receives an `rhc__` prefix on its
+`QualifiedApiName`. Subscriber-owned Custom Metadata records do not.
 
 ## Use Qualified API Name at every Framework boundary
 
@@ -55,12 +70,10 @@ Set. It is not the public selection contract.
 
 `force-app` contains the engine, Lightning component, permissions, Custom Metadata Type
 definitions, public APIs, reusable evaluator code, and the four shipped `Example_` Demo Check Sets
-(with their Rules). Those records are teaching and sandbox-ready starters. Their `CardTitle__c`
-values start with `Demo:` so Lightning App Builder and the card make the starter status obvious.
+(with their Rules). Those records are teaching and sandbox-ready starters.
 
-The same 25 records are mirrored under `integration-tests/main/default/customMetadata` so local
-and CI fixture deploys stay identical to the package content. Additional teaching packs and
-learning-path metadata may still live in
+The same Demo records are mirrored under `integration-tests/main/default/customMetadata` so local
+and CI fixture deploys stay identical to the package content. Additional teaching packs may live in
 [`RecordHealthCheck-Examples`](https://github.com/gkolan/RecordHealthCheck-Examples).
 
 Do not add unlabeled business-policy records to the Framework package. Keep `All` list views
@@ -114,7 +127,8 @@ guards.
 
 ## Related
 
-- [Salesforce naming and metadata writing standard](salesforce-naming-and-metadata-writing-standard.md)
-- [Deployment readiness standard](deployment-readiness-standard.md)
+- [Install and verify](../installation/02-install-and-verify.md)
+- [Security and data access](reference-security.md)
 - [Integration overview](../integration/README.md)
 - [Flow actions](../integration/flow-actions.md)
+- [Glossary](glossary.md)

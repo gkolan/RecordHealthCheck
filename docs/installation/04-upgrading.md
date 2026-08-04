@@ -153,6 +153,8 @@ Do not resume the release until the restored org produces the retained passing a
 ## Next steps
 
 - [Install and verify](02-install-and-verify.md)
+- [Uninstall and rollback](06-uninstall-and-rollback.md)
+- [Operate in production](../guides/operate-in-production.md)
 - [Configuration review checklist](../guides/configure-check-sets-and-rules.md#14-review-checklist)
 - [Integration overview](../integration/README.md)
 - [Reason Codes](../reference/reference-reason-codes.md)

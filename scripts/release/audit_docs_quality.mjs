@@ -17,12 +17,6 @@ const files = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
-    if (
-      entryPath === path.join(docsRoot, "slides") ||
-      entryPath === path.join(docsRoot, "audits") ||
-      entryPath === path.join(docsRoot, "development")
-    )
-      continue;
     if (entry.isDirectory()) walk(entryPath);
     else if (entry.name.endsWith(".md")) files.push(entryPath);
   }
@@ -122,9 +116,6 @@ function classify(relative) {
   if (/docs\/installation\/01-how-it-works\.md$/.test(relative))
     return "Concept guide";
   if (/docs\/installation\//.test(relative)) return "Installation task";
-  if (/docs\/development\/cli-commands\.md$/.test(relative)) return "Guide";
-  if (/docs\/development\/documentation-standard\.md$/.test(relative))
-    return "Documentation standard";
   if (/docs\/integration\/apex-api\/README\.md$/.test(relative))
     return "Navigation page";
   if (

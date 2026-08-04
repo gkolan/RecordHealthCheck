@@ -255,6 +255,11 @@ on administrator-authored display text.
 
 ## 9. Security model
 
+Record Health Check evaluates with the running user's access, rejects unsafe query shapes, and
+keeps diagnostics and error detail behind explicit permissions. For the full evaluator-facing
+model (Permission Sets, persistence, events, plugins, and fix links), see
+[Security and data access](reference-security.md).
+
 | Concern | Approach |
 | --- | --- |
 | Record and field access | The running user's own access, enforced by `WITH USER_MODE` on every query |

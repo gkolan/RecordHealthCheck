@@ -1,28 +1,42 @@
 # Install and verify
 
 > [!NOTE]
-> On this page, take Record Health Check from deployment to a proven Lightning record-page result by configuring access, placing the card, and verifying as a representative user.
+> On this page, take Record Health Check from installation to a proven Lightning record-page result by configuring access, placing the card, and verifying as a representative user.
 
-This tutorial takes Record Health Check from sandbox deployment to an observable Rule result on a Lightning record
-page. Complete the verification as a representative user before planning a production release.
+This tutorial takes Record Health Check from a sandbox install to an observable Rule result on a
+Lightning record page. Complete the verification as a representative user before planning a
+production release.
 
-**You need:** a Salesforce sandbox, the Salesforce CLI (`sf`) or a one-click Deploy button, and
-permission to deploy metadata and edit Lightning record pages.
+**You need:** a Salesforce sandbox, permission to install packages or deploy metadata, and
+permission to edit Lightning record pages.
+
+> [!IMPORTANT]
+> **Supported subscriber path:** install the namespaced unlocked package **Record Health Check**
+> (`rhc`). That is the path described in the project's release process.
+>
+> **Contributor / scratch-org path:** source deploy from this repository with
+> `manifest/package.xml` (or an explicit `--source-dir force-app`). Use source deploy for
+> development, [Try the demo](05-create-rhc-scratch-org.md), and contribution workflows, not as
+> the default production install.
+>
+> Package-owned Custom Metadata and Apex use the `rhc` namespace. Always pass the exact
+> `QualifiedApiName` Salesforce returns (see
+> [Configuration identity](../reference/reference-configuration-identity.md)).
 
 > [!NOTE]
 > **Already installed?** Use [Revalidate an installation](04-upgrading.md) to protect configuration,
-> access, integrations, and rollback evidence while deploying the current repository.
+> access, integrations, and rollback evidence while upgrading.
 
 ## What the install includes
 
-The documented install paths deploy the Record Health Check Framework from `force-app` via
-`manifest/package.xml`: the engine, permission sets, Lightning component, Custom Metadata Types,
-public APIs, and four Demo Check Sets (`Example_…`, card titles prefixed with `Demo:`).
+The Framework package (and the matching `force-app` source tree) includes the engine, permission
+sets, Lightning component, Custom Metadata Types, public APIs, and four Demo Check Sets
+(`Example_…`, card titles prefixed with `Demo:`).
 
 They do **not** create Acme demo Account data. Those deterministic records come only from
 [Try the demo](05-create-rhc-scratch-org.md).
 
-Always use the manifest (or an explicit `--source-dir force-app`). A bare
+When using source deploy, always use the manifest (or an explicit `--source-dir force-app`). A bare
 `sf project deploy start` can pull more than product metadata; keep `integration-tests/` out of
 sandbox installs. That tree is CI fixture metadata. See
 [`integration-tests/README.md`](../../integration-tests/README.md).
@@ -31,7 +45,7 @@ sandbox installs. That tree is CI fixture metadata. See
 
 | Milestone | Expected result |
 | --- | --- |
-| Record Health Check is deployed | The Framework classes, Lightning Web Component, Custom Metadata Types, and Permission Sets exist in the sandbox |
+| Record Health Check is installed | The Framework classes, Lightning Web Component, Custom Metadata Types, and Permission Sets exist in the sandbox |
 | User access is assigned | A representative user can run the protected Apex surface |
 | A Check Set is available | Lightning App Builder can select an active Check Set for the record page object |
 | The card is placed | The Record Health Check card appears on the matching Lightning record page |
@@ -46,21 +60,33 @@ sf org login web --instance-url https://test.salesforce.com --alias rhc-sandbox
 sf org display --target-org rhc-sandbox
 ```
 
-Confirm that `sf org display` identifies the intended sandbox before deploying.
+Confirm that `sf org display` identifies the intended sandbox before installing.
 
-## 2. Deploy Record Health Check
+## 2. Install Record Health Check
 
 Use a sandbox for the first install.
 
-### Option A: One-click Deploy button
+### Option A: Unlocked package (supported)
+
+Install the latest promoted **Record Health Check** unlocked package version into the sandbox
+(AppExchange / package install URL from your release notes, or `sf package install` with the
+published `04t` version ID). Then assign permission sets as in step 2 of Option B below.
+
+After install, discover Demo Check Set identities with:
+
+```sql
+SELECT DeveloperName, QualifiedApiName, CardTitle__c
+FROM Record_Health_Check_Set__mdt
+WHERE DeveloperName LIKE 'Example_%'
+ORDER BY QualifiedApiName
+```
+
+### Option B: Source deploy (contributor / scratch)
 
 [![Deploy to Sandbox](https://img.shields.io/badge/Deploy%20to-Sandbox-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
 
-The button opens Salesforce authentication and deploys the default package directory (`force-app`)
-only. For production orgs, use the **Deploy to Salesforce** badge on the repository README (same
-tool, production login host).
-
-### Option B: Salesforce CLI
+The Deploy button opens Salesforce authentication and deploys the default package directory
+(`force-app`) only. Prefer Option A for production and long-lived subscriber orgs.
 
 From a clone of this repository:
 
@@ -85,6 +111,8 @@ The install includes four Demo Check Sets you can select immediately (Account Pr
 Account Relationship & Risk, Contact Relationship Readiness, and Opportunity Deal Readiness).
 Review every Demo Rule before adapting it for production policy.
 
+![Demo Account Relationship and Risk health check card on an Account record page](../../assets/img/Example_Account_Relationship_Risk_Screenshot.png)
+
 To author your own configuration, create a Check Set under **Setup → Custom Metadata Types** by
 following [Create your first Rule](03-create-your-first-rule.md).
 
@@ -102,7 +130,7 @@ Open a matching record. If the card is configured for manual execution, click **
 shows Pass, Fail (Failed, Warning, or Info by severity), Skipped, Unable to Check, or System Error
 for each Rule. Edit relevant record data and rerun to
 confirm the result changes. Repeat the verification as a representative user, not only as the
-administrator who deployed Record Health Check.
+administrator who installed Record Health Check.
 
 | Verification | Expected result |
 | --- | --- |
@@ -115,7 +143,7 @@ administrator who deployed Record Health Check.
 
 | Symptom | What to check |
 | --- | --- |
-| The deployment reports an Apex or metadata permission error | Confirm that the authenticated user can deploy Apex and Custom Metadata. |
+| The installation reports an Apex or metadata permission error | Confirm that the authenticated user can install packages or deploy Apex and Custom Metadata. |
 | The card has no Check Set to select | Select an active Demo Check Set whose Object matches the Lightning record page object, or create and activate your own Check Set. |
 | A user cannot see or run the card | Assign `Record_Health_Check_User`, then review record, object, and field access. |
 | A Rule shows Unable to Check | Review its Reason Code, Rule configuration, and the running user's Salesforce access. |
@@ -130,3 +158,5 @@ If the card does not appear or a Rule will not evaluate, see
 - [Examples library](../examples/README.md): adapt another Rule pattern
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): configure every field
 - [How It Works](01-how-it-works.md): learn the result terms and codes
+- [Uninstall and rollback](06-uninstall-and-rollback.md): remove the card, subscribers, and package when needed
+- [Security and data access](../reference/reference-security.md): review the trust model before production

@@ -11,9 +11,10 @@ Apex callers, Flow integrations, or Platform Event subscribers.
 
 | Your starting point | Follow this path | What you will accomplish |
 | --- | --- | --- |
-| Record Health Check is new to the org | [How it works](01-how-it-works.md) → [Install and verify](02-install-and-verify.md) → [Create your first Rule](03-create-your-first-rule.md) | Understand the Framework, deploy Record Health Check, place the Lightning card, and evaluate a Formula Rule |
+| Record Health Check is new to the org | [How it works](01-how-it-works.md) → [Install and verify](02-install-and-verify.md) → [Create your first Rule](03-create-your-first-rule.md) | Understand the Framework, install Record Health Check, place the Lightning card, and evaluate a Formula Rule |
 | You want the complete project demo | [Create the demo scratch org](05-create-rhc-scratch-org.md) | Reproduce the maintained demo org, data, record page, permissions, and verified outcomes |
-| Record Health Check is already installed | [Revalidate an installation](04-upgrading.md) | Back up the existing configuration, validate and deploy the current repository, verify integrations, and retain a rollback path |
+| Record Health Check is already installed | [Revalidate an installation](04-upgrading.md) | Back up the existing configuration, validate and deploy or upgrade, verify integrations, and retain a rollback path |
+| You need to remove Record Health Check | [Uninstall and rollback](06-uninstall-and-rollback.md) | Remove card placements, subscribers, permission assignments, and the package or source metadata |
 | Record Health Check is installed and you want another Rule | [Examples library](../examples/README.md) | Choose an Evaluation Type and adapt a distinct, tested configuration pattern |
 
 ## New installation sequence
@@ -21,7 +22,7 @@ Apex callers, Flow integrations, or Platform Event subscribers.
 | Step | Page | What you learn or verify |
 | ---: | --- | --- |
 | 1 | [How Record Health Check works](01-how-it-works.md) | How Check Sets, Rules, Evaluation Types, and outcomes fit together |
-| 2 | [Install and verify](02-install-and-verify.md) | How to deploy Record Health Check to a sandbox, assign Framework access, place the Lightning card, and verify a result |
+| 2 | [Install and verify](02-install-and-verify.md) | How to install the unlocked package (or source-deploy for contribution), assign Framework access, place the Lightning card, and verify a result |
 | 3 | [Create your first Rule](03-create-your-first-rule.md) | How to create a Check Set and Formula Rule in Salesforce Setup and test both PASS and FAIL |
 
 ## Existing-installation sequence
@@ -35,3 +36,5 @@ business outcomes, integrations, event subscribers, and rollback evidence.
 - [Documentation home](../README.md): choose configuration, integration, metadata, or troubleshooting guidance
 - [Examples library](../examples/README.md): learn through complete Salesforce scenarios
 - [Metadata reference](../metadata/README.md): look up current Setup labels, API names, allowed values, and defaults
+- [Operate in production](../guides/operate-in-production.md): day-2 monitoring and diagnostics hygiene
+- [Uninstall and rollback](06-uninstall-and-rollback.md): remove an installation safely

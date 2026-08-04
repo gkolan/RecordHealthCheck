@@ -81,6 +81,11 @@ The Formula Rule reads only the current Account, so it does not need SOQL or Ape
 If the Check Set picker is empty, confirm the Check Set is active and its **Object** value is
 `Account`.
 
+When a Demo Check Set is already installed, the card can look like this example (Pass, Fail, and
+Skipped outcomes with Found and Expected values):
+
+![Example Account Relationship and Risk health check card](../../assets/img/Example_Account_Relationship_Risk_Screenshot.png)
+
 ## Step 4: Test both results
 
 Use an Account you can safely edit.

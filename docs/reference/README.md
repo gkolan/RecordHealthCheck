@@ -12,6 +12,12 @@ guided configuration path, begin with the [documentation home](../README.md) or
 | Your question | Reference | What it provides |
 | --- | --- | --- |
 | Which class, Lightning Web Component, or metadata definition owns this behavior? | [Reference: Architecture](reference-architecture.md) | Full published architecture: principles, layers, runtime, security, limits, and ownership |
+| How does security and data access work? | [Reference: Security and data access](reference-security.md) | USER_MODE, Permission Sets, diagnostics, persistence, events, plugins, and fix links |
+| What do Framework terms mean? | [Glossary](glossary.md) | Check Set, Rule, Evaluation Type, Reason Code, QualifiedApiName, and outcome vocabulary |
+| Which editions and experiences are supported? | [Reference: Compatibility](reference-compatibility.md) | Editions, Lightning Experience, API version, and known limits |
+| How do Check Sets, Rules, and events relate? | [Reference: Data model](reference-data-model.md) | ERD and relationship summary for configuration and lifecycle events |
+| Are labels and messages translation-ready? | [Reference: Localization](reference-localization.md) | Translation Workbench scope, display formats, and comparison values |
+| How do Qualified API Names and package boundaries work? | [Reference: Configuration identity](reference-configuration-identity.md) | Exact identity contract, `rhc` namespace, and Demo vs subscriber metadata |
 | What does each Apex class do? | [Reference: Apex classes](reference-apex-classes.md) | Class-by-class guide: purpose, key members, and layer ownership |
 | Why was a value rejected or completed text returned `UNABLE_TO_EVALUATE`? | [Reference: Field limits](reference-fields-limits.md) | Salesforce storage limits, Framework resolved limits, and remedies |
 | Which merge-token namespaces, surfaces, and limits apply? | [Reference: Merge tokens](reference-merge-tokens.md) | Strict syntax, availability, fallback behavior, and limits |
