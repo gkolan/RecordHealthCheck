@@ -49,7 +49,12 @@ jobs:
       - name: Authenticate Dev Hub
         env:
           SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
-        run: echo "$SFDX_AUTH_URL" | sf org login sfdx-url --sfdx-url-stdin --alias devhub --set-default-dev-hub
+        run: |
+          if [ -z "${SFDX_AUTH_URL}" ]; then
+            echo "::error::SFDX_AUTH_URL secret is empty or not configured. Add a Dev Hub auth URL secret before running the Salesforce release gate."
+            exit 1
+          fi
+          echo "$SFDX_AUTH_URL" | sf org login sfdx-url --sfdx-url-stdin --alias devhub --set-default-dev-hub
       - run: sf org create scratch --definition-file config/project-scratch-def.json --alias rhc-ci --set-default --duration-days 1 --wait 15
       - name: Dry-run production package deployment
         run: sf project deploy start --manifest manifest/package.xml --target-org rhc-ci --test-level RunLocalTests --dry-run --wait 30
@@ -98,9 +103,14 @@ jobs:
           retention-days: 90
       - name: Delete scratch org
         if: always()
+        continue-on-error: true
         run: |
-          if command -v sf >/dev/null 2>&1; then
+          if ! command -v sf >/dev/null 2>&1; then
+            echo "sf CLI was never installed; skipping scratch org cleanup"
+            exit 0
+          fi
+          if sf org display --target-org rhc-ci >/dev/null 2>&1; then
             sf org delete scratch --target-org rhc-ci --no-prompt
           else
-            echo "sf CLI was never installed; skipping scratch org cleanup"
+            echo "No rhc-ci scratch org authorization found; skipping cleanup"
           fi

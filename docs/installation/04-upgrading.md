@@ -27,10 +27,10 @@ Capture these items before changing metadata:
 Store the backup where the release owner can restore it. A backup that has never been restored in
 a test org is not sufficient rollback evidence.
 
-## Public surfaces to re-check on Framework 2.0.0
+## Public surfaces to re-check after deployment
 
-This page is a revalidation procedure, not a product-generation migration guide. When the org already
-calls or configures Record Health Check, confirm these current contracts after deployment:
+This page is a revalidation procedure, not a migration guide between product generations. When the org
+already calls or configures Record Health Check, confirm these current contracts after deployment:
 
 | Surface | Confirm |
 | --- | --- |
