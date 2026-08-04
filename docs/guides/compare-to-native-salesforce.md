@@ -54,7 +54,7 @@ malformed condition blocks every save that matches it, org-wide, immediately. Re
 advisory boundary is what makes richer administrator-authored logic (arbitrary SOQL, cross-object
 aggregates, custom Apex) tolerable: a misconfigured Rule becomes a documented status on one card
 (`UNABLE_TO_EVALUATE` or `ERROR` with a Reason Code), not a block on every save in the org. See
-[Architecture: Position in the platform](../reference/product/architecture.md#1-position-in-the-platform)
+[Architecture: Position in the platform](../reference/framework/architecture.md#1-position-in-the-platform)
 for the full comparison.
 
 ## They are not mutually exclusive
@@ -72,7 +72,7 @@ conflict, because a Rule result never changes what Salesforce allows to be saved
 
 ## Related
 
-- [Architecture: Position in the platform](../reference/product/architecture.md#1-position-in-the-platform)
+- [Architecture: Position in the platform](../reference/framework/architecture.md#1-position-in-the-platform)
 - [How Record Health Check works](../installation/01-how-it-works.md)
 - [Reason Codes](../reference/contracts/reason-codes.md)
 - [FAQ](faq.md)

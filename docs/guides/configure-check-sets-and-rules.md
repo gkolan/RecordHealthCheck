@@ -593,4 +593,4 @@ Name LIKE '{!record.Name fallback="this record"}%'
 
 - [Create your first Rule](../installation/03-create-your-first-rule.md): first install and first Rule
 - [Examples library](../examples/README.md): practical patterns by Evaluation Type
-- [Architecture](../reference/product/architecture.md): published Framework architecture and source ownership
+- [Architecture](../reference/framework/architecture.md): published Framework architecture and source ownership

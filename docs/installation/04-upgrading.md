@@ -91,7 +91,7 @@ sf project deploy start \
 ```
 
 Do not deploy `integration-tests/` to a subscriber org. That directory contains CI and benchmark
-fixtures rather than installable product metadata.
+fixtures rather than installable Framework metadata.
 
 ## Step 4: Verify configuration and access
 

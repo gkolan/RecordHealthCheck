@@ -14,7 +14,7 @@ Health Check, begin with **Install and verify**, then create one Rule or copy an
 
 | I want to… | Start here | What you will learn |
 | --- | --- | --- |
-| Understand the product before installing it | [How Record Health Check works](installation/01-how-it-works.md) | Check Sets, Rules, result meanings, and when to use a health check |
+| Understand the Framework before installing it | [How Record Health Check works](installation/01-how-it-works.md) | Check Sets, Rules, result meanings, and when to use a health check |
 | Compare it to Validation Rules or Flow | [Compare to native Salesforce](guides/compare-to-native-salesforce.md) | When advisory health checks fit versus blocking native tools |
 | Install it and see a working card | [Install and verify](installation/02-install-and-verify.md) | Install the package (or source-deploy for contribution), add a Check Set, place the card, and verify a result |
 | Create my first check in Salesforce Setup | [Create your first Rule](installation/03-create-your-first-rule.md) | Configure a Formula Rule without writing Apex or using the command line |
@@ -23,7 +23,7 @@ Health Check, begin with **Install and verify**, then create one Rule or copy an
 | Revalidate an existing installation | [Revalidate Record Health Check](installation/04-upgrading.md) | Back up current configuration, dry-run the deployment, verify integrations, and prepare rollback |
 | Remove Record Health Check | [Uninstall and rollback](installation/06-uninstall-and-rollback.md) | Remove placements, subscribers, permissions, and the package or source metadata |
 | Answer a common question | [FAQ](guides/faq.md) | Short answers on saves, editions, events, Demo Check Sets, and install paths |
-| Review security before production | [Security and data access](reference/product/security.md) | USER_MODE, Permission Sets, diagnostics, persistence, and plugins |
+| Review security before production | [Security and data access](reference/framework/security.md) | USER_MODE, Permission Sets, diagnostics, persistence, and plugins |
 | Call health checks from code or automation | [Integration overview](integration/README.md) | Choose Lightning, Apex, Flow, or platform events |
 | Look up one Setup field | [Metadata reference](metadata/README.md) | Find the exact label, API name, allowed values, default, and behavior |
 | Look up a Framework term | [Glossary](reference/glossary.md) | Shared definitions for Check Set, Rule, Reason Code, and related terms |
@@ -64,7 +64,7 @@ Evaluation Type fits, the exact Setup values, what users see, and how to test it
 | --- | --- |
 | [Configure Check Sets and Rules](guides/configure-check-sets-and-rules.md) | You need the complete mental model, Evaluation Type guidance, or go-live checklist |
 | [Compare to native Salesforce](guides/compare-to-native-salesforce.md) | You are choosing between RHC, Validation Rules, Duplicate Rules, or Flow errors |
-| [FAQ](guides/faq.md) | You need a short answer to a common product question |
+| [FAQ](guides/faq.md) | You need a short answer to a common Framework question |
 | [Operate in production](guides/operate-in-production.md) | You need day-2 monitoring, diagnostics hygiene, or backup cadence |
 | [Configure action links](guides/configure-action-links.md) | A failed Rule should tell users what to do or where to go |
 | [Troubleshoot with Show Diagnostics](guides/troubleshoot-with-show-diagnostics.md) | An administrator needs authorized troubleshooting details |
@@ -91,16 +91,16 @@ Start with the [integration overview](integration/README.md) if you are unsure w
 | [Check Set fields](metadata/fields-check-set.md) | Every Check Set field, default, dependency, and allowed value |
 | [Rule fields](metadata/fields-check-rule.md) | Every Rule field grouped by purpose and Evaluation Type |
 | [Glossary](reference/glossary.md) | Shared Framework vocabulary |
-| [Security and data access](reference/product/security.md) | USER_MODE, Permission Sets, diagnostics, persistence, and plugins |
-| [Compatibility](reference/product/compatibility.md) | Editions, Lightning Experience, API version, and known limits |
-| [Data model](reference/product/data-model.md) | ERD for Check Sets, Rules, and lifecycle events |
-| [Localization](reference/product/localization.md) | Translation Workbench scope and locale-aware display |
+| [Security and data access](reference/framework/security.md) | USER_MODE, Permission Sets, diagnostics, persistence, and plugins |
+| [Compatibility](reference/framework/compatibility.md) | Editions, Lightning Experience, API version, and known limits |
+| [Data model](reference/framework/data-model.md) | ERD for Check Sets, Rules, and lifecycle events |
+| [Localization](reference/framework/localization.md) | Translation Workbench scope and locale-aware display |
 | [Reason Codes](reference/contracts/reason-codes.md) | Stable explanations for skipped, unable-to-evaluate, and error outcomes |
 | [Platform Event metadata](metadata/README.md#choose-a-platform-event-reference) | Fields and usage for Set Run, Rule Result, and Log events |
 | [Field limits](reference/contracts/field-limits.md) | Salesforce storage limits and Framework completed-text limits |
-| [Architecture](reference/product/architecture.md) | Published Framework architecture: principles, layers, runtime, security, limits, ownership |
+| [Architecture](reference/framework/architecture.md) | Published Framework architecture: principles, layers, runtime, security, limits, ownership |
 | [Apex classes](reference/apex/README.md) | What each production Apex class owns and when to use it |
-| [Configuration identity](reference/product/configuration-identity.md) | Exact Qualified API Name rules and the Framework/examples package boundary |
+| [Configuration identity](reference/framework/configuration-identity.md) | Exact Qualified API Name rules and the Framework/examples package boundary |
 
 ## Important behavior to know
 

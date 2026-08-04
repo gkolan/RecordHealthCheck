@@ -13,7 +13,7 @@ when you need field-level detail.
 | --- | --- | --- |
 | Design a complete readiness review | [Configure Check Sets and Rules](configure-check-sets-and-rules.md) | Turn a Salesforce business question into a Check Set, ordered Rules, outcomes, and release checklist |
 | Decide RHC vs Validation Rules or Flow | [Compare to native Salesforce](compare-to-native-salesforce.md) | Choose advisory health checks versus blocking native tools |
-| Answer a common product question | [FAQ](faq.md) | Find short answers on saves, editions, install paths, events, and Demo Check Sets |
+| Answer a common Framework question | [FAQ](faq.md) | Find short answers on saves, editions, install paths, events, and Demo Check Sets |
 | Run Record Health Check in production | [Operate in production](operate-in-production.md) | Keep events, diagnostics, backups, and subscribers healthy after go-live |
 | Give users a corrective next step | [Configure action links](configure-action-links.md) | Pair Fix Message with a safe Action Label and Action URL |
 | Match the card to a Lightning page | [Understand adaptive card styling](choose-card-design-system.md) | Use one placement across established Lightning styling and Cosmos without manual configuration |

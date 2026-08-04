@@ -183,11 +183,11 @@ are not part of Record Health Check unless you deploy that folder.
 | Class | Note |
 | --- | --- |
 | `RecordHealthCheckTestDataFactory` | `@isTest` factory for Accounts/Contacts and related coverage data; not used at runtime |
-| `*Test.cls` / coverage classes | Unit and coverage tests; not part of the product API |
+| `*Test.cls` / coverage classes | Unit and coverage tests; not part of the Framework API |
 
 ---
 
 ## Related
 
 - [Apex class reference](README.md)
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)

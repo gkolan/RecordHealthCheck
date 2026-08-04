@@ -1,6 +1,6 @@
 # Record Health Check
 
-[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE) [![CI](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Apex coverage: 99.41%](https://img.shields.io/badge/Apex%20coverage-99.41%25-brightgreen)](https://github.com/gkolan/RecordHealthCheck/actions/workflows/ci.yml) [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json) [![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
+[![License: Apache 2.0](assets/img/badge-license.svg)](LICENSE) [![CI](https://github.com/gkolan/record-health-check/actions/workflows/ci.yml/badge.svg)](https://github.com/gkolan/record-health-check/actions/workflows/ci.yml) [![Apex coverage: 99.41%](https://img.shields.io/badge/Apex%20coverage-99.41%25-brightgreen)](https://github.com/gkolan/record-health-check/actions/workflows/ci.yml) [![Salesforce API](assets/img/badge-salesforce-api.svg)](sfdx-project.json) [![Feedback: RHC Slack](https://img.shields.io/badge/Feedback-RHC%20Slack-4A154B?logo=slack&logoColor=white)](https://recordhealthcheck.com/slack-invite)
 
 > **Make informed decisions before taking action on Salesforce data.**
 
@@ -23,7 +23,7 @@ Administrators define **Check Sets** and **Rules** in Custom Metadata. The frame
 [Examples](docs/examples/README.md) ·
 [Try the demo](docs/installation/05-create-rhc-scratch-org.md) ·
 [Support](SUPPORT.md) ·
-[Security](docs/reference/product/security.md) ·
+[Security](docs/reference/framework/security.md) ·
 [Changelog](CHANGELOG.md)
 
 > [!IMPORTANT]

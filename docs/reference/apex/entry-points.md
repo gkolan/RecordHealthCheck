@@ -5,7 +5,7 @@
 > Flow, Lightning, schedulers, and lifecycle publication.
 
 This page is part of the [Apex class reference](README.md). For the architecture story, see
-[Architecture](../product/architecture.md).
+[Architecture](../framework/architecture.md).
 
 ## Entry points (L5)
 
@@ -101,7 +101,7 @@ publication in subscriber context to prevent loops.
 
 | Member | Purpose |
 | --- | --- |
-| `CONTRACT_VERSION`, `FRAMEWORK_VERSION`, `SOURCE_*`, `PUBLISH_CHUNK_SIZE` | Event contract, product version, publishable-source values, and the 100-row publish batch size |
+| `CONTRACT_VERSION`, `FRAMEWORK_VERSION`, `SOURCE_*`, `PUBLISH_CHUNK_SIZE` | Event contract, Framework version, publishable-source values, and the 100-row publish batch size |
 | `publishCompletedSet(...)` | Publish the Set Run event after a deliberate run |
 | `publishRuleResults(...)` | Publish per-Rule Result events for Rules that enable publication |
 | `isRunPublicationEnabled(...)` | Whether the Check Set's `PublishUserRunEvent__c` allows publication |
@@ -153,4 +153,4 @@ extra click.
 ## Related
 
 - [Apex class reference](README.md)
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)

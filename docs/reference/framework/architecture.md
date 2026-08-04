@@ -246,7 +246,7 @@ Three version numbers move independently.
 | --- | --- | --- |
 | Response contract | Apex and Flow results, in `contractVersion` | `1.0` |
 | Event contract | The `ContractVersion__c` field on each platform event | `1.0` |
-| Product version | The release itself, reported as `FrameworkVersion__c` on events | Independent of both |
+| Framework version | The release itself, reported as `FrameworkVersion__c` on events | Independent of both |
 
 Additive fields may appear inside a contract version, so consumers must ignore fields they do not
 recognize. Removing or renaming a public operation, field, status, or reason value requires a new

@@ -162,4 +162,4 @@ Used when the Lightning card has no Check Set selected.
 ## Related
 
 - [Apex class reference](README.md)
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)

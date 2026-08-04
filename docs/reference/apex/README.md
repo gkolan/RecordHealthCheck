@@ -48,7 +48,7 @@ order never changes.
 ## Layers at a glance
 
 Higher levels call lower levels. Lower levels never call back up. This matches
-[Reference: Architecture § 5. Layers](../product/architecture.md#5-layers); the sections below use
+[Reference: Architecture § 5. Layers](../framework/architecture.md#5-layers); the sections below use
 the same L5→L1 numbering so you can move between the two pages without re-deriving the mapping.
 
 | Level | Layer | Classes (summary) |
@@ -194,7 +194,7 @@ readability, but all three live at **L2** in the architecture layer diagram.
 
 ## Related
 
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)
 - [Apex Rule contract](../evaluation/apex-rule-contract.md)
 - [Apex API](../../api/apex-api.md)
 - [Flow actions](../../integration/flow-actions.md)

@@ -422,7 +422,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 
 | Setup field | API&nbsp;name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Value |
 | --- | --- | --- |
-| **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Fails when a pending Advanced Approvals step is assigned to an inactive user. Confirm all product API names before activation. |
+| **Check Description** | [`CheckDescription__c`](../../metadata/fields-check-rule.md#check-description-checkdescription__c) | Fails when a pending Advanced Approvals step is assigned to an inactive user. Confirm all object and class API names before activation. |
 | **Failure Severity** | [`FailureSeverity__c`](../../metadata/fields-check-rule.md#failure-severity-failureseverity__c) | Critical |
 | **Message When Failed** | [`FailureMessage__c`](../../metadata/fields-check-rule.md#message-when-failed-failuremessage__c) | One or more pending approval steps are assigned to an inactive user. Reassign the approver before submitting for approval. |
 | **Message When Unable To Evaluate** | [`UnableToEvaluateMessage__c`](../../metadata/fields-check-rule.md#message-when-unable-to-evaluate-unabletoevaluatemessage__c) | Could not check approvers: confirm Advanced Approvals is installed and the object and field API names in Apex Parameters (JSON) are correct for this org. |
@@ -432,7 +432,7 @@ In **Setup → Custom Metadata Types → Record Health Check Rule → Manage Rec
 | **Action Label** | [`ActionLabel__c`](../../metadata/fields-check-rule.md#action-label-actionlabel__c) | Leave blank until the org's approval-management destination is verified. |
 | **Action URL** | [`ActionUrl__c`](../../metadata/fields-check-rule.md#action-url-actionurl__c) | Leave blank; managed-package pages and URLs can vary by installed version. |
 | **Evaluation Order** | [`EvaluationOrder__c`](../../metadata/fields-check-rule.md#evaluation-order-evaluationorder__c) | `40` |
-| **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Unchecked: activate only after confirming product API names and tests. |
+| **Active** | [`IsActive__c`](../../metadata/fields-check-rule.md#active-isactive__c) | Unchecked: activate only after confirming object and class API names and tests. |
 | **Publish User Result Event** | [`PublishUserResultEvent__c`](../../metadata/fields-check-rule.md#publish-user-result-event-publishuserresultevent__c) | Unchecked |
 
 > [!IMPORTANT]
@@ -534,7 +534,7 @@ Confirm `status`, Found, Expected, message, and any Reason Code.
 
 | Reason or symptom | What to verify |
 | --- | --- |
-| `OBJECT_NOT_FOUND` | Install the product or correct `approvalObject`; keep the Rule inactive. |
+| `OBJECT_NOT_FOUND` | Install the Framework or correct `approvalObject`; keep the Rule inactive. |
 | `INVALID_SOQL_TEMPLATE` | Correct field names, field types, and pending statuses in Object Manager. |
 | Too few inactive users | Check approval-row sharing, User visibility, and the status list. |
 | The Found list is truncated | The framework limits list previews for readability. Use authorized diagnostics or the approval records to review the complete assignment set. |

@@ -2,7 +2,7 @@
 
 > [!NOTE]
 > On this page, look up the exact definition of a Record Health Check term so you use the same
-> word the product, the API, and the rest of the documentation use.
+> word the Framework, the API, and the rest of the documentation use.
 
 Use this page when a term appears in a Rule, a result, an event, or another document and you need
 its exact meaning. Each entry links to the page that treats it in full.
@@ -44,7 +44,7 @@ external boundary: the Apex API, Flow actions, the Lightning component, and even
 a package namespace prefix (for example `rhc__Account_Readiness`) only when the record is owned by a
 package; a subscriber-owned record has no prefix. Callers must pass the exact value Salesforce
 returns rather than constructing or guessing it. See
-[Configuration identity](product/configuration-identity.md).
+[Configuration identity](framework/configuration-identity.md).
 
 ## Found / Expected
 
@@ -71,7 +71,7 @@ titles prefixed `Demo:`) as teaching starters for Account, Contact, and Opportun
 configuration** is the Check Sets and Rules an org creates to enforce its own business policy.
 Review or deactivate Demo Check Sets before production use rather than building on top of them; use
 different Developer Names and titles for org policy. See
-[Configuration identity: Keep Demo starter configuration explicit](product/configuration-identity.md#keep-demo-starter-configuration-explicit).
+[Configuration identity: Keep Demo starter configuration explicit](framework/configuration-identity.md#keep-demo-starter-configuration-explicit).
 
 ## Status vocabulary
 
@@ -100,12 +100,12 @@ evaluation time. Add a quoted `fallback` when the value might be blank, for exam
 A Check Set-level setting (`ShowDiagnostics__c`) that, combined with the
 `Record_Health_Check_View_Diagnostics` Custom Permission on the running user, reveals authorized
 troubleshooting detail on the card and in the browser console. Neither condition alone is enough.
-See [Security and data access](product/security.md#the-diagnostics-custom-permission) and
+See [Security and data access](framework/security.md#the-diagnostics-custom-permission) and
 [Troubleshoot with Show Diagnostics](../guides/troubleshoot-with-show-diagnostics.md).
 
 ## Related
 
-- [Reference: Architecture](product/architecture.md)
+- [Reference: Architecture](framework/architecture.md)
 - [Reason Codes](contracts/reason-codes.md)
 - [Metadata reference](../metadata/README.md)
 - [How Record Health Check works](../installation/01-how-it-works.md)

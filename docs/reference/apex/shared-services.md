@@ -240,4 +240,4 @@ points call `flush()` so ERROR platform events are not lost when
 ## Related
 
 - [Apex class reference](README.md)
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)

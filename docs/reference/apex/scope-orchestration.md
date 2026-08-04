@@ -27,11 +27,11 @@ Builds the approved set of readable record fields needed by a Rule before
 - **Gotcha:** candidate fields are resolved through describe metadata before entering dynamic SOQL;
   malformed, unavailable, and unreadable paths are ignored.
 
-**See also:** [Architecture § How one Rule is evaluated](../product/architecture.md#6-how-one-rule-is-evaluated)
+**See also:** [Architecture § How one Rule is evaluated](../framework/architecture.md#6-how-one-rule-is-evaluated)
 
 ---
 
 ## Related
 
 - [Apex class reference](README.md)
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)

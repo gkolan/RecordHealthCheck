@@ -10,17 +10,17 @@ contributing, you agree that your contributions are licensed under the
 
 ## Ways to contribute
 
-| I want to…                  | Do this                                                                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Report a bug**            | Open a [Bug report](https://github.com/gkolan/RecordHealthCheck/issues/new?template=bug_report.yml) issue                     |
-| **Request a feature**       | Open a [Feature request](https://github.com/gkolan/RecordHealthCheck/issues/new?template=feature_request.yml) issue           |
-| **Ask a question**          | Start a [GitHub Discussion](https://github.com/gkolan/RecordHealthCheck/discussions) (or open an issue if Discussions is off) |
-| **Report a security issue** | Report privately through the [Security policy](SECURITY.md) rather than a public issue                                        |
-| **Fix code or docs**        | Open a pull request (see below)                                                                                               |
+| I want to…                  | Do this                                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Report a bug**            | Open a [Bug report](https://github.com/gkolan/record-health-check/issues/new?template=bug_report.yml) issue                     |
+| **Request a feature**       | Open a [Feature request](https://github.com/gkolan/record-health-check/issues/new?template=feature_request.yml) issue           |
+| **Ask a question**          | Start a [GitHub Discussion](https://github.com/gkolan/record-health-check/discussions) (or open an issue if Discussions is off) |
+| **Report a security issue** | Report privately through the [Security policy](SECURITY.md) rather than a public issue                                          |
+| **Fix code or docs**        | Open a pull request (see below)                                                                                                 |
 
 ## Reporting a bug: step by step
 
-1. **Search first.** Check [existing issues](https://github.com/gkolan/RecordHealthCheck/issues)
+1. **Search first.** Check [existing issues](https://github.com/gkolan/record-health-check/issues)
    so you do not file a duplicate.
 2. Go to **Issues → New issue → Bug report**.
 3. Fill in every field. The most useful reports include:
@@ -85,13 +85,13 @@ feedback by pushing more commits to the same branch.
   validation, reason-code documentation, and both positive and misconfiguration
   tests. Prefer extending the shared modules over adding another parser or comparison operator copy.
 
-See [`docs/reference/product/architecture.md`](../docs/reference/product/architecture.md)
+See [`docs/reference/framework/architecture.md`](../docs/reference/framework/architecture.md)
 for the published Framework architecture and to find where things live.
 
 ## Integration-test fixtures
 
 [`integration-tests/`](../integration-tests/) holds CI-only fixture metadata and is **not** part of
-the product install. Keep it out of `sfdx-project.json` `packageDirectories`. The release
+the Framework install. Keep it out of `sfdx-project.json` `packageDirectories`. The release
 gate deploys it with an explicit `--source-dir integration-tests` after Core. See
 [`integration-tests/README.md`](../integration-tests/README.md).
 
@@ -104,6 +104,6 @@ Docs must match the code at the same commit. Follow these authoring standards:
 - **Code blocks**: introduce every block with a sentence ending in a colon; use fenced blocks with a language identifier (`bash`, `apex`, `sql`, `json`).
 - **No em-dashes**: replace each em-dash by hand with a period, comma, or parentheses, never a blanket swap to a colon.
 
-The public [architecture document](../docs/reference/product/architecture.md) is the
+The public [architecture document](../docs/reference/framework/architecture.md) is the
 contributor-facing source of truth for Framework architecture and where code and docs live.
 Maintainer release steps are in [`RELEASING.md`](RELEASING.md).

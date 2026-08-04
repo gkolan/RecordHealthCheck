@@ -21,7 +21,7 @@ permission to edit Lightning record pages.
 >
 > Package-owned Custom Metadata and Apex use the `rhc` namespace. Always pass the exact
 > `QualifiedApiName` Salesforce returns (see
-> [Configuration identity](../reference/product/configuration-identity.md)).
+> [Configuration identity](../reference/framework/configuration-identity.md)).
 
 > [!NOTE]
 > **Already installed?** Use [Revalidate an installation](04-upgrading.md) to protect configuration,
@@ -37,7 +37,7 @@ They do **not** create Acme demo Account data. Those deterministic records come 
 [Try the demo](05-create-rhc-scratch-org.md).
 
 When using source deploy, always use the manifest (or an explicit `--source-dir force-app`). A bare
-`sf project deploy start` can pull more than product metadata; keep `integration-tests/` out of
+`sf project deploy start` can pull more than Framework metadata; keep `integration-tests/` out of
 sandbox installs. That tree is CI fixture metadata. See
 [`integration-tests/README.md`](../../integration-tests/README.md).
 
@@ -83,7 +83,7 @@ ORDER BY QualifiedApiName
 
 ### Option B: Source deploy (contributor / scratch)
 
-[![Deploy to Sandbox](https://img.shields.io/badge/Deploy%20to-Sandbox-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy/gkolan/RecordHealthCheck)
+[![Deploy to Sandbox](https://img.shields.io/badge/Deploy%20to-Sandbox-00A1E0?logo=salesforce&logoColor=white)](https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy/gkolan/record-health-check)
 
 The Deploy button opens Salesforce authentication and deploys the default package directory
 (`force-app`) only. Prefer Option A for production and long-lived subscriber orgs.
@@ -91,7 +91,7 @@ The Deploy button opens Salesforce authentication and deploys the default packag
 From a clone of this repository:
 
 ```bash
-git clone https://github.com/gkolan/RecordHealthCheck.git
+git clone https://github.com/gkolan/record-health-check.git
 cd RecordHealthCheck
 sf project deploy start --manifest manifest/package.xml --target-org rhc-sandbox --wait 30
 ```
@@ -159,4 +159,4 @@ If the card does not appear or a Rule will not evaluate, see
 - [Configure Check Sets and Rules](../guides/configure-check-sets-and-rules.md): configure every field
 - [How It Works](01-how-it-works.md): learn the result terms and codes
 - [Uninstall and rollback](06-uninstall-and-rollback.md): remove the card, subscribers, and package when needed
-- [Security and data access](../reference/product/security.md): review the trust model before production
+- [Security and data access](../reference/framework/security.md): review the trust model before production

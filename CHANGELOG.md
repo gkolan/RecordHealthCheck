@@ -49,7 +49,7 @@ interfaces and product-generation terminology.
 - The package manifest and Permission Sets are checked against shipped metadata.
 - Apex tests use the shared TestDataFactory for Salesforce record creation.
 - Salesforce Code Analyzer, ESLint, the SLDS linter, formatting, documentation structure, links,
-  field limits, query shapes, product language, Apex coverage, and deployment validation are release
+  field limits, query shapes, Framework version language, Apex coverage, and deployment validation are release
   gates.
 
 For installation and verification, start with
@@ -72,8 +72,8 @@ For installation and verification, start with
 - Install documentation states the namespaced unlocked package as the supported subscriber path,
   with source deploy reserved for contribution and scratch-org workflows.
 - Configuration identity guidance lives under
-  [Configuration identity](docs/reference/product/configuration-identity.md).
-- Technical references are grouped under `docs/reference/{product,evaluation,contracts,apex}/`
+  [Configuration identity](docs/reference/framework/configuration-identity.md).
+- Technical references are grouped under `docs/reference/{framework,evaluation,contracts,apex}/`
   instead of a flat `reference-*.md` list. Old GitHub blob URLs to the previous filenames will not
   redirect.
 

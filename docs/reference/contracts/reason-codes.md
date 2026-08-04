@@ -174,4 +174,4 @@ These often appear on the card chrome rather than a single Rule row:
 - [Flow actions](../../integration/flow-actions.md)
 - [Lifecycle events](../../integration/lifecycle-events.md)
 - [Troubleshoot with Show Diagnostics](../../guides/troubleshoot-with-show-diagnostics.md)
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)

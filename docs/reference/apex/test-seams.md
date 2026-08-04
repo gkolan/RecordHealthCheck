@@ -46,6 +46,6 @@ so every inline-suppressed finding remains visible in the advisory evidence.
 
 ## Related
 
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)
 - [Apex class reference](README.md)
 - [Development documentation](../../README.md)

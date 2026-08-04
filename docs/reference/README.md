@@ -15,12 +15,12 @@ guided configuration path, begin with the [documentation home](../README.md) or
 
 | Your question | Reference | What it provides |
 | --- | --- | --- |
-| How is the Framework structured end to end? | [Architecture](product/architecture.md) | Principles, layers, Rule path, entry points, limits, and ownership overview |
-| How does security and data access work? | [Security and data access](product/security.md) | USER_MODE, Permission Sets, diagnostics, persistence, events, plugins, and fix links |
-| How do Check Sets, Rules, and events relate? | [Data model](product/data-model.md) | ERD and relationship summary for configuration and lifecycle events |
-| Which editions and experiences are supported? | [Compatibility](product/compatibility.md) | Editions, Lightning Experience, API version, and known limits |
-| Are labels and messages translation-ready? | [Localization](product/localization.md) | Translation Workbench scope, display formats, and comparison values |
-| How do Qualified API Names and package boundaries work? | [Configuration identity](product/configuration-identity.md) | Exact identity contract, `rhc` namespace, and Demo vs subscriber metadata |
+| How is the Framework structured end to end? | [Architecture](framework/architecture.md) | Principles, layers, Rule path, entry points, limits, and ownership overview |
+| How does security and data access work? | [Security and data access](framework/security.md) | USER_MODE, Permission Sets, diagnostics, persistence, events, plugins, and fix links |
+| How do Check Sets, Rules, and events relate? | [Data model](framework/data-model.md) | ERD and relationship summary for configuration and lifecycle events |
+| Which editions and experiences are supported? | [Compatibility](framework/compatibility.md) | Editions, Lightning Experience, API version, and known limits |
+| Are labels and messages translation-ready? | [Localization](framework/localization.md) | Translation Workbench scope, display formats, and comparison values |
+| How do Qualified API Names and package boundaries work? | [Configuration identity](framework/configuration-identity.md) | Exact identity contract, `rhc` namespace, and Demo vs subscriber metadata |
 | What do Framework terms mean? | [Glossary](glossary.md) | Check Set, Rule, Evaluation Type, Reason Code, QualifiedApiName, and outcome vocabulary |
 | What does this stable result code mean? | [Reason Codes](contracts/reason-codes.md) | Status meanings and the first useful investigation for each code |
 | Which merge-token namespaces and limits apply? | [Merge tokens](contracts/merge-tokens.md) | Strict syntax, availability, fallback behavior, and limits |
@@ -51,7 +51,7 @@ outcomes, limits, security behavior, or failure paths.
 | Flow and Apex Platform Event subscribers | [Platform Event subscriptions](../platform-events/README.md) |
 | Plugin verification harness | [Plugin verification](apex/plugin-verification.md) |
 | Test-seam policy | [Test seams](apex/test-seams.md) |
-| Folder map for product, evaluation, contracts, and Apex | See the four directories under `docs/reference/`. Writing a Rule plugin uses `evaluation/apex-rule-contract.md`; maintaining Framework classes uses `apex/` |
+| Folder map for framework, evaluation, contracts, and Apex | See the four directories under `docs/reference/`. Writing a Rule plugin uses `evaluation/apex-rule-contract.md`; maintaining Framework classes uses `apex/` |
 
 ## Related
 

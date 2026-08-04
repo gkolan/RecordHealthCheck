@@ -146,4 +146,4 @@ Documentation example of a merge token with a quoted fallback attribute: `{!reco
 ## Related
 
 - [Apex class reference](README.md)
-- [Architecture](../product/architecture.md)
+- [Architecture](../framework/architecture.md)
