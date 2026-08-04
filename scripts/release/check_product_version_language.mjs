@@ -50,10 +50,15 @@ function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
     const entryPath = path.join(directory, entry.name);
-    const relativePath = path.relative(root, entryPath).split(path.sep).join("/");
+    const relativePath = path
+      .relative(root, entryPath)
+      .split(path.sep)
+      .join("/");
     if (
       ignoredPathPrefixes.some(
-        (prefix) => relativePath === prefix.slice(0, -1) || relativePath.startsWith(prefix)
+        (prefix) =>
+          relativePath === prefix.slice(0, -1) ||
+          relativePath.startsWith(prefix)
       )
     ) {
       continue;
