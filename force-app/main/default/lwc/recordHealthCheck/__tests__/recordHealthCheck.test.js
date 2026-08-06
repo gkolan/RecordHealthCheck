@@ -220,6 +220,53 @@ describe("c-record-health-check — adaptive design theme", () => {
 
     expect(element.shadowRoot.querySelector(".rhc-theme")).not.toBeNull();
   });
+
+  it("adds the SLDS 2 modifier when a Cosmos color-scheme class is present", () => {
+    document.body.classList.add("slds-color-scheme--light");
+    element = createComponent();
+    document.body.appendChild(element);
+
+    const theme = element.shadowRoot.querySelector(".rhc-theme");
+    expect(theme).not.toBeNull();
+    expect(theme.classList.contains("rhc-theme_slds2")).toBe(true);
+
+    document.body.classList.remove("slds-color-scheme--light");
+  });
+
+  it("adds the SLDS 2 modifier when the Cosmos surface-1 hook is defined", () => {
+    document.body.classList.remove(
+      "slds-color-scheme--light",
+      "slds-color-scheme--dark",
+      "slds-color-scheme--system"
+    );
+    document.documentElement.style.setProperty(
+      "--slds-g-color-surface-1",
+      "#ffffff"
+    );
+    element = createComponent();
+    document.body.appendChild(element);
+
+    const theme = element.shadowRoot.querySelector(".rhc-theme");
+    expect(theme).not.toBeNull();
+    expect(theme.classList.contains("rhc-theme_slds2")).toBe(true);
+
+    document.documentElement.style.removeProperty("--slds-g-color-surface-1");
+  });
+
+  it("keeps SLDS 1 chrome when no Cosmos signals are present", () => {
+    document.body.classList.remove(
+      "slds-color-scheme--light",
+      "slds-color-scheme--dark",
+      "slds-color-scheme--system"
+    );
+    document.documentElement.style.removeProperty("--slds-g-color-surface-1");
+    element = createComponent();
+    document.body.appendChild(element);
+
+    const theme = element.shadowRoot.querySelector(".rhc-theme");
+    expect(theme).not.toBeNull();
+    expect(theme.classList.contains("rhc-theme_slds2")).toBe(false);
+  });
 });
 
 describe("c-record-health-check — load and error states", () => {
@@ -2729,7 +2776,7 @@ describe("buildSummaryStats — label pluralization", () => {
     expect(stat.tooltip).toBe("3 Passed: A, B, C");
   });
 
-  it("sorts category summaries by label and leaves the non-category row unlabeled and last", () => {
+  it("sorts category summaries by label and labels the non-category row Other/Others last", () => {
     const checks = [
       {
         ...resolved("Risk pass", "PASS", null),
@@ -2758,15 +2805,41 @@ describe("buildSummaryStats — label pluralization", () => {
     expect(groups.map((group) => group.label)).toEqual([
       "Completeness",
       "Risk",
-      null
+      "Other"
     ]);
-    expect(groups[2].assistiveLabel).toBe("Checks without a category");
-    expect(groups[2].cssClass).toContain("unlabeled");
+    expect(groups[2].key).toBe("uncategorized");
+    expect(groups[2].cssClass).toContain("labeled");
     expect(groups[0].stats.map((stat) => stat.label)).toEqual([
       "1 Passed",
       "1 Warning"
     ]);
     expect(groups[0].stats[0].tooltip).toContain("Completeness pass");
+  });
+
+  it("uses Others when more than one check has no category", () => {
+    const groups = buildSummaryGroups([
+      {
+        ...resolved("Categorized", "PASS", null),
+        category: "RISK",
+        categoryLabel: "Risk"
+      },
+      {
+        ...resolved("Uncategorized A", "PASS", null),
+        category: null,
+        categoryLabel: null
+      },
+      {
+        ...resolved("Uncategorized B", "SKIPPED", null),
+        category: null,
+        categoryLabel: null
+      }
+    ]);
+
+    expect(groups.map((group) => group.label)).toEqual(["Risk", "Others"]);
+    expect(groups[1].stats.map((stat) => stat.label)).toEqual([
+      "1 Passed",
+      "1 Skipped"
+    ]);
   });
 
   it("keeps the existing ungrouped summary when no resolved Rule has a category", () => {
