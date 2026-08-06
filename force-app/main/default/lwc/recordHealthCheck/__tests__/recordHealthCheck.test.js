@@ -267,6 +267,49 @@ describe("c-record-health-check — adaptive design theme", () => {
     expect(theme).not.toBeNull();
     expect(theme.classList.contains("rhc-theme_slds2")).toBe(false);
   });
+
+  it("adds the SLDS 2 modifier from a color-scheme class on the document element", () => {
+    document.body.classList.remove(
+      "slds-color-scheme--light",
+      "slds-color-scheme--dark",
+      "slds-color-scheme--system"
+    );
+    document.documentElement.classList.add("slds-color-scheme--dark");
+    element = createComponent();
+    document.body.appendChild(element);
+
+    expect(
+      element.shadowRoot
+        .querySelector(".rhc-theme")
+        .classList.contains("rhc-theme_slds2")
+    ).toBe(true);
+
+    document.documentElement.classList.remove("slds-color-scheme--dark");
+  });
+
+  it("keeps SLDS 1 chrome when theme token detection throws", () => {
+    document.body.classList.remove(
+      "slds-color-scheme--light",
+      "slds-color-scheme--dark",
+      "slds-color-scheme--system"
+    );
+    document.documentElement.style.removeProperty("--slds-g-color-surface-1");
+    const originalGetComputedStyle = window.getComputedStyle;
+    window.getComputedStyle = () => {
+      throw new Error("style unavailable");
+    };
+    try {
+      element = createComponent();
+      document.body.appendChild(element);
+      expect(
+        element.shadowRoot
+          .querySelector(".rhc-theme")
+          .classList.contains("rhc-theme_slds2")
+      ).toBe(false);
+    } finally {
+      window.getComputedStyle = originalGetComputedStyle;
+    }
+  });
 });
 
 describe("c-record-health-check — load and error states", () => {
@@ -879,6 +922,41 @@ describe("c-record-health-check — run orchestration", () => {
       "2 inactive Rules omitted: Retired Owner Check, Legacy Phone Check"
     );
     expect(stats[0].getAttribute("tabindex")).toBe("0");
+  });
+
+  it("puts inactive rules under Other when every visible Rule already has a category", async () => {
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        triggerMode: "Automatic",
+        showDiagnostics: true,
+        inactiveRuleCount: 1,
+        inactiveRuleLabels: ["Retired Owner Check"],
+        checks: [
+          {
+            developerName: "Check_A",
+            label: "Check A",
+            description: "First check",
+            priority: 1,
+            dependsOnRuleDeveloperName: null,
+            category: "COMPLETENESS",
+            categoryLabel: "Completeness"
+          }
+        ]
+      })
+    );
+    evaluateCheck.mockResolvedValue(PASS_RESULT("Check_A"));
+    await appendAndLoad(element);
+    jest.runOnlyPendingTimers();
+    await flushPromises();
+    await flushPromises();
+
+    const groups = [...element.shadowRoot.querySelectorAll(".rhc-stats-group")];
+    const other = groups.find((group) => group.textContent.includes("Other"));
+    expect(other).toBeTruthy();
+    expect(other.querySelector(".rhc-stat--inactive")).not.toBeNull();
+    expect(other.querySelector(".rhc-stat--inactive").textContent).toContain(
+      "1 Inactive"
+    );
   });
 
   it("summarizes undisclosed inactive rule names in the pill tooltip", async () => {
@@ -2022,6 +2100,50 @@ describe("c-record-health-check — enterprise boundary and concurrency", () => 
     expect(group).toHaveBeenCalledWith("[RHC] Full check details (1)");
     group.mockRestore();
     log.mockRestore();
+    table.mockRestore();
+    groupEnd.mockRestore();
+  });
+
+  it("warns when a diagnostics check carries a server message or restricted detail", async () => {
+    const group = jest.spyOn(console, "group").mockImplementation(() => {});
+    const groupCollapsed = jest
+      .spyOn(console, "groupCollapsed")
+      .mockImplementation(() => {});
+    const log = jest.spyOn(console, "log").mockImplementation(() => {});
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const table = jest.spyOn(console, "table").mockImplementation(() => {});
+    const groupEnd = jest
+      .spyOn(console, "groupEnd")
+      .mockImplementation(() => {});
+    getCheckDefinitions.mockResolvedValue(
+      makeDefinitions({
+        showDiagnostics: true,
+        checks: [makeDefinitions().checks[0]]
+      })
+    );
+    evaluateCheck.mockResolvedValue({
+      ...PASS_RESULT("Check_A"),
+      adminDetail: {
+        message: "Formula timed out on the server",
+        containsRestrictedDetail: true
+      }
+    });
+    await appendAndLoad(element);
+    await clickRun(element);
+    await flushPromises();
+    await flushPromises();
+
+    expect(warn).toHaveBeenCalledWith(
+      "Server diagnostic",
+      "Formula timed out on the server"
+    );
+    expect(warn).toHaveBeenCalledWith(
+      "This check contains restricted diagnostic detail."
+    );
+    group.mockRestore();
+    groupCollapsed.mockRestore();
+    log.mockRestore();
+    warn.mockRestore();
     table.mockRestore();
     groupEnd.mockRestore();
   });
