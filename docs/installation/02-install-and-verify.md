@@ -179,7 +179,7 @@ user who installed Record Health Check.
 | The installation reports an Apex or metadata permission error | Confirm that the authenticated user can install unlocked packages. |
 | The card has no Check Set to select | Select an active Demo Check Set whose Object matches the Lightning record page object, or create and activate your own Check Set. |
 | A user cannot see or run the card | Assign `rhc__Record_Health_Check_User`, then review record, object, and field access. |
-| The Lightning component is under **Custom**, not a package | The org was not installed from the promoted package. Reinstall with the stable `04t` in a clean org. |
+| The Lightning component is under **Custom**, not **Custom - Managed** | Expected. Record Health Check is an *unlocked* package, so its components install as `installedEditable` and App Builder lists them under **Custom**. **Custom - Managed** holds managed packages only, and stays empty unless the org has one. To confirm the component came from the package, check Setup - Installed Packages for `Record Health Check` (`rhc`). |
 | Install fails with `Apex action method 'RecordHealthCheckController…' with public access modifier must be in the same package with caller 'markup://rhc:recordHealthCheck'` | The org already contains unpackaged Framework source, so the packaged component resolves against those local classes instead of the package. Install into an org that has never had this repository's `force-app` deployed to it. |
 | A Rule shows Unable to Check | Review its Reason Code, Rule configuration, and the running user's Salesforce access. |
 | A Rule shows System Error | Review the Reason Code, Apex plugin if any, Salesforce logs, and Show Diagnostics. |

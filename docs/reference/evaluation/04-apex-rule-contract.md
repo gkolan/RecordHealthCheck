@@ -15,7 +15,8 @@ global interface RecordHealthCheckRule {
 }
 ```
 
-Use a `global with sharing` class for a plugin that must work from the managed package.
+Use a `global with sharing` class for a plugin that must be callable across the `rhc` package
+boundary.
 Run its SOQL with user access. The Framework validates returned keys, statuses, reason
 codes, and forbidden writes, but the plugin remains responsible for its own data access.
 
