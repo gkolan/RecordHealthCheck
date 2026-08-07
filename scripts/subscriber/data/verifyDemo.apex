@@ -52,13 +52,13 @@ for (String key : expectedCounts.keySet()) {
 
 String demoCheckSetQualifiedApiName = [
   SELECT QualifiedApiName
-  FROM Record_Health_Check_Set__mdt
+  FROM rhc__Record_Health_Check_Set__mdt
   WHERE DeveloperName = 'Example_Account_Relationship_Risk'
   LIMIT 1
 ]
 .QualifiedApiName;
-RecordHealthCheckResponse response = RecordHealthCheck.evaluate(
-  RecordHealthCheckRequest.forCheckSet(
+rhc.RecordHealthCheckResponse response = rhc.RecordHealthCheck.evaluate(
+  rhc.RecordHealthCheckRequest.forCheckSet(
     demoCheckSetQualifiedApiName,
     demoAccount.Id
   )
@@ -97,9 +97,9 @@ Map<String, String> expectedStatuses = new Map<String, String>{
 };
 Map<String, String> expectedQualifiedStatuses = new Map<String, String>();
 Set<String> expectedDeveloperNames = expectedStatuses.keySet();
-for (Record_Health_Check_Rule__mdt rule : [
+for (rhc__Record_Health_Check_Rule__mdt rule : [
   SELECT DeveloperName, QualifiedApiName
-  FROM Record_Health_Check_Rule__mdt
+  FROM rhc__Record_Health_Check_Rule__mdt
   WHERE DeveloperName IN :expectedDeveloperNames
 ]) {
   expectedQualifiedStatuses.put(
@@ -110,7 +110,7 @@ for (Record_Health_Check_Rule__mdt rule : [
 if (expectedQualifiedStatuses.size() != expectedStatuses.size()) {
   throw new StringException('The demo Rule metadata is incomplete.');
 }
-for (RecordHealthCheckResultItem item : response.results) {
+for (rhc.RecordHealthCheckResultItem item : response.results) {
   String ruleName = item.evaluation.ruleQualifiedApiName;
   if (!expectedQualifiedStatuses.containsKey(ruleName)) {
     throw new StringException('Unexpected Rule result: ' + ruleName + '.');
