@@ -8,6 +8,15 @@ Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before participating. By
 contributing, you agree that your contributions are licensed under the
 [Apache License, Version 2.0](../LICENSE).
 
+Subscribers should install the promoted unlocked package (see the root README install link and
+[Install and verify](../docs/installation/02-install-and-verify.md)). Contributors deploy unpackaged
+Framework source for development; do not point new users at GitHub source deploy as the primary install
+path.
+
+Contributors changing Framework source use
+[Source development](../docs/contributing/source-development.md) (`npm run dev:setup`), not the
+subscriber install path.
+
 ## Ways to contribute
 
 | I want to…                  | Do this                                                                                                                         |
@@ -73,8 +82,8 @@ feedback by pushing more commits to the same branch.
 - **Tests are required** for every behavior change: both a positive test and a
   misconfiguration/negative test where applicable.
 - **Coverage thresholds** are enforced by `coverageThreshold` in
-  [`jest.config.js`](../jest.config.js). `npm run test:unit:coverage` exits non-zero if
-  they are not met.
+  [`packages/record-health-check/jest.config.js`](../packages/record-health-check/jest.config.js).
+  `npm run test:unit:coverage` exits non-zero if they are not met.
 - **Apex changes** must also pass the project Apex test suite and a validation
   deployment (`sf project deploy validate`) with `RunLocalTests` in a clean
   scratch org.
@@ -92,11 +101,11 @@ for the published Framework architecture and to find where things live.
 
 When changing Demo `Example_` Check Sets/Rules or any public identity boundary:
 
-1. Change the record in `force-app/main/default/customMetadata`.
-2. Copy the same record into `integration-tests/main/default/customMetadata` (identical XML).
+1. Change the record in `packages/record-health-check/force-app/main/default/customMetadata`.
+2. Copy the same record into `packages/record-health-check/integration-tests/main/default/customMetadata` (identical XML).
 3. Keep Check Set `CardTitle__c` values prefixed with `Demo:`.
-4. Update `manifest/package.xml` CustomMetadata members when members are listed explicitly.
-5. Deploy `force-app` alone to a clean org before broader fixture deployment.
+4. Update `packages/record-health-check/manifest/package.xml` CustomMetadata members when members are listed explicitly.
+5. Deploy `force-app` alone to a clean org before broader fixture deployment (from `packages/record-health-check/`).
 6. Run `npm run check:configuration-identity` and `npm run check:package-boundary`.
 
 Every public input must accept the exact Custom Metadata `QualifiedApiName` Salesforce returns. Do
@@ -112,10 +121,23 @@ updating the architecture baseline. The full policy lives in
 
 ## Integration-test sample data
 
-[`integration-tests/`](../integration-tests/) holds CI-only sample metadata and is **not** part of
-the Framework install. Keep it out of `sfdx-project.json` `packageDirectories`. The release
-gate deploys it with an explicit `--source-dir integration-tests` after Core. See
-[`integration-tests/README.md`](../integration-tests/README.md).
+[`packages/record-health-check/integration-tests/`](../packages/record-health-check/integration-tests/) holds CI-only sample metadata and is **not** part of
+the Framework install. Keep it out of the root `sfdx-project.json` `packageDirectories`. The release
+gate deploys it with an explicit `--source-dir packages/record-health-check/integration-tests` after Core. See
+[`packages/record-health-check/integration-tests/README.md`](../packages/record-health-check/integration-tests/README.md).
+
+## Apex test ownership
+
+| Layer                | Location                                                   | Who maintains it          |
+| -------------------- | ---------------------------------------------------------- | ------------------------- |
+| Package unit tests   | `packages/record-health-check/force-app` `@IsTest` classes | This repository           |
+| Integration fixtures | `packages/record-health-check/integration-tests/`          | This repository (CI only) |
+| Customer tests       | Subscriber repository                                      | The subscriber            |
+
+Package tests must use `RecordHealthCheckTestDataFactory`, schema tokens, and queried
+`QualifiedApiName` values. Do not add hardcoded `rhc__` string literals to package Apex under
+`packages/record-health-check/force-app`.
+Run `npm run check:test-data-factory` before opening a PR that touches Apex tests.
 
 ## Documentation changes
 

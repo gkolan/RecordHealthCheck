@@ -30,9 +30,11 @@ Flow paths.
 
 ### Runnable demo sample
 
-For a demonstration scratch org, deploy `force-app` followed by `integration-tests`, then run:
+For a contributor demonstration org with integration fixtures, use `npm run dev:setup`, then run:
 
 ```bash
+cd packages/record-health-check
+
 sf apex run \
   --file integration-tests/scripts/demo_apex_api.apex \
   --target-org my-scratch-org
@@ -40,6 +42,9 @@ sf apex run \
   --file integration-tests/scripts/demo_flow_actions.apex \
   --target-org my-scratch-org
 ```
+
+For a subscriber demo org that installed the promoted package, use `npm run setup` instead. That path
+does not deploy `integration-tests` fixtures.
 
 The first script creates a reusable **Record Health Check API Demo** Account. The second invokes the
 same two invocable methods Flow Builder calls and prints their Status, counts, Reason Code, and

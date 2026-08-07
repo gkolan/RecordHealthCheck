@@ -2,16 +2,13 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { paths } from "../lib/paths.mjs";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../.."
-);
-const coreDirectory = path.join(root, "force-app/main/default/customMetadata");
+const root = paths.repoRoot;
+const coreDirectory = path.join(paths.forceApp, "main/default/customMetadata");
 const fixtureDirectory = path.join(
-  root,
-  "integration-tests/main/default/customMetadata"
+  paths.integrationTests,
+  "main/default/customMetadata"
 );
 const examplePattern =
   /^Record_Health_Check_(?:Set|Rule)__mdt\.Example_.+\.md-meta\.xml$/;

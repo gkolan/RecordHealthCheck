@@ -14,6 +14,16 @@
     "url": "https://github.com/gkolan/record-health-check/issues"
   },
   "scripts": {
+    "setup": "node scripts/subscriber/setup.mjs",
+    "subscriber:setup": "node scripts/subscriber/setup.mjs",
+    "subscriber:test": "node scripts/subscriber/test.mjs",
+    "subscriber:upgrade": "node scripts/subscriber/upgrade.mjs",
+    "dev:setup": "node scripts/contributor/setup.mjs",
+    "dev:test": "node scripts/contributor/test.mjs",
+    "dev:test-no-namespace": "node scripts/contributor/test-no-namespace.mjs",
+    "package:create": "node scripts/release/create-package-version.mjs",
+    "package:verify": "node scripts/release/verify-package-version.mjs",
+    "package:promote": "node scripts/release/promote-package-version.mjs",
     "lint": "eslint --no-error-on-unmatched-pattern **/{aura,lwc}/**/*.js",
     "lint:slds": "node scripts/release/check_slds.mjs",
     "check:namespaced-tokens": "python3 scripts/release/check_namespaced_tokens.py check",
@@ -23,6 +33,7 @@
     "check:apex-surface": "node scripts/release/check_apex_surface.mjs",
     "check:code-analyzer-output-paths": "node scripts/release/check_code_analyzer_output_paths.mjs",
     "check:product-version-language": "node scripts/release/check_product_version_language.mjs",
+    "check:distribution-boundary": "node scripts/release/check_distribution_boundary.mjs",
     "check:docs": "node scripts/release/check_docs.mjs && node scripts/release/audit_docs_quality.mjs --check",
     "check:field-limits": "python3 scripts/release/generate_field_size_registry.py --check",
     "check:manifest": "node scripts/release/check_manifest_coverage.mjs",
@@ -36,12 +47,12 @@
     "fix:apex-braces": "node scripts/release/add_apex_braces.mjs",
     "audit:docs": "node scripts/release/audit_docs_quality.mjs",
     "test": "npm run test:unit",
-    "test:unit": "sfdx-lwc-jest",
-    "test:unit:watch": "sfdx-lwc-jest --watch",
-    "test:unit:debug": "sfdx-lwc-jest --debug",
-    "test:unit:coverage": "sfdx-lwc-jest --coverage -- --no-cache",
-    "prettier": "prettier --write --no-error-on-unmatched-pattern \"force-app/**/*.{cls,css,html,js,trigger,xml}\" \"integration-tests/**/*.{cls,css,html,js,trigger,xml}\" \"scripts/**/*.{apex,js,json,md,mjs,xml,yaml,yml}\" \"manifest/**/*.xml\" \"config/**/*.json\" \"*.{js,json,md,xml,yaml,yml}\" \".github/**/*.{md,yaml,yml}\"",
-    "prettier:verify": "prettier --check --no-error-on-unmatched-pattern \"force-app/**/*.{cls,css,html,js,trigger,xml}\" \"integration-tests/**/*.{cls,css,html,js,trigger,xml}\" \"scripts/**/*.{apex,js,json,md,mjs,xml,yaml,yml}\" \"manifest/**/*.xml\" \"config/**/*.json\" \"*.{js,json,md,xml,yaml,yml}\" \".github/**/*.{md,yaml,yml}\"",
+    "test:unit": "node scripts/run-package-jest.mjs",
+    "test:unit:watch": "node scripts/run-package-jest.mjs --watch",
+    "test:unit:debug": "node scripts/run-package-jest.mjs --debug",
+    "test:unit:coverage": "node scripts/run-package-jest.mjs --coverage -- --no-cache",
+    "prettier": "prettier --write --no-error-on-unmatched-pattern \"packages/record-health-check/force-app/**/*.{cls,css,html,js,trigger,xml}\" \"packages/record-health-check/integration-tests/**/*.{cls,css,html,js,trigger,xml}\" \"subscriber-app/**/*.{cls,css,html,js,trigger,xml}\" \"scripts/**/*.{apex,js,json,md,mjs,xml,yaml,yml}\" \"packages/record-health-check/manifest/**/*.xml\" \"config/**/*.json\" \"*.{js,json,md,xml,yaml,yml}\" \".github/**/*.{md,yaml,yml}\"",
+    "prettier:verify": "prettier --check --no-error-on-unmatched-pattern \"packages/record-health-check/force-app/**/*.{cls,css,html,js,trigger,xml}\" \"packages/record-health-check/integration-tests/**/*.{cls,css,html,js,trigger,xml}\" \"subscriber-app/**/*.{cls,css,html,js,trigger,xml}\" \"scripts/**/*.{apex,js,json,md,mjs,xml,yaml,yml}\" \"packages/record-health-check/manifest/**/*.xml\" \"config/**/*.json\" \"*.{js,json,md,xml,yaml,yml}\" \".github/**/*.{md,yaml,yml}\"",
     "prepare": "husky || true",
     "precommit": "lint-staged"
   },
@@ -69,7 +80,7 @@
       "eslint"
     ],
     "**/lwc/**": [
-      "sfdx-lwc-jest -- --bail --findRelatedTests --passWithNoTests"
+      "node scripts/run-package-jest.mjs -- --bail --findRelatedTests --passWithNoTests"
     ]
   }
 }

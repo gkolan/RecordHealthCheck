@@ -29,8 +29,15 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = (
-    ROOT / "force-app/main/default/customMetadata",
-    ROOT / "integration-tests/main/default/customMetadata",
+    (
+        "force-app",
+        ROOT / "packages/record-health-check/force-app/main/default/customMetadata",
+    ),
+    (
+        "integration-tests",
+        ROOT
+        / "packages/record-health-check/integration-tests/main/default/customMetadata",
+    ),
 )
 OUTPUT = ROOT / "scripts/release/generated/bulk-query-shape-inventory.md"
 JSON_OUTPUT = ROOT / "scripts/release/generated/bulk-query-shape-inventory.json"
@@ -182,11 +189,10 @@ def classify(soql):
 
 def collect():
     rows = []
-    for source in SOURCES:
+    for package, source in SOURCES:
         for path in sorted(source.glob("Record_Health_Check_Rule__mdt.*.md-meta.xml")):
             root = ET.parse(path).getroot()
             developer_name = path.name.split("__mdt.")[1][: -len(".md-meta.xml")]
-            package = path.relative_to(ROOT).parts[0]
             for values in root.findall("m:values", NS):
                 field_node = values.find("m:field", NS)
                 value_node = values.find("m:value", NS)
@@ -357,9 +363,12 @@ def main():
 
     if args.check:
         stale = []
-        if not OUTPUT.exists() or OUTPUT.read_text() != markdown:
+        if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != markdown:
             stale.append(OUTPUT.relative_to(ROOT))
-        if not JSON_OUTPUT.exists() or JSON_OUTPUT.read_text() != payload:
+        if (
+            not JSON_OUTPUT.exists()
+            or JSON_OUTPUT.read_text(encoding="utf-8") != payload
+        ):
             stale.append(JSON_OUTPUT.relative_to(ROOT))
         for row in unclassified:
             print(
@@ -382,8 +391,8 @@ def main():
         return 1 if (unclassified or stale) else 0
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(markdown)
-    JSON_OUTPUT.write_text(payload)
+    OUTPUT.write_text(markdown, encoding="utf-8", newline="\n")
+    JSON_OUTPUT.write_text(payload, encoding="utf-8", newline="\n")
     print(f"{len(rows)} templates classified -> {OUTPUT.relative_to(ROOT)}")
     counts = {}
     for row in rows:

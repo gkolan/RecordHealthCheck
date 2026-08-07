@@ -8,9 +8,9 @@
 .localdevserver/
 deploy-options.json
 /config/*
-# Scratch-org definitions the published setup scripts depend on.
-!/config/project-scratch-def.json
-!/config/display-formats-scratch-def.json
+# Published install / subscriber setup inputs (scratch defs live under the package).
+!/config/package-releases.json
+!/config/subscriber-scratch-def.json
 .claude/
 .playwright-mcp/
 /AGENTS.md
@@ -94,6 +94,17 @@ scripts/*
 # Release-gate scripts used by package.json and CI are public and tracked.
 !scripts/release/
 !scripts/release/**
+# Shared path helpers for subscriber / contributor / package commands.
+!scripts/lib/
+!scripts/lib/**
+# Subscriber scratch-org install / upgrade / smoke (npm run subscriber:*).
+!scripts/subscriber/
+!scripts/subscriber/**
+# Contributor source-development scratch orgs (npm run dev:*).
+!scripts/contributor/
+!scripts/contributor/**
+# Package-scoped Jest runner (npm run test:unit*).
+!scripts/run-package-jest.mjs
 # Public Apex plugin scaffolding shipped as the 2.0 migration path.
 !scripts/templates/
 !scripts/templates/**

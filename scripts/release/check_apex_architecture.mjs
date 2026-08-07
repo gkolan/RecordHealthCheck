@@ -7,7 +7,10 @@ const baselinePath = path.join(
   "scripts/release/generated/apex-architecture-baseline.json"
 );
 const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
-const sourceRoots = ["force-app", "integration-tests"];
+const sourceRoots = [
+  "packages/record-health-check/force-app",
+  "packages/record-health-check/integration-tests"
+];
 const failures = [];
 
 function filesUnder(directory) {
@@ -77,7 +80,7 @@ for (const file of apexFiles) {
     );
   }
   if (
-    fileName.startsWith("force-app/") &&
+    fileName.startsWith("packages/record-health-check/force-app/") &&
     lineCount > baseline.maximumApexClassLines
   ) {
     failures.push(

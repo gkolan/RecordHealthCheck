@@ -12,7 +12,7 @@ for every requested record ID.
 
 | Example | Salesforce question | Distinct Framework technique | Packaging |
 | --- | --- | --- | --- |
-| [Recent Account activity](01-recent-activity.md) | Does the Account have a recent completed Task or Event? | Multiple objects and a bounded JSON activity window | Ships in the Framework package (`force-app`) |
+| [Recent Account activity](01-recent-activity.md) | Does the Account have a recent completed Task or Event? | Multiple objects and a bounded JSON activity window | Ships in the Framework package |
 | [Open Opportunity health](02-open-opportunity-health.md) | Does any open Opportunity carry all three coaching risks? | Several conditions applied to each related record plus count-query applicability | Integration-test sample only (`integration-tests/`); not part of the Framework install |
 | [Strategic Account readiness](03-strategic-readiness.md) | Does a Strategic Account meet a configurable weighted score? | Weighted scoring, multiple JSON parameters, and Formula applicability | Integration-test sample only (`integration-tests/`); not part of the Framework install |
 | [Inactive approval participants](04-inactive-approver.md) | Is a pending approval assigned to an inactive user? | Dynamic object and field names, defensive `UNABLE_TO_EVALUATE`, and stop-after-`ERROR` behavior | Integration-test sample only (`integration-tests/`); not part of the Framework install |

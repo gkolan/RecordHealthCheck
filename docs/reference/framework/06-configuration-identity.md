@@ -12,8 +12,9 @@ identifies a Check Set or Rule.
 | Surface | What it contains | Who installs it |
 | --- | --- | --- |
 | Framework unlocked package (`rhc`) | Engine, Lightning card, Permission Sets, Custom Metadata Types, public Apex/Flow APIs, four Demo `Example_…` Check Sets | Subscribers (supported path) |
-| This repository `force-app` | Same Framework metadata used to build the package | Contributors and scratch-org demos |
-| `integration-tests/` | Fixture mirror of Demo CMDT plus CI-only helpers | CI and local verification only (not subscriber installs) |
+| `packages/record-health-check/force-app` | Same Framework metadata used to build the package | Contributors (`npm run dev:setup`) |
+| `packages/record-health-check/integration-tests/` | Fixture mirror of Demo CMDT plus CI-only helpers | CI and local verification only (not subscriber installs) |
+| `subscriber-app/` | External subscriber smoke tests and optional subscriber-owned demo metadata | Subscriber demo setup (`npm run setup`) after package install |
 
 Demo Check Set `CardTitle__c` values start with `Demo:` so Lightning App Builder and the card make
 starter status obvious. Subscriber policy should use different Developer Names and titles.
@@ -39,12 +40,17 @@ Discover the value instead of constructing it:
 
 ```sql
 SELECT DeveloperName, QualifiedApiName
-FROM Record_Health_Check_Set__mdt
+FROM rhc__Record_Health_Check_Set__mdt
 ORDER BY QualifiedApiName
 ```
 
 Use the corresponding Rule query for Rule entry points. Store or pass the returned
 `QualifiedApiName` exactly.
+
+> [!NOTE]
+> The `rhc__` in the `FROM` clause names the packaged Custom Metadata **Type**, which subscriber code
+> must always qualify. That is a separate matter from the record **identity** rules below: never add
+> or remove a namespace on the `QualifiedApiName` value itself.
 
 ## Prohibited identity behavior
 
@@ -67,16 +73,20 @@ Set. It is not the public selection contract.
 
 ## Keep Demo starter configuration explicit
 
-`force-app` contains the engine, Lightning component, permissions, Custom Metadata Type
-definitions, public APIs, reusable evaluator code, and the four shipped `Example_` Demo Check Sets
-(with their Rules). Those records are teaching and sandbox-ready starters.
+`packages/record-health-check/force-app` contains the engine, Lightning component, permissions,
+Custom Metadata Type definitions, public APIs, reusable evaluator code, and the four shipped
+`Example_` Demo Check Sets (with their Rules). Those records are teaching and sandbox-ready starters.
 
-The same Demo records are mirrored under `integration-tests/main/default/customMetadata` so local
-and CI sample deploys stay identical to the package content.
+The same Demo records are mirrored under
+`packages/record-health-check/integration-tests/main/default/customMetadata` so local and CI sample
+deploys stay identical to the package content.
 
 Do not add unlabeled business-policy records to the Framework package. Keep `All` list views
 unfiltered. The `Examples (Example_)` list views may filter by the `Example_` DeveloperName prefix
 for Setup browsing.
+
+Subscribers must not modify packaged test classes or `RecordHealthCheckTestDataFactory`. See
+[Package testing and upgrades](07-package-testing-and-upgrades.md).
 
 Contributors changing Demo metadata or identity code: follow
 [Contributing: Configuration identity](../../../.github/CONTRIBUTING.md#configuration-identity-and-package-boundary)

@@ -16,8 +16,8 @@ COMPUTED = {
     "totalCount": "rhcResult.totalRecordCount",
 }
 TARGETS = (
-    ROOT / "force-app" / "main" / "default" / "customMetadata",
-    ROOT / "force-app" / "main" / "default" / "classes",
+    ROOT / "packages/record-health-check/force-app/main/default/customMetadata",
+    ROOT / "packages/record-health-check/force-app/main/default/classes",
     ROOT / "docs",
 )
 REVALIDATION_GUIDE = ROOT / "docs" / "installation" / "04-upgrading.md"

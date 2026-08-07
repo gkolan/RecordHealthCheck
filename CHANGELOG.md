@@ -6,6 +6,11 @@ interfaces and product-generation terminology.
 
 ## Current release
 
+**Subscriber install:** promoted unlocked package `Record Health Check@2.0.0-6`. Stable `04t` and
+install URLs are recorded in [`config/package-releases.json`](config/package-releases.json).
+
+- Production and Sandbox install links: see `installUrl` in `config/package-releases.json`
+
 ### Evaluation and integration
 
 - Formula, Query, Compare two queries, and bulk Apex Rule plugins use one bounded evaluation
@@ -69,7 +74,8 @@ For installation and verification, start with
 ### Changed
 
 - Install documentation states the namespaced unlocked package as the supported subscriber path,
-  with source deploy reserved for contribution and scratch-org workflows.
+  with concrete Production and Sandbox install URLs for promoted `04tak000000ZXVlAAO`, and source
+  deploy reserved for contribution and scratch-org workflows.
 - Configuration identity guidance lives under
   [Configuration identity](docs/reference/framework/06-configuration-identity.md).
 - Technical references are grouped under `docs/reference/{framework,evaluation,contracts,apex}/`

@@ -27,24 +27,22 @@ generation enabled. Pass an optional second argument to use a shorter duration.
 From the repository root, run:
 
 ```bash
-DEV_HUB_ALIAS=my-dev-hub ./scripts/setup-demo.sh rhc-demo
+npm run setup -- --dev-hub my-dev-hub --alias rhc-demo
 ```
 
-The script deliberately refuses to overwrite an existing alias. If `rhc-demo` already exists, delete it yourself
+The command deliberately refuses to overwrite an existing alias. If `rhc-demo` already exists, delete it yourself
 only when you no longer need that org, or choose another alias.
 
 Setup performs the following operations in order:
 
-1. Creates a 30-day scratch org from the checked-in definition.
-2. Deploys the Framework `force-app` package, including the four Demo Check Sets.
-3. Deploys additional integration-test sample metadata (matching Demo copies plus broader sample metadata), then deploys the demo Account record page.
-4. Assigns `Record_Health_Check_Admin` to the scratch-org user.
-5. Creates the deterministic Acme data set and its inactive owner scenario.
-6. Creates the realistic Account, Contact, and Opportunity portfolio for all four optional Check Sets.
-7. Generates a password, validates all RHC metadata, and verifies both demo scenarios.
+1. Creates a 30-day, no-namespace scratch org from the checked-in subscriber definition.
+2. Installs the promoted **Record Health Check** package (`04t` from `config/package-releases.json`).
+3. Assigns `Record_Health_Check_Admin` to the scratch-org user.
+4. Deploys subscriber-owned demo metadata from `subscriber-app`.
+5. Creates the deterministic Acme data set via `scripts/subscriber/data/setupDemoData.apex`.
+6. Runs `RHCSubscriberSmokeTest` to verify the installed package and subscriber harness.
 
-The command exits unsuccessfully if any step fails or if the final engine result is not exactly **3 passed, 4
-failed, and 1 skipped**.
+This workflow does **not** deploy unpackaged Framework source or `integration-tests` fixtures.
 
 ## Exact test data created
 
@@ -139,68 +137,51 @@ Common checks:
 ```bash
 sf org display --target-org rhc-demo
 sf project deploy report --use-most-recent --target-org rhc-demo
-sf apex run --target-org rhc-demo --file scripts/apex/validateMetadata.apex
-sf apex run --target-org rhc-demo --file scripts/apex/verifyDemo.apex
+sf apex run test --class-names RHCSubscriberSmokeTest --target-org rhc-demo --result-format human
+sf apex run --target-org rhc-demo --file scripts/subscriber/data/verifyDemo.apex
 ```
 
-The final verification command checks every record count and every Rule status listed on this page. A successful
-run prints `RHC_DEMO_VERIFIED pass=3 fail=4 skip=1`.
+The demo verification Apex script checks record counts and Rule statuses for the Acme scenario when
+you need manual troubleshooting beyond the subscriber smoke tests.
 
 ## Currency mode
 
-The demo scratch org is **multi-currency by design** (`MultiCurrency` in
-`config/display-formats-scratch-def.json`). That matches currency display examples and the EUR activation
-step in `setup-demo.sh`.
-
-Installed subscriber orgs (package or source) work in **both** single-currency and multi-currency modes.
+The demo scratch org is **multi-currency by design** when you extend subscriber setup with display-format
+fixtures. Installed subscriber orgs work in **both** single-currency and multi-currency modes.
 At runtime the Framework selects `CurrencyIsoCode` only when the org is multi-currency, and Found /
 Expected currency chips use a symbol in a single-currency org or an ISO code in a multi-currency org.
 See [Localization](../reference/framework/05-localization.md) and the
 [FAQ](../guides/02-faq.md#does-record-health-check-work-in-single-currency-and-multi-currency-orgs).
 
 To exercise display formatting in a **single-currency** scratch org, use the display-formats fixture path
-with `config/project-scratch-def.json` instead of this demo script. See
-[`integration-tests/README.md`](../../integration-tests/README.md).
+with `packages/record-health-check/config/project-scratch-def.json`. See
+[`integration-tests/README.md`](../../packages/record-health-check/integration-tests/README.md).
 
 ## Windows and shell notes
 
-`scripts/setup-demo.sh` is a bash script. On Windows:
+`npm run setup` uses Node and works the same on Windows, macOS, and Linux. You still need the
+Salesforce CLI installed and authenticated to a Dev Hub.
 
-- Prefer **Git Bash** or run the equivalent `sf` steps in **PowerShell**.
-- Do **not** use WSL `bash` to invoke the Windows Salesforce CLI (`sf.cmd`). WSL cannot execute that
-  launcher and fails with errors such as `@echo: not found`.
-- If bash reports `$'\r': command not found` or `pipefail: invalid option name`, the script has CRLF
-  line endings. Convert to LF (for example with `dos2unix` or your editor) before running under bash.
+Pass the Dev Hub with the `--dev-hub` flag, which behaves identically in bash, zsh, PowerShell, and
+cmd. The `DEV_HUB_ALIAS` environment variable is still honoured, but the `VAR=value command` prefix
+form used to set it is bash/zsh-only and does nothing on Windows:
 
-## Known setup-script gaps
+```bash
+npm run setup -- --dev-hub my-dev-hub --alias rhc-demo
+```
 
-`setup-demo.sh` currently references Apex files that are **not** checked into this repository:
-
-| Referenced file | Intended role |
-| --- | --- |
-| `scripts/apex/configureDemoAdmin.apex` | Rename / personalize the scratch-org admin user |
-| `scripts/apex/setupExampleData.apex` | Seed the realistic Account / Contact / Opportunity portfolio |
-| `scripts/apex/verifyExampleData.apex` | Verify that portfolio and object-specific Check Set outcomes |
-
-When those files are absent, stop after the Acme path that **is** in the repo:
-`setupDemoUser.apex` → `setupDemoData.apex` → `deactivateDemoUser.apex` → `validateMetadata.apex` →
-`verifyDemo.apex`. A successful Acme verification still prints
-`RHC_DEMO_VERIFIED pass=3 fail=4 skip=1`. Re-add or restore the missing scripts before expecting the
-object-specific portfolio section above to run end-to-end from `setup-demo.sh`.
+Contributors changing Framework source use
+[`npm run dev:setup`](../contributing/source-development.md) instead, which deploys unpackaged source
+rather than installing the package.
 
 ## Multi-currency Apex test failure
 
-If a deploy with `--test-level RunLocalTests` fails on
+If a contributor deploy with `--test-level RunLocalTests` fails on
 `RecordHealthCheckFieldPlannerTest.rejectsMissingInaccessibleAndMalformedPaths` with a message like
 `Expected: {Id}, Actual: {CurrencyIsoCode, Id}`, the org is multi-currency and the field planner
-correctly selected `CurrencyIsoCode`. The test must allow that field when
-`UserInfo.isMultiCurrencyOrganization()` is true and Account exposes `CurrencyIsoCode`. Current
-`force-app` includes that assertion. Pull the latest Framework sources before re-running the demo
-setup on a multi-currency scratch org.
-
-This failure affects **contributor source deploys that run local tests**, not typical unlocked-package
-installs into subscriber sandboxes. See the
-[FAQ](../guides/02-faq.md#why-did-my-multi-currency-scratch-or-source-deploy-fail-apex-tests).
+correctly selected `CurrencyIsoCode`. Unlocked-package subscriber installs are unaffected. See
+[Source development](../contributing/source-development.md) and the
+[FAQ](../guides/02-faq.md#why-did-contributor-source-deploy-fail-apex-tests-in-a-multi-currency-org).
 
 ## Next steps
 

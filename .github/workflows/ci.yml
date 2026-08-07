@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  local-gates:
+  static-checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -33,7 +33,8 @@ jobs:
       - run: npm run check:manifest
       - run: npm run check:package-boundary
       - run: npm run check:query-shapes
+      - run: npm run check:distribution-boundary
       - run: npm run check:permission-sets
       - run: npm run test:unit:coverage
       - name: Validate XML
-        run: python3 -c "import pathlib,xml.etree.ElementTree as ET; [ET.parse(p) for root in ('force-app','integration-tests','manifest') for p in pathlib.Path(root).rglob('*.xml')]"
+        run: python3 -c "import pathlib,xml.etree.ElementTree as ET; [ET.parse(p) for root in ('packages/record-health-check/force-app','packages/record-health-check/integration-tests','packages/record-health-check/manifest','subscriber-app') for p in pathlib.Path(root).rglob('*.xml')]"

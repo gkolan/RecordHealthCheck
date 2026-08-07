@@ -197,7 +197,7 @@ for (const [objectName, referenceName] of [
   const reference = path.join(docsRoot, "metadata", referenceName);
   const fieldsDirectory = path.join(
     root,
-    "force-app/main/default/objects",
+    "packages/record-health-check/force-app/main/default/objects",
     objectName,
     "fields"
   );
@@ -220,7 +220,7 @@ for (const [eventName, referenceName] of [
   );
   const fieldsDirectory = path.join(
     root,
-    "force-app/main/default/objects",
+    "packages/record-health-check/force-app/main/default/objects",
     eventName,
     "fields"
   );
@@ -235,7 +235,10 @@ for (const [eventName, referenceName] of [
 // Every production Apex class must remain visible in the Apex class-reference
 // corpus under docs/reference/apex/. This catches a new class that compiles and
 // ships but is absent from the layer guides.
-const apexClassesDirectory = path.join(root, "force-app/main/default/classes");
+const apexClassesDirectory = path.join(
+  root,
+  "packages/record-health-check/force-app/main/default/classes"
+);
 const productionApexClasses = fs
   .readdirSync(apexClassesDirectory)
   .filter((name) => {

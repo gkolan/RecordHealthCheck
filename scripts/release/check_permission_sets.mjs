@@ -2,7 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const DEFAULT = path.join(ROOT, "force-app", "main", "default");
+const DEFAULT = path.join(
+  ROOT,
+  "packages/record-health-check/force-app",
+  "main",
+  "default"
+);
 const PERMISSION_SETS = path.join(DEFAULT, "permissionsets");
 const MAX_SALESFORCE_DESCRIPTION = 255;
 const PROJECT_DESCRIPTION_BUDGET = 200;

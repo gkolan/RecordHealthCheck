@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const roots = [
-  "force-app/main/default/classes",
-  "integration-tests/main/default/classes",
+  "packages/record-health-check/force-app/main/default/classes",
+  "packages/record-health-check/integration-tests/main/default/classes",
   "scripts/templates"
 ];
 

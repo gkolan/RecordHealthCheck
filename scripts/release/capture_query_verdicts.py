@@ -22,9 +22,9 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = ROOT / "scripts/release/generated/bulk-query-shape-inventory.json"
 DEFAULT_OUTPUT = ROOT / "scripts/release/generated/query-verdict-baseline.json"
-FIXTURE_SCRIPT = ROOT / "integration-tests/scripts/query_verdict_fixture.apex"
+FIXTURE_SCRIPT = ROOT / "packages/record-health-check/integration-tests/scripts/query_verdict_fixture.apex"
 RULE_LAUNCHERS = tuple(
-    ROOT / f"integration-tests/scripts/exhaustive_smoke_rules_{offset}.apex"
+    ROOT / f"packages/record-health-check/integration-tests/scripts/exhaustive_smoke_rules_{offset}.apex"
     for offset in (0, 50, 100, 150)
 )
 

@@ -11,56 +11,56 @@ const root = path.resolve(
 const controller = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/classes/RecordHealthCheckController.cls"
+    "packages/record-health-check/force-app/main/default/classes/RecordHealthCheckController.cls"
   ),
   "utf8"
 );
 const component = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/lwc/recordHealthCheck/recordHealthCheck.js"
+    "packages/record-health-check/force-app/main/default/lwc/recordHealthCheck/recordHealthCheck.js"
   ),
   "utf8"
 );
 const runner = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/lwc/recordHealthCheck/healthCheckRunner.js"
+    "packages/record-health-check/force-app/main/default/lwc/recordHealthCheck/healthCheckRunner.js"
   ),
   "utf8"
 );
 const constants = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/classes/RecordHealthCheckConstants.cls"
+    "packages/record-health-check/force-app/main/default/classes/RecordHealthCheckConstants.cls"
   ),
   "utf8"
 );
 const formulaEvaluator = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/classes/RecordHealthCheckFormulaEvaluator.cls"
+    "packages/record-health-check/force-app/main/default/classes/RecordHealthCheckFormulaEvaluator.cls"
   ),
   "utf8"
 );
 const activityCheck = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/classes/AccountHasRecentActivityCheck.cls"
+    "packages/record-health-check/force-app/main/default/classes/AccountHasRecentActivityCheck.cls"
   ),
   "utf8"
 );
 const configService = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/classes/RecordHealthCheckConfigService.cls"
+    "packages/record-health-check/force-app/main/default/classes/RecordHealthCheckConfigService.cls"
   ),
   "utf8"
 );
 const definitionLoader = fs.readFileSync(
   path.join(
     root,
-    "force-app/main/default/classes/RecordHealthCheckDefinitionLoader.cls"
+    "packages/record-health-check/force-app/main/default/classes/RecordHealthCheckDefinitionLoader.cls"
   ),
   "utf8"
 );

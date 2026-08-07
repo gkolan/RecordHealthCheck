@@ -1,14 +1,28 @@
 # Release Record Health Check
 
 Record Health Check ships primarily as the namespaced unlocked package `Record Health Check`.
-Source deployment is a development workflow and is not the supported subscriber installation path.
+Source deployment is a contributor workflow and is not the supported subscriber installation path.
 
 ## Version model
 
 The Framework follows Semantic Versioning. `package.json` carries the Framework version and
-`sfdx-project.json` carries the Salesforce package version as `MAJOR.MINOR.PATCH.NEXT`.
-Each package build uses `MAJOR.MINOR.PATCH.BUILD`; later build numbers are immutable candidates for
-the same semantic release.
+`packages/record-health-check/sfdx-project.json` carries the Salesforce package version as
+`MAJOR.MINOR.PATCH.NEXT`. Each package build uses `MAJOR.MINOR.PATCH.BUILD`; later build numbers are
+immutable candidates for the same semantic release.
+
+## Single source of truth for subscriber installs
+
+All subscriber-facing install URLs, CLI scripts, and CI gates read from
+[`config/package-releases.json`](../config/package-releases.json).
+
+Rules:
+
+1. `stable.subscriberPackageVersionId` must always refer to a **promoted** version.
+2. Never update `stable` merely because package-version creation produced a new candidate `04t`.
+3. Move the current stable `04t` into `previous` before replacing `stable`.
+4. Refresh `installUrl.production` and `installUrl.sandbox` when `stable` changes.
+5. Do not duplicate the stable `04t` across README badges, docs, and scripts—update
+   `package-releases.json` first, then run doc checks.
 
 ## Required evidence
 
@@ -16,45 +30,71 @@ Before creating a release candidate:
 
 1. Run every local gate, including docs, query shapes, permissions, formatting, lint, and Jest.
 2. Run Code Analyzer and resolve every unsuppressed release finding.
-3. Deploy the production manifest into a clean scratch org and run all local Apex tests.
-4. Run the query-verdict parity comparison and the checked-in scope measurement harness.
-5. Create the package version without example Custom Metadata records.
-6. Install it into a clean subscriber org, assign the admin permission set, and smoke-test Apex,
-   Flow, LWC, permissions, and lifecycle events.
-7. Upgrade an org containing the previous released package and repeat the smoke tests.
+3. Run `npm run package:verify` against the candidate `04t` (clean install and, when available,
+   previous-to-candidate upgrade).
+4. Confirm subscriber-owned Custom Metadata survives the upgrade gate.
+5. Run the package-source org gate in CI (`salesforce-validate.yml`).
 
 Never discard deploy, test, package, or install output. Archive JSON results with the release.
 
 ## Create a package candidate
 
 ```bash
-sf package version create \
-  --package "Record Health Check" \
-  --installation-key-bypass \
-  --code-coverage \
-  --wait 120 \
-  --target-dev-hub gkSfdcDevHub
+DEV_HUB_ALIAS=<dev-hub> npm run package:create
 ```
 
-Record the resulting `04t` ID and add its alias to `sfdx-project.json`. Do not promote it until the
-clean-install and upgrade gates pass.
+Or manually from the nested package project:
+
+```bash
+cd packages/record-health-check
+
+sf package version create \
+  --package 0Hoak0000004kKPCAY \
+  --path force-app \
+  --definition-file config/project-scratch-def.json \
+  --version-number 2.0.0.NEXT \
+  --code-coverage \
+  --installation-key-bypass \
+  --wait 120 \
+  --target-dev-hub <dev-hub>
+```
+
+Record the resulting `04t` ID. Do not promote it until subscriber verification gates pass.
+
+## Verify before promote
+
+```bash
+DEV_HUB_ALIAS=<dev-hub> npm run package:verify -- --package <candidate-04t>
+```
+
+This runs:
+
+- Clean no-namespace install of the candidate
+- Subscriber harness deploy and `RHCSubscriberSmokeTest`
+- Previous-to-candidate upgrade rehearsal when `previous` is a promoted `04t`
 
 ## Promote and publish
 
 ```bash
-sf package version promote \
-  --package "Record Health Check@2.0.0-1" \
-  --target-dev-hub gkSfdcDevHub
+DEV_HUB_ALIAS=<dev-hub> npm run package:promote -- --package <candidate-04t>
 ```
 
-Then update `CHANGELOG.md`, commit the exact source used to create the package, create the matching
-semantic-version tag, and create the GitHub release. Publish the promoted subscriber package ID in
-the install guide and release notes.
+Then update `config/package-releases.json`:
+
+1. Move the current stable entry to `previous`.
+2. Set `stable.subscriberPackageVersionId` to the promoted `04t`.
+3. Refresh `installUrl` values.
+4. Update `CHANGELOG.md` and create the GitHub release.
+
+Also commit the exact source used to create the package, create the matching semantic-version tag,
+and configure the public install redirect (`recordhealthcheck.com/install`) to the new stable `04t`.
+
+Current promoted subscriber package version ID: see `config/package-releases.json`.
 
 ## Samples
 
 Example Check Sets and Rules are optional learning assets, not Core defaults. Deliver them through
-the documented sample installer or source package after Core is installed. Never make a Core
+the documented sample installer or subscriber demo scripts after Core is installed. Never make a Core
 package candidate depend on example records being packaged.
 
 ## Rollback

@@ -1,0 +1,43 @@
+/**
+ * @author Gautam Kolan (https://github.com/gkolan)
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Adaptive theme via platform styling hooks. Semantic `--slds-g-*` values are
+ * SLDS 2 only; SLDS 1 pages leave them unset, so the nested fallbacks win.
+ * Custom properties inherit through shadow DOM — no runtime theme detection.
+ */
+.rhc-theme {
+  --rhc-theme-card-background: var(
+    --slds-g-color-surface-container-1,
+    var(--slds-g-color-neutral-base-100, #ffffff)
+  );
+  --rhc-theme-card-border: var(
+    --slds-g-color-border-base-1,
+    var(--slds-g-color-border-1, #c9c7c5)
+  );
+  --rhc-theme-card-border-width: var(--slds-g-sizing-border-1, 1px);
+  --rhc-theme-card-radius: var(
+    --slds-g-radius-border-4,
+    var(--lwc-borderRadiusMedium, 0.25rem)
+  );
+  --rhc-theme-header-background: var(
+    --slds-g-color-surface-container-1,
+    var(--slds-g-color-neutral-base-95, #fafafa)
+  );
+  --rhc-theme-row-hover: var(
+    --slds-g-color-surface-container-2,
+    var(--slds-g-color-neutral-base-95, #f5f5f5)
+  );
+  --rhc-theme-text: var(
+    --slds-g-color-on-surface-1,
+    var(--slds-g-color-neutral-base-10, #181818)
+  );
+  --rhc-theme-text-weak: var(
+    --slds-g-color-on-surface-2,
+    var(--slds-g-color-neutral-base-40, #706e6b)
+  );
+  /* Component-local overlay scale: the nubbin sits one layer above its bubble. */
+  --rhc-layer-tooltip: 100;
+  --rhc-layer-tooltip-nubbin: 101;
+  font-family: var(--slds-g-font-family, "Salesforce Sans", Arial, sans-serif);
+}

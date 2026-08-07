@@ -5,7 +5,8 @@
 > when reading source or extending the Framework. Writing an Apex Rule plugin? Start with
 > [Apex Rule contract](../evaluation/04-apex-rule-contract.md), not this folder.
 
-This guide covers every **production** class under `force-app/main/default/classes/` (excluding
+This guide covers every **production** class under
+`packages/record-health-check/force-app/main/default/classes/` (excluding
 `*Test` classes and coverage helpers). Shipped and integration-test example plugins are listed in
 [Results, definitions, and plugins](07-results-and-plugins.md).
 

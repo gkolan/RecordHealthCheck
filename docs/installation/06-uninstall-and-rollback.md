@@ -102,10 +102,13 @@ class extending a packaged interface without an override). Resolve every depende
 
 ## Step 4b: Remove source-deployed metadata
 
-If Record Health Check was source-deployed (a contributor or scratch-org install), remove the same
-manifest that installed it, carefully:
+If Record Health Check was source-deployed during contributor development, remove the same manifest
+that installed it. Run these commands from `packages/record-health-check/` or pass the full manifest
+path from the repository root:
 
 ```bash
+cd packages/record-health-check
+
 sf project delete source \
   --manifest manifest/package.xml \
   --target-org <org-alias> \
@@ -122,8 +125,10 @@ sf project delete source \
 ```
 
 Do not run a bare deletion without a manifest. Deleting by manifest keeps the operation scoped to
-Record Health Check's own components, the same discipline
-[Install and verify](02-install-and-verify.md#what-the-install-includes) uses for installation.
+Record Health Check's own components.
+
+This step applies only to contributor source-deploy orgs. Subscriber orgs that installed the unlocked
+package should use [Step 4a](#step-4a-uninstall-the-unlocked-package) instead.
 
 ## Step 5: Verify removal
 

@@ -337,20 +337,24 @@ the pipeline derives display content or publishes lifecycle events.
 
 ## 14. Delivery and environments
 
-The Framework can be deployed as source metadata from `force-app` through `manifest/package.xml`
-or installed as the namespaced second-generation package configured in `sfdx-project.json`. In a
-namespaced installation, Salesforce applies the package namespace where platform APIs require it;
+Subscribers install the promoted namespaced second-generation package (`rhc`). The stable `04t` ID
+lives in [`config/package-releases.json`](../../../config/package-releases.json). Contributors deploy
+unpackaged source from `packages/record-health-check/force-app` through
+`packages/record-health-check/manifest/package.xml` using [`npm run dev:setup`](../../contributing/source-development.md).
+
+In a namespaced installation, Salesforce applies the package namespace where platform APIs require it;
 use the qualified names returned by Custom Metadata queries and the public Apex API.
 
 Operational consequences:
 
-- The Framework deploys four Demo Check Sets (`Example_…`, card titles prefixed with `Demo:`)
-  with matching integration-test sample copies.
+- The Framework package ships four Demo Check Sets (`Example_…`, card titles prefixed with `Demo:`)
+  with matching integration-test sample copies under `packages/record-health-check/integration-tests/`.
 - Check Sets and Rules are Custom Metadata, so they deploy between orgs and version control
   alongside the classes they configure.
 - Qualified API Names are the external contract identifiers used by the Apex API, Flow actions,
   Lightning component, and event bodies. Exact identities prevent namespace-dependent fallback.
-- `npm run check:manifest` compares every packageable source member with `manifest/package.xml`.
+- `npm run check:manifest` compares every packageable source member with
+  `packages/record-health-check/manifest/package.xml`.
   `npm run check:permission-sets` checks permission-set component references and keeps descriptions
   within a 200-character project budget, below Salesforce's 255-character limit. CI runs both
   checks before creating the scratch org.

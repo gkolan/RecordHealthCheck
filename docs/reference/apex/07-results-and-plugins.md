@@ -141,7 +141,7 @@ the engine to run Formula or Query Rules.
 **Role:** Shipped Apex Rule for recent Account Task/Event activity.
 **Type:** Example plugin (implements `RecordHealthCheckRule`) · `global with sharing`
 
-Ships with Record Health Check in `force-app`. Passes when the Account has at least one completed Task or Event in
+Ships with Record Health Check in the Framework package. Passes when the Account has at least one completed Task or Event in
 a look-back window. Tunable with `ApexParametersJson__c`: `{"daysBack": 90}` (default 30, bounds
 1–3650). Sets Found/Expected and value-source detail; label, severity, and failure message come from
 metadata.

@@ -22,7 +22,7 @@ const targetOrg = positionalArguments[0] || process.env.SF_TARGET_ORG;
 const threshold = Number(optionValue("--threshold", "98"));
 const sourceDirectory = optionValue(
   "--source-dir",
-  "force-app/main/default/classes"
+  "packages/record-health-check/force-app/main/default/classes"
 );
 if (helpRequested) {
   console.log(

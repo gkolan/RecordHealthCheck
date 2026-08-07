@@ -23,6 +23,7 @@ the [examples library](../examples/README.md).
 | 4 | [Compatibility](framework/04-compatibility.md) | Editions, Lightning Experience, API version |
 | 5 | [Localization](framework/05-localization.md) | Translation Workbench, display formats |
 | 6 | [Configuration identity](framework/06-configuration-identity.md) | Qualified API Names, `rhc` namespace, Demo vs subscriber |
+| 7 | [Package testing and upgrades](framework/07-package-testing-and-upgrades.md) | Test ownership, RunLocalTests, subscriber upgrade path |
 
 Terms: [Glossary](01-glossary.md).
 

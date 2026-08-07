@@ -34,12 +34,26 @@ records that existed before the Rule did). See
 
 ## Should I install the package or deploy from source?
 
-Install the namespaced unlocked package (`rhc`) for a production or long-lived subscriber org. Use
-source deploy (`manifest/package.xml` or `--source-dir force-app`) for development, contribution
-work, and the demo scratch org. Package-owned metadata carries the `rhc__` prefix on its
-`QualifiedApiName`; source-deployed metadata in a subscriber org does not. See
-[Install and verify](../installation/02-install-and-verify.md) and
+Install the namespaced unlocked package (`rhc`) for production, sandboxes, and evaluation orgs.
+The current stable `04t` ID and install URLs live in
+[`config/package-releases.json`](../../config/package-releases.json).
+
+Deploying unpackaged source is a **contributor-only** workflow for changing the Framework itself.
+See [Source development](../contributing/source-development.md). Subscribers must not use source
+deploy as an installation path. Package-owned metadata carries the `rhc__` prefix on its
+`QualifiedApiName`. See [Install and verify](../installation/02-install-and-verify.md) and
 [Configuration identity](../reference/framework/06-configuration-identity.md).
+
+## Do I need to modify Record Health Check test classes or the test factory?
+
+No. Subscribers must not edit packaged Apex, including `RecordHealthCheckTestDataFactory` or any
+`@IsTest` class shipped in the package. Your org-specific Rules, plugins, and tests belong in your
+own repository.
+
+Normal subscriber deployments that use `RunLocalTests` do not execute tests from an installed
+namespaced unlocked package. Maintainers run packaged tests during package-version creation before
+promoting a new `04t`. See
+[Package testing and upgrades](../reference/framework/07-package-testing-and-upgrades.md).
 
 ## Are lifecycle events on by default?
 
@@ -67,11 +81,12 @@ own Developer Names and titles for org policy. See
 
 ## What does the `rhc` namespace mean for me?
 
-`rhc` is the package namespace for the managed unlocked package. Custom Metadata records **owned
-by** the package (including the four Demo Check Sets) return a `QualifiedApiName` prefixed
-`rhc__`. Custom Metadata your org creates does not carry that prefix. Every Apex, Flow, Lightning,
-and event boundary requires the exact `QualifiedApiName` Salesforce returns; never construct it by
-guessing whether the prefix applies. See [Configuration identity](../reference/framework/06-configuration-identity.md).
+`rhc` is the package namespace for the unlocked package. Custom Metadata records **owned by** the
+package (including the four Demo Check Sets) return a `QualifiedApiName` prefixed `rhc__`. Custom
+Metadata your org creates does not carry that prefix. Every Apex, Flow, Lightning, and event
+boundary requires the exact `QualifiedApiName` Salesforce returns; never construct it by guessing
+whether the prefix applies. See
+[Configuration identity](../reference/framework/06-configuration-identity.md).
 
 ## Does a Rule failure ever cause data loss or a rollback?
 
@@ -91,21 +106,20 @@ Yes. Install and day-to-day evaluation work the same in both modes. At runtime t
 - still compares raw numeric and API values for Pass / Fail, never the formatted display text.
 
 Subscriber sandboxes installing the unlocked package do not need a special currency-mode install
-step. Maintainers validate both modes with
+step. They also do not run packaged RHC Apex tests during normal `RunLocalTests` deployments.
+Maintainers validate both currency modes with
 [`scripts/setup-display-formats.sh`](../../scripts/setup-display-formats.sh) (multi-currency by
 default; set `SCRATCH_DEF=config/project-scratch-def.json` for single-currency). See
 [Localization](../reference/framework/05-localization.md) and
 [Create the demo scratch org](../installation/05-create-rhc-scratch-org.md#currency-mode).
 
-## Why did my multi-currency scratch or source deploy fail Apex tests?
+## Why did contributor source deploy fail Apex tests in a multi-currency org?
 
-A source deploy with `--test-level RunLocalTests` into a multi-currency org can fail
+A contributor source deploy with `--test-level RunLocalTests` into a multi-currency org can fail
 `RecordHealthCheckFieldPlannerTest.rejectsMissingInaccessibleAndMalformedPaths` when the assertion
 expects only `{Id}` but the planner correctly returns `{CurrencyIsoCode, Id}`. That is a test
-assertion issue, not a Framework currency bug. Current `force-app` allows `CurrencyIsoCode` when
-the org is multi-currency. Pull the latest sources and redeploy. Unlocked-package installs into
-subscriber orgs are unaffected by this contributor-path failure mode. See
-[Multi-currency Apex test failure](../installation/05-create-rhc-scratch-org.md#multi-currency-apex-test-failure).
+assertion issue, not a Framework currency bug. Unlocked-package installs into subscriber orgs are
+unaffected. See [Source development](../contributing/source-development.md).
 
 ## Where do I go next?
 

@@ -11,13 +11,15 @@ metadata require directly, and it says plainly where a claim has not been indepe
 
 | Item | Value | Source |
 | --- | --- | --- |
-| Source API version | `66.0` | `sfdx-project.json` |
-| Package | Record Health Check (`rhc`), unlocked second-generation package | `sfdx-project.json` |
-| Package version at time of writing | `2.0.0` | `sfdx-project.json` |
+| Source API version | `66.0` | Root and packaging `sfdx-project.json` |
+| Package | Record Health Check (`rhc`), unlocked second-generation package | `packages/record-health-check/sfdx-project.json` |
+| Stable package version | See `stable` in [`config/package-releases.json`](../../../config/package-releases.json) | Promoted release record |
+| Production install | `installUrl.production` in `config/package-releases.json` | Promoted package version |
+| Sandbox install | `installUrl.sandbox` in `config/package-releases.json` | Promoted package version |
 
-Confirm your org's Salesforce release supports API version 66.0 or later before deploying source
-metadata. A newer org release accepts an older API version; an org on an older release does not
-accept a newer one.
+Confirm your org's Salesforce release supports API version 66.0 or later before installing or
+deploying source metadata. A newer org release accepts an older API version; an org on an older
+release does not accept a newer one.
 
 ## Salesforce editions
 

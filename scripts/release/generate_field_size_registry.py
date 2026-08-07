@@ -17,7 +17,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
-OBJECTS = ROOT / "force-app/main/default/objects"
+OBJECTS = ROOT / "packages/record-health-check/force-app/main/default/objects"
 OUTPUT = ROOT / "docs/reference/contracts/04-field-limits.md"
 NS = {"m": "http://soap.sforce.com/2006/04/metadata"}
 
