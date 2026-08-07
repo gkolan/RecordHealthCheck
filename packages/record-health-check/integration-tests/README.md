@@ -44,6 +44,11 @@ SCRATCH_DEF=config/project-scratch-def.json \
 ./scripts/setup-display-formats.sh rhc-display-single 7
 ```
 
+> [!NOTE]
+> These two commands are shell scripts, so the `VAR=value` prefix is required and is bash/zsh only.
+> On Windows run them from **Git Bash**. The `npm run` entry points below take `--dev-hub` instead
+> and work in PowerShell and cmd as well.
+
 Run both commands from the repository root. `SCRATCH_DEF` is resolved under
 `packages/record-health-check/config/` by the script.
 
@@ -83,7 +88,7 @@ sf apex run --file integration-tests/scripts/demo_flow_actions.apex --target-org
 Or use the maintained contributor shortcut:
 
 ```bash
-DEV_HUB_ALIAS=my-dev-hub npm run dev:setup -- --alias my-scratch-org
+npm run dev:setup -- --dev-hub my-dev-hub --alias my-scratch-org
 ```
 
 `integration-tests` intentionally remains outside the root `sfdx-project.json`. A subscriber package

@@ -40,7 +40,7 @@ Never discard deploy, test, package, or install output. Archive JSON results wit
 ## Create a package candidate
 
 ```bash
-DEV_HUB_ALIAS=<dev-hub> npm run package:create
+npm run package:create -- --dev-hub <dev-hub>
 ```
 
 Or manually from the nested package project:
@@ -52,7 +52,6 @@ sf package version create \
   --package 0Hoak0000004kKPCAY \
   --path force-app \
   --definition-file config/project-scratch-def.json \
-  --version-number 2.0.0.NEXT \
   --code-coverage \
   --installation-key-bypass \
   --wait 120 \
@@ -64,7 +63,7 @@ Record the resulting `04t` ID. Do not promote it until subscriber verification g
 ## Verify before promote
 
 ```bash
-DEV_HUB_ALIAS=<dev-hub> npm run package:verify -- --package <candidate-04t>
+npm run package:verify -- --dev-hub <dev-hub> --package <candidate-04t>
 ```
 
 This runs:
@@ -76,7 +75,7 @@ This runs:
 ## Promote and publish
 
 ```bash
-DEV_HUB_ALIAS=<dev-hub> npm run package:promote -- --package <candidate-04t>
+npm run package:promote -- --dev-hub <dev-hub> --package <candidate-04t>
 ```
 
 Then update `config/package-releases.json`:
