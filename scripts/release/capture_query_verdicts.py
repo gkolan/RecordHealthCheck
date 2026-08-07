@@ -153,7 +153,7 @@ def main() -> int:
     if args.refresh_results:
         refresh_smoke_results(args.target_org)
     comparison_baseline = (
-        json.loads(args.compare_to.read_text())
+        json.loads(args.compare_to.read_text(encoding="utf-8"))
         if args.compare_to is not None
         else None
     )

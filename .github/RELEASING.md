@@ -91,11 +91,19 @@ and configure the public install redirect (`recordhealthcheck.com/install`) to t
 
 Current promoted subscriber package version ID: see `config/package-releases.json`.
 
-## Samples
+## Demo Example Check Sets and Rules
 
-Example Check Sets and Rules are optional learning assets, not Core defaults. Deliver them through
-the documented sample installer or subscriber demo scripts after Core is installed. Never make a Core
-package candidate depend on example records being packaged.
+The 25 `Example_` Check Sets and Rules ship **inside** the package, from
+`packages/record-health-check/force-app/main/default/customMetadata`. A subscriber gets four Demo
+Check Sets and 21 Rules on install, with no extra step. `check:package-boundary` enforces that they
+stay there and stay byte-identical to their `integration-tests` copies.
+
+Do not move them to an unpackaged directory and do not add `unpackagedMetadata` to
+`sfdx-project.json`; that flag deploys metadata to the build org for testing and then deliberately
+excludes it from the package, which is how `2.0.0.6` came to install with zero Example records.
+
+Demo _data_ is different. The Acme Accounts and related records the demo org uses are subscriber
+owned, come from `scripts/subscriber/data`, and must never be packaged.
 
 ## Rollback
 

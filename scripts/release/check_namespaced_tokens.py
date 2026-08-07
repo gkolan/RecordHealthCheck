@@ -62,7 +62,7 @@ def main() -> int:
     args = parser.parse_args()
     changes = []
     for path in files():
-        original = path.read_text()
+        original = path.read_text(encoding="utf-8")
 
         def convert(match: re.Match[str]) -> str:
             new = replacement(match.group(1))
@@ -84,7 +84,7 @@ def main() -> int:
 
         updated = TOKEN.sub(convert, original)
         if args.mode == "apply" and updated != original:
-            path.write_text(updated)
+            path.write_text(updated, encoding="utf-8")
     if args.manifest:
         args.manifest.write_text(json.dumps({"changes": changes}, indent=2) + "\n")
     print(json.dumps({"mode": args.mode, "invalidTokenCount": len(changes)}))
