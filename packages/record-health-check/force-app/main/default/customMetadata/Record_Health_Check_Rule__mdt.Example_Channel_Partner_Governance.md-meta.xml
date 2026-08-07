@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Example_Channel Partner Governance</label>
+    <label>Example: Channel Partner Governance</label>
     <protected>false</protected>
     <values>
         <field>Record_Health_Check_Set__c</field>

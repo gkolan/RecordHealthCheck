@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Example_Customer Engagement Is Current</label>
+    <label>Example: Customer Engagement Is Current</label>
     <protected>false</protected>
     <values>
         <field>Record_Health_Check_Set__c</field>

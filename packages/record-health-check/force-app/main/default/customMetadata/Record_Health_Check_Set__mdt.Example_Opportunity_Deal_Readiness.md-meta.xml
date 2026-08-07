@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Example_Opportunity Deal Readiness</label>
+    <label>Example: Opportunity Deal Readiness</label>
     <protected>false</protected>
     <values>
         <field>PublishErrorLogEvent__c</field>

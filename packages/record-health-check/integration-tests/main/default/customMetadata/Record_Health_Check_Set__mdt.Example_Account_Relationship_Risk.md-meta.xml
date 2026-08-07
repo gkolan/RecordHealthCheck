@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Example_Account Relationship &amp; Risk</label>
+    <label>Example: Account Relationship &amp; Risk</label>
     <protected>false</protected>
     <values>
         <field>ObjectApiName__c</field>

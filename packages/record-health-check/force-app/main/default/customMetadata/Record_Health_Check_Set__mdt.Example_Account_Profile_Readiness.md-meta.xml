@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Example_Account Profile Readiness</label>
+    <label>Example: Account Profile Readiness</label>
     <protected>false</protected>
     <values><field>ObjectApiName__c</field><value
       xsi:type="xsd:string"

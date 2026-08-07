@@ -4,7 +4,8 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Example_Contact Readiness - Phone</label><protected>false</protected>
+    <label>Example: Contact Readiness - Phone</label><protected
+  >false</protected>
     <values><field>Record_Health_Check_Set__c</field><value
       xsi:type="xsd:string"
     >Example_Contact_Relationship_Readiness</value></values>
